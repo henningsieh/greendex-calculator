@@ -3,7 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 
 import { participationPath } from "@/app/paths";
-import type { useConfirmDialog } from "@/components/confirm-dialog";
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -22,7 +22,6 @@ export function JoinedParticipants({
   partnershipId,
   entryAccess,
   removeParticipation,
-  confirm,
   setFeedback,
 }: {
   data: Pick<
@@ -36,12 +35,13 @@ export function JoinedParticipants({
     variables: string | undefined;
     mutate: (id: string) => void;
   };
-  confirm: ReturnType<typeof useConfirmDialog>["confirm"];
   setFeedback: (value: undefined) => void;
 }) {
   const t = useTranslations("participations");
+  const { confirm, dialog } = useConfirmDialog();
   return (
     <Card data-testid="joined-participants">
+      {dialog}
       <CardHeader>
         <CardTitle>{t("joined.title")}</CardTitle>
         {data.participations.length > 0 && (

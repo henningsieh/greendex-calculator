@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -48,11 +49,13 @@ function CountryCorrection({
   participationId,
   displayName,
   country,
+  archived,
 }: {
   partnershipId: string;
   participationId: string;
   displayName: string;
   country: string | null;
+  archived: boolean;
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("participations.details");
@@ -98,7 +101,7 @@ function CountryCorrection({
           {t("countryFor")} {displayName}
         </Label>
         <EUCountrySelector
-          disabled={update.isPending}
+          disabled={archived || update.isPending}
           id="participation-country"
           optional
           onValueChange={(value) => {
@@ -110,7 +113,7 @@ function CountryCorrection({
       </div>
       <Button
         data-testid="participation-country-save"
-        disabled={update.isPending}
+        disabled={archived || update.isPending}
         onClick={() => {
           setFeedback(undefined);
           update.mutate();
@@ -120,6 +123,7 @@ function CountryCorrection({
       >
         {t("saveCountry")} {displayName}
       </Button>
+      {archived && <ArchivedActionExplanation />}
       {feedback && (
         <Alert
           data-feedback-outcome={
@@ -192,6 +196,7 @@ export function ParticipantDetails({
               participationId={participation.id}
               displayName={participation.displayName}
               country={participation.country}
+              archived={data.projectArchived}
             />
           ) : (
             <p className="text-sm text-muted-foreground">

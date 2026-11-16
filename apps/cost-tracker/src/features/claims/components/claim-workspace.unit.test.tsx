@@ -49,6 +49,7 @@ vi.mock(
 
 const mocks = vi.hoisted(() => ({
   permitted: true,
+  projectArchived: false,
   secondParticipant: false,
   draft: null as null | {
     id: string;
@@ -199,6 +200,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         listPartnership: query(
           original.orpcQuery.participations.listPartnership,
           () => ({
+            projectArchived: mocks.projectArchived,
             participations: [
               {
                 id: "person",
@@ -256,6 +258,7 @@ function mount(client = createQueryClient(), locale: "en-GB" | "de" = "en-GB") {
 
 beforeEach(() => {
   mocks.permitted = true;
+  mocks.projectArchived = false;
   mocks.draft = null;
   mocks.history = [];
   mocks.selected = null;
@@ -309,6 +312,32 @@ function expectFieldError(field: HTMLElement) {
 }
 
 describe("Claim workspace", () => {
+  it.each(["paid", "rejected"] as const)(
+    "does not attribute lifecycle-locked %s Claim editing to archive",
+    async (status) => {
+      mocks.projectArchived = true;
+      mocks.draft = { id: "claim", partnershipId: "own", status };
+      mount();
+      expect(await screen.findByTestId("claim-locked")).toBeVisible();
+      expect(
+        screen.queryByTestId("archive-explanation-trigger"),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
+    },
+  );
+  it("blocks a stale editable Claim when the Project is archived", async () => {
+    mocks.projectArchived = true;
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mount();
+    expect(await screen.findByTestId("claim-payout-select")).toBeDisabled();
+    const trigger = screen.getByTestId("archive-explanation-trigger");
+    await userEvent.click(trigger);
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeVisible();
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
   it("hides editing controls when the client scope check refuses an editable Claim", async () => {
     mocks.permitted = false;
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };

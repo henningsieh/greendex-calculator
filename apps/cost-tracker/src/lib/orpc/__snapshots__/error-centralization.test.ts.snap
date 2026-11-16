@@ -512,10 +512,22 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PAYOUT_SELECTION_LOCKED",
     "status": 409,
   },
+  "projectAlreadyArchived": {
+    "code": "CONFLICT",
+    "message": "Project is already archived.",
+    "reason": "PROJECT_ALREADY_ARCHIVED",
+    "status": 409,
+  },
   "projectAlreadyCompleted": {
     "code": "CONFLICT",
     "message": "Project is already completed.",
     "reason": "PROJECT_ALREADY_COMPLETED",
+    "status": 409,
+  },
+  "projectArchiveBlocked": {
+    "code": "CONFLICT",
+    "message": "Every Partnership must have a paid or rejected Claim before the Project can be archived.",
+    "reason": "PROJECT_ARCHIVE_BLOCKED",
     "status": 409,
   },
   "projectCompletionBlocked": {
@@ -523,6 +535,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "composedCopy": true,
     "message": "Cannot complete Project:",
     "reason": "PROJECT_COMPLETION_BLOCKED",
+    "status": 409,
+  },
+  "projectNotArchived": {
+    "code": "CONFLICT",
+    "message": "Project is not archived.",
+    "reason": "PROJECT_NOT_ARCHIVED",
     "status": 409,
   },
   "projectNotFound": {

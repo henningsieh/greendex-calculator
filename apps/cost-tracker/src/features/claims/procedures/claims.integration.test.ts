@@ -87,10 +87,12 @@ describe("Claim drafts and Partnership payout selection", () => {
   it("exposes reviewer access for assigned Hosting coordinators and owners, not Partners or unassigned staff", async () => {
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: false,
+      projectArchived: false,
     });
     activeOrg = host;
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
+      projectArchived: false,
     });
     actor = participant;
     await expect(
@@ -101,6 +103,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     actor = owner;
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
+      projectArchived: false,
     });
   });
   it("reads only Partner payout options and the selected account without creating a Claim", async () => {

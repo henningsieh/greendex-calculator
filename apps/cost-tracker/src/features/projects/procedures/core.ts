@@ -9,16 +9,10 @@ import {
   projectPartnerOrganizationsTable,
   projectParticipantsTable,
   projectsTable,
-  user,
 } from "@greendex/database/schema";
 import { openapi } from "@orpc/openapi";
 import { and, asc, count, eq, isNull, or } from "drizzle-orm";
-import { z } from "zod";
 
-import {
-  canCompleteProject,
-  isSettledClaimStatus,
-} from "@/features/claims/claim-lifecycle";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
@@ -47,10 +41,6 @@ export type ProjectRelationship =
       location: string;
       country: string;
       archived: boolean;
-      costSubmissionWindowOpen: boolean;
-      completedAt: Date | null;
-      completedByUserId: string | null;
-      completedByUserName: string | null;
       participantCount: number;
       hostingOrganization: { id: string; name: string };
     }
@@ -63,10 +53,6 @@ export type ProjectRelationship =
       location: string;
       country: string;
       archived: boolean;
-      costSubmissionWindowOpen: boolean;
-      completedAt: Date | null;
-      completedByUserId: string | null;
-      completedByUserName: string | null;
       participantCount: number;
       hostingOrganization: { id: string; name: string };
       partnershipId: string;
@@ -89,11 +75,7 @@ export async function resolveRelationship({
       endDate: projectsTable.endDate,
       location: projectsTable.location,
       country: projectsTable.country,
-      archived: projectsTable.archived,
-      costSubmissionWindowOpen: projectsTable.costSubmissionWindowOpen,
-      completedAt: projectsTable.completedAt,
-      completedByUserId: projectsTable.completedByUserId,
-      completedByUserName: user.name,
+      archived: projectsTable.costTrackerArchived,
       hostingOrganizationId: organization.id,
       hostingOrganizationName: organization.name,
       partnershipId: projectPartnerOrganizationsTable.id,
@@ -102,7 +84,6 @@ export async function resolveRelationship({
     })
     .from(projectsTable)
     .innerJoin(organization, eq(organization.id, projectsTable.organizationId))
-    .leftJoin(user, eq(user.id, projectsTable.completedByUserId))
     .leftJoin(
       projectPartnerOrganizationsTable,
       and(
@@ -134,10 +115,6 @@ export async function resolveRelationship({
     location: row.location,
     country: row.country,
     archived: row.archived,
-    costSubmissionWindowOpen: row.costSubmissionWindowOpen,
-    completedAt: row.completedAt,
-    completedByUserId: row.completedByUserId,
-    completedByUserName: row.completedByUserName,
     hostingOrganization: {
       id: row.hostingOrganizationId,
       name: row.hostingOrganizationName,
@@ -353,10 +330,6 @@ export const getProject = authorized
       location: relationship.location,
       country: relationship.country,
       archived: relationship.archived,
-      costSubmissionWindowOpen: relationship.costSubmissionWindowOpen,
-      completedAt: relationship.completedAt,
-      completedByUserId: relationship.completedByUserId,
-      completedByUserName: relationship.completedByUserName,
       participantCount: relationship.participantCount,
       daysLeft,
     };
@@ -451,98 +424,7 @@ export const getProject = authorized
     return {
       ...project,
       relationship: "hosted" as const,
+      canArchive: true,
       partnerOrganizations,
     };
-  });
-
-/** Record one completion transition after checking fresh Partnership states. */
-export const complete = authorized
-  .input(ProjectDetailInputSchema)
-  .output(
-    z.object({
-      projectId: z.string(),
-      completed: z.literal(true),
-      completedAt: z.date(),
-      completedByUserId: z.string(),
-    }),
-  )
-  .meta(
-    openapi({
-      tags: ["Projects"],
-      summary: "Record project completion",
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
-    const orgId = context.session.activeOrganizationId;
-    if (!orgId) throw createSituationErrors(errors).selectOrganization();
-
-    return db.transaction(async (tx) => {
-      const [project] = await tx
-        .select({
-          id: projectsTable.id,
-          completedAt: projectsTable.completedAt,
-        })
-        .from(projectsTable)
-        .where(
-          and(
-            eq(projectsTable.id, input.projectId),
-            eq(projectsTable.organizationId, orgId),
-            eq(projectsTable.archived, false),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project) throw createSituationErrors(errors).projectNotFound();
-      await requireHostCoordination(
-        project.id,
-        context.user.id,
-        orgId,
-        errors,
-        tx,
-      );
-      if (project.completedAt)
-        throw createSituationErrors(errors).projectAlreadyCompleted();
-
-      const partnerships = await tx
-        .select({ name: organization.name, status: claimsTable.status })
-        .from(projectPartnerOrganizationsTable)
-        .innerJoin(
-          organization,
-          eq(organization.id, projectPartnerOrganizationsTable.organizationId),
-        )
-        .leftJoin(
-          claimsTable,
-          eq(claimsTable.partnershipId, projectPartnerOrganizationsTable.id),
-        )
-        .where(eq(projectPartnerOrganizationsTable.projectId, project.id))
-        .orderBy(asc(organization.name), asc(organization.id));
-      const statuses = partnerships.map(({ status }) => status);
-      if (!canCompleteProject(statuses)) {
-        const blockers = partnerships.filter(
-          ({ status }) => !isSettledClaimStatus(status),
-        );
-        throw createSituationErrors(errors).projectCompletionBlocked(blockers);
-      }
-      const [completed] = await tx
-        .update(projectsTable)
-        .set({ completedAt: new Date(), completedByUserId: context.user.id })
-        .where(
-          and(
-            eq(projectsTable.id, project.id),
-            eq(projectsTable.organizationId, orgId),
-          ),
-        )
-        .returning({
-          completedAt: projectsTable.completedAt,
-          completedByUserId: projectsTable.completedByUserId,
-        });
-      if (!completed?.completedAt || !completed.completedByUserId)
-        throw createSituationErrors(errors).internalFailure();
-      return {
-        projectId: project.id,
-        completed: true as const,
-        completedAt: completed.completedAt,
-        completedByUserId: completed.completedByUserId,
-      };
-    });
   });

@@ -51,7 +51,6 @@ export class CostTrackerProjectFixture {
       location: "Berlin",
       country: "DE",
       organizationId: seedOrganization.id,
-      costSubmissionWindowOpen: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

@@ -16,7 +16,6 @@ import {
 import {
   getProjectColumnFilters,
   isProjectPageSize,
-  isProjectWindowFilter,
   PROJECT_FILTER_IDS,
   pushColumnFiltersToUrl,
   type ProjectListQueryState,
@@ -24,7 +23,6 @@ import {
 import {
   PROJECT_PAGE_SIZES,
   PROJECT_SORT_MODES,
-  PROJECT_WINDOW_FILTERS,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 
@@ -56,7 +54,6 @@ export function ProjectListFilters({
   ) =>
     pushColumnFiltersToUrl(
       [...columnFilters.filter((filter) => filter.id !== id), { id, value }],
-      state,
       urlState,
       setUrlState,
     );
@@ -64,16 +61,11 @@ export function ProjectListFilters({
   // Labels for the trigger: Base UI resolves the displayed label from the
   // `items` prop (docs pattern), not from the mounted item children.
   const sortItems = [
-    { value: "operational", label: t("sortOpenEarliest") },
     { value: "start-asc", label: t("sortStartEarliest") },
     { value: "start-desc", label: t("sortStartLatest") },
     { value: "end-asc", label: t("sortEndEarliest") },
     { value: "end-desc", label: t("sortEndLatest") },
   ];
-  const windowItems = PROJECT_WINDOW_FILTERS.map((value) => ({
-    value,
-    label: value === "all" ? t("allWindows") : value,
-  }));
   const pageSizeItems = PROJECT_PAGE_SIZES.map((value) => ({
     value: String(value),
     label: String(value),
@@ -107,34 +99,6 @@ export function ProjectListFilters({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="project-submission-window">{t("submissionWindow")}</Label>
-        <Select
-          items={windowItems}
-          onValueChange={(value) =>
-            updateProjectFilter(
-              PROJECT_FILTER_IDS.window,
-              value && isProjectWindowFilter(value) ? value : state.window,
-            )
-          }
-          value={state.window}
-        >
-          <SelectTrigger
-            className="w-full"
-            id="project-submission-window"
-            data-testid="project-submission-window"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PROJECT_WINDOW_FILTERS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {value === "all" ? t("allWindows") : value}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
         <Label htmlFor="project-sort">{t("sort")}</Label>
         <Select
           items={sortItems}
@@ -142,8 +106,7 @@ export function ProjectListFilters({
             void setUrlState({
               cursor: null,
               sort:
-                PROJECT_SORT_MODES.find((mode) => mode === value) ??
-                "operational",
+                PROJECT_SORT_MODES.find((mode) => mode === value) ?? "start-asc",
             })
           }
           value={state.sort}
@@ -156,7 +119,6 @@ export function ProjectListFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="operational">{t("sortOpenEarliest")}</SelectItem>
             <SelectItem value="start-asc">{t("sortStartEarliest")}</SelectItem>
             <SelectItem value="start-desc">{t("sortStartLatest")}</SelectItem>
             <SelectItem value="end-asc">{t("sortEndEarliest")}</SelectItem>

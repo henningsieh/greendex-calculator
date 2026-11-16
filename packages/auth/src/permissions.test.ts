@@ -113,6 +113,29 @@ describe("Organization permissions", () => {
     ).toBe(false);
   });
 
+  it("grants Cost Tracker Project reopening only to owners and admins", () => {
+    expect(
+      costTrackerOrganizationRoles[roles.OrganizationOwner].authorize({
+        project: ["reopen"],
+      }).success,
+    ).toBe(true);
+    expect(
+      costTrackerOrganizationRoles[roles.OrganizationAdmin].authorize({
+        project: ["reopen"],
+      }).success,
+    ).toBe(true);
+    expect(
+      costTrackerOrganizationRoles[roles.ProjectCoordinator].authorize({
+        project: ["reopen"],
+      }).success,
+    ).toBe(false);
+    expect(
+      costTrackerOrganizationRoles[roles.Participant].authorize({
+        project: ["reopen"],
+      }).success,
+    ).toBe(false);
+  });
+
   it("mirrors Calculator admin project rights without archive or delete", () => {
     const coordinator = calculatorOrganizationRoles[roles.ProjectCoordinator];
     expect(coordinator.statements.project).toEqual(["create", "read", "update"]);

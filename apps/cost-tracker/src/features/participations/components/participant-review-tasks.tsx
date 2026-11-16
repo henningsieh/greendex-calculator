@@ -142,9 +142,11 @@ function ReviewTaskControls({
 export function ReviewTasks({
   partnershipId,
   canMutate,
+  archived,
 }: {
   partnershipId: string;
   canMutate: boolean;
+  archived: boolean;
 }) {
   const t = useTranslations("participations");
   const queryClient = useQueryClient();
@@ -175,6 +177,7 @@ export function ReviewTasks({
           <Button
             type="button"
             variant="outline"
+            data-testid="review-tasks-retry"
             onClick={() => void tasks.refetch()}
           >
             {t("review.retry")}
@@ -183,17 +186,19 @@ export function ReviewTasks({
       ) : tasks.data.length === 0 ? (
         <p>{t("review.empty")}</p>
       ) : (
-        <ul className="divide-y">
-          {tasks.data.map((task) => (
-            <ReviewTaskControls
-              key={task.id}
-              task={task}
-              canMutate={canMutate}
-              refresh={refresh}
-              onFeedback={setFeedback}
-            />
-          ))}
-        </ul>
+        <fieldset disabled={archived}>
+          <ul className="divide-y">
+            {tasks.data.map((task) => (
+              <ReviewTaskControls
+                key={task.id}
+                task={task}
+                canMutate={canMutate}
+                refresh={refresh}
+                onFeedback={setFeedback}
+              />
+            ))}
+          </ul>
+        </fieldset>
       )}
       {feedback && (
         <Alert>

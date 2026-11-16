@@ -2035,7 +2035,6 @@ async function ensureProjectDetailScenarios(db: SeedDatabase): Promise<string[]>
         location: "Prague",
         country: "CZ",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
     ] satisfies (typeof projects.$inferInsert)[];
     await ensureSeedProjects(db, rows);
@@ -2188,7 +2187,6 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
         location: "Berlin",
         country: "DE",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: betaId,
@@ -2207,7 +2205,6 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
         location: "Vienna",
         country: "AT",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: foreignId,
@@ -2217,7 +2214,6 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
         location: "Rome",
         country: "IT",
         organizationId: foreignHostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: archivedId,

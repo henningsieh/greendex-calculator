@@ -26,7 +26,7 @@ export async function assignedHostProjectIds(
       and(
         eq(hostAssignments.userId, userId),
         eq(projectsTable.organizationId, organizationId),
-        eq(projectsTable.archived, false),
+        eq(projectsTable.costTrackerArchived, false),
       ),
     );
   return rows.map((row) => row.id);

@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useConfirmDialog } from "@/components/confirm-dialog";
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { EntityCombobox } from "@/components/entity-combobox";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -80,7 +80,6 @@ export function ParticipantCoordination({
   partnershipId: string;
 }) {
   const t = useTranslations("participations");
-  const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
     orpcQuery.participations.listPartnership.queryOptions({
@@ -269,7 +268,9 @@ export function ParticipantCoordination({
       aria-label={t("page.label")}
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
     >
-      {dialog}
+      {data.projectArchived && entryAccess.permitted && (
+        <ArchivedActionExplanation />
+      )}
       {entryAccess.permitted && (
         <Card>
           <CardHeader>
@@ -279,35 +280,40 @@ export function ParticipantCoordination({
             <p className="text-sm text-muted-foreground">
               {t("page.addUserDescription")}
             </p>
-            <form
-              className="flex flex-wrap items-end gap-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setFeedback(undefined);
-                create.mutate();
-              }}
-            >
-              <div className="space-y-2" data-testid="participation-user-picker">
-                <span className="text-sm font-medium">
-                  {t("page.registeredUser")}
-                </span>
-                <EntityCombobox
-                  label={t("page.registeredUserLabel")}
-                  value={userId}
-                  onChange={setUserId}
-                  search={searchOnboarded}
-                  searchBy="name, email or ID"
-                  disabled={create.isPending}
-                />
-              </div>
-              <Button
-                data-testid="participation-add"
-                disabled={create.isPending || !userId}
-                type="submit"
+            <fieldset disabled={data.projectArchived}>
+              <form
+                className="flex flex-wrap items-end gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setFeedback(undefined);
+                  create.mutate();
+                }}
               >
-                {create.isPending ? t("page.adding") : t("page.add")}
-              </Button>
-            </form>
+                <div
+                  className="space-y-2"
+                  data-testid="participation-user-picker"
+                >
+                  <span className="text-sm font-medium">
+                    {t("page.registeredUser")}
+                  </span>
+                  <EntityCombobox
+                    label={t("page.registeredUserLabel")}
+                    value={userId}
+                    onChange={setUserId}
+                    search={searchOnboarded}
+                    searchBy="name, email or ID"
+                    disabled={data.projectArchived || create.isPending}
+                  />
+                </div>
+                <Button
+                  data-testid="participation-add"
+                  disabled={create.isPending || !userId}
+                  type="submit"
+                >
+                  {create.isPending ? t("page.adding") : t("page.add")}
+                </Button>
+              </form>
+            </fieldset>
             {feedback && (
               <Alert
                 data-feedback-outcome={
@@ -321,14 +327,16 @@ export function ParticipantCoordination({
           </CardContent>
         </Card>
       )}
-      <JoinedParticipants
-        data={data}
-        partnershipId={partnershipId}
-        entryAccess={entryAccess}
-        removeParticipation={removeParticipation}
-        confirm={confirm}
-        setFeedback={setFeedback}
-      />
+      <fieldset disabled={data.projectArchived}>
+        <JoinedParticipants
+          key={String(data.projectArchived)}
+          data={data}
+          partnershipId={partnershipId}
+          entryAccess={entryAccess}
+          removeParticipation={removeParticipation}
+          setFeedback={setFeedback}
+        />
+      </fieldset>
       {entryAccess.permitted && (
         <Card>
           <CardHeader>
@@ -347,7 +355,11 @@ export function ParticipantCoordination({
                 : t("page.manageOrganizers")}
             </Button>
             {coordinatorsOpen && (
-              <PartnerCoordinatorControls partnershipId={partnershipId} />
+              <PartnerCoordinatorControls
+                key={String(data.projectArchived)}
+                partnershipId={partnershipId}
+                archived={data.projectArchived}
+              />
             )}
           </CardContent>
         </Card>
@@ -371,6 +383,7 @@ export function ParticipantCoordination({
             <ReviewTasks
               partnershipId={partnershipId}
               canMutate={entryAccess.permitted}
+              archived={data.projectArchived}
             />
           )}
         </CardContent>
@@ -385,48 +398,50 @@ export function ParticipantCoordination({
             <p className="text-sm text-muted-foreground">{entryDenial}</p>
           ) : (
             <>
-              <form
-                className="flex flex-wrap items-end gap-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setEntryFeedback(undefined);
-                  issueInvitation.mutate();
-                }}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="participant-invitation-email">
-                    {t("page.inviteeEmail")}
-                  </Label>
-                  <input
-                    id="participant-invitation-email"
-                    data-testid="participant-invitation-email"
-                    className="h-9 rounded-md border bg-background px-3 text-sm"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-                <Button
-                  data-testid="send-participant-invitation"
-                  disabled={issueInvitation.isPending}
-                  type="submit"
+              <fieldset disabled={data.projectArchived} className="space-y-4">
+                <form
+                  className="flex flex-wrap items-end gap-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setEntryFeedback(undefined);
+                    issueInvitation.mutate();
+                  }}
                 >
-                  {t("page.sendInvitation")}
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-invitation-email">
+                      {t("page.inviteeEmail")}
+                    </Label>
+                    <input
+                      id="participant-invitation-email"
+                      data-testid="participant-invitation-email"
+                      className="h-9 rounded-md border bg-background px-3 text-sm"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+                  <Button
+                    data-testid="send-participant-invitation"
+                    disabled={issueInvitation.isPending}
+                    type="submit"
+                  >
+                    {t("page.sendInvitation")}
+                  </Button>
+                </form>
+                <Button
+                  data-testid="create-registration-link"
+                  type="button"
+                  variant="outline"
+                  disabled={createLink.isPending}
+                  onClick={() => {
+                    setEntryFeedback(undefined);
+                    createLink.mutate();
+                  }}
+                >
+                  {t("page.createLink")}
                 </Button>
-              </form>
-              <Button
-                data-testid="create-registration-link"
-                type="button"
-                variant="outline"
-                disabled={createLink.isPending}
-                onClick={() => {
-                  setEntryFeedback(undefined);
-                  createLink.mutate();
-                }}
-              >
-                {t("page.createLink")}
-              </Button>
+              </fieldset>
               {createdLink?.partnershipId === partnershipId && (
                 <div className="space-y-2">
                   <Label htmlFor="new-participant-link">
@@ -459,21 +474,23 @@ export function ParticipantCoordination({
           )}
         </CardContent>
       </Card>
-      <ParticipantInvitations
-        data={data}
-        entryAccess={entryAccess}
-        reissueInvitation={reissueInvitation}
-        closeInvitation={closeInvitation}
-        entryDenial={entryDenial}
-      />
-      <ParticipantRegistrationLinks
-        data={data}
-        entryAccess={entryAccess}
-        closeLink={closeLink}
-        reopenLink={reopenLink}
-        entryDenial={entryDenial}
-        setEntryFeedback={setEntryFeedback}
-      />
+      <fieldset disabled={data.projectArchived}>
+        <ParticipantInvitations
+          data={data}
+          entryAccess={entryAccess}
+          reissueInvitation={reissueInvitation}
+          closeInvitation={closeInvitation}
+          entryDenial={entryDenial}
+        />
+        <ParticipantRegistrationLinks
+          data={data}
+          entryAccess={entryAccess}
+          closeLink={closeLink}
+          reopenLink={reopenLink}
+          entryDenial={entryDenial}
+          setEntryFeedback={setEntryFeedback}
+        />
+      </fieldset>
     </section>
   );
 }

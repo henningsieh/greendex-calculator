@@ -14,8 +14,10 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 export function PartnerCoordinatorControls({
   partnershipId,
+  archived,
 }: {
   partnershipId: string;
+  archived: boolean;
 }) {
   const t = useTranslations("participations");
   const { confirm, dialog } = useConfirmDialog();
@@ -81,6 +83,7 @@ export function PartnerCoordinatorControls({
         <Button
           type="button"
           variant="outline"
+          data-testid="registered-users-retry"
           onClick={() => void members.refetch()}
         >
           {t("groupOrganizer.retryUsers")}
@@ -104,69 +107,71 @@ export function PartnerCoordinatorControls({
       <p className="text-sm text-muted-foreground">
         {t("groupOrganizer.description")}
       </p>
-      <div className="space-y-2">
-        <Label htmlFor={`group-organizer-${partnershipId}`}>
-          {t("groupOrganizer.registeredUserLabel")}
-        </Label>
-        <select
-          id={`group-organizer-${partnershipId}`}
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-          value={targetUserId}
-          disabled={assign.isPending || revoke.isPending}
-          onChange={(event) => {
-            setTargetUserId(event.target.value);
-            setFeedback("");
-          }}
-        >
-          <option value="">{t("groupOrganizer.selectUser")}</option>
-          {eligible.map((entry) => (
-            <option key={entry.userId} value={entry.userId}>
-              {entry.name} ({entry.email})
-            </option>
-          ))}
-        </select>
-      </div>
-      {eligible.length === 0 && <p>{t("groupOrganizer.noEligible")}</p>}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          data-testid="assign-group-organizer"
-          type="button"
-          disabled={!targetUserId || assign.isPending || revoke.isPending}
-          onClick={() => {
-            setFeedback("");
-            assign.mutate();
-          }}
-        >
-          {t("groupOrganizer.assign")}
-        </Button>
-        <Button
-          data-testid="revoke-group-organizer"
-          type="button"
-          variant="outline"
-          disabled={!targetUserId || assign.isPending || revoke.isPending}
-          onClick={async () => {
-            if (
-              await confirm({
-                title: t("confirmations.revokeOrganizer.title"),
-                description: t("confirmations.revokeOrganizer.description", {
-                  user:
-                    eligible.find((entry) => entry.userId === targetUserId)
-                      ?.name ?? targetUserId,
-                }),
-                confirmText: t("confirmations.revokeOrganizer.execute"),
-                isDestructive: true,
-              })
-            ) {
+      <fieldset disabled={archived} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={`group-organizer-${partnershipId}`}>
+            {t("groupOrganizer.registeredUserLabel")}
+          </Label>
+          <select
+            id={`group-organizer-${partnershipId}`}
+            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            value={targetUserId}
+            disabled={assign.isPending || revoke.isPending}
+            onChange={(event) => {
+              setTargetUserId(event.target.value);
               setFeedback("");
-              revoke.mutate();
-            }
-          }}
-        >
-          {revoke.isPending
-            ? t("confirmations.pending")
-            : t("groupOrganizer.revoke")}
-        </Button>
-      </div>
+            }}
+          >
+            <option value="">{t("groupOrganizer.selectUser")}</option>
+            {eligible.map((entry) => (
+              <option key={entry.userId} value={entry.userId}>
+                {entry.name} ({entry.email})
+              </option>
+            ))}
+          </select>
+        </div>
+        {eligible.length === 0 && <p>{t("groupOrganizer.noEligible")}</p>}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            data-testid="assign-group-organizer"
+            type="button"
+            disabled={!targetUserId || assign.isPending || revoke.isPending}
+            onClick={() => {
+              setFeedback("");
+              assign.mutate();
+            }}
+          >
+            {t("groupOrganizer.assign")}
+          </Button>
+          <Button
+            data-testid="revoke-group-organizer"
+            type="button"
+            variant="outline"
+            disabled={!targetUserId || assign.isPending || revoke.isPending}
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: t("confirmations.revokeOrganizer.title"),
+                  description: t("confirmations.revokeOrganizer.description", {
+                    user:
+                      eligible.find((entry) => entry.userId === targetUserId)
+                        ?.name ?? targetUserId,
+                  }),
+                  confirmText: t("confirmations.revokeOrganizer.execute"),
+                  isDestructive: true,
+                })
+              ) {
+                setFeedback("");
+                revoke.mutate();
+              }
+            }}
+          >
+            {revoke.isPending
+              ? t("confirmations.pending")
+              : t("groupOrganizer.revoke")}
+          </Button>
+        </div>
+      </fieldset>
       {feedback && (
         <Alert>
           <AlertTitle>{t("groupOrganizer.update")}</AlertTitle>

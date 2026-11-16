@@ -177,6 +177,62 @@ describe("Claim decisions", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("keeps a paid correction visible but disabled with a keyboard-accessible archive explanation", async () => {
+    const user = userEvent.setup();
+    const onDecision = vi.fn();
+    render(
+      <ClaimDecisionPanel
+        {...base}
+        status="paid"
+        archived
+        onDecision={onDecision}
+      />,
+    );
+    expect(screen.getByTestId("claim-decision-correctPayment")).toBeDisabled();
+    const trigger = screen.getByTestId("archive-explanation-trigger");
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeVisible();
+    expect(onDecision).not.toHaveBeenCalled();
+  });
+
+  it("keeps rejected Claim reopening visible but disabled when archived", async () => {
+    const user = userEvent.setup();
+    render(<ClaimDecisionPanel {...base} status="rejected" archived />);
+    expect(screen.getByTestId("claim-decision-reopen")).toBeDisabled();
+    await user.click(screen.getByTestId("archive-explanation-trigger"));
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeVisible();
+  });
+
+  it("prevents an already-open paid correction after archive", async () => {
+    const user = userEvent.setup();
+    const onDecision = vi.fn();
+    const { rerender } = render(
+      <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
+    );
+    await user.click(screen.getByTestId("claim-decision-correctPayment"));
+    await user.type(
+      screen.getByTestId("claim-decision-reason-correctPayment"),
+      "Mistake",
+    );
+    rerender(
+      <ClaimDecisionPanel
+        {...base}
+        status="paid"
+        archived
+        onDecision={onDecision}
+      />,
+    );
+    expect(
+      screen.getByTestId("claim-decision-confirm-correctPayment"),
+    ).toBeDisabled();
+    expect(onDecision).not.toHaveBeenCalled();
+  });
+
   it("requires reasons and explicit confirmation before correction and rejection", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);

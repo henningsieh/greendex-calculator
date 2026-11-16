@@ -5,8 +5,6 @@ import {
   projectListParsers,
   PROJECT_PAGE_SIZES,
   PROJECT_SORT_MODES,
-  PROJECT_WINDOW_FILTERS,
-  type ProjectListState,
 } from "@/features/projects/list-query-options";
 
 export const PROJECT_FILTER_IDS = {
@@ -14,7 +12,6 @@ export const PROJECT_FILTER_IDS = {
   dateTo: "dateTo",
   name: "name",
   partnerOrganizationIds: "partnerOrganizationIds",
-  window: "window",
 } as const;
 
 export type ProjectListQueryState = UseQueryStatesReturn<
@@ -26,17 +23,14 @@ export function getProjectColumnFilters({
   dateTo,
   partnerOrganizationIds,
   search,
-  window,
 }: {
   dateFrom: Date | null;
   dateTo: Date | null;
   partnerOrganizationIds: string[];
   search: string;
-  window: (typeof PROJECT_WINDOW_FILTERS)[number];
 }): ColumnFiltersState {
   return [
     { id: PROJECT_FILTER_IDS.name, value: search },
-    { id: PROJECT_FILTER_IDS.window, value: window },
     { id: PROJECT_FILTER_IDS.dateFrom, value: dateFrom },
     { id: PROJECT_FILTER_IDS.dateTo, value: dateTo },
     {
@@ -53,12 +47,6 @@ export function getStringFilterValue(
 ) {
   const value = filters.find((filter) => filter.id === id)?.value;
   return typeof value === "string" ? value : fallback;
-}
-
-export function isProjectWindowFilter(
-  value: string,
-): value is (typeof PROJECT_WINDOW_FILTERS)[number] {
-  return PROJECT_WINDOW_FILTERS.some((filter) => filter === value);
 }
 
 export function isProjectPageSize(
@@ -101,7 +89,7 @@ export function getSortingState(
     case "end-desc":
       return [{ id: "endDate", desc: true }];
     default:
-      return [{ id: "operational", desc: false }];
+      return [{ id: "startDate", desc: false }];
   }
 }
 
@@ -113,7 +101,7 @@ export function getProjectSortMode(sorting: SortingState) {
   if (currentSort?.id === "endDate") {
     return currentSort.desc ? "end-desc" : "end-asc";
   }
-  return "operational";
+  return "start-asc";
 }
 
 /**
@@ -123,16 +111,9 @@ export function getProjectSortMode(sorting: SortingState) {
  */
 export function pushColumnFiltersToUrl(
   nextFilters: ColumnFiltersState,
-  state: ProjectListState,
   urlState: ProjectListQueryState[0],
   setUrlState: ProjectListQueryState[1],
 ) {
-  const nextWindow = getStringFilterValue(
-    nextFilters,
-    PROJECT_FILTER_IDS.window,
-    state.window,
-  );
-
   void setUrlState({
     cursor: null,
     dateFrom: getDateFilterValue(
@@ -155,6 +136,5 @@ export function pushColumnFiltersToUrl(
       PROJECT_FILTER_IDS.name,
       urlState.search,
     ),
-    window: isProjectWindowFilter(nextWindow) ? nextWindow : state.window,
   });
 }

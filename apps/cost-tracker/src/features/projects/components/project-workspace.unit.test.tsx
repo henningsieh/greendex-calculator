@@ -8,11 +8,17 @@ import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>,
-  complete: vi.fn(),
+  archive: vi.fn(),
+  reopen: vi.fn(),
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
+    claims: { reviewerAccess: { key: () => ["reviewer-access"] } },
+    participations: {
+      listPartnership: { key: () => ["participations"] },
+      get: { key: () => ["participation"] },
+    },
     projects: {
       get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
@@ -22,13 +28,17 @@ vi.mock("@/lib/orpc/orpc", () => ({
       },
     },
   },
-  orpc: { projects: { complete: mocks.complete } },
+  orpc: { projects: { archive: mocks.archive, reopen: mocks.reopen } },
 }));
 
 vi.mock("@/features/partnerships/components/partnership-actions", () => ({
   PartnershipActions: ({ projectId }: { projectId?: string }) => (
     <p data-project-id={projectId} data-testid="partnership-actions" />
   ),
+}));
+vi.mock("@/features/partnerships/components/invalidate-partnership-data", () => ({
+  invalidatePartnershipProjectData: (queryClient: QueryClient) =>
+    queryClient.invalidateQueries({ queryKey: ["project"] }),
 }));
 
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
@@ -41,12 +51,14 @@ const baseProject = {
   location: "Berlin",
   country: "DE",
   archived: false,
-  costSubmissionWindowOpen: true,
   participantCount: 3,
   daysLeft: 5,
 };
 
-function renderWorkspace({ canManagePartnerships = false } = {}) {
+function renderWorkspace({
+  canManagePartnerships = false,
+  canReopen = false,
+} = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -55,6 +67,7 @@ function renderWorkspace({ canManagePartnerships = false } = {}) {
       <Suspense fallback={<p>Loading workspace</p>}>
         <ProjectWorkspace
           canManagePartnerships={canManagePartnerships}
+          canReopen={canReopen}
           projectId="project-1"
         />
       </Suspense>
@@ -64,7 +77,8 @@ function renderWorkspace({ canManagePartnerships = false } = {}) {
 
 beforeEach(() => {
   mocks.detail = {};
-  mocks.complete.mockReset();
+  mocks.archive.mockReset();
+  mocks.reopen.mockReset();
 });
 
 describe("Project workspace", () => {
@@ -225,11 +239,12 @@ describe("Project workspace", () => {
     );
   });
 
-  it("completes an eligible Hosted Project and refreshes its workspace", async () => {
+  it("confirms archive before changing an eligible Hosted Project", async () => {
     const user = userEvent.setup();
     mocks.detail = {
       ...baseProject,
       relationship: "hosted",
+      canArchive: true,
       completedAt: null,
       completedByUserId: null,
       partnerOrganizations: [
@@ -241,27 +256,29 @@ describe("Project workspace", () => {
         },
       ],
     };
-    mocks.complete.mockImplementation(async () => {
+    mocks.archive.mockImplementation(async () => {
       mocks.detail = {
         ...mocks.detail,
-        completedAt: new Date("2026-06-05T12:00:00.000Z"),
-        completedByUserId: "staff-1",
-        completedByUserName: "Staff Member",
+        archived: true,
       };
-      return { projectId: "project-1", completed: true };
+      return { projectId: "project-1", archived: true };
     });
     renderWorkspace();
-    await user.click(await screen.findByTestId("complete-project"));
-    expect(mocks.complete).toHaveBeenCalledWith({ projectId: "project-1" });
+    await user.click(await screen.findByTestId("archive-project"));
+    await user.click(await screen.findByTestId("confirm-dialog-cancel"));
+    expect(mocks.archive).not.toHaveBeenCalled();
+    await user.click(screen.getByTestId("archive-project"));
+    await user.click(await screen.findByTestId("confirm-dialog-execute"));
+    expect(mocks.archive).toHaveBeenCalledWith({ projectId: "project-1" });
     expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
-    expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
-    expect(screen.queryByTestId("complete-project")).toBeNull();
+    expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 
   it("hides completion for blocked, completed and Partner Projects", async () => {
     mocks.detail = {
       ...baseProject,
       relationship: "hosted",
+      canArchive: true,
       completedAt: null,
       partnerOrganizations: [
         {
@@ -278,48 +295,82 @@ describe("Project workspace", () => {
         await screen.findByTestId("assigned-partner-organizations"),
       ).getAllByRole("listitem"),
     ).toHaveLength(1);
-    expect(screen.queryByTestId("complete-project")).toBeNull();
+    expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 
-  it("shows recorded completion and no repeat action", async () => {
-    const completedAt = new Date("2026-06-05T12:00:00.000Z");
+  it("hides archive for a settled Hosted Project without archive capability", async () => {
     mocks.detail = {
       ...baseProject,
       relationship: "hosted",
-      completedAt,
-      completedByUserId: "staff-1",
-      completedByUserName: "Staff Member",
+      canArchive: false,
       partnerOrganizations: [],
     };
     renderWorkspace();
-    expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
-    const completion = screen
-      .getByTestId("project-workspace")
-      .querySelector("[data-completed-at]");
-    expect(completion).toHaveAttribute(
-      "data-completed-at",
-      "2026-06-05T12:00:00.000Z",
-    );
-    expect(completion).toHaveAttribute("data-completed-by-user-id", "staff-1");
-    expect(screen.queryByTestId("complete-project")).toBeNull();
+    expect(await screen.findByTestId("project-workspace")).toBeInTheDocument();
+    expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 
-  it("reports a completion failure without marking the Project completed", async () => {
+  it("requires a reason to reopen an archived Project", async () => {
     const user = userEvent.setup();
     mocks.detail = {
       ...baseProject,
       relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    mocks.reopen.mockImplementation(async () => {
+      mocks.detail = { ...mocks.detail, archived: false };
+    });
+    renderWorkspace({ canReopen: true });
+    await user.click(await screen.findByTestId("reopen-project"));
+    const reason = screen.getByRole("textbox");
+    await user.type(reason, "Correct a payment");
+    await user.click(screen.getByTestId("reopen-project-confirm"));
+    expect(mocks.reopen).toHaveBeenCalledWith({
+      projectId: "project-1",
+      reason: "Correct a payment",
+    });
+  });
+
+  it("keeps archived Partnership actions visible with a keyboard-accessible explanation", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    renderWorkspace({ canManagePartnerships: true });
+    const trigger = await screen.findByTestId("archive-explanation-trigger");
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("project-workspace").querySelectorAll("button:disabled")
+        .length,
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it("reports an archive failure without marking the Project archived", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      canArchive: true,
       completedAt: null,
       partnerOrganizations: [],
     };
-    mocks.complete.mockRejectedValue(new Error("network"));
+    mocks.archive.mockRejectedValue(new Error("network"));
     renderWorkspace();
-    await user.click(await screen.findByTestId("complete-project"));
+    await user.click(await screen.findByTestId("archive-project"));
+    await user.click(await screen.findByTestId("confirm-dialog-execute"));
     expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByTestId("complete-project")).toBeEnabled();
+      expect(screen.getByTestId("archive-project")).toBeEnabled();
     });
-    expect(screen.queryByTestId("project-completed")).not.toBeInTheDocument();
+    expect(screen.getByTestId("archive-project")).toBeInTheDocument();
   });
 
   it("renders only the active Partner assignment and Hosting identity", async () => {
@@ -355,6 +406,6 @@ describe("Project workspace", () => {
       "/en-GB/partnerships/partnership-1/claim",
     );
     expect(screen.queryByTestId("hosted-participants")).toBeNull();
-    expect(screen.queryByTestId("complete-project")).toBeNull();
+    expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 });

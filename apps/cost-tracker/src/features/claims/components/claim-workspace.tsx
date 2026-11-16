@@ -4,6 +4,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import {
   ErrorDetail,
   ErrorPresentation,
@@ -596,7 +597,11 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   return (
     <section className="min-w-0" aria-label={t("label")}>
       <ClaimBand title={t("bandTitle")} status={draft?.status} />
-      <div className="min-w-0 border border-t-0 bg-card">
+      {people.projectArchived && editable && <ArchivedActionExplanation />}
+      <fieldset
+        disabled={people.projectArchived && editable}
+        className="min-w-0 border border-t-0 bg-card"
+      >
         <div
           className={
             editable && preview
@@ -672,7 +677,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
             <AlertDescription>{t("noDraft")}</AlertDescription>
           </Alert>
         )}
-      </div>
+      </fieldset>
     </section>
   );
 }

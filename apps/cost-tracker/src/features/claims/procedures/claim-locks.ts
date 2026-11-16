@@ -25,10 +25,9 @@ interface ClaimScope {
 }
 
 /**
- * The rows one write must hold, derived from the invariants that write protects
- * (ADR-0017). Every coverage is a suffix of the one order
- * Project → Partnership → Claim, so two writers can never hold the row the
- * other waits for:
+ * Every Claim write locks its Project first so archive and writes serialize.
+ * Coverage chooses whether the Partnership row is also needed. Rows are locked
+ * in Project → Partnership → Claim order:
  *
  * - `claim`: lifecycle state and the Claim-owned data every edit revalidates
  *   against it — Travel Cost Entries, Cost Allocations, Proof Documents.
@@ -40,9 +39,9 @@ interface ClaimScope {
 export type ClaimLockCoverage = "claim" | "partnership" | "project";
 
 const coveredRows = {
-  claim: { project: false, partnership: false },
-  partnership: { project: false, partnership: true },
-  project: { project: true, partnership: true },
+  claim: { partnership: false },
+  partnership: { partnership: true },
+  project: { partnership: true },
 } as const;
 
 const lockedClaim = {
@@ -65,16 +64,18 @@ export async function lockClaimScope(
   coverage: ClaimLockCoverage,
 ) {
   const rows = coveredRows[coverage];
-  const [project] = rows.project
-    ? await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1)
-    : [];
+  const [project] = await tx
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.id, scope.projectId),
+        eq(projects.costTrackerArchived, false),
+      ),
+    )
+    .for("update")
+    .limit(1);
+  if (!project) throw createSituationErrors(errors).partnershipNotFound();
   const [partnership] = rows.partnership
     ? await tx
         .select({ id: partnerships.id })
@@ -91,7 +92,7 @@ export async function lockClaimScope(
         .for("update")
         .limit(1)
     : [];
-  if ((rows.project && !project) || (rows.partnership && !partnership))
+  if (rows.partnership && !partnership)
     throw createSituationErrors(errors).partnershipNotFound();
   const [claim] = await tx
     .select(lockedClaim)
