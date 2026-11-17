@@ -198,6 +198,11 @@ export function ProjectWorkspace({
     await Promise.all([
       invalidatePartnershipProjectData(queryClient),
       queryClient.invalidateQueries({
+        queryKey: orpcQuery.projectPartnerships.listSetupLinks.key({
+          type: "query",
+        }),
+      }),
+      queryClient.invalidateQueries({
         queryKey: orpcQuery.claims.reviewerAccess.key({ type: "query" }),
       }),
       queryClient.invalidateQueries({

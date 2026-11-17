@@ -29,6 +29,9 @@ const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   hasPermission: vi.fn(),
 }));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 

@@ -348,7 +348,32 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       expiresAt: new Date(Date.now() + 86_400_000),
     });
     const page = await hostContext!.newPage();
-    await openHostedProject(page, `/projects/${ids.settled}`);
+    await page.goto("/partner-organizations");
+    const warmResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/rpc/projectPartnerships/listSetupLinks") &&
+        response.ok(),
+    );
+    await page.getByTestId("partner-organizations-tab-invitations").click();
+    expect(JSON.stringify(await (await warmResponse).json())).toContain(
+      '"costTrackerArchived":false',
+    );
+    const link = page.locator(`[data-setup-link-id="${linkId}"]`);
+    await expect(link.locator("[data-link-status]")).toHaveAttribute(
+      "data-link-status",
+      "open",
+    );
+    await expect(link.getByTestId("close-setup-link")).toBeEnabled();
+    await page.evaluate(() => Reflect.set(window, "__warmCacheNavigation", true));
+    await page.getByTestId("partner-organizations-tab-partnerships").click();
+    await page.getByRole("link", { name: names.settled, exact: true }).click();
+    await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+      "data-hydrated",
+      "true",
+    );
+    expect(
+      await page.evaluate(() => Reflect.get(window, "__warmCacheNavigation")),
+    ).toBe(true);
     await page.getByTestId("archive-project").click();
     await page.getByTestId("confirm-dialog-cancel").click();
     expect(
@@ -370,7 +395,26 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
           .where(eq(partnerOrganizationSetupLinksTable.id, linkId))
       )[0]?.enabled,
     ).toBe(false);
-    await page.goto("/partner-organizations");
+    await page.getByTestId("sidebar-nav-partner-organizations").click();
+    expect(
+      await page.evaluate(() => Reflect.get(window, "__warmCacheNavigation")),
+    ).toBe(true);
+    const archivedResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/rpc/projectPartnerships/listSetupLinks") &&
+        response.ok(),
+    );
+    await page.getByTestId("partner-organizations-tab-invitations").click();
+    expect(JSON.stringify(await (await archivedResponse).json())).toContain(
+      '"costTrackerArchived":true',
+    );
+    await expect(link.locator("[data-link-status]")).toHaveAttribute(
+      "data-link-status",
+      "closed",
+    );
+    await expect(link.getByTestId("close-setup-link")).toBeDisabled();
+    await expect(link.getByTestId("archive-explanation-trigger")).toBeVisible();
+    await page.getByTestId("partner-organizations-tab-partnerships").click();
     const partnership = page
       .getByTestId(`partnership-row-${ids.partnerA}`)
       .filter({ has: page.getByTestId(`remove-partnership-${ids.settledA}`) });
@@ -382,9 +426,6 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
     await page.keyboard.press("Escape");
-    await page.getByTestId("partner-organizations-tab-invitations").click();
-    const link = page.locator(`[data-setup-link-id="${linkId}"]`);
-    await expect(link.getByTestId("close-setup-link")).toBeDisabled();
     const touch = await browser.newContext({
       baseURL,
       storageState: await hostContext!.storageState(),

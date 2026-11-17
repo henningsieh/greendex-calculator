@@ -19,6 +19,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       listPartnership: { key: () => ["participations"] },
       get: { key: () => ["participation"] },
     },
+    projectPartnerships: { listSetupLinks: { key: () => ["setup-links"] } },
     projects: {
       get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
