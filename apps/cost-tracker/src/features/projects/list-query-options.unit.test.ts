@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getProjectListQueryInput,
+  getProjectListQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
@@ -103,7 +103,7 @@ describe("Project list URL state", () => {
     });
   });
 
-  it("builds one procedure input contract for browser and server query options", () => {
+  it("includes scope-specific procedure inputs in generated query keys", () => {
     const state = {
       scope: "hosted" as const,
       search: "climate",
@@ -117,27 +117,39 @@ describe("Project list URL state", () => {
       pageSize: 50 as const,
     };
 
-    expect(getProjectListQueryInput("hosted", state)).toEqual({
-      search: "climate",
-      dateFrom: state.dateFrom,
-      dateTo: state.dateTo,
-      archive: "archived",
-      settlement: "ready",
-      partnerOrganizationIds: ["partner-1"],
-      sort: "start-desc",
-      cursor: "opaque",
-      pageSize: 50,
-    });
-    expect(getProjectListQueryInput("partner", state)).toEqual({
-      search: "climate",
-      dateFrom: state.dateFrom,
-      dateTo: state.dateTo,
-      archive: "archived",
-      settlement: "ready",
-      sort: "start-desc",
-      cursor: "opaque",
-      pageSize: 50,
-    });
+    expect(getProjectListQueryOptions("hosted", state).queryKey).toEqual([
+      ["projects", "listHosted"],
+      {
+        type: "query",
+        input: {
+          search: "climate",
+          dateFrom: state.dateFrom,
+          dateTo: state.dateTo,
+          archive: "archived",
+          settlement: "ready",
+          partnerOrganizationIds: ["partner-1"],
+          sort: "start-desc",
+          cursor: "opaque",
+          pageSize: 50,
+        },
+      },
+    ]);
+    expect(getProjectListQueryOptions("partner", state).queryKey).toEqual([
+      ["projects", "listPartner"],
+      {
+        type: "query",
+        input: {
+          search: "climate",
+          dateFrom: state.dateFrom,
+          dateTo: state.dateTo,
+          archive: "archived",
+          settlement: "ready",
+          sort: "start-desc",
+          cursor: "opaque",
+          pageSize: 50,
+        },
+      },
+    ]);
   });
 
   it("omits search values shorter than three normalized characters", () => {

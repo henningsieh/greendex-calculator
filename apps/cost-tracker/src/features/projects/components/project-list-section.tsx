@@ -4,11 +4,11 @@ import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibil
 import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
+  getProjectListQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
-import { getServerProjectListQueryOptions } from "@/features/projects/list-query-options.server";
 import { requireSession } from "@/lib/session";
 import {
   getQueryClient,
@@ -64,10 +64,10 @@ export async function ProjectListSection({
       await (
         resolution.scope === "hosted"
           ? queryClient.query(
-              getServerProjectListQueryOptions("hosted", resolution.state),
+              getProjectListQueryOptions("hosted", resolution.state),
             )
           : queryClient.query(
-              getServerProjectListQueryOptions("partner", resolution.state),
+              getProjectListQueryOptions("partner", resolution.state),
             )
       ).catch(swallowPrefetchError);
     }

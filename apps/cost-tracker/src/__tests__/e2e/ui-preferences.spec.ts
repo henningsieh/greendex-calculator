@@ -11,7 +11,7 @@ import {
 } from "@greendex/database/schema";
 import type { Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
 
@@ -25,7 +25,8 @@ const [first, second] = users;
 if (!first || !second) throw new Error("Two test users are required");
 const ownerCookieName = `project_columns_${createHash("sha256").update(first.id).digest("hex").slice(0, 32)}`;
 let seedOwnerId = "";
-let activeProjectId = "";
+const activeProjectId = randomUUID();
+const activeProjectName = `Preferences active ${activeProjectId}`;
 registerPrivateValues(password);
 
 async function signIn(page: Page, address: string) {
@@ -61,18 +62,16 @@ test.describe("UI preferences", () => {
       .from(member)
       .where(eq(member.userId, owner.id));
     if (!membership) throw new Error("Seed membership is missing");
-    const [activeProject] = await db
-      .select({ id: projectsTable.id })
-      .from(projectsTable)
-      .where(
-        and(
-          eq(projectsTable.organizationId, membership.organizationId),
-          eq(projectsTable.costTrackerArchived, false),
-        ),
-      )
-      .limit(1);
-    if (!activeProject) throw new Error("An active Project is missing");
-    activeProjectId = activeProject.id;
+    await db.insert(projectsTable).values({
+      id: activeProjectId,
+      name: activeProjectName,
+      organizationId: membership.organizationId,
+      startDate: new Date("2024-01-01T00:00:00.000Z"),
+      endDate: new Date("2024-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE",
+      costTrackerArchived: false,
+    });
     await db.insert(projectsTable).values({
       id: archivedProjectId,
       name: `Preferences archived ${archivedProjectId}`,
@@ -109,6 +108,7 @@ test.describe("UI preferences", () => {
 
   test.afterAll(async () => {
     await db.delete(projectsTable).where(eq(projectsTable.id, archivedProjectId));
+    await db.delete(projectsTable).where(eq(projectsTable.id, activeProjectId));
     for (const testUser of users) {
       await db.delete(session).where(eq(session.userId, testUser.id));
       await db.delete(member).where(eq(member.userId, testUser.id));
@@ -152,7 +152,13 @@ test.describe("UI preferences", () => {
       page.getByTestId(`project-link-${archivedProjectId}`),
     ).toHaveCount(0);
     await page.goto(
-      `/projects?scope=hosted&archive=archived&search=${activeProjectId}`,
+      `/projects?scope=hosted&search=${encodeURIComponent(activeProjectName)}`,
+    );
+    await expect(
+      page.getByTestId(`project-link-${activeProjectId}`),
+    ).toBeVisible();
+    await page.goto(
+      `/projects?scope=hosted&archive=archived&search=${encodeURIComponent(activeProjectName)}`,
     );
     await expect(page.getByTestId(`project-link-${activeProjectId}`)).toHaveCount(
       0,
