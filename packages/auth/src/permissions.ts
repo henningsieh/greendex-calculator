@@ -35,6 +35,15 @@ export const legacyCalculatorAdminRole = accessControl.newRole({
   projectParticipation: ["create", "read", "update", "merge"],
 });
 
+// Calculator has no Project reopen workflow; keep its owner grants separate from
+// Cost Tracker's lifecycle permission.
+export const calculatorOwnerRole = accessControl.newRole({
+  ...ownerAc.statements,
+  project: ["create", "read", "update", "delete", "archive"],
+  projectPartnership: ["create", "read", "update", "delete"],
+  projectParticipation: ["create", "read", "update", "merge"],
+});
+
 // Organization Admin keeps the existing admin permission statements; its definition
 // name is distinct from Calculator's legacy admin meaning, not a new stored role.
 export const organizationAdmin = accessControl.newRole({
@@ -68,7 +77,7 @@ export const organizationRoles = {
 };
 
 export const calculatorOrganizationRoles = {
-  [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
+  [ORGANIZATION_ROLES.OrganizationOwner]: calculatorOwnerRole,
   [ORGANIZATION_ROLES.OrganizationAdmin]: legacyCalculatorAdminRole,
   [ORGANIZATION_ROLES.ProjectCoordinator]: calculatorCoordinatorRole,
   [ORGANIZATION_ROLES.Participant]: projectParticipant,
