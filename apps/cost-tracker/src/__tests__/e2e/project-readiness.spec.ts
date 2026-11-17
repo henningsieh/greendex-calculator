@@ -14,7 +14,7 @@ import {
 } from "@greendex/database/schema";
 import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { count, inArray } from "drizzle-orm";
+import { count, eq, inArray } from "drizzle-orm";
 
 import { expect, test, registerPrivateValues } from "./fixtures/artifact-privacy";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
@@ -38,16 +38,19 @@ const ids = {
   main: randomUUID(),
   isolation: randomUUID(),
   zero: randomUUID(),
+  settled: randomUUID(),
   other: randomUUID(),
   mainA: randomUUID(),
   mainB: randomUUID(),
   isolationA: randomUUID(),
   otherB: randomUUID(),
+  settledA: randomUUID(),
 };
 const names = {
   main: `CT ${suffix} Main`,
   isolation: `CT ${suffix} Isolation`,
   zero: `CT ${suffix} Zero Partnerships`,
+  settled: `CT ${suffix} Settled`,
   other: `CT ${suffix} E Other Project`,
   partnerA: `CT ${suffix} Partner A`,
   partnerB: `CT ${suffix} Partner B`,
@@ -55,8 +58,14 @@ const names = {
 const password = randomUUID();
 registerPrivateValues(password);
 const hostEmail = `ct-${suffix}-h@example.invalid`;
-const projectIds = [ids.main, ids.isolation, ids.zero, ids.other];
-const partnershipIds = [ids.mainA, ids.mainB, ids.isolationA, ids.otherB];
+const projectIds = [ids.main, ids.isolation, ids.zero, ids.other, ids.settled];
+const partnershipIds = [
+  ids.mainA,
+  ids.mainB,
+  ids.isolationA,
+  ids.otherB,
+  ids.settledA,
+];
 const organizationIds = [ids.host, ids.existing, ids.partnerA, ids.partnerB];
 const userIds = [ids.hostUser, ids.existingUser];
 const mainURL = `/projects/${ids.main}`;
@@ -177,7 +186,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       },
     ]);
     await db.insert(projectsTable).values(
-      (["main", "isolation", "zero", "other"] as const).map((key) => ({
+      (["main", "isolation", "zero", "other", "settled"] as const).map((key) => ({
         id: ids[key],
         name: names[key],
         startDate: now,
@@ -196,13 +205,15 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
         organizationId: ids.partnerA,
       },
       { id: ids.otherB, projectId: ids.other, organizationId: ids.partnerB },
+      { id: ids.settledA, projectId: ids.settled, organizationId: ids.partnerA },
     ]);
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
       { partnershipId: ids.mainA, status: "rejected" },
       { partnershipId: ids.otherB, status: "in_preparation" },
+      { partnershipId: ids.settledA, status: "rejected" },
     ]);
-    expect(await ownedCounts()).toEqual([2, 4, 4, 4, 2]);
+    expect(await ownedCounts()).toEqual([2, 4, 5, 5, 3]);
   });
 
   test.afterAll(async () => {
@@ -298,5 +309,58 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await page.locator("#reopen-reason").fill("Correct a test record");
     await page.getByRole("dialog").getByTestId("reopen-project-confirm").click();
     await expect(page.getByTestId("archive-project")).toBeVisible();
+  });
+
+  test("opens the archived explanation with emulated touch", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      storageState: await hostContext!.storageState(),
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await openHostedProject(page, zeroURL);
+      await page.getByTestId("archive-project").click();
+      await page.getByTestId("confirm-dialog-execute").click();
+      await expect(page.getByTestId("reopen-project")).toBeVisible();
+      await page.getByTestId("archive-explanation-trigger").tap();
+      await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("refuses a stale rejected Claim reopening after another tab archives its Project", async () => {
+    const reviewPage = await hostContext!.newPage();
+    await reviewPage.goto(`/partnerships/${ids.settledA}/claim/review`);
+    const review = reviewPage.getByTestId("claim-review");
+    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await review.getByTestId("claim-decision-reopen").click();
+    const confirm = review.getByTestId("claim-decision-confirm-reopen");
+    await expect(confirm).toBeEnabled();
+
+    const archivePage = await hostContext!.newPage();
+    await openHostedProject(archivePage, `/projects/${ids.settled}`);
+    await archivePage.getByTestId("archive-project").click();
+    await archivePage.getByTestId("confirm-dialog-execute").click();
+    await expect(archivePage.getByTestId("reopen-project")).toBeVisible();
+
+    await expect(confirm).toBeVisible();
+    await confirm.click();
+    await expect(review.getByRole("alert")).toBeVisible();
+    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    const [claim] = await db
+      .select({ status: claimsTable.status })
+      .from(claimsTable)
+      .where(eq(claimsTable.partnershipId, ids.settledA));
+    const [project] = await db
+      .select({ archived: projectsTable.costTrackerArchived })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, ids.settled));
+    expect(claim?.status).toBe("rejected");
+    expect(project?.archived).toBe(true);
   });
 });
