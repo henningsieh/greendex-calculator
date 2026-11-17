@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const SCALAR_VERSION = "1.76.4" as const;
+export const SCALAR_VERSION = "1.78.1" as const;
 
 export const SCALAR_STANDALONE_PATH =
   `/api/scalar/standalone-${SCALAR_VERSION}.js` as const;

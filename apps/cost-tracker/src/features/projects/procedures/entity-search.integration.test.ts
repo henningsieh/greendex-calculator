@@ -204,7 +204,7 @@ describe("entity picker procedures", () => {
         endDate: new Date("2024-12-31"),
         location: "Test",
         country,
-        archived: index === 25,
+        costTrackerArchived: index === 25,
       })),
     );
     try {
