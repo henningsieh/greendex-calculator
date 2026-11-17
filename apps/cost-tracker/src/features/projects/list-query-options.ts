@@ -51,10 +51,10 @@ export type ProjectListUrlState = inferParserType<typeof projectListParsers>;
 
 export type ProjectListScope = (typeof PROJECT_LIST_SCOPES)[number];
 
-type HostedProjectListQueryOptions = ReturnType<
+export type HostedProjectListQueryOptions = ReturnType<
   typeof orpcQuery.projects.listHosted.queryOptions<HostedProjectList>
 >;
-type PartnerProjectListQueryOptions = ReturnType<
+export type PartnerProjectListQueryOptions = ReturnType<
   typeof orpcQuery.projects.listPartner.queryOptions<PartnerProjectList>
 >;
 
@@ -145,6 +145,59 @@ export function getProjectAvailableScopesQueryOptions() {
 }
 
 /**
+ * The complete procedure input for one resolved list state. Shared by the
+ * browser query options and the request-local server prefetch so both sides
+ * cannot drift into different query keys or filters.
+ */
+type ProjectListQueryInputBase = {
+  search?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  archive: (typeof PROJECT_ARCHIVE_FILTERS)[number];
+  settlement: (typeof PROJECT_SETTLEMENT_FILTERS)[number];
+  sort: (typeof PROJECT_SORT_MODES)[number];
+  cursor?: string;
+  pageSize: (typeof PROJECT_PAGE_SIZES)[number];
+};
+
+export type HostedProjectListQueryInput = ProjectListQueryInputBase & {
+  partnerOrganizationIds: string[];
+};
+export type PartnerProjectListQueryInput = ProjectListQueryInputBase;
+
+export function getProjectListQueryInput(
+  scope: "hosted",
+  state: ProjectListState,
+): HostedProjectListQueryInput;
+export function getProjectListQueryInput(
+  scope: "partner",
+  state: ProjectListState,
+): PartnerProjectListQueryInput;
+export function getProjectListQueryInput(
+  scope: ProjectListScope,
+  state: ProjectListState,
+): HostedProjectListQueryInput | PartnerProjectListQueryInput;
+export function getProjectListQueryInput(
+  scope: ProjectListScope,
+  state: ProjectListState,
+): HostedProjectListQueryInput | PartnerProjectListQueryInput {
+  const commonInput = {
+    search: state.search,
+    dateFrom: state.dateFrom,
+    dateTo: state.dateTo,
+    archive: state.archive,
+    settlement: state.settlement,
+    sort: state.sort,
+    cursor: state.cursor,
+    pageSize: state.pageSize,
+  };
+
+  return scope === "hosted"
+    ? { ...commonInput, partnerOrganizationIds: state.partnerOrganizationIds }
+    : commonInput;
+}
+
+/**
  * Bridges two intentionally different safe output projections into one
  * discriminated client view while preserving the generated oRPC query key and
  * query function for the selected scope.
@@ -167,27 +220,15 @@ export function getProjectListQueryOptions(
   scope: ProjectListScope,
   state: ProjectListState,
 ): HostedProjectListQueryOptions | PartnerProjectListQueryOptions {
-  const commonInput = {
-    search: state.search,
-    dateFrom: state.dateFrom,
-    dateTo: state.dateTo,
-    archive: state.archive,
-    settlement: state.settlement,
-    sort: state.sort,
-    cursor: state.cursor,
-    pageSize: state.pageSize,
-  };
+  const input = getProjectListQueryInput(scope, state);
   const options =
     scope === "hosted"
       ? orpcQuery.projects.listHosted.queryOptions({
-          input: {
-            ...commonInput,
-            partnerOrganizationIds: state.partnerOrganizationIds,
-          },
+          input,
           meta: { costTrackerORPC: true },
         })
       : orpcQuery.projects.listPartner.queryOptions({
-          input: commonInput,
+          input,
           meta: { costTrackerORPC: true },
         });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getProjectListQueryInput,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
@@ -99,6 +100,43 @@ describe("Project list URL state", () => {
         pageSize: 25,
       },
       didPartnerToHostedFallback: false,
+    });
+  });
+
+  it("builds one procedure input contract for browser and server query options", () => {
+    const state = {
+      scope: "hosted" as const,
+      search: "climate",
+      dateFrom: new Date("2026-01-01T00:00:00.000Z"),
+      dateTo: new Date("2026-12-31T00:00:00.000Z"),
+      archive: "archived" as const,
+      settlement: "ready" as const,
+      partnerOrganizationIds: ["partner-1"],
+      sort: "start-desc" as const,
+      cursor: "opaque",
+      pageSize: 50 as const,
+    };
+
+    expect(getProjectListQueryInput("hosted", state)).toEqual({
+      search: "climate",
+      dateFrom: state.dateFrom,
+      dateTo: state.dateTo,
+      archive: "archived",
+      settlement: "ready",
+      partnerOrganizationIds: ["partner-1"],
+      sort: "start-desc",
+      cursor: "opaque",
+      pageSize: 50,
+    });
+    expect(getProjectListQueryInput("partner", state)).toEqual({
+      search: "climate",
+      dateFrom: state.dateFrom,
+      dateTo: state.dateTo,
+      archive: "archived",
+      settlement: "ready",
+      sort: "start-desc",
+      cursor: "opaque",
+      pageSize: 50,
     });
   });
 

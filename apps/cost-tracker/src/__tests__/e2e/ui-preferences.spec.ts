@@ -11,7 +11,7 @@ import {
 } from "@greendex/database/schema";
 import type { Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
 
@@ -25,6 +25,7 @@ const [first, second] = users;
 if (!first || !second) throw new Error("Two test users are required");
 const ownerCookieName = `project_columns_${createHash("sha256").update(first.id).digest("hex").slice(0, 32)}`;
 let seedOwnerId = "";
+let activeProjectId = "";
 registerPrivateValues(password);
 
 async function signIn(page: Page, address: string) {
@@ -60,6 +61,18 @@ test.describe("UI preferences", () => {
       .from(member)
       .where(eq(member.userId, owner.id));
     if (!membership) throw new Error("Seed membership is missing");
+    const [activeProject] = await db
+      .select({ id: projectsTable.id })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.organizationId, membership.organizationId),
+          eq(projectsTable.costTrackerArchived, false),
+        ),
+      )
+      .limit(1);
+    if (!activeProject) throw new Error("An active Project is missing");
+    activeProjectId = activeProject.id;
     await db.insert(projectsTable).values({
       id: archivedProjectId,
       name: `Preferences archived ${archivedProjectId}`,
@@ -126,11 +139,24 @@ test.describe("UI preferences", () => {
     await expect(
       page.getByTestId(`project-link-${archivedProjectId}`),
     ).toBeVisible();
+    const archivedURL = page.url();
+    const directPage = await context.newPage();
+    await directPage.goto(archivedURL);
+    await expect(
+      directPage.getByTestId(`project-link-${archivedProjectId}`),
+    ).toBeVisible();
+    await directPage.close();
     await page.getByTestId("project-settlement-filter").click();
     await page.getByTestId("project-settlement-ready").click();
     await expect(
       page.getByTestId(`project-link-${archivedProjectId}`),
     ).toHaveCount(0);
+    await page.goto(
+      `/projects?scope=hosted&archive=archived&search=${activeProjectId}`,
+    );
+    await expect(page.getByTestId(`project-link-${activeProjectId}`)).toHaveCount(
+      0,
+    );
     await context.addCookies([
       { name: "sidebar_state", value: "false", url: baseURL },
     ]);
