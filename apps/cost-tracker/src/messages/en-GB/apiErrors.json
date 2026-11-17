@@ -29,7 +29,7 @@
     "PROJECT_ALREADY_COMPLETED": "Project is already completed.",
     "PROJECT_ALREADY_ARCHIVED": "Project is already archived.",
     "PROJECT_NOT_ARCHIVED": "Project is not archived.",
-    "PROJECT_ARCHIVE_BLOCKED": "Every Partnership needs a paid or rejected Claim before the Project can be archived.",
+    "PROJECT_ARCHIVE_BLOCKED": "Every Partnership must have a paid or rejected Claim before the Project can be archived.",
     "PROJECT_COMPLETION_BLOCKED": "Cannot complete Project:",
     "SETUP_LINK_NOT_FOUND": "Setup link not found.",
     "SETUP_LINK_WRONG_EMAIL": "This setup link belongs to another email address.",
