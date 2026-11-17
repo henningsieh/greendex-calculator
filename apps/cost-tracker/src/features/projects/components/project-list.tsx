@@ -27,11 +27,16 @@ import {
   type ProjectListScopeAvailability,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectVisibility } from "@/lib/ui-preferences/definitions";
+
+type VisibilityPreference = { accountKey: string; visibility: ProjectVisibility };
 
 export function ProjectList({
   hasStaffMembership,
+  preference,
 }: {
   hasStaffMembership: boolean;
+  preference: VisibilityPreference;
 }) {
   const t = useTranslations("projects.list");
   const { data: availableScopes } = useSuspenseQuery(
@@ -59,7 +64,10 @@ export function ProjectList({
   return (
     <>
       <ProjectDataErrorBoundary resource="Projects">
-        <AvailableProjectList availableScopes={availableScopes} />
+        <AvailableProjectList
+          availableScopes={availableScopes}
+          preference={preference}
+        />
       </ProjectDataErrorBoundary>
     </>
   );
@@ -69,8 +77,10 @@ type ProjectListQueryState = UseQueryStatesReturn<typeof projectListParsers>;
 
 function AvailableProjectList({
   availableScopes,
+  preference,
 }: {
   availableScopes: ProjectListScopeAvailability;
+  preference: VisibilityPreference;
 }) {
   const [urlState, setUrlState] = useQueryStates(projectListParsers, {
     history: "push",
@@ -86,6 +96,7 @@ function AvailableProjectList({
   return (
     <ResolvedProjectList
       availableScopes={availableScopes}
+      preference={preference}
       didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
       requestedState={requestedState}
       scope={resolution.scope}
@@ -98,6 +109,7 @@ function AvailableProjectList({
 
 function ResolvedProjectList({
   availableScopes,
+  preference,
   didPartnerToHostedFallback,
   requestedState,
   scope,
@@ -106,6 +118,7 @@ function ResolvedProjectList({
   urlState,
 }: {
   availableScopes: ProjectListScopeAvailability;
+  preference: VisibilityPreference;
   didPartnerToHostedFallback: boolean;
   requestedState: ProjectListState;
   scope: "hosted" | "partner";
@@ -179,6 +192,8 @@ function ResolvedProjectList({
       />
       <Suspense fallback={<ProjectListSkeleton />}>
         <ResolvedProjectListResults
+          key={preference.accountKey}
+          preference={preference}
           scope={scope}
           state={state}
           urlState={urlState}

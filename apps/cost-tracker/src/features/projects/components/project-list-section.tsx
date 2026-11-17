@@ -9,11 +9,13 @@ import {
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
+import { requireSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
+import { readProjectVisibility } from "@/lib/ui-preferences/server";
 
 type ProjectListSectionProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -39,6 +41,8 @@ export async function ProjectListSection({
   searchParams,
 }: ProjectListSectionProps) {
   const queryClient = getQueryClient();
+  const session = await requireSession();
+  const preference = await readProjectVisibility(session.user.id);
   const [urlState, availableScopes, hasStaffMembership] = await Promise.all([
     loadProjectListSearchParams(searchParams),
     queryClient
@@ -72,7 +76,10 @@ export async function ProjectListSection({
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Projects">
-        <ProjectList hasStaffMembership={hasStaffMembership} />
+        <ProjectList
+          hasStaffMembership={hasStaffMembership}
+          preference={preference}
+        />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

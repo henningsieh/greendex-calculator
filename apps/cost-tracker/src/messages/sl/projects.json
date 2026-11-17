@@ -42,6 +42,8 @@
       "activeBefore": "Active on or before",
       "partnerOrganizations": "Partner Organizations (match any)",
       "refresh": "Refresh",
+      "columns": "Columns",
+      "resetColumns": "Reset columns",
       "noMatch": "No Projects match this scope and filter.",
       "previousPage": "Previous page",
       "nextPage": "Next page",

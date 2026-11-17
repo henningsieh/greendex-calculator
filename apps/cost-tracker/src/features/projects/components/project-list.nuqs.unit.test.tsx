@@ -75,7 +75,10 @@ function renderList(
     >
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<p>Loading Projects</p>}>
-          <ProjectList hasStaffMembership={hasStaffMembership} />
+          <ProjectList
+            hasStaffMembership={hasStaffMembership}
+            preference={{ accountKey: "test", visibility: {} }}
+          />
         </Suspense>
       </QueryClientProvider>
     </NuqsTestingAdapter>,

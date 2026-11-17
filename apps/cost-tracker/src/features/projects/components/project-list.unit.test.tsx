@@ -89,7 +89,10 @@ function renderList(withCreation = false) {
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
         {withCreation && mocks.canCreate ? <CreateProjectDialog /> : null}
-        <ProjectList hasStaffMembership />
+        <ProjectList
+          hasStaffMembership
+          preference={{ accountKey: "test", visibility: {} }}
+        />
       </Suspense>
     </QueryClientProvider>,
   );

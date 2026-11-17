@@ -23,6 +23,7 @@ vi.mock("next/server", () => ({ connection: mocks.connection }));
 
 // The shell restores the persisted sidebar state from this cookie.
 vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
+vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/session", () => ({
   getSession: mocks.getSession,

@@ -151,6 +151,7 @@ vi.mock("@/features/participations/components/participant-page-header", () => ({
 }));
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
+  cookies: () => Promise.resolve({ get: () => undefined }),
 }));
 vi.mock("next/server", () => ({
   connection: () => Promise.resolve(),
@@ -166,6 +167,7 @@ vi.mock("@/lib/orpc/middleware", () => ({
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.hasOrganizationMembership,
   getSession: mocks.getSession,
+  requireSession: vi.fn().mockResolvedValue({ user: { id: "test-user" } }),
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => queryClient,

@@ -42,6 +42,8 @@
       "activeBefore": "Aktiv am oder vor",
       "partnerOrganizations": "Partnerorganisationen (beliebige Übereinstimmung)",
       "refresh": "Aktualisieren",
+      "columns": "Spalten",
+      "resetColumns": "Spalten zurücksetzen",
       "noMatch": "Keine Projekte passen zu diesem Bereich und Filter.",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",

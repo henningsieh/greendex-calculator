@@ -5,6 +5,7 @@ import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
+  columnVisibilityFeature,
   filterFn_includesString,
   flexRender,
   functionalUpdate,
@@ -16,7 +17,7 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { RefreshCwIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,15 @@ import { getProjectListQueryOptions } from "@/features/projects/list-query-optio
 import type { ProjectListState } from "@/features/projects/list-query-options";
 import type { ProjectListRow } from "@/features/projects/types";
 import { Link } from "@/lib/i18n/routing";
+import { writePreference } from "@/lib/ui-preferences/browser";
+import {
+  projectVisibilityPreference,
+  type ProjectVisibility,
+} from "@/lib/ui-preferences/definitions";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
+  columnVisibilityFeature,
   rowPaginationFeature,
   rowSortingFeature,
   filterFns: { includesString: filterFn_includesString },
@@ -113,11 +120,13 @@ export function ProjectListMetrics({
 }
 
 export function ResolvedProjectListResults({
+  preference,
   scope,
   state,
   urlState,
   setUrlState,
 }: {
+  preference: { accountKey: string; visibility: ProjectVisibility };
   scope: "hosted" | "partner";
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
@@ -125,6 +134,9 @@ export function ResolvedProjectListResults({
 }) {
   const t = useTranslations("projects.list");
   const dateFormat = useDateFormat();
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >(preference.visibility);
 
   // Single-element suspense list (not a singular query): the hosted and
   // partner query functions carry incompatible scope-specific tagged key
@@ -148,6 +160,7 @@ export function ResolvedProjectListResults({
     () => [
       {
         accessorKey: "name",
+        enableHiding: false,
         enableSorting: false,
         header: t("project"),
         cell: ({ row }) => (
@@ -227,6 +240,11 @@ export function ResolvedProjectListResults({
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
+    onColumnVisibilityChange: (updater) => {
+      const next = functionalUpdate(updater, columnVisibility);
+      setColumnVisibility(next);
+      writePreference(projectVisibilityPreference(preference.accountKey), next);
+    },
     onColumnFiltersChange: (updater) => {
       pushColumnFiltersToUrl(
         functionalUpdate(updater, columnFilters),
@@ -261,7 +279,7 @@ export function ResolvedProjectListResults({
       });
     },
     pageCount: -1,
-    state: { columnFilters, pagination, sorting },
+    state: { columnFilters, columnVisibility, pagination, sorting },
   });
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
@@ -337,13 +355,46 @@ export function ResolvedProjectListResults({
         </Button>
       </div>
 
+      <fieldset className="flex flex-wrap items-center gap-3">
+        <legend>{t("columns")}</legend>
+        {table
+          .getAllLeafColumns()
+          .filter((column) => column.getCanHide())
+          .map((column) => (
+            <label key={column.id} className="flex items-center gap-2">
+              <input
+                data-testid={`project-column-toggle-${column.id}`}
+                type="checkbox"
+                checked={column.getIsVisible()}
+                onChange={column.getToggleVisibilityHandler()}
+              />
+              {column.id === "startDate"
+                ? t("schedule")
+                : column.id === "location"
+                  ? t("location")
+                  : t("participants")}
+            </label>
+          ))}
+        <Button
+          data-testid="project-columns-reset"
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => table.resetColumnVisibility(true)}
+        >
+          {t("resetColumns")}
+        </Button>
+      </fieldset>
       <div className="overflow-x-auto rounded-xl border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    data-testid={`project-column-header-${header.column.id}`}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -358,14 +409,17 @@ export function ResolvedProjectListResults({
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell className="h-28 text-center" colSpan={columns.length}>
+                <TableCell
+                  className="h-28 text-center"
+                  colSpan={table.getVisibleLeafColumns().length}
+                >
                   {t("noMatch")}
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
                 <TableRow data-project-id={row.id} key={row.id}>
-                  {row.getAllCells().map((cell) => (
+                  {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
