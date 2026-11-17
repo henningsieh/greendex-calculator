@@ -26,9 +26,11 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
     queryFn: async () => mocks.availableScopes,
   }),
   getProjectListQueryOptions: mocks.getListOptions.mockImplementation(
-    (scope: "hosted" | "partner", state: { cursor?: string }) => ({
-      queryKey: ["projects", scope, state],
-      queryFn: async () => ({
+    (scope: "hosted" | "partner", state: { cursor?: string }) => {
+      // URL-state tests use resolved data. Real asynchronous row ordering is
+      // covered by projects.spec.ts; two suspense consumers of an empty mock
+      // otherwise repeatedly remount while the testing adapter updates.
+      const data = {
         scope,
         rows: [],
         previousCursor: state.cursor ? "previous-page" : undefined,
@@ -44,8 +46,14 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
           },
         },
         partnerOptions: [],
-      }),
-    }),
+      };
+      return {
+        staleTime: Infinity,
+        queryKey: ["projects", scope, state],
+        initialData: data,
+        queryFn: async () => data,
+      };
+    },
   ),
 }));
 
@@ -63,6 +71,7 @@ function renderList(
   },
   locale: "en-GB" | "de" | "sl" = "en-GB",
 ) {
+  window.history.replaceState({}, "", `/projects${searchParams}`);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -70,7 +79,10 @@ function renderList(
   return render(
     <NuqsTestingAdapter
       hasMemory
-      onUrlUpdate={onUrlUpdate}
+      onUrlUpdate={(event) => {
+        window.history.replaceState({}, "", `/projects${event.queryString}`);
+        onUrlUpdate(event);
+      }}
       searchParams={searchParams}
     >
       <QueryClientProvider client={queryClient}>
@@ -187,30 +199,111 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
   );
 
   it.each([
+    ["startDate", "endDate", "name", "settlement"],
+    ["settlement", "name", "endDate", "startDate"],
+  ])(
+    "preserves and toggles every sort priority through real URL state: %s",
+    async (...fields) => {
+      const user = userEvent.setup();
+      const onUrlUpdate = vi.fn();
+      const sort = fields.map((field) => ({ field, direction: "desc" }));
+      const testIds: Record<string, string> = {
+        startDate: "start",
+        endDate: "end",
+        name: "name",
+        settlement: "settlement",
+      };
+      renderList({
+        onUrlUpdate,
+        searchParams: `?scope=hosted&sort=${encodeURIComponent(JSON.stringify(sort))}`,
+      });
+      for (const [index, field] of fields.entries()) {
+        await user.click(
+          await screen.findByTestId(`sort-project-${testIds[field]}`),
+        );
+        sort[index] = { field, direction: "asc" };
+        await waitFor(() => {
+          const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
+          expect(JSON.parse(update?.searchParams.get("sort") ?? "null")).toEqual(
+            sort,
+          );
+        });
+        expect(mocks.getListOptions).toHaveBeenLastCalledWith(
+          "hosted",
+          expect.objectContaining({ sort }),
+        );
+      }
+    },
+  );
+
+  it("edits and resets the complete ordered sorting", async () => {
+    const user = userEvent.setup();
+    const onUrlUpdate = vi.fn();
+    const sort = [
+      { field: "startDate", direction: "desc" },
+      { field: "endDate", direction: "desc" },
+    ];
+    renderList({
+      onUrlUpdate,
+      searchParams: `?scope=hosted&sort=${encodeURIComponent(JSON.stringify(sort))}`,
+    });
+    await user.click(await screen.findByTestId("project-sort-menu"));
+    await user.click(screen.getByTestId("project-sort-up-endDate"));
+    await waitFor(() =>
+      expect(
+        JSON.parse(
+          onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("sort") ?? "null",
+        ),
+      ).toEqual([sort[1], sort[0]]),
+    );
+    await user.click(screen.getByTestId("project-sort-direction-endDate"));
+    await waitFor(() =>
+      expect(
+        JSON.parse(
+          onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("sort") ?? "null",
+        ),
+      ).toEqual([{ field: "endDate", direction: "asc" }, sort[0]]),
+    );
+    await user.click(screen.getByTestId("project-sort-remove-startDate"));
+    await waitFor(() =>
+      expect(
+        JSON.parse(
+          onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("sort") ?? "null",
+        ),
+      ).toEqual([{ field: "endDate", direction: "asc" }]),
+    );
+    expect(screen.getByTestId("project-sort-remove-endDate")).toBeDisabled();
+    await user.click(screen.getByTestId("project-sort-reset"));
+    await waitFor(() =>
+      expect(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.has("sort")).toBe(
+        false,
+      ),
+    );
+  });
+
+  it.each([
     { locale: "en-GB", messages: messagesEn },
     { locale: "de", messages: messagesDe },
     { locale: "sl", messages: messagesSi },
   ] as const)(
     "commits the selected sort option to the URL (%s)",
-    async ({ locale, messages }) => {
+    async ({ locale }) => {
       const user = userEvent.setup();
       const onUrlUpdate = vi.fn();
       mocks.availableScopes = { hosted: true, partner: true };
       renderList({ onUrlUpdate, searchParams: "?scope=hosted" }, locale);
 
       await user.click(
-        await screen.findByTestId("project-sort", {}, { timeout: 10_000 }),
-      );
-      await user.click(
-        await screen.findByRole("option", {
-          name: messages.projects.list.sortStartLatest,
-        }),
+        await screen.findByTestId("sort-project-start", {}, { timeout: 10_000 }),
       );
 
       await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
       const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
       expect(update.options.history).toBe("push");
-      expect(update.searchParams.get("sort")).toBe("start-desc");
+      expect(JSON.parse(update.searchParams.get("sort") ?? "null")).toEqual([
+        { field: "settlement", direction: "asc" },
+        { field: "startDate", direction: "desc" },
+      ]);
     },
   );
 });

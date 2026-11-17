@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
 import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
@@ -33,13 +32,16 @@ export default async function ProjectsPage(
   });
 
   return (
-    <div>
-      <ProtectedPageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-        rightButton={canCreate ? <CreateProjectDialog /> : undefined}
-      />
+    <div className="min-w-0">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            {t("description")}
+          </p>
+        </div>
+        {canCreate && <CreateProjectDialog />}
+      </header>
 
       <Suspense fallback={<ProjectListSkeleton />}>
         <ProjectListSection searchParams={searchParams} />

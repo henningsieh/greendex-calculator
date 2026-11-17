@@ -30,11 +30,15 @@ const activeProjectName = `Preferences active ${activeProjectId}`;
 registerPrivateValues(password);
 
 async function signIn(page: Page, address: string) {
-  await page.goto("/login");
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
   await page.getByTestId("email").fill(address);
   await page.getByTestId("password").fill(password);
   await page.getByTestId("auth-submit").click();
   await page.waitForURL(/\/projects/);
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
 }
 
 async function switchAccount(page: Page, address: string) {
@@ -45,6 +49,32 @@ async function switchAccount(page: Page, address: string) {
   await page.getByTestId("confirm-dialog-execute").click();
   await page.waitForURL(/\/en-GB\/?$/);
   await signIn(page, address);
+}
+
+async function expectColumnVisibility(
+  page: Page,
+  column: string,
+  visible: boolean,
+) {
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
+  await page.getByTestId("project-columns-menu").click();
+  await expect(
+    page.getByTestId(`project-column-toggle-${column}`),
+  ).toHaveAttribute("aria-checked", String(visible));
+  await page.keyboard.press("Escape");
+}
+
+async function hideColumn(page: Page, column: string) {
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
+  await page.getByTestId("project-columns-menu").click();
+  await page.getByTestId(`project-column-toggle-${column}`).click();
+  await page.keyboard.press("Escape");
 }
 
 test.describe("UI preferences", () => {
@@ -117,11 +147,10 @@ test.describe("UI preferences", () => {
     }
   });
 
-  test("restores separate account views, sidebar, reset and invalid preferences", async ({
+  test("restores archive filters through reloads and direct links", async ({
     page,
     context,
     baseURL,
-    browser,
   }) => {
     if (!baseURL) throw new Error("Missing base URL");
     await signIn(page, first.email);
@@ -163,33 +192,45 @@ test.describe("UI preferences", () => {
     await expect(page.getByTestId(`project-link-${activeProjectId}`)).toHaveCount(
       0,
     );
+  });
+
+  test("restores separate account columns, Sidebar and column reset", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    // Several account changes and reloads exercise real browser persistence.
+    test.setTimeout(180_000);
+    if (!baseURL) throw new Error("Missing base URL");
+    await signIn(page, first.email);
     await context.addCookies([
       { name: "sidebar_state", value: "false", url: baseURL },
     ]);
-    await page.goto("/projects?search=climate&sort=start-desc");
+    await page.goto(
+      `/projects?search=climate&sort=${encodeURIComponent(
+        JSON.stringify([
+          { field: "startDate", direction: "desc" },
+          { field: "endDate", direction: "desc" },
+        ]),
+      )}`,
+    );
     await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute(
       "data-state",
       "collapsed",
     );
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).toBeChecked();
+    await expectColumnVisibility(page, "location", true);
     const originalURL = page.url();
-    await page.getByTestId("project-column-toggle-location").uncheck();
+    await hideColumn(page, "location");
     expect(page.url()).toBe(originalURL);
     await expect(page.getByTestId("project-column-header-location")).toHaveCount(
       0,
     );
     await page.reload();
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).not.toBeChecked();
+    await expectColumnVisibility(page, "location", false);
     expect(page.url()).toBe(originalURL);
     await page.goto("/partner-organizations");
     await page.goto("/projects");
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).not.toBeChecked();
+    await expectColumnVisibility(page, "location", false);
     await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute(
       "data-state",
       "collapsed",
@@ -200,76 +241,65 @@ test.describe("UI preferences", () => {
       "data-state",
       "expanded",
     );
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).not.toBeChecked();
+    await expectColumnVisibility(page, "location", false);
 
     await switchAccount(page, second.email);
     await page.goto("/projects");
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).toBeChecked();
+    await expectColumnVisibility(page, "location", true);
     await expect(
       page.getByTestId("project-column-header-startDate"),
     ).toBeVisible();
     await expect(page.getByTestId("project-column-header-endDate")).toBeVisible();
-    await page.getByTestId("project-column-toggle-endDate").uncheck();
+    await hideColumn(page, "endDate");
     await page.reload();
     await expect(page.getByTestId("project-column-header-endDate")).toHaveCount(
       0,
     );
-    await expect(
-      page.getByTestId("project-column-toggle-endDate"),
-    ).not.toBeChecked();
-    await page.getByTestId("project-column-toggle-startDate").uncheck();
+    await expectColumnVisibility(page, "endDate", false);
+    await hideColumn(page, "startDate");
     await page.reload();
-    await expect(
-      page.getByTestId("project-column-toggle-startDate"),
-    ).not.toBeChecked();
+    await expectColumnVisibility(page, "startDate", false);
     await switchAccount(page, first.email);
     await page.goto("/projects");
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).not.toBeChecked();
-    await expect(
-      page.getByTestId("project-column-toggle-startDate"),
-    ).toBeChecked();
-    await expect(page.getByTestId("project-column-toggle-endDate")).toBeChecked();
+    await expectColumnVisibility(page, "location", false);
+    await expectColumnVisibility(page, "startDate", true);
+    await expectColumnVisibility(page, "endDate", true);
+    await page.getByTestId("project-columns-menu").click();
     await page.getByTestId("project-columns-reset").click();
     await page.reload();
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).toBeChecked();
+    await expectColumnVisibility(page, "location", true);
     await switchAccount(page, second.email);
     await page.goto("/projects");
-    await expect(
-      page.getByTestId("project-column-toggle-startDate"),
-    ).not.toBeChecked();
-    await switchAccount(page, first.email);
+    await expectColumnVisibility(page, "startDate", false);
+  });
+
+  test("recovers missing, malformed and unavailable preference storage", async ({
+    page,
+    context,
+    baseURL,
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    if (!baseURL) throw new Error("Missing base URL");
+    await signIn(page, first.email);
     await page.goto("/projects");
-    await page.getByTestId("project-column-toggle-location").uncheck();
+    await hideColumn(page, "location");
     await context.addCookies([
       { name: ownerCookieName, value: "invalid", url: baseURL },
     ]);
     await page.reload();
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).toBeChecked();
-    await page.getByTestId("project-column-toggle-location").uncheck();
+    await expectColumnVisibility(page, "location", true);
+    await hideColumn(page, "location");
     await context.clearCookies({ name: ownerCookieName });
     await page.reload();
-    await expect(
-      page.getByTestId("project-column-toggle-location"),
-    ).toBeChecked();
+    await expectColumnVisibility(page, "location", true);
     for (const value of [
       "x".repeat(257),
       encodeURIComponent('[2,["location"]]'),
     ]) {
       await context.addCookies([{ name: ownerCookieName, value, url: baseURL }]);
       await page.reload();
-      await expect(
-        page.getByTestId("project-column-toggle-location"),
-      ).toBeChecked();
+      await expectColumnVisibility(page, "location", true);
     }
     await context.clearCookies({ name: ownerCookieName });
     await page.addInitScript(() => {
@@ -288,7 +318,7 @@ test.describe("UI preferences", () => {
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await page.getByTestId("project-column-toggle-location").uncheck();
+    await hideColumn(page, "location");
     await expect(page.getByTestId("project-column-header-location")).toHaveCount(
       0,
     );

@@ -8,9 +8,32 @@ import {
   PartnerProjectListInputSchema,
   ProjectCreateInputSchema,
   ProjectDetailInputSchema,
+  ProjectSortOrderSchema,
 } from "@/features/projects/validation-schemas";
 
 const country = EU_COUNTRY_CODES[0];
+
+describe("Project sort order", () => {
+  it("preserves priority and rejects duplicate or unsupported fields", () => {
+    const order = [
+      { field: "name", direction: "desc" },
+      { field: "startDate", direction: "asc" },
+    ];
+    expect(ProjectSortOrderSchema.parse(order)).toEqual(order);
+    expect(ProjectSortOrderSchema.safeParse([...order, order[0]]).success).toBe(
+      false,
+    );
+    expect(
+      ProjectSortOrderSchema.safeParse([{ field: "actions", direction: "asc" }])
+        .success,
+    ).toBe(false);
+    expect(
+      ProjectSortOrderSchema.safeParse([{ field: "name", direction: "sideways" }])
+        .success,
+    ).toBe(false);
+    expect(ProjectSortOrderSchema.safeParse([]).success).toBe(false);
+  });
+});
 
 function validCreateInput() {
   return {
@@ -80,7 +103,10 @@ describe("Project creation input", () => {
 describe("Project list input", () => {
   it("applies list defaults without requiring optional filters", () => {
     expect(PartnerProjectListInputSchema.parse({ pageSize: 25 })).toEqual({
-      sort: "start-asc",
+      sort: [
+        { field: "settlement", direction: "asc" },
+        { field: "startDate", direction: "asc" },
+      ],
       archive: "active",
       settlement: "all",
       pageSize: 25,

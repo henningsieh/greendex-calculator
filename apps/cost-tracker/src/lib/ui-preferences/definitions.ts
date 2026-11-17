@@ -22,6 +22,7 @@ export const sidebarPreference: Preference<boolean> = {
 export const projectVisibilityColumns = [
   "startDate",
   "endDate",
+  "settlement",
   "location",
   "participants",
 ] as const;

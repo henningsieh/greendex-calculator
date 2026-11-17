@@ -314,7 +314,13 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.availableScopes).toHaveBeenCalledOnce();
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
-      expect.objectContaining({ pageSize: 25, sort: "start-asc" }),
+      expect.objectContaining({
+        pageSize: 25,
+        sort: [
+          { field: "settlement", direction: "asc" },
+          { field: "startDate", direction: "asc" },
+        ],
+      }),
     );
     expect(mocks.query).toHaveBeenCalledTimes(2);
     expect(mocks.query).toHaveBeenNthCalledWith(1, {
@@ -335,7 +341,12 @@ describe("Cost Tracker Project data routes", () => {
 
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "partner",
-      expect.objectContaining({ sort: "start-asc" }),
+      expect.objectContaining({
+        sort: [
+          { field: "settlement", direction: "asc" },
+          { field: "startDate", direction: "asc" },
+        ],
+      }),
     );
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });

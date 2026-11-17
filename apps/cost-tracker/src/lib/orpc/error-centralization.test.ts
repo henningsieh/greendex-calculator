@@ -19,6 +19,7 @@ const privateInvariantThrows: Record<string, string[]> = {
   "features/projects/procedures/list.ts": [
     'new Error("Expected at least one SQL condition.")',
     'new Error("Expected at least one SQL condition.")',
+    'new Error("Invalid cursor sort values")',
   ],
   "features/partnerships/procedures/core.ts": [
     'new Error("Project Partnership insert returned no row")',

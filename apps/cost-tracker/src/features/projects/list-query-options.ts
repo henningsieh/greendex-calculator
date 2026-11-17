@@ -1,6 +1,7 @@
 import {
   createLoader,
   parseAsIsoDate,
+  parseAsJson,
   parseAsNativeArrayOf,
   parseAsNumberLiteral,
   parseAsString,
@@ -17,7 +18,8 @@ import {
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
   PROJECT_SETTLEMENT_FILTERS,
-  PROJECT_SORT_MODES,
+  DEFAULT_PROJECT_SORT,
+  ProjectSortOrderSchema,
 } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
@@ -26,7 +28,7 @@ export {
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
   PROJECT_SETTLEMENT_FILTERS,
-  PROJECT_SORT_MODES,
+  DEFAULT_PROJECT_SORT,
 };
 
 const MAX_PARTNER_FILTERS = 20;
@@ -40,7 +42,7 @@ export const projectListParsers = {
   archive: parseAsStringLiteral(PROJECT_ARCHIVE_FILTERS).withDefault("active"),
   settlement: parseAsStringLiteral(PROJECT_SETTLEMENT_FILTERS).withDefault("all"),
   partnerOrganizationIds: parseAsNativeArrayOf(parseAsString),
-  sort: parseAsStringLiteral(PROJECT_SORT_MODES).withDefault("start-asc"),
+  sort: parseAsJson(ProjectSortOrderSchema).withDefault(DEFAULT_PROJECT_SORT),
   cursor: parseAsString.withDefault(""),
   pageSize: parseAsNumberLiteral(PROJECT_PAGE_SIZES).withDefault(25),
 };
@@ -68,7 +70,7 @@ export type ProjectListState = {
   archive: (typeof PROJECT_ARCHIVE_FILTERS)[number];
   settlement: (typeof PROJECT_SETTLEMENT_FILTERS)[number];
   partnerOrganizationIds: string[];
-  sort: (typeof PROJECT_SORT_MODES)[number];
+  sort: ProjectListUrlState["sort"];
   cursor?: string;
   pageSize: (typeof PROJECT_PAGE_SIZES)[number];
 };
