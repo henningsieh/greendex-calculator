@@ -334,6 +334,34 @@ describe("Partner Organization setup links", () => {
     );
   });
 
+  it.each(["paid", "rejected"] as const)(
+    "refuses to change a settled %s Claim after archive",
+    async (status) => {
+      const link = await client.projectPartnerships.createSetupLink({
+        projectId,
+        recipientEmail,
+      });
+      const { partnershipId } = await client.projectPartnerships.consumeSetupLink(
+        {
+          ...link,
+          organizationId: partnerId,
+        },
+      );
+      await db.insert(claims).values({ partnershipId, status });
+      await lifecycle.archiveProject({ projectId });
+      const change =
+        status === "paid"
+          ? client.claims.correctPayment({ partnershipId, reason: "Mistake" })
+          : client.claims.reopen({ partnershipId });
+      await expect(change).rejects.toMatchObject({ code: "NOT_FOUND" });
+      const [claim] = await db
+        .select({ status: claims.status })
+        .from(claims)
+        .where(eq(claims.partnershipId, partnershipId));
+      expect(claim).toEqual({ status });
+    },
+  );
+
   it("keeps archived Project details readable to both authorized organizations", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
