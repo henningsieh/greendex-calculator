@@ -12,6 +12,7 @@ import { Controller, useForm } from "react-hook-form";
 import { type z } from "zod";
 
 import { destinationHref } from "@/app/paths";
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { EntityCombobox } from "@/components/entity-combobox";
 import {
   ErrorPresentation,
@@ -414,13 +415,20 @@ export function SetupLinkList() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          disabled={!existing.enabled || !!closingId}
+                          disabled={
+                            !existing.enabled ||
+                            !!closingId ||
+                            existing.costTrackerArchived
+                          }
                           onClick={() => void closeLink(existing.id)}
                         >
                           {closingId === existing.id
                             ? t("closing")
                             : t("closeLink")}
                         </Button>
+                        {existing.costTrackerArchived && (
+                          <ArchivedActionExplanation />
+                        )}
                       </TableCell>
                     </TableRow>
                   );

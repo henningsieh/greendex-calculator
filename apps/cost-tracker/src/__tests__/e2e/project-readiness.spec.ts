@@ -7,6 +7,7 @@ import {
   claimsTable,
   member,
   organization,
+  partnerOrganizationSetupLinksTable,
   projectPartnerOrganizationsTable,
   projectsTable,
   session,
@@ -330,6 +331,88 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
     } finally {
       await context.close();
+    }
+  });
+
+  test("partner organizations keeps archived actions disabled with keyboard and touch explanations", async ({
+    browser,
+    baseURL,
+  }) => {
+    const linkId = randomUUID();
+    await db.insert(partnerOrganizationSetupLinksTable).values({
+      id: linkId,
+      projectId: ids.settled,
+      secretHash: randomUUID(),
+      recipientEmail: `ct-${suffix}-setup@example.invalid`,
+      createdByUserId: ids.hostUser,
+      expiresAt: new Date(Date.now() + 86_400_000),
+    });
+    const page = await hostContext!.newPage();
+    await openHostedProject(page, `/projects/${ids.settled}`);
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-cancel").click();
+    expect(
+      (
+        await db
+          .select({ enabled: partnerOrganizationSetupLinksTable.enabled })
+          .from(partnerOrganizationSetupLinksTable)
+          .where(eq(partnerOrganizationSetupLinksTable.id, linkId))
+      )[0]?.enabled,
+    ).toBe(true);
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-execute").click();
+    await expect(page.getByTestId("reopen-project")).toBeVisible();
+    expect(
+      (
+        await db
+          .select({ enabled: partnerOrganizationSetupLinksTable.enabled })
+          .from(partnerOrganizationSetupLinksTable)
+          .where(eq(partnerOrganizationSetupLinksTable.id, linkId))
+      )[0]?.enabled,
+    ).toBe(false);
+    await page.goto("/partner-organizations");
+    const partnership = page
+      .getByTestId(`partnership-row-${ids.partnerA}`)
+      .filter({ has: page.getByTestId(`remove-partnership-${ids.settledA}`) });
+    await expect(
+      partnership.getByTestId(`remove-partnership-${ids.settledA}`),
+    ).toBeDisabled();
+    await expect(partnership.getByRole("link")).toBeVisible();
+    await partnership.getByTestId("archive-explanation-trigger").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByTestId("partner-organizations-tab-invitations").click();
+    const link = page.locator(`[data-setup-link-id="${linkId}"]`);
+    await expect(link.getByTestId("close-setup-link")).toBeDisabled();
+    const touch = await browser.newContext({
+      baseURL,
+      storageState: await hostContext!.storageState(),
+      hasTouch: true,
+    });
+    try {
+      const touchPage = await touch.newPage();
+      await touchPage.goto("/partner-organizations");
+      await touchPage
+        .getByTestId("partner-organizations-tab-invitations")
+        .click();
+      await touchPage
+        .locator(`[data-setup-link-id="${linkId}"]`)
+        .getByTestId("archive-explanation-trigger")
+        .tap();
+      await expect(
+        touchPage.getByTestId("archive-explanation-content"),
+      ).toBeVisible();
+    } finally {
+      await touch.close();
+      await page.close();
+      await db
+        .delete(partnerOrganizationSetupLinksTable)
+        .where(eq(partnerOrganizationSetupLinksTable.id, linkId));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.settled));
     }
   });
 

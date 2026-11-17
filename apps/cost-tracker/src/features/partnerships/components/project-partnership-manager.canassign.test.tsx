@@ -37,6 +37,7 @@ const existingPartnership = {
   id: "partnership-existing",
   projectId: "project-existing",
   projectName: "Existing Project",
+  costTrackerArchived: false,
   organizationId: "organization-existing",
   organizationName: "Existing Partner Organization",
   assignedAt: new Date("2026-02-01T12:00:00.000Z"),

@@ -14,6 +14,7 @@ import { assignedPartnershipIds } from "@/features/partnerships/procedures/assig
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import {
   AssignProjectPartnershipInputSchema,
+  ListedProjectPartnershipSchema,
   PartnershipScopeInputSchema,
   PartnershipScopeSchema,
   ProjectPartnershipSchema,
@@ -42,7 +43,7 @@ function isExpectedORPCError(error: unknown): boolean {
 }
 
 export const listPartnerships = authorized
-  .output(z.array(ProjectPartnershipSchema))
+  .output(z.array(ListedProjectPartnershipSchema))
   .meta(
     openapi({
       tags: ["Partnerships"],
@@ -78,6 +79,7 @@ export const listPartnerships = authorized
         id: projectPartnerOrganizationsTable.id,
         projectId: projectsTable.id,
         projectName: projectsTable.name,
+        costTrackerArchived: projectsTable.costTrackerArchived,
         organizationId: organization.id,
         organizationName: organization.name,
         assignedAt: projectPartnerOrganizationsTable.createdAt,

@@ -41,7 +41,7 @@ Participant-only Memberships are read-only for Project management: neither the U
 
 ## Cost Tracker archive and reopening
 
-**Approved target, not yet implemented:** [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) replaces the former Project-completion action. At specification baseline `3863c601`, completion only records actor/time and does not lock Claim work; the shared archive flag still controls availability. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) owns the package; [#416](https://github.com/henningsieh/greendex-calculator/issues/416) implements archive/reopen.
+[ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) establishes archive and reopening for Cost Tracker. [#416](https://github.com/henningsieh/greendex-calculator/issues/416) records the implementation and subsequent setup-link closure decision.
 
 - A Project has zero or more Project Partnerships, each with at most one Claim. A Claim is settled when paid or rejected. Approved unpaid Claims are not settled. No additional Claim-close action or status follows payment or rejection.
 - Archive is the explicit confirmation that the Project's Claim administration is settled, not that the real-world Project has ended. Every existing Project Partnership must have a paid or rejected Claim. A Partnership without a Claim blocks archive; no Partnerships means there is nothing to settle and archive is permitted.
@@ -49,10 +49,10 @@ Participant-only Memberships are read-only for Project management: neither the U
 - Hosting Organization Owners and Admins may archive their Projects; Hosting-side Project Coordinators may archive explicitly assigned Projects. Partner-side authority does not grant archive.
 - Reopening requires the separately declared Cost Tracker Project `reopen` permission. Its default grant is limited to the Hosting Organization's Owners and Admins; Project Coordinators and Partner-side roles do not receive it. A reason is required. Responsible User, time and prior archive/reopen cycles remain traceable.
 - Reopening changes Project availability, not Claim statuses. A later payment correction or rejected-Claim reopening remains a separate authorized Claim action with its existing audit rules.
+- Archiving closes all Project setup links in the same transaction. New setup links cannot be created while the Project is archived. Reopening does not reactivate closed links; an authorized User may create a new link after reopening.
 - Archived Project-scoped data is read-only through Cost Tracker: Claims, selected Payout Account, Project Partnerships, Project Participations, Participant Journeys and setup/onboarding writes cannot be changed without reopening. Existing authorized reading remains available. Shared reusable Organization data, including Payout Accounts used elsewhere, is not globally frozen.
 - Archive and Project-scoped mutations must check availability atomically so concurrent work cannot invalidate settlement after archive. Permission checks are authoritative on the server.
 - Cost Tracker archive state is independent of Calculator archive state. Neither app's archive/unarchive action changes the other's workflow state. Shared entities remain shared: this rule does not promise an immutable snapshot against changes made through other authorized contexts.
-- Existing completion timestamps are not proof of a valid new archive state because later Claim work was possible. The implementation must explicitly reconcile the old record rather than keep competing completion/archive ends or blindly lock historically completed Projects.
 
 ### Archive presentation
 

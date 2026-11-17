@@ -11,6 +11,7 @@ import { EyeIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
 import { partnershipPath, projectPath } from "@/app/paths";
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -241,42 +242,51 @@ export function ProjectPartnershipManager({
                           {t("manager.viewDetails")}
                         </Link>
                         {canAssign && (
-                          <Button
-                            disabled={removeMutation.isPending}
-                            data-testid={`remove-partnership-${partnership.id}`}
-                            onClick={async () => {
-                              if (
-                                await confirm({
-                                  title: t(
-                                    "confirmations.removePartnership.title",
-                                  ),
-                                  description: t(
-                                    "confirmations.removePartnership.description",
-                                    {
-                                      organization: partnership.organizationName,
-                                      project: partnership.projectName,
-                                    },
-                                  ),
-                                  confirmText: t(
-                                    "confirmations.removePartnership.execute",
-                                  ),
-                                  isDestructive: true,
-                                })
-                              ) {
-                                setFeedback(undefined);
-                                removeMutation.mutate(partnership.id);
+                          <>
+                            <Button
+                              disabled={
+                                removeMutation.isPending ||
+                                partnership.costTrackerArchived
                               }
-                            }}
-                            size="sm"
-                            type="button"
-                            variant="destructive"
-                          >
-                            <Trash2Icon aria-hidden="true" />
-                            {removeMutation.isPending &&
-                            removeMutation.variables === partnership.id
-                              ? t("confirmations.pending")
-                              : t("manager.remove")}
-                          </Button>
+                              data-testid={`remove-partnership-${partnership.id}`}
+                              onClick={async () => {
+                                if (
+                                  await confirm({
+                                    title: t(
+                                      "confirmations.removePartnership.title",
+                                    ),
+                                    description: t(
+                                      "confirmations.removePartnership.description",
+                                      {
+                                        organization:
+                                          partnership.organizationName,
+                                        project: partnership.projectName,
+                                      },
+                                    ),
+                                    confirmText: t(
+                                      "confirmations.removePartnership.execute",
+                                    ),
+                                    isDestructive: true,
+                                  })
+                                ) {
+                                  setFeedback(undefined);
+                                  removeMutation.mutate(partnership.id);
+                                }
+                              }}
+                              size="sm"
+                              type="button"
+                              variant="destructive"
+                            >
+                              <Trash2Icon aria-hidden="true" />
+                              {removeMutation.isPending &&
+                              removeMutation.variables === partnership.id
+                                ? t("confirmations.pending")
+                                : t("manager.remove")}
+                            </Button>
+                            {partnership.costTrackerArchived && (
+                              <ArchivedActionExplanation />
+                            )}
+                          </>
                         )}
                       </li>
                     ))}

@@ -136,6 +136,102 @@ afterEach(async () => {
 });
 
 describe("Partner Organization setup links", () => {
+  it("closes links on archive, refuses issuance while archived and keeps them closed after reopening", async () => {
+    const first = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const second = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    await lifecycle.archiveProject({ projectId });
+    expect(
+      await db
+        .select({ enabled: links.enabled })
+        .from(links)
+        .where(eq(links.projectId, projectId)),
+    ).toEqual([{ enabled: false }, { enabled: false }]);
+    await expect(
+      client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+    ).rejects.toMatchObject({ data: { reason: "PROJECT_NOT_FOUND" } });
+    await lifecycle.reopenProject({
+      projectId,
+      reason: "Correct administration",
+    });
+    const listed = await client.projectPartnerships.listSetupLinks();
+    expect(listed.find((row) => row.id === first.id)?.enabled).toBe(false);
+    expect(listed.find((row) => row.id === second.id)?.enabled).toBe(false);
+    const fresh = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    expect(
+      (await client.projectPartnerships.listSetupLinks()).find(
+        (row) => row.id === fresh.id,
+      )?.enabled,
+    ).toBe(true);
+  });
+
+  it("keeps links enabled when archive is refused", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    await db
+      .insert(partnerships)
+      .values({ projectId, organizationId: partnerId });
+    await expect(lifecycle.archiveProject({ projectId })).rejects.toMatchObject({
+      data: { reason: "PROJECT_ARCHIVE_BLOCKED" },
+    });
+    expect(
+      (await client.projectPartnerships.listSetupLinks()).find(
+        (row) => row.id === link.id,
+      )?.enabled,
+    ).toBe(true);
+  });
+  it("lists Cost Tracker archive state independently of Calculator archive", async () => {
+    const first = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const second = await client.projectPartnerships.createSetupLink({
+      projectId: otherProjectId,
+      recipientEmail,
+    });
+    const firstPartnership = await db
+      .insert(partnerships)
+      .values({ projectId, organizationId: partnerId })
+      .returning({ id: partnerships.id });
+    const secondPartnership = await db
+      .insert(partnerships)
+      .values({ projectId: otherProjectId, organizationId: partnerId })
+      .returning({ id: partnerships.id });
+    await db
+      .update(projectsTable)
+      .set({ archived: true, costTrackerArchived: false })
+      .where(eq(projectsTable.id, projectId));
+    await db
+      .update(projectsTable)
+      .set({ archived: false, costTrackerArchived: true })
+      .where(eq(projectsTable.id, otherProjectId));
+    const listedLinks = await client.projectPartnerships.listSetupLinks();
+    const listedPartnerships = await client.projectPartnerships.list();
+    expect(
+      listedLinks.find((row) => row.id === first.id)?.costTrackerArchived,
+    ).toBe(false);
+    expect(
+      listedLinks.find((row) => row.id === second.id)?.costTrackerArchived,
+    ).toBe(true);
+    expect(
+      listedPartnerships.find((row) => row.id === firstPartnership[0]?.id)
+        ?.costTrackerArchived,
+    ).toBe(false);
+    expect(
+      listedPartnerships.find((row) => row.id === secondPartnership[0]?.id)
+        ?.costTrackerArchived,
+    ).toBe(true);
+  });
   it("archives an empty Project and retains reasoned reopen history without changing Calculator archive", async () => {
     await db
       .update(projectsTable)
@@ -235,7 +331,7 @@ describe("Partner Organization setup links", () => {
     },
   );
 
-  it("refuses setup-link changes during archive and allows redemption after reopen", async () => {
+  it("refuses setup-link changes during archive and keeps old links closed after reopen", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
       recipientEmail,
@@ -255,12 +351,46 @@ describe("Partner Organization setup links", () => {
       }),
     ).rejects.toThrow();
     await lifecycle.reopenProject({ projectId, reason: "Correct settlement" });
+    await expect(
+      client.projectPartnerships.consumeSetupLink({
+        id: link.id,
+        secret: link.secret,
+        organizationId: partnerId,
+      }),
+    ).rejects.toMatchObject({ data: { reason: "SETUP_LINK_DISABLED" } });
+    const fresh = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
     const result = await client.projectPartnerships.consumeSetupLink({
-      id: link.id,
-      secret: link.secret,
+      id: fresh.id,
+      secret: fresh.secret,
       organizationId: partnerId,
     });
     expect(result.organizationId).toBe(partnerId);
+  });
+
+  it("serializes archive against setup-link issuance", async () => {
+    const [archive, issuance] = await Promise.allSettled([
+      lifecycle.archiveProject({ projectId }),
+      client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+    ]);
+    expect(archive.status).toBe("fulfilled");
+    const rows = await db
+      .select({ enabled: links.enabled })
+      .from(links)
+      .where(eq(links.projectId, projectId));
+    expect(rows).toEqual(
+      issuance.status === "fulfilled" ? [{ enabled: false }] : [],
+    );
+    expect(
+      (
+        await db
+          .select({ archived: projectsTable.costTrackerArchived })
+          .from(projectsTable)
+          .where(eq(projectsTable.id, projectId))
+      )[0]?.archived,
+    ).toBe(true);
   });
 
   it("serializes archive against setup-link redemption", async () => {

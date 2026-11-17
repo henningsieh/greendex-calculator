@@ -3,6 +3,7 @@ import {
   claimsTable,
   costTrackerProjectArchiveEventsTable as archiveEvents,
   organization,
+  partnerOrganizationSetupLinksTable as setupLinks,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
 } from "@greendex/database/schema";
@@ -67,6 +68,10 @@ export const archiveProject = authorized
         .orderBy(asc(organization.name), asc(organization.id));
       if (!canCompleteProject(rows.map(({ status }) => status)))
         throw createSituationErrors(errors).projectArchiveBlocked();
+      await tx
+        .update(setupLinks)
+        .set({ enabled: false })
+        .where(eq(setupLinks.projectId, project.id));
       await tx
         .update(projects)
         .set({ costTrackerArchived: true })
