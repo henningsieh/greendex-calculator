@@ -53,29 +53,38 @@ import {
 } from "@/lib/orpc/errors";
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
-const blockers = db
-  .select({ id: projectPartnerOrganizationsTable.id })
-  .from(projectPartnerOrganizationsTable)
-  .where(
-    and(
-      eq(projectPartnerOrganizationsTable.projectId, projectsTable.id),
-      notExists(
-        db
-          .select({ id: claimsTable.id })
-          .from(claimsTable)
-          .where(
-            and(
-              eq(claimsTable.partnershipId, projectPartnerOrganizationsTable.id),
-              inArray(claimsTable.status, ["paid", "rejected"]),
+// Build imports the router without runtime database configuration. Construct
+// database-backed expressions only when a request calls these helpers.
+function getProjectBlockers() {
+  return db
+    .select({ id: projectPartnerOrganizationsTable.id })
+    .from(projectPartnerOrganizationsTable)
+    .where(
+      and(
+        eq(projectPartnerOrganizationsTable.projectId, projectsTable.id),
+        notExists(
+          db
+            .select({ id: claimsTable.id })
+            .from(claimsTable)
+            .where(
+              and(
+                eq(
+                  claimsTable.partnershipId,
+                  projectPartnerOrganizationsTable.id,
+                ),
+                inArray(claimsTable.status, ["paid", "rejected"]),
+              ),
             ),
-          ),
+        ),
       ),
-    ),
-  );
-const settlementRank =
-  sql<number>`case when ${projectsTable.costTrackerArchived} then 2 when ${exists(blockers)} then 0 else 1 end`.mapWith(
+    );
+}
+
+function getSettlementRank() {
+  return sql<number>`case when ${projectsTable.costTrackerArchived} then 2 when ${exists(getProjectBlockers())} then 0 else 1 end`.mapWith(
     Number,
   );
+}
 
 function getProjectFilters(input: ProjectListInput): SQL[] {
   const filters: SQL[] = [];
@@ -95,6 +104,7 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
     );
   }
   if (input.settlement !== "all") {
+    const blockers = getProjectBlockers();
     filters.push(eq(projectsTable.costTrackerArchived, false));
     filters.push(
       input.settlement === "open" ? exists(blockers) : notExists(blockers),
@@ -124,27 +134,27 @@ function anyOf(...conditions: SQL[]): SQL {
 
 const PROJECT_SORT_DESCRIPTORS = {
   settlement: {
-    expression: settlementRank,
+    getExpression: getSettlementRank,
     value: (row: ProjectListCursorRow) => ({
       field: "settlement" as const,
       value: row.settlementRank,
     }),
   },
   name: {
-    expression: projectsTable.name,
+    getExpression: () => projectsTable.name,
     value: () => ({
       field: "name" as const,
     }),
   },
   startDate: {
-    expression: projectsTable.startDate,
+    getExpression: () => projectsTable.startDate,
     value: (row: ProjectListCursorRow) => ({
       field: "startDate" as const,
       value: row.startDate.toISOString(),
     }),
   },
   endDate: {
-    expression: projectsTable.endDate,
+    getExpression: () => projectsTable.endDate,
     value: (row: ProjectListCursorRow) => ({
       field: "endDate" as const,
       value: row.endDate.toISOString(),
@@ -158,7 +168,7 @@ function getOrder(
 ) {
   return [
     ...sort.map(({ field, direction: order }) => {
-      const expression = PROJECT_SORT_DESCRIPTORS[field].expression;
+      const expression = PROJECT_SORT_DESCRIPTORS[field].getExpression();
       return (order === "asc") === (direction === "next")
         ? asc(expression)
         : desc(expression);
@@ -182,7 +192,7 @@ function getCursorFilter(
       (value.field === "name" && cursorName === undefined)
     )
       throw new Error("Invalid cursor sort values");
-    const expression = PROJECT_SORT_DESCRIPTORS[criterion.field].expression;
+    const expression = PROJECT_SORT_DESCRIPTORS[criterion.field].getExpression();
     const parameter =
       value.field === "name"
         ? cursorName
@@ -214,15 +224,17 @@ function getCursorFilter(
   return anyOf(...alternatives);
 }
 
-const rowSelection = {
-  id: projectsTable.id,
-  name: projectsTable.name,
-  startDate: projectsTable.startDate,
-  endDate: projectsTable.endDate,
-  location: projectsTable.location,
-  country: projectsTable.country,
-  settlementRank,
-};
+function getProjectRowSelection() {
+  return {
+    id: projectsTable.id,
+    name: projectsTable.name,
+    startDate: projectsTable.startDate,
+    endDate: projectsTable.endDate,
+    location: projectsTable.location,
+    country: projectsTable.country,
+    settlementRank: getSettlementRank(),
+  };
+}
 
 const projectMetricsSelection = {
   projectCount: countDistinct(projectsTable.id),
@@ -441,7 +453,7 @@ export const listHosted = authorized
     const [pageRows, wholeMetricRows, filteredMetricRows, partnerOptions] =
       await Promise.all([
         db
-          .select(rowSelection)
+          .select(getProjectRowSelection())
           .from(projectsTable)
           .where(and(...pageFilters))
           .orderBy(...getOrder(input.sort, cursor?.direction ?? "next"))
@@ -557,7 +569,7 @@ export const listPartner = authorized
 
     const [pageRows, wholeMetricRows, filteredMetricRows] = await Promise.all([
       db
-        .select(rowSelection)
+        .select(getProjectRowSelection())
         .from(projectPartnerOrganizationsTable)
         .innerJoin(
           projectsTable,
