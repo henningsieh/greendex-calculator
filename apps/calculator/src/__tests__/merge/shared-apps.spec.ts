@@ -188,7 +188,7 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
       .filter({ has: cost.locator("[data-draft-status]") });
     // Text-free: draft state hook instead of visible copy.
     await expect(
-      workspace.locator('[data-draft-status="editable"]'),
+      workspace.locator('[data-draft-status="in_preparation"]'),
     ).toBeVisible();
     const journey = workspace.locator(`#journey-${seed.participantId}`);
     // Text-free: ID-anchored journey element proves presence (seed detail subsumed).

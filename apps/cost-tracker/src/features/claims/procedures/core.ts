@@ -285,7 +285,7 @@ export const saveDraft = authorized
   .meta(
     openapi({
       tags: ["Claims"],
-      summary: "Save the claim draft",
+      summary: "Create the claim",
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -334,7 +334,7 @@ export const saveDraft = authorized
           partnershipId: claims.partnershipId,
           status: claims.status,
         });
-      if (created) return { ...created, status: "editable" as const };
+      if (created) return { ...created, status: "in_preparation" as const };
       const [raced] = await tx
         .select({
           id: claims.id,

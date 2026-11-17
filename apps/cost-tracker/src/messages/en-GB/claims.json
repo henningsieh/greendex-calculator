@@ -63,7 +63,7 @@
         "rejected": "Rejected · unpaid",
         "correctionRequested": "Correction requested · Partner action required",
         "submitted": "Submitted · awaiting Hosting review",
-        "draft": "Editable draft"
+        "in_preparation": "In preparation"
       },
       "confirmTransfer": "Confirm only after one full bank transfer of {amount} EUR was actually sent.",
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
@@ -95,13 +95,21 @@
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",
       "locked": "This Claim is locked for Partner editing. Only a Hosting-side correction request can reopen it.",
-      "noDraft": "Select a Payout Account and explicitly save a Claim draft to add costs or Proof Documents. Journeys can be prepared separately.",
+      "noDraft": "Select a Payout Account and create a Claim to add costs or Proof Documents. Journeys can be prepared separately.",
+      "status": {
+        "in_preparation": "In preparation",
+        "submitted": "Submitted",
+        "correction_requested": "Correction requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "paid": "Paid"
+      },
       "common": {
         "cancel": "Cancel"
       },
       "journey": {
         "distanceSuffix": "km (calculator distance)",
-        "correctFor": "Correct journey for {name}",
+        "correctFor": "Correct journey",
         "originFor": "Origin for {name}",
         "destinationFor": "Destination for {name}",
         "tripTypeFor": "Trip type for {name}",
@@ -159,7 +167,7 @@
         "accountHolder": "Account holder",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "saveDraft": "Save Claim draft"
+        "createClaim": "Create claim"
       },
       "notice": {
         "correctionRequested": "Correction requested:",

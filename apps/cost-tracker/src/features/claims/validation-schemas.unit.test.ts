@@ -17,7 +17,7 @@ import {
 describe("Claim validation schemas", () => {
   it("accepts the persisted Claim statuses and rejects unknown statuses", () => {
     for (const status of [
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",
@@ -27,6 +27,7 @@ describe("Claim validation schemas", () => {
       expect(ClaimStatusSchema.parse(status)).toBe(status);
     }
     expect(ClaimStatusSchema.safeParse("unknown").success).toBe(false);
+    expect(ClaimStatusSchema.safeParse("editable").success).toBe(false);
   });
 
   it("normalizes and validates Partnership IDs in each input", () => {
@@ -46,7 +47,7 @@ describe("Claim validation schemas", () => {
   });
 
   it("limits draft output to editable statuses", () => {
-    for (const status of ["editable", "correction_requested"]) {
+    for (const status of ["in_preparation", "correction_requested"]) {
       expect(
         ClaimDraftSchema.parse({ id: "claim", partnershipId: "partner", status }),
       ).toEqual({ id: "claim", partnershipId: "partner", status });

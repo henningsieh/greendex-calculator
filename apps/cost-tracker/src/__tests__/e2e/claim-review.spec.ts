@@ -620,9 +620,9 @@ test.describe.serial("Claim review journey 25–26", () => {
       new RegExp(`/partnerships/${ids.partnerships[0]}/claim/review$`),
     );
     reviewURL = host.url();
-    expect(new URL(reviewURL).pathname.replace(/^\/[a-z]{2}(?=\/)/, "")).toBe(
-      `/partnerships/${ids.partnerships[0]}/claim/review`,
-    );
+    expect(
+      new URL(reviewURL).pathname.replace(/^\/[a-z]{2}(?:-[A-Z]{2})?(?=\/)/, ""),
+    ).toBe(`/partnerships/${ids.partnerships[0]}/claim/review`);
     const header = host.locator("main header");
     await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
     // Breadcrumbs render in the shell header, above the main content.
@@ -637,7 +637,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).not.toHaveAttribute("href");
     await expect(breadcrumb.locator("a").first()).toHaveAttribute(
       "href",
-      "/en-GB/claims/review",
+      "/en-GB/projects",
     );
     await expect(breadcrumb.getByRole("listitem")).toHaveCount(3);
     await host.setViewportSize({ width: 375, height: 812 });
@@ -652,7 +652,8 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect(fits).toBe(true);
     await breadcrumb.locator("a").first().focus();
     await host.keyboard.press("Enter");
-    await expectPrivateURL(host, /\/claims\/review$/);
+    await expectPrivateURL(host, /\/projects$/);
+    await host.goto("/claims/review");
     await expect(first).toBeVisible();
     await first.click();
     await expectPrivateURL(

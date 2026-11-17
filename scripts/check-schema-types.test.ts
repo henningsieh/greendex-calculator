@@ -14,7 +14,6 @@ const tables: TableIndex = new Map([
       "archived",
       "startDate",
       "endDate",
-      "costSubmissionWindowOpen",
     ]),
   ],
   [

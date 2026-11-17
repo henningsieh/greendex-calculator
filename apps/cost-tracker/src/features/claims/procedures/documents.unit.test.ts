@@ -81,7 +81,7 @@ beforeEach(() => {
     user: { id: "actor" },
     session: { activeOrganizationId: "partner" },
   });
-  mocks.limit.mockResolvedValue([{ id: "claim", status: "editable" }]);
+  mocks.limit.mockResolvedValue([{ id: "claim", status: "in_preparation" }]);
   mocks.returning.mockResolvedValue([{ id: "proof" }]);
   mocks.get.mockResolvedValue(Buffer.from([1, 2, 3]));
 });
@@ -249,7 +249,7 @@ describe("Proof Document upload outcomes", () => {
     "rejects an upload past the per-claim %s with 429",
     async (_name, usage, content) => {
       mocks.limit
-        .mockResolvedValueOnce([{ id: "claim", status: "editable" }])
+        .mockResolvedValueOnce([{ id: "claim", status: "in_preparation" }])
         .mockResolvedValueOnce(usage);
       await expect(
         uploadProofDocument({
@@ -268,7 +268,7 @@ describe("Proof Document upload outcomes", () => {
   );
   it("accepts an upload just under the per-claim quota", async () => {
     mocks.limit
-      .mockResolvedValueOnce([{ id: "claim", status: "editable" }])
+      .mockResolvedValueOnce([{ id: "claim", status: "in_preparation" }])
       .mockResolvedValueOnce([
         { documentCount: 24, totalBytes: 90 * 1024 * 1024 },
       ]);

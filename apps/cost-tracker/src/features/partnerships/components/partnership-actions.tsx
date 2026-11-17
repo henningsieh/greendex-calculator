@@ -1,10 +1,28 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries } from "@tanstack/react-query";
 
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
+import { Button } from "@/components/ui/button";
 import { AssignOrganizationDialog } from "@/features/partnerships/components/project-partnership-assigner";
 import { CreateSetupLinkDialog } from "@/features/partnerships/components/setup-link";
 import { orpcQuery } from "@/lib/orpc/orpc";
+
+export function ArchivedPartnershipActions() {
+  const t = useTranslations("partnerships");
+  return (
+    <div className="flex flex-col gap-2">
+      <Button disabled type="button">
+        {t("setup.invite")}
+      </Button>
+      <Button disabled type="button" variant="outline">
+        {t("manager.assignExisting")}
+      </Button>
+      <ArchivedActionExplanation />
+    </div>
+  );
+}
 
 export function PartnershipActions({
   projectId,

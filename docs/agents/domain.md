@@ -36,7 +36,7 @@ Root `docs/` contains repository-wide architecture, operations, decisions, and a
 ## Language rules
 
 - Use the shared glossary for Organization, User, Membership, Project, Project Participation, and Participant.
-- Use the app glossary for terms that another application does not expose. For example, Partner Organization and Cost Submission Window belong to Cost Tracker. Shared terms have one definition unless an app explicitly refines their meaning; Cost Tracker refines Project Participation for authenticated participation.
+- Use the app glossary for terms that another application does not expose. For example, Partner Organization belongs to Cost Tracker. Shared terms have one definition unless an app explicitly refines their meaning; Cost Tracker refines Project Participation for authenticated participation.
 - Treat shared database identity and shared business behavior separately. Two applications referencing the same Project does not make every Project workflow shared.
 - When a new term conflicts with existing language, resolve the conflict before changing code and update the owning glossary immediately.
 - Use the canonical terms in issue titles, hypotheses, tests, and proposals; consult `_Avoid_` entries before substituting synonyms.

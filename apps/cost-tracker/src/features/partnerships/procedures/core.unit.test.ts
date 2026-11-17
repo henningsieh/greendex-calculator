@@ -48,6 +48,8 @@ beforeEach(() => {
   });
   mocks.permission.mockResolvedValue({ success: true });
   mocks.limit
+    .mockResolvedValueOnce([{ projectId: "project" }])
+    .mockResolvedValueOnce([{ id: "project" }])
     .mockResolvedValueOnce([{ projectId: "project", organizationId: "partner" }])
     .mockResolvedValueOnce([]);
 });

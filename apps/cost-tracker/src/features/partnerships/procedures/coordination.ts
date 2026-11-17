@@ -14,6 +14,7 @@ import { z } from "zod";
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { PartnerCoordinatorInputSchema } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { lockActiveProject } from "@/features/projects/procedures/project-lock";
 import {
   createSituationErrors,
   type ScopeErrorConstructors,
@@ -36,10 +37,11 @@ export async function requirePartnerCoordination(
       projectId: partnerships.projectId,
       partnerId: partnerships.organizationId,
       hostId: projects.organizationId,
+      projectArchived: projects.costTrackerArchived,
     })
     .from(partnerships)
     .innerJoin(projects, eq(projects.id, partnerships.projectId))
-    .where(and(eq(partnerships.id, partnershipId), eq(projects.archived, false)))
+    .where(eq(partnerships.id, partnershipId))
     .limit(1);
   if (
     !scope ||
@@ -106,15 +108,12 @@ export const assignPartnerCoordinator = authorized
     const orgId = context.session.activeOrganizationId;
     if (!orgId) throw situation.selectOrganization();
     const [partnership] = await db
-      .select({ organizationId: partnerships.organizationId })
+      .select({
+        organizationId: partnerships.organizationId,
+        projectId: partnerships.projectId,
+      })
       .from(partnerships)
-      .innerJoin(
-        projects,
-        and(
-          eq(projects.id, partnerships.projectId),
-          eq(projects.archived, false),
-        ),
-      )
+      .innerJoin(projects, eq(projects.id, partnerships.projectId))
       .where(eq(partnerships.id, input.partnershipId))
       .limit(1);
     if (!partnership || partnership.organizationId !== orgId)
@@ -158,7 +157,23 @@ export const assignPartnerCoordinator = authorized
         )
     )
       throw situation.coordinatorSelectionRequired();
-    await db.insert(assignments).values(input).onConflictDoNothing();
+    await db.transaction(async (tx) => {
+      await lockActiveProject(tx, partnership.projectId, errors);
+      const [current] = await tx
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(
+          and(
+            eq(partnerships.id, input.partnershipId),
+            eq(partnerships.projectId, partnership.projectId),
+            eq(partnerships.organizationId, orgId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!current) throw situation.partnershipNotFound();
+      await tx.insert(assignments).values(input).onConflictDoNothing();
+    });
     return { assigned: true as const };
   });
 
@@ -176,15 +191,12 @@ export const removePartnerCoordinator = authorized
     const orgId = context.session.activeOrganizationId;
     if (!orgId) throw situation.selectOrganization();
     const [partnership] = await db
-      .select({ organizationId: partnerships.organizationId })
+      .select({
+        organizationId: partnerships.organizationId,
+        projectId: partnerships.projectId,
+      })
       .from(partnerships)
-      .innerJoin(
-        projects,
-        and(
-          eq(projects.id, partnerships.projectId),
-          eq(projects.archived, false),
-        ),
-      )
+      .innerJoin(projects, eq(projects.id, partnerships.projectId))
       .where(eq(partnerships.id, input.partnershipId))
       .limit(1);
     if (!partnership || partnership.organizationId !== orgId)
@@ -204,13 +216,29 @@ export const removePartnerCoordinator = authorized
       )
     )
       throw situation.organizationManagementRequired();
-    await db
-      .delete(assignments)
-      .where(
-        and(
-          eq(assignments.partnershipId, input.partnershipId),
-          eq(assignments.userId, input.userId),
-        ),
-      );
+    await db.transaction(async (tx) => {
+      await lockActiveProject(tx, partnership.projectId, errors);
+      const [current] = await tx
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(
+          and(
+            eq(partnerships.id, input.partnershipId),
+            eq(partnerships.projectId, partnership.projectId),
+            eq(partnerships.organizationId, orgId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!current) throw situation.partnershipNotFound();
+      await tx
+        .delete(assignments)
+        .where(
+          and(
+            eq(assignments.partnershipId, input.partnershipId),
+            eq(assignments.userId, input.userId),
+          ),
+        );
+    });
     return { removed: true as const };
   });

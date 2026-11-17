@@ -115,7 +115,7 @@ test.describe("Project Shared Travel Legs", () => {
         name: en.organization.projects.form.new["create-project"],
       })
       .click();
-    await page.waitForURL(/\/en\/org\/projects\/[\w-]+$/);
+    await page.waitForURL(/\/[a-z]{2}(?:-[A-Z]{2})?\/org\/projects\/[\w-]+$/);
 
     const url = new URL(page.url());
     createdProjectId = url.pathname.split("/").at(-1);

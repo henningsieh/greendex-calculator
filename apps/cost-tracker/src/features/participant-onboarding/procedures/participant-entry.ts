@@ -71,7 +71,7 @@ export async function loadParticipantEntryContext(
     })
     .from(partnerships)
     .innerJoin(projects, eq(projects.id, partnerships.projectId))
-    .where(and(eq(partnerships.id, partnershipId), eq(projects.archived, false)))
+    .where(eq(partnerships.id, partnershipId))
     .limit(1);
   if (
     !scope ||

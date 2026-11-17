@@ -19,7 +19,6 @@ import { RefreshCwIcon } from "lucide-react";
 import { useMemo } from "react";
 
 import { projectParticipantsPath, projectPath } from "@/app/paths";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -95,14 +94,6 @@ export function ProjectListMetrics({
             : t("metrics.projectsTotal", { count: whole.projectCount })
         }
         value={filtered.projectCount}
-      />
-      <MetricCard
-        label={
-          filtered.openWindowCount === whole.openWindowCount
-            ? t("metrics.windows")
-            : t("metrics.windowsTotal", { count: whole.openWindowCount })
-        }
-        value={filtered.openWindowCount}
       />
       {data.scope === "hosted" && (
         <MetricCard
@@ -225,22 +216,6 @@ export function ResolvedProjectListResults({
             >,
           ]
         : []),
-      {
-        accessorKey: "costSubmissionWindowOpen",
-        enableSorting: false,
-        header: t("submissionWindow"),
-        cell: ({ row }) => (
-          <Badge
-            data-testid={`project-window-${row.original.id}`}
-            data-state={row.original.costSubmissionWindowOpen ? "open" : "closed"}
-            variant={
-              row.original.costSubmissionWindowOpen ? "default" : "secondary"
-            }
-          >
-            {row.original.costSubmissionWindowOpen ? t("open") : t("closed")}
-          </Badge>
-        ),
-      },
     ],
     [scope, t, dateFormat],
   );
@@ -255,7 +230,6 @@ export function ResolvedProjectListResults({
     onColumnFiltersChange: (updater) => {
       pushColumnFiltersToUrl(
         functionalUpdate(updater, columnFilters),
-        state,
         urlState,
         setUrlState,
       );
@@ -327,7 +301,6 @@ export function ResolvedProjectListResults({
                           value: ids,
                         },
                       ],
-                      state,
                       urlState,
                       setUrlState,
                     );

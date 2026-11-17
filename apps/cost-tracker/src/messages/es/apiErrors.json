@@ -27,6 +27,9 @@
     "PARTNERSHIP_INVARIANT": "No se puede crear esta colaboración del proyecto con las organizaciones seleccionadas.",
     "PARTNERSHIP_REFERENCED": "Elimina o reasigna las participaciones en el proyecto representadas antes de eliminar esta colaboración del proyecto.",
     "PROJECT_ALREADY_COMPLETED": "El proyecto ya está completado.",
+    "PROJECT_ALREADY_ARCHIVED": "El proyecto ya está archivado.",
+    "PROJECT_NOT_ARCHIVED": "El proyecto no está archivado.",
+    "PROJECT_ARCHIVE_BLOCKED": "Cada asociación necesita una solicitud pagada o rechazada antes de archivar el proyecto.",
     "PROJECT_COMPLETION_BLOCKED": "No se puede completar el proyecto:",
     "SETUP_LINK_NOT_FOUND": "No se ha encontrado el enlace de configuración.",
     "SETUP_LINK_WRONG_EMAIL": "Este enlace de configuración pertenece a otra dirección de correo electrónico.",
@@ -165,7 +168,7 @@
       "summary": "Aún no se puede completar el proyecto. Revisa las siguientes colaboraciones del proyecto.",
       "status": {
         "none": "Sin solicitud de financiación",
-        "editable": "Editable",
+        "in_preparation": "In preparation",
         "correction_requested": "Corrección solicitada",
         "submitted": "Presentada",
         "approved": "Aprobada",

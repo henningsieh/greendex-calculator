@@ -68,16 +68,16 @@ describe("shared Claim lock order", () => {
     expect(held).toEqual(["projects", "partnerships", "claims"]);
   });
 
-  it("takes Partnership before Claim for Partnership-scoped writes", async () => {
+  it("takes Project before Partnership and Claim for Partnership-scoped writes", async () => {
     const { tx, held } = recorder(allRows);
     await lockClaimScope(tx, scope, {}, "partnership");
-    expect(held).toEqual(["partnerships", "claims"]);
+    expect(held).toEqual(["projects", "partnerships", "claims"]);
   });
 
-  it("takes only the Claim for Claim-owned writes", async () => {
+  it("takes Project before Claim for Claim-owned writes", async () => {
     const { tx, held } = recorder(allRows);
     await lockClaimScope(tx, scope, {}, "claim");
-    expect(held).toEqual(["claims"]);
+    expect(held).toEqual(["projects", "claims"]);
   });
 
   it("returns the locked Claim row that the shared editing rule reads", async () => {

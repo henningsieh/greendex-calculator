@@ -81,10 +81,10 @@ import {
   listSetupLinks,
 } from "@/features/partnerships/procedures/setup-links";
 import {
-  availableScopes,
-  complete,
-  getProject,
-} from "@/features/projects/procedures/core";
+  archiveProject,
+  reopenProject,
+} from "@/features/projects/procedures/archive";
+import { availableScopes, getProject } from "@/features/projects/procedures/core";
 import { create as createProject } from "@/features/projects/procedures/create";
 import { listHosted, listPartner } from "@/features/projects/procedures/list";
 import {
@@ -142,10 +142,11 @@ export const router = {
   },
   projects: {
     create: createProject,
+    archive: archiveProject,
+    reopen: reopenProject,
     searchHosted,
     listHostedOptions,
     get: getProject,
-    complete,
     listHosted,
     listPartner,
     scopes: availableScopes,

@@ -119,6 +119,7 @@ export function createParticipationProcedures(
     .output(
       z.object({
         projectName: z.string(),
+        projectArchived: z.boolean(),
         participations: z.array(participation),
         invitations: z.array(
           z.object({
@@ -193,6 +194,7 @@ export function createParticipationProcedures(
       );
       return {
         projectName: project?.name ?? "",
+        projectArchived: scope.projectArchived,
         participations: rows,
         invitations,
         registrationLinks,
@@ -218,6 +220,7 @@ export function createParticipationProcedures(
       z.object({
         projectId: z.string(),
         projectName: z.string(),
+        projectArchived: z.boolean(),
         participation: participation,
         correctionContext: scopeContext,
       }),
@@ -253,6 +256,7 @@ export function createParticipationProcedures(
       return {
         projectId: details.projectId,
         projectName,
+        projectArchived: scope.projectArchived,
         participation: details,
         correctionContext: {
           partnerOrganizationId: scope.partnerId,

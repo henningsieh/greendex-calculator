@@ -3,8 +3,8 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { CalendarDaysIcon, CheckIcon, MapPinIcon, UsersIcon } from "lucide-react";
-import { Suspense, useState } from "react";
+import { CalendarDaysIcon, MapPinIcon, UsersIcon } from "lucide-react";
+import { Suspense, useState, useSyncExternalStore } from "react";
 
 import {
   partnershipClaimPath,
@@ -19,6 +19,7 @@ import {
   StatLabel,
   StatNumber,
 } from "@/components/brand/stat-grid";
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -32,50 +33,81 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   type ClaimStatus,
   canCompleteProject,
   isClaimAwaitingReview,
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
-import { PartnershipActions } from "@/features/partnerships/components/partnership-actions";
+import { invalidatePartnershipProjectData } from "@/features/partnerships/components/invalidate-partnership-data";
+import {
+  ArchivedPartnershipActions,
+  PartnershipActions,
+} from "@/features/partnerships/components/partnership-actions";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
-/** Header actions: completion plus the partnership dialogs, when permitted. */
 function ProjectHeaderActions({
   canComplete,
   completing,
   onComplete,
+  canReopen,
+  onReopen,
+  archived,
   projectId,
   showPartnershipDialogs,
 }: {
   canComplete: boolean;
   completing: boolean;
   onComplete: () => void;
+  canReopen: boolean;
+  onReopen: () => void;
+  archived: boolean;
   projectId: string;
   showPartnershipDialogs: boolean;
 }) {
   const t = useTranslations("projects.workspace");
-  if (!canComplete && !showPartnershipDialogs) return null;
+  if (!canComplete && !canReopen && !showPartnershipDialogs) return null;
   return (
     // Stacked like the Partner Organizations header: the actions own the
     // right edge, one per line, instead of competing for width.
     <div className="flex flex-col gap-2">
       {canComplete ? (
         <Button
-          data-testid="complete-project"
+          data-testid="archive-project"
           disabled={completing}
           onClick={onComplete}
           type="button"
         >
-          {completing ? t("completing") : t("complete")}
+          {completing ? t("archiving") : t("archive")}
         </Button>
       ) : null}
-      {showPartnershipDialogs ? (
+      {canReopen ? (
+        <Button
+          data-testid="reopen-project"
+          onClick={onReopen}
+          type="button"
+          variant="outline"
+        >
+          {t("reopen")}
+        </Button>
+      ) : null}
+      {showPartnershipDialogs && archived ? (
+        <ArchivedPartnershipActions />
+      ) : showPartnershipDialogs ? (
         <Suspense fallback={<ProjectOptionsLoading />}>
           <PartnershipActions projectId={projectId} />
         </Suspense>
@@ -94,7 +126,7 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
     );
   }
   const labels: Record<ClaimStatus, string> = {
-    editable: t("claimStatus.editable"),
+    in_preparation: t("claimStatus.in_preparation"),
     submitted: t("claimStatus.submitted"),
     correction_requested: t("claimStatus.correctionRequested"),
     approved: t("claimStatus.approved"),
@@ -126,16 +158,26 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
 export function ProjectWorkspace({
   projectId,
   canManagePartnerships = false,
+  canReopen = false,
 }: {
   projectId: string;
   /** Presentation-only: the dialogs re-enforce on every call. */
   canManagePartnerships?: boolean;
+  canReopen?: boolean;
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
   const [completing, setCompleting] = useState(false);
   const [feedback, setFeedback] = useState<React.ReactNode>("");
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const { confirm, dialog } = useConfirmDialog();
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const { data: project } = useSuspenseQuery(
     orpcQuery.projects.get.queryOptions({
       input: { projectId },
@@ -146,23 +188,61 @@ export function ProjectWorkspace({
   const isHosted = project.relationship === "hosted";
   const canComplete =
     project.relationship === "hosted" &&
+    project.canArchive === true &&
     !project.archived &&
-    !project.completedAt &&
     canCompleteProject(
       project.partnerOrganizations.map(({ claimStatus }) => claimStatus),
     );
 
+  async function refreshProjectState() {
+    await Promise.all([
+      invalidatePartnershipProjectData(queryClient),
+      queryClient.invalidateQueries({
+        queryKey: orpcQuery.claims.reviewerAccess.key({ type: "query" }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: orpcQuery.participations.listPartnership.key({ type: "query" }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: orpcQuery.participations.get.key({ type: "query" }),
+      }),
+    ]);
+  }
+
   async function completeProject() {
     if (completing) return;
+    if (
+      !(await confirm({
+        title: t("archiveConfirmTitle"),
+        description: t("archiveConfirmDescription"),
+        confirmText: t("archive"),
+        isDestructive: true,
+      }))
+    )
+      return;
     setCompleting(true);
     setFeedback("");
     try {
-      await orpc.projects.complete({ projectId });
-      setFeedback(t("completedFeedback"));
-      await queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.get.queryOptions({ input: { projectId } })
-          .queryKey,
-      });
+      await orpc.projects.archive({ projectId });
+      setFeedback(t("archiveFeedback"));
+      await refreshProjectState();
+    } catch (error) {
+      setFeedback(<ErrorPresentation error={error} />);
+    } finally {
+      setCompleting(false);
+    }
+  }
+
+  async function reopenProject() {
+    if (completing || !reason.trim()) return;
+    setCompleting(true);
+    setFeedback("");
+    try {
+      await orpc.projects.reopen({ projectId, reason });
+      setReopenOpen(false);
+      setReason("");
+      setFeedback(t("reopenFeedback"));
+      await refreshProjectState();
     } catch (error) {
       setFeedback(<ErrorPresentation error={error} />);
     } finally {
@@ -191,11 +271,38 @@ export function ProjectWorkspace({
   return (
     <div
       className="space-y-8"
+      data-hydrated={isHydrated ? "true" : undefined}
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
     >
       <header className="space-y-4">
+        {dialog}
+        <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("reopen")}</DialogTitle>
+              <DialogDescription>{t("reopenDescription")}</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="reopen-reason">{t("reopenReason")}</Label>
+            <Textarea
+              id="reopen-reason"
+              value={reason}
+              maxLength={2000}
+              onChange={(event) => setReason(event.target.value)}
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                disabled={!reason.trim() || completing}
+                data-testid="reopen-project-confirm"
+                onClick={reopenProject}
+              >
+                {t("reopen")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <ProtectedPageHeader
           eyebrow={
             project.relationship === "hosted"
@@ -208,6 +315,9 @@ export function ProjectWorkspace({
               canComplete={canComplete}
               completing={completing}
               onComplete={completeProject}
+              canReopen={isHosted && project.archived && canReopen}
+              onReopen={() => setReopenOpen(true)}
+              archived={project.archived}
               projectId={project.id}
               showPartnershipDialogs={canManagePartnerships && isHosted}
             />
@@ -215,19 +325,6 @@ export function ProjectWorkspace({
         />
         <div className="flex flex-wrap items-center gap-2">
           {project.archived && <Badge variant="secondary">{t("archived")}</Badge>}
-          {project.completedAt && (
-            <Badge data-testid="project-completed" variant="secondary">
-              {t("completed")}
-            </Badge>
-          )}
-          <Badge
-            variant={
-              project.costSubmissionWindowOpen ? "status-pass" : "secondary"
-            }
-          >
-            {t("submissionWindow")}{" "}
-            {project.costSubmissionWindowOpen ? t("open") : t("closed")}
-          </Badge>
         </div>
         {feedback && (
           <div
@@ -341,32 +438,6 @@ export function ProjectWorkspace({
               </p>
             </div>
           </div>
-          {project.completedAt && (
-            <div
-              className="flex items-center gap-3"
-              data-completed-at={project.completedAt.toISOString()}
-              data-completed-by-user-id={project.completedByUserId}
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-                <CheckIcon
-                  aria-hidden="true"
-                  className="size-5 text-muted-foreground"
-                />
-              </span>
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-xs text-muted-foreground">{t("completed")}</p>
-                <p className="text-sm font-medium">
-                  {dateFormat.format(project.completedAt, "dateTime.short")}
-                  {project.completedByUserName ? (
-                    <span className="font-normal text-muted-foreground">
-                      {" "}
-                      {t("by")} {project.completedByUserName}
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
         {project.relationship === "hosted" && (
           <div className="flex shrink-0 items-center">

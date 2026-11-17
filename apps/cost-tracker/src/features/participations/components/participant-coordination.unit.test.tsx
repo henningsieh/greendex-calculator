@@ -1,7 +1,7 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
   createRegistrationLink: vi.fn(),
   setInvitationOpen: vi.fn(),
   setRegistrationLinkOpen: vi.fn(),
+  members: vi.fn(),
+  reviews: vi.fn(),
 }));
 
 const browserSession = vi.hoisted(() => ({
@@ -57,16 +59,8 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         listMembers: {
           queryOptions: () => ({
             queryKey: ["organizer-members"],
-            queryFn: async () => ({
-              members: [
-                {
-                  userId: "organizer-1",
-                  name: "Organizer One",
-                  email: "organizer@example.org",
-                  role: "admin",
-                },
-              ],
-            }),
+            queryFn: mocks.members,
+            retry: false,
           }),
         },
       },
@@ -79,25 +73,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
             >
           ) => ({
             ...original.orpcQuery.duplicateReviews.list.queryOptions(...args),
-            queryFn: async () => [
-              {
-                id: "review-open",
-                partnershipId: "own-partnership",
-                candidateEmail: "review@example.org",
-                status: "open",
-                existingParticipationId: "person-1",
-                decision: null,
-              },
-              {
-                id: "review-assigned",
-                partnershipId: "own-partnership",
-                candidateEmail: "assigned@example.org",
-                status: "assigned",
-                existingParticipationId: "person-1",
-                assignedToUserId: "user-1",
-                decision: null,
-              },
-            ],
+            queryFn: mocks.reviews,
           }),
         },
       },
@@ -126,7 +102,8 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
 });
 
 vi.mock("@/components/ui/popover", async () => {
-  const { createContext, useContext, cloneElement } = await import("react");
+  const { createContext, useContext, cloneElement, useState } =
+    await import("react");
   const Context = createContext({
     open: false,
     onOpenChange: (_open: boolean) => {},
@@ -138,18 +115,39 @@ vi.mock("@/components/ui/popover", async () => {
       onOpenChange,
     }: {
       children: React.ReactNode;
-      open: boolean;
-      onOpenChange: (open: boolean) => void;
-    }) => (
-      <Context.Provider value={{ open, onOpenChange }}>
-        {children}
-      </Context.Provider>
-    ),
-    PopoverTrigger: ({ render }: { render: React.ReactElement }) => {
+      open?: boolean;
+      onOpenChange?: (open: boolean) => void;
+    }) => {
+      const [internalOpen, setInternalOpen] = useState(false);
+      return (
+        <Context.Provider
+          value={{
+            open: open ?? internalOpen,
+            onOpenChange: onOpenChange ?? setInternalOpen,
+          }}
+        >
+          {children}
+        </Context.Provider>
+      );
+    },
+    PopoverTrigger: ({
+      render,
+      children,
+    }: {
+      render: React.ReactElement;
+      children?: React.ReactNode;
+    }) => {
       const { onOpenChange } = useContext(Context);
-      return cloneElement(render as React.ReactElement<{ onClick: () => void }>, {
-        onClick: () => onOpenChange(true),
-      });
+      return cloneElement(
+        render as React.ReactElement<{
+          onClick: () => void;
+          children?: React.ReactNode;
+        }>,
+        {
+          onClick: () => onOpenChange(true),
+          ...(children === undefined ? {} : { children }),
+        },
+      );
     },
     PopoverContent: ({ children }: { children: React.ReactNode }) =>
       useContext(Context).open ? <div>{children}</div> : null,
@@ -173,6 +171,7 @@ async function renderCoordination() {
       <ParticipantCoordination partnershipId="own-partnership" />
     </QueryClientProvider>,
   );
+  return client;
 }
 
 async function selectRegisteredUser(
@@ -204,6 +203,35 @@ describe("ParticipantCoordination", () => {
     browserSession.userId = "user-1";
     browserSession.activeOrganizationId = "partner-1";
     browserSession.role = ORGANIZATION_ROLES.OrganizationOwner;
+    mocks.members.mockReset().mockResolvedValue({
+      members: [
+        {
+          userId: "organizer-1",
+          name: "Organizer One",
+          email: "organizer@example.org",
+          role: "admin",
+        },
+      ],
+    });
+    mocks.reviews.mockReset().mockResolvedValue([
+      {
+        id: "review-open",
+        partnershipId: "own-partnership",
+        candidateEmail: "review@example.org",
+        status: "open",
+        existingParticipationId: "person-1",
+        decision: null,
+      },
+      {
+        id: "review-assigned",
+        partnershipId: "own-partnership",
+        candidateEmail: "assigned@example.org",
+        status: "assigned",
+        existingParticipationId: "person-1",
+        assignedToUserId: "user-1",
+        decision: null,
+      },
+    ]);
     mocks.list.mockReset().mockResolvedValue({
       projectName: "Own Project",
       participations: [
@@ -251,6 +279,57 @@ describe("ParticipantCoordination", () => {
     mocks.setRegistrationLinkOpen.mockReset().mockResolvedValue({ open: false });
   });
 
+  it("keeps archived Participation actions disabled and explains why via keyboard", async () => {
+    const data = await mocks.list();
+    mocks.list.mockResolvedValue({ ...data, projectArchived: true });
+    const user = userEvent.setup();
+    await renderCoordination();
+    expect(screen.getByTestId("participation-add")).toBeDisabled();
+    expect(screen.getByTestId("send-participant-invitation")).toBeDisabled();
+    expect(screen.getByTestId("create-registration-link")).toBeDisabled();
+    expect(screen.getByTestId("remove-participation-person-1")).toBeDisabled();
+    const trigger = screen.getByTestId("archive-explanation-trigger");
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeVisible();
+  });
+
+  it("allows read retries on an archived Project", async () => {
+    const data = await mocks.list();
+    mocks.list.mockResolvedValue({ ...data, projectArchived: true });
+    mocks.members.mockRejectedValueOnce(new Error("unavailable"));
+    mocks.reviews.mockRejectedValueOnce(new Error("unavailable"));
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.click(screen.getByTestId("manage-group-organizers"));
+    await user.click(await screen.findByTestId("registered-users-retry"));
+    expect(await screen.findByTestId("revoke-group-organizer")).toBeDisabled();
+    await user.click(screen.getByTestId("review-tasks-toggle"));
+    await user.click(await screen.findByTestId("review-tasks-retry"));
+    expect(await screen.findByTestId("review-task-assign")).toBeDisabled();
+  });
+
+  it("keeps a newly created registration link readable after archive", async () => {
+    const user = userEvent.setup();
+    const client = await renderCoordination();
+    await user.click(screen.getByTestId("create-registration-link"));
+    expect(await screen.findByTestId("new-registration-link")).toBeEnabled();
+    const data = await mocks.list();
+    act(() => {
+      client.setQueryData(
+        orpcQuery.participations.listPartnership.queryOptions({
+          input: { partnershipId: "own-partnership" },
+          meta: { costTrackerORPC: true },
+        }).queryKey,
+        { ...data, projectArchived: true },
+      );
+    });
+    expect(await screen.findByTestId("create-registration-link")).toBeDisabled();
+    expect(screen.getByTestId("new-registration-link")).toBeEnabled();
+  });
+
   it("keeps a cancelled Participation and disables removal while executing", async () => {
     mocks.remove.mockImplementation(() => new Promise(() => {}));
     const user = userEvent.setup();
@@ -295,6 +374,52 @@ describe("ParticipantCoordination", () => {
       userId: "organizer-1",
     });
     expect(trigger).toBeDisabled();
+  });
+
+  it("dismisses an open organizer confirmation when the Project is archived", async () => {
+    const user = userEvent.setup();
+    const client = await renderCoordination();
+    await user.click(screen.getByTestId("manage-group-organizers"));
+    await user.selectOptions(await screen.findByRole("combobox"), "organizer-1");
+    await user.click(screen.getByTestId("revoke-group-organizer"));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    const data = await mocks.list();
+    act(() => {
+      client.setQueryData(
+        orpcQuery.participations.listPartnership.queryOptions({
+          input: { partnershipId: "own-partnership" },
+          meta: { costTrackerORPC: true },
+        }).queryKey,
+        { ...data, projectArchived: true },
+      );
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(mocks.revoke).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("revoke-group-organizer")).toBeDisabled();
+  });
+
+  it("dismisses an open Participation removal when the Project is archived", async () => {
+    const user = userEvent.setup();
+    const client = await renderCoordination();
+    await user.click(screen.getByTestId("remove-participation-person-1"));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    const data = await mocks.list();
+    act(() => {
+      client.setQueryData(
+        orpcQuery.participations.listPartnership.queryOptions({
+          input: { partnershipId: "own-partnership" },
+          meta: { costTrackerORPC: true },
+        }).queryKey,
+        { ...data, projectArchived: true },
+      );
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("remove-participation-person-1")).toBeDisabled();
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
   it("renders only the server-scoped Partnership response with honest joined and invitation states", async () => {
     await renderCoordination();

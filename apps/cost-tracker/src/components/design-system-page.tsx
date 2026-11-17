@@ -120,7 +120,7 @@ const BADGE_VARIANTS = [
 /** Mirrors the hosted workspace mapping so designers can compare states. */
 const CLAIM_STATE_EXAMPLES = [
   { key: "none", variant: "secondary" },
-  { key: "editable", variant: "secondary" },
+  { key: "in_preparation", variant: "secondary" },
   { key: "submitted", variant: "status-attention" },
   { key: "correction", variant: "destructive" },
   { key: "approved", variant: "status-success" },

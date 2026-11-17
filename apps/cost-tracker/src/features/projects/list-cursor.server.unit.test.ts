@@ -12,21 +12,19 @@ import {
 const fingerprintInput = {
   scope: "hosted" as const,
   search: "climate",
-  window: "open" as const,
-  sort: "operational" as const,
+  sort: "start-asc" as const,
   pageSize: 25 as const,
   partnerOrganizationIds: ["partner-2", "partner-1"],
 };
 
 function buildCursor(fingerprint: string): ProjectListCursor {
   return {
-    version: 2,
+    version: 3,
     direction: "next",
     fingerprint,
-    sort: "operational",
+    sort: "start-asc",
     id: "project-1",
     date: new Date("2026-06-01T00:00:00.000Z").toISOString(),
-    open: true,
   };
 }
 
@@ -65,7 +63,7 @@ describe("project list cursor", () => {
     const cursor = buildCursor(getProjectListFingerprint(fingerprintInput));
     const otherFingerprint = getProjectListFingerprint({
       ...fingerprintInput,
-      window: "closed",
+      search: "different",
     });
 
     expect(
@@ -82,7 +80,7 @@ describe("project list cursor", () => {
     );
     expect(
       decodeProjectListCursor(
-        Buffer.from(JSON.stringify({ version: 2 }), "utf8").toString("base64url"),
+        Buffer.from(JSON.stringify({ version: 3 }), "utf8").toString("base64url"),
         fingerprint,
       ).status,
     ).toBe("invalid");

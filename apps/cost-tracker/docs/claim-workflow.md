@@ -2,6 +2,8 @@
 
 Status: recommended MVP target derived from the clickdummy's use cases and the accepted Cost Tracker ADRs. This document intentionally replaces the clickdummy's manual Project phases and per-`Ticket` decisions with Claim-owned states and Cost Tracker's canonical terms.
 
+[ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) records the archive decision. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) includes the full Claim transition table; [#418](https://github.com/henningsieh/greendex-calculator/issues/418) covers Claim naming and [#416](https://github.com/henningsieh/greendex-calculator/issues/416) covers archive availability.
+
 ## Actors
 
 - **Partner-side Project Coordinator** prepares, corrects, and submits its Project Partnership's Claim. Participants do not create, edit, or submit Claim data.
@@ -10,14 +12,14 @@ Status: recommended MVP target derived from the clickdummy's use cases and the a
 ## Claim lifecycle
 
 ```text
-editable → submitted → correction requested → submitted
+in preparation → submitted → correction requested → submitted
                      ↘ approved → paid
                      ↘ rejected → reopened for Hosting review
 ```
 
-Opening Claim UI persists nothing; there is no separate start ceremony. Explicit Save creates the Claim on its first save, after the Project Partnership has selected a Payout Account. A submitted Claim is locked. Browser Back/Forward restoration revalidates the Claim's saved state and history rather than trusting a pre-submission snapshot; reload also preserves the lock. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
+Opening Claim UI persists nothing; there is no separate start ceremony. “Claim erstellen” / “Create claim” creates the Claim after the Project Partnership has selected a Payout Account. Its initial status is `in_preparation` (“In Vorbereitung” / “In preparation”), not a Project-wide phase or a synonym for every editable Claim. A submitted Claim is locked. Browser Back/Forward restoration revalidates the Claim's saved state and history rather than trusting a pre-submission snapshot; reload also preserves the lock. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
 
-There is no manually opened or closed Project-wide Claim phase. A Partner-side Project Coordinator may prepare its Claim whenever its Project Partnership is set up and has selected a Payout Account.
+There is no manually opened or closed Project-wide Claim phase. While the Cost Tracker Project is active, a Partner-side Project Coordinator may prepare its Claim whenever its Project Partnership is set up and has selected a Payout Account.
 
 ## Submission checklist
 
@@ -66,9 +68,13 @@ Claim history is append-only. It records Participant Journey updates (`journey_u
 
 A Payout Account is selected by Project Partnership reference. It may be changed while the Claim is editable. Once a Claim is submitted, its selected Payout Account is locked until Hosting staff return the Claim for correction; an approved or paid Claim's account cannot change. This preserves the agreed reference model without copying bank details into the Claim.
 
-## Project readiness and completion
+## Project readiness and archive
 
-Project-wide progress is derived from its Project Partnerships and Claims; there are no manual preparation, claim, or review phases. A Hosting Organization Owner, Organization Admin, or Hosting-side Project Coordinator may complete a Project only when every Project Partnership has a terminal Claim: either paid or rejected. A Project Partnership without a Claim blocks completion; staff must resolve its participation rather than silently treating it as complete.
+Project-wide progress is derived from its Project Partnerships and Claims; there are no manual preparation, claim, or review phases. A Project may have multiple Project Partnerships, each with at most one Claim. Paid or rejected Claims are settled without an additional close action; approval alone does not settle a Claim.
+
+Archive replaces the separate Project-completion action. A Hosting Organization Owner, Organization Admin, or explicitly assigned Hosting-side Project Coordinator may archive only when every Project Partnership has a settled Claim. A Partnership without a Claim blocks archive; a Project with no Partnerships may be archived because nothing remains to settle.
+
+Archive changes no Claim status but makes the Project read-only through Cost Tracker. Payment-status correction and reopening an individual rejection require the Project to be active. A distinct Project `reopen` permission, granted by default only to Hosting Organization Owners and Admins, permits reopening with a required reason; it does not itself reopen or change any Claim. Archive/reopen events retain actor/time/history. See [domain behavior](domain-behavior.md#cost-tracker-archive-and-reopening) for scope and UI consequences.
 
 ## Deferred beyond MVP
 

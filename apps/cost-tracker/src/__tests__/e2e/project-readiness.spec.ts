@@ -16,12 +16,7 @@ import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, inArray } from "drizzle-orm";
 
-import {
-  expectPrivateURL,
-  expect,
-  test,
-  registerPrivateValues,
-} from "./fixtures/artifact-privacy";
+import { expect, test, registerPrivateValues } from "./fixtures/artifact-privacy";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -30,13 +25,8 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // deep guard is dormant. See #338 (E2E artifact privacy follow-up).
 // API-setup exceptions: beforeAll seeds verified H/E Users, credential login,
 // Organization Memberships, Projects, Project Partnerships and two Claim states.
-// Rejected is a fixture precondition, NOT evidence of a browser review decision;
-// the browser only observes derived readiness and never clicks Complete Project.
+// Rejected is a fixture precondition, not evidence of a browser review decision.
 // No mail-sending form is submitted; sign-in uses the auth API in a private context.
-// Case 27 (real payment) is NOT-RUN; all-paid Project completion in 28 is BLOCKED.
-// Named server blockers are AUTOMATED-ONLY in projects.integration.test.ts.
-// N2 zero-Partnership completion is NOT-RUN pending a product decision: observe
-// the button only, even when it appears enabled; never click it.
 const suffix = randomUUID();
 const ids = {
   hostUser: randomUUID(),
@@ -104,17 +94,15 @@ async function ownedCounts() {
 }
 
 async function openHostedProject(page: Page, url: string) {
-  await page.goto("/projects");
-  // ADR-0025: Project links carry identity only, so no query parameter follows.
-  await page.locator(`a[href$="${url}"]`).click();
-  // Preserve the original full-URL match; only the diagnostic receives a boolean.
-  await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
+  await page.goto(url);
+  const workspace = page.getByTestId("project-workspace");
+  // The workspace is actionable only after React has taken over the streamed
+  // tree; its own marker is a real hydration condition, not a timing guess.
+  await expect(workspace).toHaveAttribute("data-hydrated", "true");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // Text-free: relationship state hook instead of visible copy.
-  await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
-  await expect(
-    page.locator('[data-testid="assigned-partner-organizations"]'),
-  ).toBeVisible();
+  await expect(workspace).toHaveAttribute("data-relationship", "hosted");
+  await expect(page.getByTestId("assigned-partner-organizations")).toBeVisible();
 }
 
 function partnerRow(page: Page, organizationId: string) {
@@ -212,7 +200,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
       { partnershipId: ids.mainA, status: "rejected" },
-      { partnershipId: ids.otherB, status: "editable" },
+      { partnershipId: ids.otherB, status: "in_preparation" },
     ]);
     expect(await ownedCounts()).toEqual([2, 4, 4, 4, 2]);
   });
@@ -258,7 +246,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
-    await expect(page.getByTestId("complete-project")).toHaveCount(0);
+    await expect(page.getByTestId("archive-project")).toHaveCount(0);
 
     // E owns another Project with the same Partner Organization B. Its editable
     // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
@@ -275,17 +263,19 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
     // Text-free: no partner row carries the editable-claim state.
-    await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(0);
-    await expect(page.getByTestId("complete-project")).toHaveCount(0);
+    await expect(
+      page.locator('[data-claim-status="in_preparation"]'),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("archive-project")).toHaveCount(0);
   });
 
-  test("N2 hides completion for a claimless Partnership; observes zero-Partnership control only", async () => {
+  test("archives and reopens a zero-Partnership Project after explicit confirmation", async () => {
     const page = await hostContext!.newPage();
     await openHostedProject(page, isolationURL);
     await expect(
       partnerRow(page, ids.partnerA).locator('[data-claim-status="none"]'),
     ).toBeVisible();
-    await expect(page.getByTestId("complete-project")).toHaveCount(0);
+    await expect(page.getByTestId("archive-project")).toHaveCount(0);
 
     await openHostedProject(page, zeroURL);
     // Text-free: empty-state hook instead of visible copy.
@@ -293,8 +283,20 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       page.locator('[data-testid="assigned-partnerships-empty"]'),
     ).toBeVisible();
     await expect(partnerRow(page, ids.partnerA)).toHaveCount(0);
-    // Observation only: current UI offers an enabled button for zero Partnerships.
-    // Whether completing this Project is valid is unresolved; NOT-RUN, never click.
-    await expect(page.getByTestId("complete-project")).toBeEnabled();
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-cancel").click();
+    await expect(page.getByTestId("archive-project")).toBeEnabled();
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-execute").click();
+    await expect(page.getByTestId("reopen-project")).toBeVisible();
+    const explanation = page.getByTestId("archive-explanation-trigger");
+    await explanation.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByTestId("reopen-project").click();
+    await page.locator("#reopen-reason").fill("Correct a test record");
+    await page.getByRole("dialog").getByTestId("reopen-project-confirm").click();
+    await expect(page.getByTestId("archive-project")).toBeVisible();
   });
 });

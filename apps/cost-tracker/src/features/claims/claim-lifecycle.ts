@@ -8,7 +8,7 @@ export const MAX_CLAIM_REASON_LENGTH = 2_000;
 
 /** States in which a Partner may add and correct Claim data. */
 const partnerEditableStatuses: readonly ClaimStatus[] = [
-  "editable",
+  "in_preparation",
   "correction_requested",
 ];
 
@@ -130,7 +130,7 @@ export function isClaimAwaitingReview(
 export function isClaimReviewable(
   status: ClaimStatus | null | undefined,
 ): boolean {
-  return status != null && status !== "editable";
+  return status != null && status !== "in_preparation";
 }
 
 /**

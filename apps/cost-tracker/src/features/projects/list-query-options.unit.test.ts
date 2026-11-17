@@ -11,11 +11,29 @@ describe("Project list URL state", () => {
     expect(loadProjectListSearchParams({})).toEqual({
       scope: null,
       search: "",
-      window: "all",
       dateFrom: null,
       dateTo: null,
       partnerOrganizationIds: [],
-      sort: "operational",
+      sort: "start-asc",
+      cursor: "",
+      pageSize: 25,
+    });
+  });
+
+  it("ignores the removed window filter and falls back from the old sort", () => {
+    expect(
+      loadProjectListSearchParams({
+        scope: "partner",
+        window: "open",
+        sort: "operational",
+      }),
+    ).toEqual({
+      scope: "partner",
+      search: "",
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: [],
+      sort: "start-asc",
       cursor: "",
       pageSize: 25,
     });
@@ -26,7 +44,6 @@ describe("Project list URL state", () => {
       normalizeProjectListState({
         scope: "hosted",
         search: "  CLIMATE  ",
-        window: "open",
         dateFrom: new Date("2026-06-30T00:00:00.000Z"),
         dateTo: new Date("2026-06-01T00:00:00.000Z"),
         partnerOrganizationIds: ["partner-2", "", "partner-1", "partner-2"],
@@ -37,7 +54,6 @@ describe("Project list URL state", () => {
     ).toEqual({
       scope: "hosted",
       search: "climate",
-      window: "open",
       dateFrom: undefined,
       dateTo: undefined,
       partnerOrganizationIds: ["partner-1", "partner-2"],
@@ -52,9 +68,8 @@ describe("Project list URL state", () => {
       {
         scope: "partner",
         search: undefined,
-        window: "all",
         partnerOrganizationIds: [],
-        sort: "operational",
+        sort: "start-asc",
         cursor: "stale-partner-cursor",
         pageSize: 25,
       },
@@ -66,9 +81,8 @@ describe("Project list URL state", () => {
       state: {
         scope: null,
         search: undefined,
-        window: "all",
         partnerOrganizationIds: [],
-        sort: "operational",
+        sort: "start-asc",
         cursor: undefined,
         pageSize: 25,
       },
@@ -80,11 +94,10 @@ describe("Project list URL state", () => {
     const state = normalizeProjectListState({
       scope: null,
       search: " ab ",
-      window: "all",
       dateFrom: null,
       dateTo: null,
       partnerOrganizationIds: [],
-      sort: "operational",
+      sort: "start-asc",
       cursor: "",
       pageSize: 25,
     });

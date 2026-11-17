@@ -121,7 +121,6 @@
       "journey": {
         "project": "Spring workshop",
         "subtitle": "Travel cost trail",
-        "windowOpen": "Window open",
         "train": {
           "title": "Train to Utrecht",
           "detail": "Berlin · 2 participants"
@@ -237,7 +236,7 @@
         "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
         "claim": {
           "none": "No claim",
-          "editable": "Editable draft",
+          "in_preparation": "In preparation",
           "submitted": "Submitted",
           "correction": "Correction requested",
           "approved": "Approved",

@@ -8,13 +8,12 @@ import { PROJECT_SORT_MODES } from "@/features/projects/validation-schemas";
 const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
 
 const CursorSchema = z.object({
-  version: z.literal(2),
+  version: z.literal(3),
   direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
   sort: z.enum(PROJECT_SORT_MODES),
   id: z.string().min(1).max(128),
   date: z.iso.datetime(),
-  open: z.boolean().optional(),
 });
 
 export type ProjectListCursor = z.infer<typeof CursorSchema>;
@@ -22,7 +21,6 @@ export type ProjectListCursor = z.infer<typeof CursorSchema>;
 export function getProjectListFingerprint(input: {
   scope: "hosted" | "partner";
   search?: string;
-  window: "all" | "open" | "closed";
   dateFrom?: Date;
   dateTo?: Date;
   sort: (typeof PROJECT_SORT_MODES)[number];
@@ -34,7 +32,6 @@ export function getProjectListFingerprint(input: {
       JSON.stringify({
         scope: input.scope,
         search: input.search,
-        window: input.window,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString(),
         sort: input.sort,
@@ -65,7 +62,7 @@ export function decodeProjectListCursor(
     const version = CursorVersionSchema.safeParse(payload);
 
     if (!version.success) return { status: "invalid" };
-    if (version.data.version !== 2) return { status: "unsupported-version" };
+    if (version.data.version !== 3) return { status: "unsupported-version" };
 
     const cursor = CursorSchema.safeParse(payload);
     if (!cursor.success || cursor.data.fingerprint !== fingerprint) {

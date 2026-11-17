@@ -27,6 +27,9 @@
     "PARTNERSHIP_INVARIANT": "Ce partenariat de projet ne peut pas être créé avec les organisations sélectionnées.",
     "PARTNERSHIP_REFERENCED": "Supprimez ou réaffectez les participations au projet représentées avant de supprimer ce partenariat de projet.",
     "PROJECT_ALREADY_COMPLETED": "Le projet est déjà terminé.",
+    "PROJECT_ALREADY_ARCHIVED": "Le projet est déjà archivé.",
+    "PROJECT_NOT_ARCHIVED": "Le projet n'est pas archivé.",
+    "PROJECT_ARCHIVE_BLOCKED": "Chaque partenariat doit avoir une demande payée ou rejetée avant l'archivage du projet.",
     "PROJECT_COMPLETION_BLOCKED": "Impossible de terminer le projet :",
     "SETUP_LINK_NOT_FOUND": "Lien de configuration introuvable.",
     "SETUP_LINK_WRONG_EMAIL": "Ce lien de configuration appartient à une autre adresse e-mail.",
@@ -165,7 +168,7 @@
       "summary": "Le projet ne peut pas encore être terminé. Examinez les partenariats de projet suivants.",
       "status": {
         "none": "Aucune demande de financement",
-        "editable": "Modifiable",
+        "in_preparation": "In preparation",
         "correction_requested": "Correction demandée",
         "submitted": "Soumise",
         "approved": "Approuvée",

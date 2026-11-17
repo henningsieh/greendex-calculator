@@ -31,6 +31,7 @@ import {
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/participant-onboarding/procedures/shared";
+import { lockActiveProject } from "@/features/projects/procedures/project-lock";
 import { createJoinTransactionAuth } from "@/lib/auth";
 import {
   normalizeParticipantMembershipError,
@@ -88,18 +89,31 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           projectId: partnerships.projectId,
           partnerId: partnerships.organizationId,
           hostId: projects.organizationId,
-          archived: projects.archived,
         })
         .from(partnerships)
         .innerJoin(projects, eq(projects.id, partnerships.projectId))
         .where(eq(partnerships.id, partnershipId))
         .limit(1);
-      if (!partnership || partnership.archived)
-        throw createSituationErrors(errors).partnershipNotFound();
+      if (!partnership) throw createSituationErrors(errors).partnershipNotFound();
       let membershipChange:
         | { previousRole: string | null; newRole: string }
         | undefined;
       const result = await db.transaction(async (tx) => {
+        await lockActiveProject(tx, partnership.projectId, errors);
+        const [currentPartnership] = await tx
+          .select({ id: partnerships.id })
+          .from(partnerships)
+          .where(
+            and(
+              eq(partnerships.id, partnershipId),
+              eq(partnerships.projectId, partnership.projectId),
+              eq(partnerships.organizationId, partnership.partnerId),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!currentPartnership)
+          throw createSituationErrors(errors).partnershipNotFound();
         // The auth schema has no unique (user, organization) constraint. Lock
         // the stable User row before reading Membership so joins through
         // different tokens cannot both create it or race their role grants.

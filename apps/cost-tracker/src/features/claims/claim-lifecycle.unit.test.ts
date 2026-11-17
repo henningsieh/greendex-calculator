@@ -17,7 +17,7 @@ import {
 } from "@/features/claims/claim-lifecycle";
 
 const acceptedStates: ClaimStatus[] = [
-  "editable",
+  "in_preparation",
   "submitted",
   "correction_requested",
   "approved",
@@ -29,7 +29,7 @@ describe("Partner Claim editing rule", () => {
   it("adds and corrects in editable and correction_requested only", () => {
     expect(
       acceptedStates.filter((status) => canPartnerEditClaim(status)),
-    ).toEqual(["editable", "correction_requested"]);
+    ).toEqual(["in_preparation", "correction_requested"]);
   });
 
   it("locks a missing Claim's own data only after one exists", () => {
@@ -79,7 +79,7 @@ describe("Hosting review transitions", () => {
     ]);
     expect(claimReviewActions("rejected")).toEqual(["reopen"]);
     for (const status of [
-      "editable",
+      "in_preparation",
       "correction_requested",
       "approved",
       "paid",
@@ -96,7 +96,7 @@ describe("payment recording", () => {
     // transfer only; every other status refuses payment.
     expect(canRecordPayment("paid")).toBe(true);
     for (const status of [
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "rejected",
@@ -107,7 +107,7 @@ describe("payment recording", () => {
   it("corrects the paid flag only while paid", () => {
     expect(canCorrectPaidFlag("paid")).toBe(true);
     for (const status of [
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",
@@ -129,13 +129,13 @@ describe("review surfaces", () => {
     // second review decision; a paid Claim offers only the flag correction.
     expect(claimPanelActions("approved")).toEqual(["markPaid"]);
     expect(claimPanelActions("paid")).toEqual(["correctPayment"]);
-    expect(claimPanelActions("editable")).toEqual([]);
+    expect(claimPanelActions("in_preparation")).toEqual([]);
     expect(claimPanelActions("correction_requested")).toEqual([]);
     expect(claimPanelActions(null)).toEqual([]);
   });
 
   it("opens the review page for everything except an unsubmitted draft", () => {
-    expect(isClaimReviewable("editable")).toBe(false);
+    expect(isClaimReviewable("in_preparation")).toBe(false);
     expect(isClaimReviewable(null)).toBe(false);
     for (const status of [
       "submitted",
@@ -150,7 +150,7 @@ describe("review surfaces", () => {
   it("queues submitted Claims for review and nothing else", () => {
     expect(isClaimAwaitingReview("submitted")).toBe(true);
     for (const status of [
-      "editable",
+      "in_preparation",
       "correction_requested",
       "approved",
       "rejected",
@@ -166,7 +166,7 @@ describe("Project completion", () => {
     expect(isSettledClaimStatus("paid")).toBe(true);
     expect(isSettledClaimStatus("rejected")).toBe(true);
     for (const status of [
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",
@@ -183,7 +183,7 @@ describe("Project completion", () => {
     expect(canCompleteProject(["paid", "rejected"])).toBe(true);
     expect(canCompleteProject(["paid", "paid"])).toBe(true);
     for (const status of [
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",

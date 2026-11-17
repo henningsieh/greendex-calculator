@@ -37,4 +37,27 @@ Participant-only Memberships are read-only for Project management: neither the U
 - Approval confirms the payable amount; later payment recording confirms one full transfer. The MVP has a binary paid flag and no partial payments. See [Claim workflow](claim-workflow.md) for the complete state and access rules.
 - A Partner Organization may have zero or more reusable Payout Accounts. Each Project Partnership selects one by reference; a Claim cannot be created until that selection exists.
 - One allocation method applies to all Cost Allocations on a Travel Cost Entry.
-- The legacy `cost_submission_window_open` Project flag remains read-only until removed. It no longer gates Claim work; there is no manual Project-wide Claim phase.
+- There is no manual Project-wide Claim phase.
+
+## Cost Tracker archive and reopening
+
+**Approved target, not yet implemented:** [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) replaces the former Project-completion action. At specification baseline `3863c601`, completion only records actor/time and does not lock Claim work; the shared archive flag still controls availability. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) owns the package; [#416](https://github.com/henningsieh/greendex-calculator/issues/416) implements archive/reopen.
+
+- A Project has zero or more Project Partnerships, each with at most one Claim. A Claim is settled when paid or rejected. Approved unpaid Claims are not settled. No additional Claim-close action or status follows payment or rejection.
+- Archive is the explicit confirmation that the Project's Claim administration is settled, not that the real-world Project has ended. Every existing Project Partnership must have a paid or rejected Claim. A Partnership without a Claim blocks archive; no Partnerships means there is nothing to settle and archive is permitted.
+- Readiness is derived from Claims. There is no separate “review finished” confirmation or stored readiness phase. Archive does not change Claim statuses.
+- Hosting Organization Owners and Admins may archive their Projects; Hosting-side Project Coordinators may archive explicitly assigned Projects. Partner-side authority does not grant archive.
+- Reopening requires the separately declared Cost Tracker Project `reopen` permission. Its default grant is limited to the Hosting Organization's Owners and Admins; Project Coordinators and Partner-side roles do not receive it. A reason is required. Responsible User, time and prior archive/reopen cycles remain traceable.
+- Reopening changes Project availability, not Claim statuses. A later payment correction or rejected-Claim reopening remains a separate authorized Claim action with its existing audit rules.
+- Archived Project-scoped data is read-only through Cost Tracker: Claims, selected Payout Account, Project Partnerships, Project Participations, Participant Journeys and setup/onboarding writes cannot be changed without reopening. Existing authorized reading remains available. Shared reusable Organization data, including Payout Accounts used elsewhere, is not globally frozen.
+- Archive and Project-scoped mutations must check availability atomically so concurrent work cannot invalidate settlement after archive. Permission checks are authoritative on the server.
+- Cost Tracker archive state is independent of Calculator archive state. Neither app's archive/unarchive action changes the other's workflow state. Shared entities remain shared: this rule does not promise an immutable snapshot against changes made through other authorized contexts.
+- Existing completion timestamps are not proof of a valid new archive state because later Claim work was possible. The implementation must explicitly reconcile the old record rather than keep competing completion/archive ends or blindly lock historically completed Projects.
+
+### Archive presentation
+
+- Use “Archivieren” for the Project-level action, not “Project abschließen”. Initial Claim status is “In Vorbereitung” / “In preparation”, internally `in_preparation`; `correction_requested` remains distinct. The first-create button is “Claim erstellen” / “Create claim”.
+- Archive uses the existing reusable [confirmation dialog](confirm-dialog.md) as a destructive action. Explain that data becomes read-only, the Project leaves the default active list, and only authorized Users may reopen it. Cancellation changes nothing.
+- Actions unavailable because of archive remain visible and disabled. A Popover names archive as the reason; its explanation must work by keyboard and touch, not only by hovering a disabled control.
+- Never mention the Calculator app in Cost Tracker user-facing archive/reopen text. Cross-application separation is an engineering rule, not UI copy.
+- Archived Projects remain reachable through the Project-list archive filter and their authorized detail views. See [Projects](projects/README.md) for derived settlement filters and sorting.

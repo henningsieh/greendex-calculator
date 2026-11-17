@@ -7,6 +7,7 @@ import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -152,7 +153,7 @@ function ClaimDecisionSummary({
                 ? t("status.correctionRequested")
                 : status === "submitted"
                   ? t("status.submitted")
-                  : t("status.draft")}
+                  : t("status.in_preparation")}
       </p>
       {approvedAmountEur && (
         <p data-testid="approved-payable">
@@ -172,12 +173,14 @@ export function ClaimDecisionPanel({
   status,
   approvedAmountEur,
   canReview,
+  archived = false,
   onDecision,
 }: {
   partnershipId: string;
   status: Claim["status"];
   approvedAmountEur: string | null;
   canReview: boolean;
+  archived?: boolean;
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
 }) {
   const t = useTranslations("claims.review");
@@ -196,7 +199,7 @@ export function ClaimDecisionPanel({
     setFeedback("");
   }
   async function execute() {
-    if (!canReview || !confirming || pending) return;
+    if (!canReview || archived || !confirming || pending) return;
     const needsReason = Boolean(definition?.reasonLabel);
     if (needsReason && !reason.trim()) return;
     setPending(true);
@@ -239,12 +242,15 @@ export function ClaimDecisionPanel({
                   ? "default"
                   : "outline"
               }
-              disabled={pending}
+              disabled={pending || archived}
               onClick={() => begin(action)}
             >
               {label}
             </Button>
           ))}
+        {canReview && archived && controls.length > 0 && (
+          <ArchivedActionExplanation />
+        )}
         {canReview && confirming && (
           <Alert>
             <AlertDescription>
@@ -279,6 +285,7 @@ export function ClaimDecisionPanel({
                 type="button"
                 disabled={
                   pending ||
+                  archived ||
                   (Boolean(definition?.reasonLabel) && !reason.trim()) ||
                   (confirming === "markPaid" && !approvedAmountEur)
                 }
@@ -509,6 +516,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
                   status={claim.status}
                   approvedAmountEur={claim.approvedAmountEur}
                   canReview={mayReview && reviewer.canReview}
+                  archived={reviewer.projectArchived}
                   onDecision={decide}
                 />
               )}

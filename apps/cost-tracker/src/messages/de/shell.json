@@ -121,7 +121,6 @@
       "journey": {
         "project": "Frühlingsworkshop",
         "subtitle": "Reisekostenverlauf",
-        "windowOpen": "Zeitfenster offen",
         "train": {
           "title": "Zug nach Utrecht",
           "detail": "Berlin · 2 Teilnehmende"
@@ -237,7 +236,7 @@
         "claimDescription": "Das heutige Mapping im Hosted-Workspace. Diese Referenz darf hinterfragt werden.",
         "claim": {
           "none": "Kein Claim",
-          "editable": "Entwurf in Bearbeitung",
+          "in_preparation": "In Vorbereitung",
           "submitted": "Eingereicht",
           "correction": "Korrektur angefordert",
           "approved": "Genehmigt",

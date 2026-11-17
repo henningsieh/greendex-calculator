@@ -16,16 +16,10 @@ import {
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
   PROJECT_SORT_MODES,
-  PROJECT_WINDOW_FILTERS,
 } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
-export {
-  PROJECT_LIST_SCOPES,
-  PROJECT_PAGE_SIZES,
-  PROJECT_SORT_MODES,
-  PROJECT_WINDOW_FILTERS,
-};
+export { PROJECT_LIST_SCOPES, PROJECT_PAGE_SIZES, PROJECT_SORT_MODES };
 
 const MAX_PARTNER_FILTERS = 20;
 const MINIMUM_SEARCH_LENGTH = 3;
@@ -33,11 +27,10 @@ const MINIMUM_SEARCH_LENGTH = 3;
 export const projectListParsers = {
   scope: parseAsStringLiteral(PROJECT_LIST_SCOPES),
   search: parseAsString.withDefault(""),
-  window: parseAsStringLiteral(PROJECT_WINDOW_FILTERS).withDefault("all"),
   dateFrom: parseAsIsoDate,
   dateTo: parseAsIsoDate,
   partnerOrganizationIds: parseAsNativeArrayOf(parseAsString),
-  sort: parseAsStringLiteral(PROJECT_SORT_MODES).withDefault("operational"),
+  sort: parseAsStringLiteral(PROJECT_SORT_MODES).withDefault("start-asc"),
   cursor: parseAsString.withDefault(""),
   pageSize: parseAsNumberLiteral(PROJECT_PAGE_SIZES).withDefault(25),
 };
@@ -60,7 +53,6 @@ export type ProjectListScopeAvailability = Record<ProjectListScope, boolean>;
 export type ProjectListState = {
   scope: ProjectListScope | null;
   search?: string;
-  window: (typeof PROJECT_WINDOW_FILTERS)[number];
   dateFrom?: Date;
   dateTo?: Date;
   partnerOrganizationIds: string[];
@@ -89,7 +81,6 @@ export function normalizeProjectListState(
       normalizedSearch.length >= MINIMUM_SEARCH_LENGTH
         ? normalizedSearch
         : undefined,
-    window: state.window,
     dateFrom: hasValidDateRange && state.dateFrom ? state.dateFrom : undefined,
     dateTo: hasValidDateRange && state.dateTo ? state.dateTo : undefined,
     partnerOrganizationIds: [...new Set(state.partnerOrganizationIds)]
@@ -164,7 +155,6 @@ export function getProjectListQueryOptions(
 ): HostedProjectListQueryOptions | PartnerProjectListQueryOptions {
   const commonInput = {
     search: state.search,
-    window: state.window,
     dateFrom: state.dateFrom,
     dateTo: state.dateTo,
     sort: state.sort,
