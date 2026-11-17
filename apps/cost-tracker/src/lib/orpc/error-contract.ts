@@ -149,6 +149,22 @@ export const situationCatalog = {
     reason: "PROJECT_ALREADY_COMPLETED",
     message: "Project is already completed.",
   },
+  projectAlreadyArchived: {
+    code: "CONFLICT",
+    reason: "PROJECT_ALREADY_ARCHIVED",
+    message: "Project is already archived.",
+  },
+  projectNotArchived: {
+    code: "CONFLICT",
+    reason: "PROJECT_NOT_ARCHIVED",
+    message: "Project is not archived.",
+  },
+  projectArchiveBlocked: {
+    code: "CONFLICT",
+    reason: "PROJECT_ARCHIVE_BLOCKED",
+    message:
+      "Every Partnership must have a paid or rejected Claim before the Project can be archived.",
+  },
   projectCompletionBlocked: {
     code: "CONFLICT",
     reason: "PROJECT_COMPLETION_BLOCKED",

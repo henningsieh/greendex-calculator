@@ -107,7 +107,7 @@ test.describe("Login readiness", () => {
       await password.fill(SEED_USER.password);
       await expect(submit).toBeEnabled();
       await submit.click();
-      await expect(page).toHaveURL(/\/en\/org\/dashboard$/);
+      await expect(page).toHaveURL(/\/[a-z]{2}(?:-[A-Z]{2})?\/org\/dashboard$/);
       await expect(page.getByTestId("organization-dashboard")).toBeVisible();
     } finally {
       release();

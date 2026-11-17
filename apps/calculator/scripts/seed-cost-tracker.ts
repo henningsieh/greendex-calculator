@@ -243,9 +243,13 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
       state: SEED_IDS.claim.claimState1,
     }, // submitted-selected
   ] as const;
-  const claimScenarios = ["editable", "submitted", "submitted-selected"] as const;
+  const claimScenarios = [
+    "in_preparation",
+    "submitted",
+    "submitted-selected",
+  ] as const;
   for (const [stateIndex, state] of claimScenarios.entries()) {
-    const status = state === "editable" ? "editable" : "submitted";
+    const status = state === "in_preparation" ? "in_preparation" : "submitted";
     const { project: projectId, partnership: partnershipId } =
       claimScenarioIds[stateIndex]!;
     {
@@ -253,7 +257,7 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
         {
           id: projectId,
           name:
-            state === "editable"
+            state === "in_preparation"
               ? "Seed Editable Claim Project"
               : state === "submitted"
                 ? "Seed Submitted Claim Project"
@@ -1368,7 +1372,7 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
   ] as const;
   const journeyScenarioNames = [
     "empty",
-    "editable",
+    "in_preparation",
     "legacy",
     "correction_requested",
     "submitted",
@@ -1858,7 +1862,7 @@ async function ensureProjectReadinessScenarios(
     "mixed",
     "claimless-partial",
     "terminal",
-    "editable",
+    "in_preparation",
     "submitted",
     "correction_requested",
     "approved",
@@ -2035,7 +2039,6 @@ async function ensureProjectDetailScenarios(db: SeedDatabase): Promise<string[]>
         location: "Prague",
         country: "CZ",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
     ] satisfies (typeof projects.$inferInsert)[];
     await ensureSeedProjects(db, rows);
@@ -2182,17 +2185,16 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
     const rows = [
       {
         id: alphaId,
-        name: "Alpha Open Workshop",
+        name: "Alpha Workshop",
         startDate: new Date("2024-06-01T00:00:00.000Z"),
         endDate: new Date("2024-06-03T00:00:00.000Z"),
         location: "Berlin",
         country: "DE",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: betaId,
-        name: "Beta Closed Forum",
+        name: "Beta Forum",
         startDate: new Date("2024-06-03T00:00:00.000Z"),
         endDate: new Date("2024-06-05T00:00:00.000Z"),
         location: "Paris",
@@ -2207,7 +2209,6 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
         location: "Vienna",
         country: "AT",
         organizationId: hostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: foreignId,
@@ -2217,7 +2218,6 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
         location: "Rome",
         country: "IT",
         organizationId: foreignHostId,
-        costSubmissionWindowOpen: true,
       },
       {
         id: archivedId,
@@ -3429,7 +3429,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
     }, // correction
   ] as const;
   const submissionScenarioNames = [
-    "editable",
+    "in_preparation",
     "submitted",
     "rejected",
     "approved",
@@ -3552,7 +3552,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
           partnershipId: own,
           status: name === "correction" ? "correction_requested" : name,
           approvedAmountEur:
-            name === "editable"
+            name === "in_preparation"
               ? null
               : name === "correction"
                 ? "101.01"

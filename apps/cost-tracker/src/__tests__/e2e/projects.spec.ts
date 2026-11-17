@@ -7,7 +7,7 @@ const fixture = new CostTrackerProjectFixture();
 function listURL(pageURL: string) {
   const url = new URL(pageURL);
   // Internal links render the active locale; compare the route, not the prefix.
-  return `${url.pathname.replace(/^\/[a-z]{2}(?=\/)/, "")}${url.search}`;
+  return `${url.pathname.replace(/^\/[a-z]{2}(?:-[A-Z]{2})?(?=\/)/, "")}${url.search}`;
 }
 
 function isRPCRequest(url: string) {
@@ -55,6 +55,9 @@ test.describe("Cost Tracker Project production path", () => {
 
     const filteredListURL = listURL(page.url());
     await page.reload();
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
     await expect(page.getByTestId("project-search")).toHaveValue(
       "Cost Tracker E2E",
     );

@@ -190,7 +190,7 @@ beforeEach(async () => {
   await db.delete(entries).where(inArray(entries.claimId, claimIds));
   await db
     .update(claims)
-    .set({ status: "editable" })
+    .set({ status: "in_preparation" })
     .where(inArray(claims.id, claimIds));
   await db
     .delete(counters)
@@ -483,7 +483,7 @@ describe("Proof upload Organization daily consumption", () => {
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimIds[0])))[0]
         .status,
-    ).toBe("editable");
+    ).toBe("in_preparation");
   });
   it("removes the stored file and retains attempted bytes when document insertion fails", async () => {
     await seed(0);

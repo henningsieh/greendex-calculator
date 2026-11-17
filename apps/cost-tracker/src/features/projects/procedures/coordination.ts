@@ -32,7 +32,6 @@ export async function requireHostCoordination(
       and(
         eq(projects.id, projectId),
         eq(projects.organizationId, activeOrganizationId ?? ""),
-        eq(projects.archived, false),
       ),
     )
     .limit(1);

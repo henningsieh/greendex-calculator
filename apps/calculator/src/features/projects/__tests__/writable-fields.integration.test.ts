@@ -112,7 +112,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
   const attemptedLifecycle = {
     completedAt: new Date(),
     completedByUserId: coordinatorUserId,
-    costSubmissionWindowOpen: true,
+    costTrackerArchived: true,
     archived: true,
   };
   const created = await client.projects.create({
@@ -126,7 +126,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
     organizationId: seedOrgId,
     completedAt: null,
     completedByUserId: null,
-    costSubmissionWindowOpen: false,
+    costTrackerArchived: false,
     archived: false,
   });
 
@@ -137,7 +137,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
     .set({
       completedAt,
       completedByUserId: coordinatorUserId,
-      costSubmissionWindowOpen: true,
+      costTrackerArchived: true,
     })
     .where(eq(projectsTable.id, created.project.id));
   const updated = await client.projects.update({
@@ -147,7 +147,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
       name: "Legitimate rename",
       completedAt: null,
       completedByUserId: null,
-      costSubmissionWindowOpen: false,
+      costTrackerArchived: false,
       archived: true,
     } as typeof form,
   });
@@ -160,7 +160,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
     organizationId: seedOrgId,
     completedAt,
     completedByUserId: coordinatorUserId,
-    costSubmissionWindowOpen: true,
+    costTrackerArchived: true,
     archived: false,
   });
   await expect(

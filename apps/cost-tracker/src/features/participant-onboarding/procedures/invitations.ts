@@ -5,7 +5,6 @@ import { db } from "@greendex/database";
 import {
   participantEntryTokensTable as tokens,
   projectParticipantsTable as participants,
-  projectsTable as projects,
   user,
 } from "@greendex/database/schema";
 import { openapi } from "@orpc/openapi";
@@ -28,6 +27,7 @@ import {
   ParticipantInvitationEmailInputSchema,
   SetParticipantInvitationOpenInputSchema,
 } from "@/features/participant-onboarding/validation-schemas";
+import { lockActiveProject } from "@/features/projects/procedures/project-lock";
 import { sendParticipantInvitation } from "@/lib/email";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -68,11 +68,7 @@ export function buildIssueInvitation() {
         throw createSituationErrors(errors).participantAlreadyParticipates();
       const result = await db.transaction(async (tx) => {
         // Share the Project lock with reissue: only the winning issuer delivers.
-        await tx
-          .select({ id: projects.id })
-          .from(projects)
-          .where(eq(projects.id, partnership.projectId))
-          .for("update");
+        await lockActiveProject(tx, partnership.projectId, errors);
         const existing = await findPendingInvitationToken(
           partnership.projectId,
           input.email,
@@ -150,11 +146,7 @@ export function buildReissueInvitation() {
         throw createSituationErrors(errors).participantAlreadyParticipates();
       const issued = await db.transaction(async (tx) => {
         // Serialize rotations across every Partnership in this Project.
-        await tx
-          .select({ id: projects.id })
-          .from(projects)
-          .where(eq(projects.id, target.projectId))
-          .for("update");
+        await lockActiveProject(tx, target.projectId, errors);
         const [previous] = await tx
           .select({
             id: tokens.id,
@@ -221,27 +213,43 @@ export function buildSetInvitationOpen() {
         .limit(1);
       if (!token || token.email === null)
         throw createSituationErrors(errors).participantInvitationNotFound();
-      await requirePartnerScopeAuthority(
+      const scope = await requirePartnerScopeAuthority(
         context.headers,
         token.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
         errors,
       );
-      if (token.status === "accepted")
-        throw createSituationErrors(errors).participantInvitationAccepted();
-      if (token.status !== "pending")
-        throw createSituationErrors(errors).participantInvitationClosed();
-      if (token.expiresAt !== null && token.expiresAt <= new Date())
-        throw createSituationErrors(errors).participantInvitationExpired();
-      // Revocation is terminal: reopening never resurrects a revoked identity
-      // — reissue after revoke instead, mirroring newest-wins rotation.
-      if (input.open) return { open: true };
-      await db
-        .update(tokens)
-        .set({ status: "revoked" })
-        .where(eq(tokens.id, input.invitationId));
-      return { open: input.open };
+      return db.transaction(async (tx) => {
+        await lockActiveProject(tx, scope.projectId, errors);
+        const [locked] = await tx
+          .select()
+          .from(tokens)
+          .where(
+            and(
+              eq(tokens.id, input.invitationId),
+              eq(tokens.partnershipId, scope.id),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!locked || locked.email === null)
+          throw createSituationErrors(errors).participantInvitationNotFound();
+        if (locked.status === "accepted")
+          throw createSituationErrors(errors).participantInvitationAccepted();
+        if (locked.status !== "pending")
+          throw createSituationErrors(errors).participantInvitationClosed();
+        if (locked.expiresAt !== null && locked.expiresAt <= new Date())
+          throw createSituationErrors(errors).participantInvitationExpired();
+        // Revocation is terminal: reopening never resurrects a revoked identity
+        // — reissue after revoke instead, mirroring newest-wins rotation.
+        if (input.open) return { open: true };
+        await tx
+          .update(tokens)
+          .set({ status: "revoked" })
+          .where(eq(tokens.id, input.invitationId));
+        return { open: input.open };
+      });
     });
 }
 

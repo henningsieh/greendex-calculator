@@ -23,6 +23,7 @@ export const messageBundleRoutes = [
   ["features/participations/", "participations"],
   ["features/partnerships/", "partnerships"],
   ["features/projects/", "projects"],
+  ["components/archived-action-explanation.tsx", "projects"],
   ["components/confirm-dialog.tsx", "common"],
   ["components/error-presentation/", "apiErrors"],
   ["components/", "shell"],

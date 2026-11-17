@@ -71,14 +71,8 @@ export const listPartnerships = authorized
       errors,
     );
     const scopeFilter = assignedIds.length
-      ? and(
-          inArray(projectPartnerOrganizationsTable.id, assignedIds),
-          eq(projectsTable.archived, false),
-        )
-      : and(
-          eq(projectsTable.organizationId, activeOrganizationId),
-          eq(projectsTable.archived, false),
-        );
+      ? inArray(projectPartnerOrganizationsTable.id, assignedIds)
+      : eq(projectsTable.organizationId, activeOrganizationId);
     return db
       .select({
         id: projectPartnerOrganizationsTable.id,
@@ -172,6 +166,7 @@ export const assignPartnership = authorized
             and(
               eq(projectsTable.id, input.projectId),
               eq(projectsTable.organizationId, activeOrganizationId),
+              eq(projectsTable.costTrackerArchived, false),
             ),
           )
           .for("update")
@@ -249,6 +244,34 @@ export const removePartnership = authorized
 
     try {
       return await db.transaction(async (transaction) => {
+        const [hint] = await transaction
+          .select({ projectId: projectPartnerOrganizationsTable.projectId })
+          .from(projectPartnerOrganizationsTable)
+          .innerJoin(
+            projectsTable,
+            eq(projectsTable.id, projectPartnerOrganizationsTable.projectId),
+          )
+          .where(
+            and(
+              eq(projectPartnerOrganizationsTable.id, input.id),
+              eq(projectsTable.organizationId, activeOrganizationId),
+            ),
+          )
+          .limit(1);
+        if (!hint) throw createSituationErrors(errors).partnershipNotFound();
+        const [project] = await transaction
+          .select({ id: projectsTable.id })
+          .from(projectsTable)
+          .where(
+            and(
+              eq(projectsTable.id, hint.projectId),
+              eq(projectsTable.organizationId, activeOrganizationId),
+              eq(projectsTable.costTrackerArchived, false),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!project) throw createSituationErrors(errors).partnershipNotFound();
         const [partnership] = await transaction
           .select({
             projectId: projectPartnerOrganizationsTable.projectId,
@@ -262,7 +285,12 @@ export const removePartnership = authorized
               eq(projectsTable.organizationId, activeOrganizationId),
             ),
           )
-          .where(eq(projectPartnerOrganizationsTable.id, input.id))
+          .where(
+            and(
+              eq(projectPartnerOrganizationsTable.id, input.id),
+              eq(projectPartnerOrganizationsTable.projectId, project.id),
+            ),
+          )
           .for("update")
           .limit(1);
         if (!partnership) {

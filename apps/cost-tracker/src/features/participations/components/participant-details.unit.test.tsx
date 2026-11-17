@@ -87,6 +87,22 @@ async function renderDetails() {
 }
 
 describe("ParticipantDetails country correction", () => {
+  it("disables country correction on an archived Project and explains why", async () => {
+    const data = await mocks.get();
+    mocks.get.mockResolvedValue({ ...data, projectArchived: true });
+    const user = userEvent.setup();
+    await renderDetails();
+    expect(screen.getByRole("combobox", { name: countryLabel })).toBeDisabled();
+    expect(screen.getByTestId("participation-country-save")).toBeDisabled();
+    const trigger = screen.getByTestId("archive-explanation-trigger");
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByTestId("archive-explanation-content"),
+    ).toBeVisible();
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
   it("displays the current country by name and saves a selected ISO code", async () => {
     const user = userEvent.setup();
     await renderDetails();

@@ -51,7 +51,7 @@ async function hostedScope(
     activeOrganizationId,
     filter: and(
       eq(projects.organizationId, activeOrganizationId),
-      eq(projects.archived, false),
+      eq(projects.costTrackerArchived, false),
       isManager
         ? undefined
         : exists(

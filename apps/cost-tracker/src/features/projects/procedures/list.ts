@@ -60,11 +60,6 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
       sql`lower(${projectsTable.name}) like ${`%${escapedSearch}%`} escape '\\'`,
     );
   }
-  if (input.window !== "all") {
-    filters.push(
-      eq(projectsTable.costSubmissionWindowOpen, input.window === "open"),
-    );
-  }
   if (input.dateFrom) filters.push(gte(projectsTable.endDate, input.dateFrom));
   if (input.dateTo) filters.push(lte(projectsTable.startDate, input.dateTo));
 
@@ -72,20 +67,15 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
 }
 
 type ProjectCursorDirection = ProjectListCursor["direction"];
-type ProjectCursorPosition = Pick<
-  ProjectListCursor,
-  "date" | "direction" | "id" | "open"
->;
+type ProjectCursorPosition = Pick<ProjectListCursor, "date" | "direction" | "id">;
 type ProjectListCursorRow = Pick<
   typeof projectsTable.$inferSelect,
-  "costSubmissionWindowOpen" | "endDate" | "id" | "startDate"
+  "endDate" | "id" | "startDate"
 >;
 
 type ProjectSortDescription = {
   getCursorFilter: (cursor: ProjectCursorPosition) => SQL;
-  getCursorValues: (
-    row: ProjectListCursorRow,
-  ) => Pick<ProjectListCursor, "date" | "open">;
+  getCursorValues: (row: ProjectListCursorRow) => Pick<ProjectListCursor, "date">;
   getOrder: (direction: ProjectCursorDirection) => SQL[];
 };
 
@@ -162,46 +152,6 @@ const endDateSortDescriptions = createChronologicalSortDescriptions({
 });
 
 const PROJECT_SORT_DESCRIPTIONS = {
-  operational: {
-    getCursorFilter(cursor) {
-      const date = new Date(cursor.date);
-      const open = cursor.open ?? false;
-      const movingForward = cursor.direction === "next";
-      const compareWindow = movingForward
-        ? lt(projectsTable.costSubmissionWindowOpen, open)
-        : gt(projectsTable.costSubmissionWindowOpen, open);
-      const compareDate = movingForward
-        ? gt(projectsTable.startDate, date)
-        : lt(projectsTable.startDate, date);
-      const compareId = movingForward
-        ? gt(projectsTable.id, cursor.id)
-        : lt(projectsTable.id, cursor.id);
-
-      return anyOf(
-        compareWindow,
-        allOf(
-          eq(projectsTable.costSubmissionWindowOpen, open),
-          anyOf(compareDate, allOf(eq(projectsTable.startDate, date), compareId)),
-        ),
-      );
-    },
-    getCursorValues: (row) => ({
-      date: row.startDate.toISOString(),
-      open: row.costSubmissionWindowOpen,
-    }),
-    getOrder: (direction) =>
-      direction === "next"
-        ? [
-            sql`${projectsTable.costSubmissionWindowOpen} desc nulls last`,
-            asc(projectsTable.startDate),
-            asc(projectsTable.id),
-          ]
-        : [
-            sql`${projectsTable.costSubmissionWindowOpen} asc nulls first`,
-            desc(projectsTable.startDate),
-            desc(projectsTable.id),
-          ],
-  },
   "start-asc": startDateSortDescriptions.ascending,
   "start-desc": startDateSortDescriptions.descending,
   "end-asc": endDateSortDescriptions.ascending,
@@ -221,15 +171,10 @@ const rowSelection = {
   endDate: projectsTable.endDate,
   location: projectsTable.location,
   country: projectsTable.country,
-  costSubmissionWindowOpen: projectsTable.costSubmissionWindowOpen,
 };
 
 const projectMetricsSelection = {
   projectCount: countDistinct(projectsTable.id),
-  openWindowCount:
-    sql<number>`count(distinct case when ${projectsTable.costSubmissionWindowOpen} then ${projectsTable.id} end)`.mapWith(
-      Number,
-    ),
 };
 const hostedProjectMetricsSelection = {
   ...projectMetricsSelection,
@@ -243,7 +188,6 @@ type ProjectMetricRow = PartnerProjectList["metrics"]["whole"];
 function mapProjectMetrics(value: ProjectMetricRow | undefined) {
   return {
     projectCount: value?.projectCount ?? 0,
-    openWindowCount: value?.openWindowCount ?? 0,
   };
 }
 
@@ -261,7 +205,7 @@ export function getHostedProjectScopeFilters(
 ): SQL[] {
   return [
     eq(projectsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.archived, false),
+    eq(projectsTable.costTrackerArchived, false),
   ];
 }
 
@@ -270,7 +214,7 @@ export function getPartnerProjectScopeFilters(
 ): SQL[] {
   return [
     eq(projectPartnerOrganizationsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.archived, false),
+    eq(projectsTable.costTrackerArchived, false),
   ];
 }
 
@@ -316,7 +260,7 @@ function finalizeProjectListPage<T extends ProjectListCursorRow>(
     row: ProjectListCursorRow,
   ) =>
     encodeProjectListCursor({
-      version: 2,
+      version: 3,
       direction,
       fingerprint,
       sort: input.sort,

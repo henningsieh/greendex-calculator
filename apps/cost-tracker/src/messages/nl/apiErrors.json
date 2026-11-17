@@ -27,6 +27,9 @@
     "PARTNERSHIP_INVARIANT": "Dit projectpartnerschap kan niet met de geselecteerde organisaties worden aangemaakt.",
     "PARTNERSHIP_REFERENCED": "Verwijder vertegenwoordigde projectdeelnames of wijs ze opnieuw toe voordat je dit projectpartnerschap verwijdert.",
     "PROJECT_ALREADY_COMPLETED": "Het project is al afgerond.",
+    "PROJECT_ALREADY_ARCHIVED": "Het project is al gearchiveerd.",
+    "PROJECT_NOT_ARCHIVED": "Het project is niet gearchiveerd.",
+    "PROJECT_ARCHIVE_BLOCKED": "Elk partnerschap heeft een betaalde of afgewezen claim nodig voordat het project kan worden gearchiveerd.",
     "PROJECT_COMPLETION_BLOCKED": "Het project kan niet worden afgerond:",
     "SETUP_LINK_NOT_FOUND": "Instellingslink niet gevonden.",
     "SETUP_LINK_WRONG_EMAIL": "Deze instellingslink hoort bij een ander e-mailadres.",
@@ -165,7 +168,7 @@
       "summary": "Het project kan nog niet worden afgerond. Controleer de volgende projectpartnerschappen.",
       "status": {
         "none": "Geen financieringsaanvraag",
-        "editable": "Bewerkbaar",
+        "in_preparation": "In preparation",
         "correction_requested": "Correctie gevraagd",
         "submitted": "Ingediend",
         "approved": "Goedgekeurd",

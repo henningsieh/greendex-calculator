@@ -35,7 +35,7 @@ const coordinator = SEED_IDS.user.journeyCoordinator,
   participantUser = SEED_IDS.user.journeyParticipantUser;
 const scenarioNames = [
   "empty",
-  "editable",
+  "in_preparation",
   "legacy",
   "correction_requested",
   "submitted",
@@ -449,7 +449,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it("updates each journey field in place without adding a second journey", async () => {
-    useScenario("editable");
+    useScenario("in_preparation");
     const saved = await client.journeys.save(journey);
     for (const [patch, expected] of [
       [{ origin: "Tallinn" }, { origin: "Tallinn" }],
@@ -469,7 +469,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it("validates update fields with the same itemized errors as save", async () => {
-    useScenario("editable");
+    useScenario("in_preparation");
     const saved = await client.journeys.save(journey);
     await expect(
       client.journeys.update({
@@ -520,7 +520,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it("rejects distances outside exactly one frozen band without changing the snapshot", async () => {
-    useScenario("editable");
+    useScenario("in_preparation");
     const saved = await client.journeys.save(journey);
     const originalSnapshot = await db
       .select()
@@ -565,7 +565,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it("treats overlapping frozen bands as a server invariant without changing the Journey", async () => {
-    useScenario("editable");
+    useScenario("in_preparation");
     const saved = await client.journeys.save(journey);
     // Deliberate frozen-band corruption is the invariant under test, restored below.
     const [overlap] = await db
@@ -599,7 +599,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it.each([
-    "editable",
+    "in_preparation",
     "correction_requested",
     "submitted",
     "approved",
@@ -610,7 +610,7 @@ describe("Participant Journey procedures", () => {
     async (status) => {
       useScenario(status);
       const saved =
-        status === "editable" || status === "correction_requested"
+        status === "in_preparation" || status === "correction_requested"
           ? await client.journeys.save(journey)
           : (
               await db
@@ -619,7 +619,7 @@ describe("Participant Journey procedures", () => {
                 .where(eq(journeys.projectParticipantId, first))
             )[0];
       const input = { ...journey, origin: "Tallinn" };
-      if (status === "editable" || status === "correction_requested") {
+      if (status === "in_preparation" || status === "correction_requested") {
         expect(await client.journeys.update(input)).toMatchObject({
           id: saved.id,
           origin: "Tallinn",
@@ -653,7 +653,7 @@ describe("Participant Journey procedures", () => {
     await expect(client.journeys.update(journey)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
-    useScenario("editable");
+    useScenario("in_preparation");
     await client.journeys.save(journey);
     await expect(
       client.journeys.update({ ...journey, projectParticipantId: second }),

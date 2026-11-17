@@ -55,7 +55,7 @@ export const createSetupLink = authorized
               projectsTable.organizationId,
               context.session.activeOrganizationId!,
             ),
-            eq(projectsTable.archived, false),
+            eq(projectsTable.costTrackerArchived, false),
           ),
         )
         .for("update")
@@ -135,20 +135,46 @@ export const disableSetupLink = authorized
     }),
   )
   .handler(async ({ input, context, errors }) => {
-    const [link] = await db
-      .update(links)
-      .set({ enabled: false })
-      .from(projectsTable)
-      .where(
-        and(
-          eq(links.id, input.id),
-          eq(links.projectId, projectsTable.id),
-          eq(projectsTable.organizationId, context.session.activeOrganizationId!),
-        ),
-      )
-      .returning({ id: links.id });
-    if (!link) throw createSituationErrors(errors).setupLinkNotFound();
-    return { disabled: true as const };
+    return db.transaction(async (tx) => {
+      const [hint] = await tx
+        .select({ projectId: links.projectId })
+        .from(links)
+        .innerJoin(projectsTable, eq(links.projectId, projectsTable.id))
+        .where(
+          and(
+            eq(links.id, input.id),
+            eq(
+              projectsTable.organizationId,
+              context.session.activeOrganizationId!,
+            ),
+          ),
+        )
+        .limit(1);
+      if (!hint) throw createSituationErrors(errors).setupLinkNotFound();
+      const [project] = await tx
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, hint.projectId),
+            eq(
+              projectsTable.organizationId,
+              context.session.activeOrganizationId!,
+            ),
+            eq(projectsTable.costTrackerArchived, false),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!project) throw createSituationErrors(errors).setupLinkNotFound();
+      const [link] = await tx
+        .update(links)
+        .set({ enabled: false })
+        .where(and(eq(links.id, input.id), eq(links.projectId, project.id)))
+        .returning({ id: links.id });
+      if (!link) throw createSituationErrors(errors).setupLinkNotFound();
+      return { disabled: true as const };
+    });
   });
 
 const setupLinkInput = z.object({
@@ -188,10 +214,29 @@ async function validateSetupLink(
   user: { id: string; email: string; emailVerified: boolean },
   errors: SetupErrors,
 ) {
+  const [hint] = await tx
+    .select({ projectId: links.projectId, secretHash: links.secretHash })
+    .from(links)
+    .where(eq(links.id, input.id))
+    .limit(1);
+  if (!hint || hint.secretHash !== hash(input.secret))
+    throw errors.setupLinkNotFound();
+
+  const [project] = await tx
+    .select({
+      id: projectsTable.id,
+      hostId: projectsTable.organizationId,
+      costTrackerArchived: projectsTable.costTrackerArchived,
+    })
+    .from(projectsTable)
+    .where(eq(projectsTable.id, hint.projectId))
+    .for("update")
+    .limit(1);
+
   const [link] = await tx
     .select()
     .from(links)
-    .where(eq(links.id, input.id))
+    .where(and(eq(links.id, input.id), eq(links.projectId, hint.projectId)))
     .for("update")
     .limit(1);
   if (!link || link.secretHash !== hash(input.secret))
@@ -202,18 +247,7 @@ async function validateSetupLink(
   if (!link.enabled) throw errors.setupLinkDisabled();
   if (link.expiresAt <= new Date()) throw errors.setupLinkExpired();
 
-  const [project] = await tx
-    .select({ id: projectsTable.id, hostId: projectsTable.organizationId })
-    .from(projectsTable)
-    .where(
-      and(
-        eq(projectsTable.id, link.projectId),
-        eq(projectsTable.archived, false),
-      ),
-    )
-    .for("update")
-    .limit(1);
-  if (!project) throw errors.projectNotFound();
+  if (!project || project.costTrackerArchived) throw errors.projectNotFound();
 
   let redemption: z.infer<typeof redemptionResult> | null = null;
   if (link.partnershipId) {

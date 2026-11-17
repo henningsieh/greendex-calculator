@@ -105,9 +105,10 @@ export const projectsTable = pgTable(
 
     // Archived flag - projects can be archived instead of deleted
     archived: boolean("archived").default(false).notNull(),
-    costSubmissionWindowOpen: boolean("cost_submission_window_open")
+    costTrackerArchived: boolean("cost_tracker_archived")
       .default(false)
       .notNull(),
+    // Historical completion did not prevent later edits, so it is not archive evidence.
     completedAt: timestamp("completed_at"),
     completedByUserId: text("completed_by_user_id").references(() => user.id, {
       onDelete: "restrict",
@@ -120,13 +121,6 @@ export const projectsTable = pgTable(
       .notNull(),
   },
   (table) => [
-    index("project_hosted_overview_operational_idx").on(
-      table.organizationId,
-      table.archived,
-      table.costSubmissionWindowOpen.desc(),
-      table.startDate,
-      table.id,
-    ),
     index("project_hosted_overview_date_idx").on(
       table.organizationId,
       table.archived,
@@ -137,6 +131,34 @@ export const projectsTable = pgTable(
     index("project_name_trigram_idx")
       .using("gin", sql`lower(${table.name}) gin_trgm_ops`)
       .where(sql`${table.archived} = false`),
+  ],
+);
+
+export const costTrackerProjectArchiveEventsTable = pgTable(
+  "cost_tracker_project_archive_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    action: text("action", { enum: ["archive", "reopen"] }).notNull(),
+    reason: text("reason"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    check(
+      "cost_tracker_archive_event_reason_check",
+      sql`(${table.action} = 'archive' AND ${table.reason} IS NULL) OR (${table.action} = 'reopen' AND ${table.reason} IS NOT NULL AND length(trim(${table.reason})) > 0)`,
+    ),
+    index("cost_tracker_project_archive_event_project_idx").on(
+      table.projectId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -477,7 +499,7 @@ export const duplicateReviewTasksTable = pgTable(
 // Claim persistence. Monetary values stay strings at the driver boundary: never
 // round exact EUR or percentage values through JavaScript floating point.
 export const claimStatusEnum = pgEnum("claim_status", [
-  "editable",
+  "in_preparation",
   "submitted",
   "correction_requested",
   "approved",
@@ -633,7 +655,7 @@ export const claimsTable = pgTable(
         onDelete: "cascade",
       })
       .unique(),
-    status: claimStatusEnum("status").default("editable").notNull(),
+    status: claimStatusEnum("status").default("in_preparation").notNull(),
     approvedAmountEur: numeric("approved_amount_eur", {
       precision: 14,
       scale: 2,

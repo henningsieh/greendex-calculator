@@ -44,7 +44,7 @@ let robin: string, sam: string, outsider: string, third: string, proof: string;
 const account = SEED_IDS.payoutAccount.submissionPayoutAccount0,
   alternate = SEED_IDS.payoutAccount.submissionPayoutAccount1;
 const scenarioNames = [
-  "editable",
+  "in_preparation",
   "submitted",
   "rejected",
   "approved",
@@ -213,7 +213,7 @@ beforeEach(() => {
   touchedScenarios.clear();
   activeOrg = partner;
   activeActor = actor;
-  useScenario("editable");
+  useScenario("in_preparation");
 });
 afterEach(async () => {
   for (const name of touchedScenarios) await restoreScenario(name);
@@ -493,7 +493,7 @@ describe("Claim authorization matrix", () => {
       "claims.markPaid": "approved",
       "claims.correctPayment": "paid",
     };
-    useScenario(statuses[procedure] ?? "editable");
+    useScenario(statuses[procedure] ?? "in_preparation");
     let entryId = "missing-entry";
     if (expected && procedure === "claims.submit") await prepare("100.00");
     if (procedure === "journeys.update") {
@@ -749,7 +749,7 @@ describe("Claim submission", () => {
     expect(
       (await db.select().from(claims).where(eq(claims.partnershipId, own)))[0]
         .status,
-    ).toBe("editable");
+    ).toBe("in_preparation");
     // Scoped to this Claim: the shared dev database may hold unrelated history.
     expect(
       await db.select().from(history).where(eq(history.claimId, claimId)),
@@ -917,7 +917,7 @@ describe("Claim submission", () => {
     });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
-    ).toBe("editable");
+    ).toBe("in_preparation");
   });
 
   it("pays exact costs below cap and reopens all Partner edits on correction requested", async () => {
@@ -1337,7 +1337,7 @@ describe("Host Claim review", () => {
     });
     await db
       .update(claims)
-      .set({ status: "editable" })
+      .set({ status: "in_preparation" })
       .where(eq(claims.id, claimId));
     activeOrg = partner;
     const submitted = await submit();
@@ -1809,7 +1809,7 @@ describe("Claim competing writes", () => {
         reason: { code: "BAD_REQUEST" },
       });
       expect(saved.status).toBe("fulfilled");
-      expect(claim.status).toBe("editable");
+      expect(claim.status).toBe("in_preparation");
       expect(submittedEvents).toHaveLength(0);
       expect(
         (await client.costs.list({ partnershipId: own })).entries,

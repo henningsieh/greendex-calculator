@@ -24,6 +24,12 @@ export async function ProjectWorkspaceSection({
     if (isPresentationRefusal(error)) return false;
     throw error;
   });
+  const canReopen = await hasCostTrackerPermissions(await headers(), {
+    project: ["reopen"],
+  }).catch((error: unknown) => {
+    if (isPresentationRefusal(error)) return false;
+    throw error;
+  });
   const queryClient = getQueryClient();
   await queryClient
     .query(
@@ -39,6 +45,7 @@ export async function ProjectWorkspaceSection({
       <ProjectDataErrorBoundary resource="this Project">
         <ProjectWorkspace
           canManagePartnerships={canManagePartnerships}
+          canReopen={canReopen}
           projectId={id}
         />
       </ProjectDataErrorBoundary>

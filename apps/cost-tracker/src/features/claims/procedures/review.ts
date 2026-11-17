@@ -145,7 +145,7 @@ export const reviewerAccess = authorized
     }),
   )
   .input(ClaimInputSchema)
-  .output(z.object({ canReview: z.boolean() }))
+  .output(z.object({ canReview: z.boolean(), projectArchived: z.boolean() }))
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
       input.partnershipId,
@@ -153,7 +153,10 @@ export const reviewerAccess = authorized
       context.session.activeOrganizationId,
       errors,
     );
-    return { canReview: scope.hostId === context.session.activeOrganizationId };
+    return {
+      canReview: scope.hostId === context.session.activeOrganizationId,
+      projectArchived: scope.projectArchived,
+    };
   });
 
 /** Hosting-only, read-only snapshot for Claim review; no editable drafts or storage keys leave this boundary. */

@@ -19,14 +19,23 @@ vi.mock("@/features/partnerships/procedures/coordination", () => {
     requirePartnerCoordination: mocks.scope,
   };
 });
-vi.mock("@greendex/database", () => ({
-  db: {
+vi.mock("@/features/projects/procedures/project-lock", () => ({
+  lockActiveProject: vi.fn(),
+}));
+vi.mock("@greendex/database", () => {
+  const tx = {
     update: () => ({
       set: () => ({ where: () => ({ returning: mocks.returning }) }),
     }),
     select: () => ({ from: () => ({ where: () => ({ limit: mocks.limit }) }) }),
-  },
-}));
+  };
+  return {
+    db: {
+      ...tx,
+      transaction: (callback: (tx: unknown) => unknown) => callback(tx),
+    },
+  };
+});
 import { duplicateReviews } from "@/features/participations/procedures/duplicate-reviews";
 
 const client = createRouterClient(duplicateReviews, {

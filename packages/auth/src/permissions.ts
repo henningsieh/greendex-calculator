@@ -14,7 +14,7 @@ export {
 
 const statement = {
   ...defaultStatements,
-  project: ["create", "read", "update", "delete", "archive"],
+  project: ["create", "read", "update", "delete", "archive", "reopen"],
   projectPartnership: ["create", "read", "update", "delete"],
   projectParticipation: ["create", "read", "update", "merge"],
 } as const;
@@ -23,7 +23,7 @@ export const accessControl = createAccessControl(statement);
 
 export const organisationOwner = accessControl.newRole({
   ...ownerAc.statements,
-  project: ["create", "read", "update", "delete", "archive"],
+  project: ["create", "read", "update", "delete", "archive", "reopen"],
   projectPartnership: ["create", "read", "update", "delete"],
   projectParticipation: ["create", "read", "update", "merge"],
 });
@@ -39,6 +39,7 @@ export const legacyCalculatorAdminRole = accessControl.newRole({
 // name is distinct from Calculator's legacy admin meaning, not a new stored role.
 export const organizationAdmin = accessControl.newRole({
   ...legacyCalculatorAdminRole.statements,
+  project: ["create", "read", "update", "archive", "reopen"],
 });
 
 // Assignment-bound Cost Tracker procedures grant coordination. The role alone

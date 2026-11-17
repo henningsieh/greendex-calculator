@@ -112,7 +112,7 @@ function JourneyCorrection({
           onClick={() => setEditing(true)}
           data-testid={`correct-journey-${journey.projectParticipantId}`}
         >
-          {t("journey.correctFor", { name })}
+          {t("journey.correctFor")}
         </Button>
       ) : (
         <form onSubmit={update} noValidate>

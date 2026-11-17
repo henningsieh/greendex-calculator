@@ -50,9 +50,7 @@ export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   });
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
-export const PROJECT_WINDOW_FILTERS = ["all", "open", "closed"] as const;
 export const PROJECT_SORT_MODES = [
-  "operational",
   "start-asc",
   "start-desc",
   "end-asc",
@@ -69,10 +67,9 @@ const ProjectListInputBaseSchema = z
       .max(120)
       .transform((value) => value.toLocaleLowerCase("en"))
       .optional(),
-    window: z.enum(PROJECT_WINDOW_FILTERS).default("all"),
     dateFrom: z.date().optional(),
     dateTo: z.date().optional(),
-    sort: z.enum(PROJECT_SORT_MODES).default("operational"),
+    sort: z.enum(PROJECT_SORT_MODES).default("start-asc"),
     cursor: z.string().min(1).max(2048).optional(),
     pageSize: z.union([
       z.literal(PROJECT_PAGE_SIZES[0]),
@@ -105,12 +102,10 @@ export const ProjectListRowSchema = projectColumns.pick({
   endDate: true,
   location: true,
   country: true,
-  costSubmissionWindowOpen: true,
 });
 
 const ProjectListMetricsSchema = z.object({
   projectCount: z.number().int().nonnegative(),
-  openWindowCount: z.number().int().nonnegative(),
 });
 
 export const HostedProjectListSchema = z.object({
@@ -156,6 +151,10 @@ export const ProjectDetailInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 
+export const ReopenProjectInputSchema = ProjectDetailInputSchema.extend({
+  reason: z.string().trim().min(1).max(2000),
+});
+
 const ProjectDetailBaseSchema = projectColumns
   .pick({
     id: true,
@@ -165,13 +164,8 @@ const ProjectDetailBaseSchema = projectColumns
     location: true,
     country: true,
     archived: true,
-    costSubmissionWindowOpen: true,
-    completedAt: true,
-    completedByUserId: true,
   })
   .extend({
-    // Resolved from the completing User; the raw id is useless on screen.
-    completedByUserName: z.string().nullable(),
     // Headcount of active (non-merged) Project Participations, scoped to
     // what the relationship may see: the whole Project for hosts, the own
     // represented Participants for partners.
@@ -200,6 +194,7 @@ const ProjectPartnershipSummarySchema = z.object({
 export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("hosted"),
+    canArchive: z.boolean(),
     partnerOrganizations: z.array(ProjectPartnershipSummarySchema),
   }),
   ProjectDetailBaseSchema.extend({

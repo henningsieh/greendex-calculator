@@ -87,10 +87,12 @@ describe("Claim drafts and Partnership payout selection", () => {
   it("exposes reviewer access for assigned Hosting coordinators and owners, not Partners or unassigned staff", async () => {
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: false,
+      projectArchived: false,
     });
     activeOrg = host;
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
+      projectArchived: false,
     });
     actor = participant;
     await expect(
@@ -101,6 +103,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     actor = owner;
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
+      projectArchived: false,
     });
   });
   it("reads only Partner payout options and the selected account without creating a Claim", async () => {
@@ -236,7 +239,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       client.claims.saveDraft({ partnershipId: own }),
       client.claims.saveDraft({ partnershipId: own }),
     ]);
-    expect(first).toMatchObject({ partnershipId: own, status: "editable" });
+    expect(first).toMatchObject({ partnershipId: own, status: "in_preparation" });
     expect(second.id).toBe(first.id);
     expect(await client.claims.getDraft({ partnershipId: own })).toMatchObject({
       id: first.id,
@@ -259,7 +262,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
-    expect(draft.status).toBe("editable");
+    expect(draft.status).toBe("in_preparation");
     own = SEED_IDS.partnership.claimsSubmittedSelectedPartnership;
     await expect(
       client.claims.selectPayoutAccount({
@@ -333,7 +336,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       payoutAccountId: account,
     });
     expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject({
-      status: "editable",
+      status: "in_preparation",
     });
   });
 
