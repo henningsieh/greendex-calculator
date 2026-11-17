@@ -9,70 +9,91 @@ import { eq } from "drizzle-orm";
 
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
 
-const id = randomUUID();
 const password = randomUUID();
-const email = `preferences-${id}@example.invalid`;
-let ownerCookieName = "";
+const users = [randomUUID(), randomUUID()].map((id) => ({
+  id,
+  email: `preferences-${id}@example.invalid`,
+}));
+const [first, second] = users;
+if (!first || !second) throw new Error("Two test users are required");
+const ownerCookieName = `project_columns_${createHash("sha256").update(first.id).digest("hex").slice(0, 32)}`;
+let seedOwnerId = "";
 registerPrivateValues(password);
 
-async function switchAccount(page: Page, address: string, secret: string) {
+async function signIn(page: Page, address: string) {
+  await page.goto("/login");
+  await page.getByTestId("email").fill(address);
+  await page.getByTestId("password").fill(password);
+  await page.getByTestId("auth-submit").click();
+  await page.waitForURL(/\/projects/);
+}
+
+async function switchAccount(page: Page, address: string) {
   await page
     .locator('header [data-testid="account-menu-trigger"]:visible')
     .click();
   await page.getByTestId("account-menu-sign-out").click();
   await page.getByTestId("confirm-dialog-execute").click();
   await page.waitForURL(/\/en-GB\/?$/);
-  await page.goto("/login");
-  await page.getByTestId("email").fill(address);
-  await page.getByTestId("password").fill(secret);
-  await page.getByTestId("auth-submit").click();
-  await page.waitForURL(/\/projects/);
+  await signIn(page, address);
 }
 
 test.describe("UI preferences", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test.beforeAll(async () => {
     const [owner] = await db
       .select()
       .from(user)
       .where(eq(user.email, SEED_USER.email));
     if (!owner) throw new Error("Seed owner is missing");
-    ownerCookieName = `project_columns_${createHash("sha256").update(owner.id).digest("hex").slice(0, 32)}`;
+    seedOwnerId = owner.id;
     const [membership] = await db
       .select()
       .from(member)
       .where(eq(member.userId, owner.id));
     if (!membership) throw new Error("Seed membership is missing");
-    await db
-      .insert(user)
-      .values({ id, name: "Preference test user", email, emailVerified: true });
-    await db.insert(account).values({
-      id: randomUUID(),
-      accountId: id,
-      userId: id,
-      providerId: "credential",
-      password: await hashPassword(password),
-    });
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: id,
-      organizationId: membership.organizationId,
-      role: membership.role,
-      createdAt: new Date(),
-    });
+    const hashedPassword = await hashPassword(password);
+    for (const testUser of users) {
+      await db.insert(user).values({
+        ...testUser,
+        name: "Preference test user",
+        emailVerified: true,
+      });
+      await db.insert(account).values({
+        id: randomUUID(),
+        accountId: testUser.id,
+        userId: testUser.id,
+        providerId: "credential",
+        password: hashedPassword,
+      });
+      await db.insert(member).values({
+        id: randomUUID(),
+        userId: testUser.id,
+        organizationId: membership.organizationId,
+        role: membership.role,
+        createdAt: new Date(),
+      });
+    }
   });
 
   test.afterAll(async () => {
-    await db.delete(session).where(eq(session.userId, id));
-    await db.delete(member).where(eq(member.userId, id));
-    await db.delete(user).where(eq(user.id, id));
+    for (const testUser of users) {
+      await db.delete(session).where(eq(session.userId, testUser.id));
+      await db.delete(member).where(eq(member.userId, testUser.id));
+      await db.delete(account).where(eq(account.userId, testUser.id));
+      await db.delete(user).where(eq(user.id, testUser.id));
+    }
   });
 
   test("restores separate account views, sidebar, reset and invalid preferences", async ({
     page,
     context,
     baseURL,
+    browser,
   }) => {
     if (!baseURL) throw new Error("Missing base URL");
+    await signIn(page, first.email);
     await context.addCookies([
       { name: "sidebar_state", value: "false", url: baseURL },
     ]);
@@ -114,7 +135,7 @@ test.describe("UI preferences", () => {
       page.getByTestId("project-column-toggle-location"),
     ).not.toBeChecked();
 
-    await switchAccount(page, email, password);
+    await switchAccount(page, second.email);
     await page.goto("/projects");
     await expect(
       page.getByTestId("project-column-toggle-location"),
@@ -124,7 +145,7 @@ test.describe("UI preferences", () => {
     await expect(
       page.getByTestId("project-column-toggle-startDate"),
     ).not.toBeChecked();
-    await switchAccount(page, SEED_USER.email, SEED_USER.password);
+    await switchAccount(page, first.email);
     await page.goto("/projects");
     await expect(
       page.getByTestId("project-column-toggle-location"),
@@ -137,12 +158,12 @@ test.describe("UI preferences", () => {
     await expect(
       page.getByTestId("project-column-toggle-location"),
     ).toBeChecked();
-    await switchAccount(page, email, password);
+    await switchAccount(page, second.email);
     await page.goto("/projects");
     await expect(
       page.getByTestId("project-column-toggle-startDate"),
     ).not.toBeChecked();
-    await switchAccount(page, SEED_USER.email, SEED_USER.password);
+    await switchAccount(page, first.email);
     await page.goto("/projects");
     await page.getByTestId("project-column-toggle-location").uncheck();
     await context.addCookies([
@@ -189,5 +210,18 @@ test.describe("UI preferences", () => {
     await expect(page.getByTestId("project-column-header-location")).toHaveCount(
       0,
     );
+    const sharedContext = await browser.newContext({
+      baseURL,
+      storageState:
+        process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+        "src/__tests__/e2e/.auth/storage-state.json",
+    });
+    try {
+      const response = await sharedContext.request.get("/api/auth/get-session");
+      expect(response.ok()).toBe(true);
+      expect((await response.json()).user.id).toBe(seedOwnerId);
+    } finally {
+      await sharedContext.close();
+    }
   });
 });
