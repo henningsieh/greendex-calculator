@@ -50,6 +50,8 @@ export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   });
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
+export const PROJECT_ARCHIVE_FILTERS = ["active", "archived", "all"] as const;
+export const PROJECT_SETTLEMENT_FILTERS = ["all", "open", "ready"] as const;
 export const PROJECT_SORT_MODES = [
   "start-asc",
   "start-desc",
@@ -69,6 +71,8 @@ const ProjectListInputBaseSchema = z
       .optional(),
     dateFrom: z.date().optional(),
     dateTo: z.date().optional(),
+    archive: z.enum(PROJECT_ARCHIVE_FILTERS).default("active"),
+    settlement: z.enum(PROJECT_SETTLEMENT_FILTERS).default("all"),
     sort: z.enum(PROJECT_SORT_MODES).default("start-asc"),
     cursor: z.string().min(1).max(2048).optional(),
     pageSize: z.union([

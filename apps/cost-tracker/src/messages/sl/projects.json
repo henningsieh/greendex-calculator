@@ -20,6 +20,14 @@
     },
     "list": {
       "label": "Project list",
+      "archiveFilter": "Stanje arhiviranja",
+      "archive": { "active": "Aktiven", "archived": "Arhiviran", "all": "Vsi" },
+      "settlementFilter": "Poravnava",
+      "settlement": {
+        "all": "Vsi",
+        "open": "Odprta poravnava",
+        "ready": "Pripravljeno za arhiviranje"
+      },
       "emptyTitle": "No Projects available",
       "emptyDescription": "No Projects are hosted by or assigned to your active Organization.",
       "relationship": "Project relationship",

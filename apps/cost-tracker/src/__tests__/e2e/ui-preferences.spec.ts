@@ -2,7 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
-import { account, member, session, user } from "@greendex/database/schema";
+import {
+  account,
+  member,
+  projectsTable,
+  session,
+  user,
+} from "@greendex/database/schema";
 import type { Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
@@ -10,6 +16,7 @@ import { eq } from "drizzle-orm";
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
 
 const password = randomUUID();
+const archivedProjectId = randomUUID();
 const users = [randomUUID(), randomUUID()].map((id) => ({
   id,
   email: `preferences-${id}@example.invalid`,
@@ -53,6 +60,16 @@ test.describe("UI preferences", () => {
       .from(member)
       .where(eq(member.userId, owner.id));
     if (!membership) throw new Error("Seed membership is missing");
+    await db.insert(projectsTable).values({
+      id: archivedProjectId,
+      name: `Preferences archived ${archivedProjectId}`,
+      organizationId: membership.organizationId,
+      startDate: new Date("2024-01-01T00:00:00.000Z"),
+      endDate: new Date("2024-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE",
+      costTrackerArchived: true,
+    });
     const hashedPassword = await hashPassword(password);
     for (const testUser of users) {
       await db.insert(user).values({
@@ -78,6 +95,7 @@ test.describe("UI preferences", () => {
   });
 
   test.afterAll(async () => {
+    await db.delete(projectsTable).where(eq(projectsTable.id, archivedProjectId));
     for (const testUser of users) {
       await db.delete(session).where(eq(session.userId, testUser.id));
       await db.delete(member).where(eq(member.userId, testUser.id));
@@ -94,6 +112,25 @@ test.describe("UI preferences", () => {
   }) => {
     if (!baseURL) throw new Error("Missing base URL");
     await signIn(page, first.email);
+    await page.goto(`/projects?scope=hosted&search=${archivedProjectId}`);
+    await expect(
+      page.getByTestId(`project-link-${archivedProjectId}`),
+    ).toHaveCount(0);
+    await page.getByTestId("project-archive-filter").click();
+    await page.getByTestId("project-archive-archived").click();
+    await expect(
+      page.getByTestId(`project-link-${archivedProjectId}`),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/archive=archived/);
+    await page.reload();
+    await expect(
+      page.getByTestId(`project-link-${archivedProjectId}`),
+    ).toBeVisible();
+    await page.getByTestId("project-settlement-filter").click();
+    await page.getByTestId("project-settlement-ready").click();
+    await expect(
+      page.getByTestId(`project-link-${archivedProjectId}`),
+    ).toHaveCount(0);
     await context.addCookies([
       { name: "sidebar_state", value: "false", url: baseURL },
     ]);

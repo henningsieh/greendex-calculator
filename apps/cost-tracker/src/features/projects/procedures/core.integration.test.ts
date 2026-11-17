@@ -138,6 +138,46 @@ describe("projects procedures", () => {
       }
       useScenario("empty");
     });
+
+    it("intersects archive and settlement filters over missing, mixed and settled Claims", async () => {
+      useScenario("terminal");
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: true })
+        .where(eq(projectsTable.id, projectId));
+      const archivedId = projectId;
+      const emptyId = readinessProjectIds[0]!;
+      await db.delete(partnerships).where(eq(partnerships.projectId, emptyId));
+      const mixedId = readinessProjectIds[1]!;
+      const missingId = readinessProjectIds[2]!;
+      const open = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "all",
+        settlement: "open",
+      });
+      const ready = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "all",
+        settlement: "ready",
+      });
+      const archived = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "archived",
+      });
+      const contradictory = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "archived",
+        settlement: "ready",
+      });
+      expect(open.rows.map((row) => row.id)).toEqual(
+        expect.arrayContaining([mixedId, missingId]),
+      );
+      expect(ready.rows.map((row) => row.id)).toContain(emptyId);
+      expect(ready.rows.map((row) => row.id)).not.toContain(archivedId);
+      expect(archived.rows.map((row) => row.id)).toContain(archivedId);
+      expect(contradictory.rows).toEqual([]);
+      expect(contradictory.metrics.filtered.projectCount).toBe(0);
+    });
     afterEach(async () => {
       for (const id of readinessProjectIds)
         await db.delete(projectsTable).where(eq(projectsTable.id, id));

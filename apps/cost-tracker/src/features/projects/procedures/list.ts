@@ -3,6 +3,7 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { db } from "@greendex/database";
 import {
+  claimsTable,
   member,
   organization,
   projectPartnerOrganizationsTable,
@@ -21,6 +22,7 @@ import {
   inArray,
   lt,
   lte,
+  notExists,
   or,
   sql,
   type SQL,
@@ -62,6 +64,40 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
   }
   if (input.dateFrom) filters.push(gte(projectsTable.endDate, input.dateFrom));
   if (input.dateTo) filters.push(lte(projectsTable.startDate, input.dateTo));
+
+  if (input.archive !== "all") {
+    filters.push(
+      eq(projectsTable.costTrackerArchived, input.archive === "archived"),
+    );
+  }
+  if (input.settlement !== "all") {
+    const blockers = db
+      .select({ id: projectPartnerOrganizationsTable.id })
+      .from(projectPartnerOrganizationsTable)
+      .where(
+        and(
+          eq(projectPartnerOrganizationsTable.projectId, projectsTable.id),
+          notExists(
+            db
+              .select({ id: claimsTable.id })
+              .from(claimsTable)
+              .where(
+                and(
+                  eq(
+                    claimsTable.partnershipId,
+                    projectPartnerOrganizationsTable.id,
+                  ),
+                  inArray(claimsTable.status, ["paid", "rejected"]),
+                ),
+              ),
+          ),
+        ),
+      );
+    filters.push(eq(projectsTable.costTrackerArchived, false));
+    filters.push(
+      input.settlement === "open" ? exists(blockers) : notExists(blockers),
+    );
+  }
 
   return filters;
 }
@@ -203,10 +239,7 @@ function mapHostedProjectMetrics(
 export function getHostedProjectScopeFilters(
   activeOrganizationId: string,
 ): SQL[] {
-  return [
-    eq(projectsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.costTrackerArchived, false),
-  ];
+  return [eq(projectsTable.organizationId, activeOrganizationId)];
 }
 
 export function getPartnerProjectScopeFilters(
@@ -214,7 +247,6 @@ export function getPartnerProjectScopeFilters(
 ): SQL[] {
   return [
     eq(projectPartnerOrganizationsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.costTrackerArchived, false),
   ];
 }
 

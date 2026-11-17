@@ -13,13 +13,21 @@ import type {
   PartnerProjectList,
 } from "@/features/projects/types";
 import {
+  PROJECT_ARCHIVE_FILTERS,
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
+  PROJECT_SETTLEMENT_FILTERS,
   PROJECT_SORT_MODES,
 } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
-export { PROJECT_LIST_SCOPES, PROJECT_PAGE_SIZES, PROJECT_SORT_MODES };
+export {
+  PROJECT_ARCHIVE_FILTERS,
+  PROJECT_LIST_SCOPES,
+  PROJECT_PAGE_SIZES,
+  PROJECT_SETTLEMENT_FILTERS,
+  PROJECT_SORT_MODES,
+};
 
 const MAX_PARTNER_FILTERS = 20;
 const MINIMUM_SEARCH_LENGTH = 3;
@@ -29,6 +37,8 @@ export const projectListParsers = {
   search: parseAsString.withDefault(""),
   dateFrom: parseAsIsoDate,
   dateTo: parseAsIsoDate,
+  archive: parseAsStringLiteral(PROJECT_ARCHIVE_FILTERS).withDefault("active"),
+  settlement: parseAsStringLiteral(PROJECT_SETTLEMENT_FILTERS).withDefault("all"),
   partnerOrganizationIds: parseAsNativeArrayOf(parseAsString),
   sort: parseAsStringLiteral(PROJECT_SORT_MODES).withDefault("start-asc"),
   cursor: parseAsString.withDefault(""),
@@ -55,6 +65,8 @@ export type ProjectListState = {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  archive: (typeof PROJECT_ARCHIVE_FILTERS)[number];
+  settlement: (typeof PROJECT_SETTLEMENT_FILTERS)[number];
   partnerOrganizationIds: string[];
   sort: (typeof PROJECT_SORT_MODES)[number];
   cursor?: string;
@@ -83,6 +95,8 @@ export function normalizeProjectListState(
         : undefined,
     dateFrom: hasValidDateRange && state.dateFrom ? state.dateFrom : undefined,
     dateTo: hasValidDateRange && state.dateTo ? state.dateTo : undefined,
+    archive: state.archive,
+    settlement: state.settlement,
     partnerOrganizationIds: [...new Set(state.partnerOrganizationIds)]
       .filter(Boolean)
       .sort()
@@ -157,6 +171,8 @@ export function getProjectListQueryOptions(
     search: state.search,
     dateFrom: state.dateFrom,
     dateTo: state.dateTo,
+    archive: state.archive,
+    settlement: state.settlement,
     sort: state.sort,
     cursor: state.cursor,
     pageSize: state.pageSize,

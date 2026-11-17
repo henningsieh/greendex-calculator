@@ -21,7 +21,9 @@ import {
   type ProjectListQueryState,
 } from "@/features/projects/components/project-list-filtering";
 import {
+  PROJECT_ARCHIVE_FILTERS,
   PROJECT_PAGE_SIZES,
+  PROJECT_SETTLEMENT_FILTERS,
   PROJECT_SORT_MODES,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
@@ -73,6 +75,76 @@ export function ProjectListFilters({
 
   return (
     <div className="grid gap-5 rounded-xl border p-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="space-y-2">
+        <Label htmlFor="project-archive">{t("archiveFilter")}</Label>
+        <Select
+          items={PROJECT_ARCHIVE_FILTERS.map((value) => ({
+            value,
+            label: t(`archive.${value}`),
+          }))}
+          value={state.archive}
+          onValueChange={(value) => {
+            const archive = PROJECT_ARCHIVE_FILTERS.find(
+              (item) => item === value,
+            );
+            if (archive) void setUrlState({ archive, cursor: null });
+          }}
+        >
+          <SelectTrigger
+            id="project-archive"
+            data-testid="project-archive-filter"
+            className="w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PROJECT_ARCHIVE_FILTERS.map((value) => (
+              <SelectItem
+                key={value}
+                value={value}
+                data-testid={`project-archive-${value}`}
+              >
+                {t(`archive.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="project-settlement">{t("settlementFilter")}</Label>
+        <Select
+          items={PROJECT_SETTLEMENT_FILTERS.map((value) => ({
+            value,
+            label: t(`settlement.${value}`),
+          }))}
+          value={state.settlement}
+          onValueChange={(value) => {
+            const settlement = PROJECT_SETTLEMENT_FILTERS.find(
+              (item) => item === value,
+            );
+            if (settlement) void setUrlState({ settlement, cursor: null });
+          }}
+        >
+          <SelectTrigger
+            id="project-settlement"
+            data-testid="project-settlement-filter"
+            className="w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PROJECT_SETTLEMENT_FILTERS.map((value) => (
+              <SelectItem
+                key={value}
+                value={value}
+                data-testid={`project-settlement-${value}`}
+              >
+                {t(`settlement.${value}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="project-search">{t("name")}</Label>
         <div className="relative">

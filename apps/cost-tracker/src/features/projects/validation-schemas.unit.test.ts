@@ -81,6 +81,8 @@ describe("Project list input", () => {
   it("applies list defaults without requiring optional filters", () => {
     expect(PartnerProjectListInputSchema.parse({ pageSize: 25 })).toEqual({
       sort: "start-asc",
+      archive: "active",
+      settlement: "all",
       pageSize: 25,
     });
   });

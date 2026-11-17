@@ -23,6 +23,8 @@ export function getProjectListFingerprint(input: {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  archive?: "active" | "archived" | "all";
+  settlement?: "all" | "open" | "ready";
   sort: (typeof PROJECT_SORT_MODES)[number];
   pageSize: 25 | 50 | 100;
   partnerOrganizationIds?: string[];
@@ -34,6 +36,8 @@ export function getProjectListFingerprint(input: {
         search: input.search,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString(),
+        archive: input.archive ?? "active",
+        settlement: input.settlement ?? "all",
         sort: input.sort,
         pageSize: input.pageSize,
         partnerOrganizationIds: [...(input.partnerOrganizationIds ?? [])].sort(),

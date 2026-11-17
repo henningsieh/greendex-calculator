@@ -20,6 +20,14 @@
     },
     "list": {
       "label": "Project list",
+      "archiveFilter": "Stato di archiviazione",
+      "archive": { "active": "Attivo", "archived": "Archiviato", "all": "Tutti" },
+      "settlementFilter": "Liquidazione",
+      "settlement": {
+        "all": "Tutti",
+        "open": "Liquidazione aperta",
+        "ready": "Pronto per l’archiviazione"
+      },
       "emptyTitle": "No Projects available",
       "emptyDescription": "No Projects are hosted by or assigned to your active Organization.",
       "relationship": "Project relationship",

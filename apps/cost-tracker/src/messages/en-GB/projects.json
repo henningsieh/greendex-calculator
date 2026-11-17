@@ -20,6 +20,14 @@
     },
     "list": {
       "label": "Project list",
+      "archiveFilter": "Archive status",
+      "archive": { "active": "Active", "archived": "Archived", "all": "All" },
+      "settlementFilter": "Settlement",
+      "settlement": {
+        "all": "All",
+        "open": "Settlement open",
+        "ready": "Ready to archive"
+      },
       "emptyTitle": "No Projects available",
       "emptyDescription": "No Projects are hosted by or assigned to your active Organization.",
       "relationship": "Project relationship",

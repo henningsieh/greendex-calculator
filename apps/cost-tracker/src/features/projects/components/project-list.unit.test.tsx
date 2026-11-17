@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
     search: "",
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
+    archive: "active" as const,
+    settlement: "all" as const,
     partnerOrganizationIds: [] as string[],
     sort: "start-asc" as const,
     cursor: "",

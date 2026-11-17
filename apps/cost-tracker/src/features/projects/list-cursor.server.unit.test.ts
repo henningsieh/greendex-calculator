@@ -47,6 +47,21 @@ describe("project list cursor", () => {
     ).toBe(getProjectListFingerprint(fingerprintInput));
   });
 
+  it("rejects a cursor after either aggregate filter changes", () => {
+    const fingerprint = getProjectListFingerprint(fingerprintInput);
+    const encoded = encodeProjectListCursor(buildCursor(fingerprint));
+    const archived = getProjectListFingerprint({
+      ...fingerprintInput,
+      archive: "archived",
+    });
+    const ready = getProjectListFingerprint({
+      ...fingerprintInput,
+      settlement: "ready",
+    });
+    expect(decodeProjectListCursor(encoded, archived).status).toBe("invalid");
+    expect(decodeProjectListCursor(encoded, ready).status).toBe("invalid");
+  });
+
   it("round-trips a cursor sealed with the same fingerprint", () => {
     const fingerprint = getProjectListFingerprint(fingerprintInput);
     const cursor = buildCursor(fingerprint);
