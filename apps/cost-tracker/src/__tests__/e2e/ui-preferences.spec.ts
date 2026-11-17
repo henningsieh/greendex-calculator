@@ -140,6 +140,18 @@ test.describe("UI preferences", () => {
     await expect(
       page.getByTestId("project-column-toggle-location"),
     ).toBeChecked();
+    await expect(
+      page.getByTestId("project-column-header-startDate"),
+    ).toBeVisible();
+    await expect(page.getByTestId("project-column-header-endDate")).toBeVisible();
+    await page.getByTestId("project-column-toggle-endDate").uncheck();
+    await page.reload();
+    await expect(page.getByTestId("project-column-header-endDate")).toHaveCount(
+      0,
+    );
+    await expect(
+      page.getByTestId("project-column-toggle-endDate"),
+    ).not.toBeChecked();
     await page.getByTestId("project-column-toggle-startDate").uncheck();
     await page.reload();
     await expect(
@@ -153,6 +165,7 @@ test.describe("UI preferences", () => {
     await expect(
       page.getByTestId("project-column-toggle-startDate"),
     ).toBeChecked();
+    await expect(page.getByTestId("project-column-toggle-endDate")).toBeChecked();
     await page.getByTestId("project-columns-reset").click();
     await page.reload();
     await expect(

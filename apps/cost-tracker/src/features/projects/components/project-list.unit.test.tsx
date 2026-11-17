@@ -146,7 +146,8 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(counts).toHaveAttribute("data-project-count", "3");
     expect(counts).toHaveAttribute("data-filtered-project-count", "1");
     expect(screen.queryByTestId("project-window-project-1")).toBeNull();
-    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(screen.getByTestId("project-column-header-startDate")).toBeVisible();
+    expect(screen.getByTestId("project-column-header-endDate")).toBeVisible();
   });
 
   it("offers the Hosting Participant view beside the details destination", async () => {
@@ -289,6 +290,11 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
       sort: "start-desc",
+    });
+    fireEvent.click(screen.getByTestId("sort-project-end"));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: "end-asc",
     });
 
     fireEvent.change(screen.getByTestId("project-search"), {

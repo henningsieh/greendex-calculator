@@ -186,16 +186,31 @@ export function ResolvedProjectListResults({
               type="button"
               variant="ghost"
             >
-              {t("schedule")}
+              {t("startDate")}
             </Button>
           );
         },
         cell: ({ row }) =>
-          dateFormat.range(
-            row.original.startDate,
-            row.original.endDate,
-            "date.medium",
-          ),
+          dateFormat.format(row.original.startDate, "date.medium"),
+      },
+      {
+        accessorKey: "endDate",
+        header: ({ column }) => {
+          const sortDirection = column.getIsSorted();
+          return (
+            <Button
+              aria-label={t("sortByEndDate")}
+              data-testid="sort-project-end"
+              onClick={() => column.toggleSorting(sortDirection === "asc")}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {t("endDate")}
+            </Button>
+          );
+        },
+        cell: ({ row }) => dateFormat.format(row.original.endDate, "date.medium"),
       },
       {
         id: "location",
@@ -369,10 +384,12 @@ export function ResolvedProjectListResults({
                 onChange={column.getToggleVisibilityHandler()}
               />
               {column.id === "startDate"
-                ? t("schedule")
-                : column.id === "location"
-                  ? t("location")
-                  : t("participants")}
+                ? t("startDate")
+                : column.id === "endDate"
+                  ? t("endDate")
+                  : column.id === "location"
+                    ? t("location")
+                    : t("participants")}
             </label>
           ))}
         <Button
