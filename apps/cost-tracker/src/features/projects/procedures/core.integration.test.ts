@@ -15,7 +15,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient, ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -400,6 +400,54 @@ describe("projects procedures", () => {
     afterEach(async () => {
       for (const id of readinessProjectIds)
         await db.delete(projectsTable).where(eq(projectsTable.id, id));
+    });
+
+    it("returns the locked archived state when a Hosted detail waits for an archive", async () => {
+      actor = SEED_IDS.user.projectsUser4;
+      useSession(host);
+      let release!: () => void;
+      let locked!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const held = new Promise<void>((resolve) => {
+        locked = resolve;
+      });
+      const blocker = db.transaction(async (tx) => {
+        await tx
+          .update(projectsTable)
+          .set({ costTrackerArchived: true })
+          .where(eq(projectsTable.id, projectId));
+        locked();
+        await gate;
+      });
+      await held;
+      const detail = client.projects.get({ projectId });
+      try {
+        let waiting = false;
+        for (let i = 0; i < 100; i++) {
+          const result = await db.execute(
+            sql`select exists(select 1 from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query ilike '%for share%' and query ilike '%project%') as waiting`,
+          );
+          if (result.rows[0].waiting) {
+            waiting = true;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        expect(waiting).toBe(true);
+      } finally {
+        release();
+        await blocker;
+      }
+      expect(await detail).toMatchObject({
+        relationship: "hosted",
+        archived: true,
+        canReopen: true,
+      });
+      await expect(
+        client.projects.reopen({ projectId, reason: "Correct state" }),
+      ).resolves.toEqual({ projectId, archived: false });
     });
 
     it("derives each Partnership's Claim state without mixing Projects or exposing other Partners", async () => {

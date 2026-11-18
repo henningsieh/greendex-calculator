@@ -20,6 +20,8 @@ const requestHeaders = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: requestHeaders.get }));
 
 import { auth } from "@/lib/better-auth";
+import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
+import { openapiHandler } from "@/lib/orpc/openapi-handler";
 import { router } from "@/lib/orpc/router";
 
 /**
@@ -243,6 +245,62 @@ async function lifecycleProject() {
   return id;
 }
 
+it("validates both REST lifecycle bodies before invoking the real procedures", async () => {
+  const id = await lifecycleProject();
+  useHeaders(await signInSession(ownerUserId));
+  for (const action of ["archive", "reopen"] as const) {
+    for (const body of [
+      "false",
+      "null",
+      "[]",
+      '{"id":"other"}',
+      '{"reason":"extra"}',
+    ]) {
+      const { response } = await openapiHandler.handle(
+        new Request(`http://localhost/api/openapi/projects/${id}/${action}`, {
+          method: "PATCH",
+          headers: new Headers([
+            ...headers,
+            ["content-type", "application/json"],
+          ]),
+          body,
+        }),
+        { prefix: "/api/openapi", context: { headers } },
+      );
+      expect(response?.status).toBe(400);
+    }
+    const { response } = await openapiHandler.handle(
+      new Request(`http://localhost/api/openapi/projects/${id}/${action}`, {
+        method: "PATCH",
+        headers,
+      }),
+      { prefix: "/api/openapi", context: { headers } },
+    );
+    expect(response?.status).toBe(200);
+    expect(await response?.json()).toMatchObject({
+      project: { archived: action === "archive" },
+    });
+  }
+});
+
+it("documents both real REST lifecycle operations with optional strict bodies", async () => {
+  const spec = await generateOpenAPISpec({
+    info: { title: "Test", version: "1" },
+  });
+  for (const action of ["archive", "reopen"] as const) {
+    expect(
+      spec.paths?.[`/projects/{id}/${action}`]?.patch?.requestBody,
+    ).toMatchObject({
+      required: false,
+      content: {
+        "application/json": {
+          schema: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+    });
+  }
+});
+
 it.each(lifecycleCases)(
   "preserves Calculator $role assigned=$assigned lifecycle authority",
   async ({ role, assigned, allowed }) => {
@@ -329,9 +387,8 @@ it.each(["owner", "admin"])(
       const before = await client.projects.list({});
       const beforeReads = reads.mock.calls.length;
       reads.mockClear();
-      const extraIds = await Promise.all(
-        Array.from({ length: 4 }, () => lifecycleProject()),
-      );
+      const extraIds = [];
+      for (let i = 0; i < 4; i++) extraIds.push(await lifecycleProject());
       reads.mockClear();
       const after = await client.projects.list({});
       const afterReads = reads.mock.calls.length;
@@ -436,12 +493,25 @@ it("reevaluates Calculator Membership, assignment, tenant and actor context on e
     .insert(partnerCoordinatorAssignmentsTable)
     .values({ partnershipId, userId: actorId });
   await db
-    .update(member)
-    .set({ role: "coordinator" })
+    .delete(hostProjectAssignmentsTable)
     .where(
-      and(eq(member.organizationId, partnerOrgId), eq(member.userId, actorId)),
+      and(
+        eq(hostProjectAssignmentsTable.projectId, id),
+        eq(hostProjectAssignmentsTable.userId, actorId),
+      ),
     );
+  await db.insert(member).values({
+    id: randomUUID(),
+    organizationId: seedOrgId,
+    userId: actorId,
+    role: "admin",
+    createdAt: new Date(),
+  });
+  useHeaders(await signInSession(actorId, seedOrgId));
   await expect(client.projects.reopen({ id })).rejects.toMatchObject({
+    code: "FORBIDDEN",
+  });
+  await expect(client.projects.archive({ id })).rejects.toMatchObject({
     code: "FORBIDDEN",
   });
   useHeaders(await signInSession(actorId, null));

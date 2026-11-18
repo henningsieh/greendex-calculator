@@ -52,16 +52,18 @@ describe("central Project lifecycle grants and scopes", () => {
         costTrackerProjectLifecycle: ["reopen"],
       }).success,
     ).toBe(tr !== undefined);
-    expect(
-      calculatorOrganizationRoles[role].authorize({
-        costTrackerProjectLifecycle: ["archive", "reopen"],
-      }).success,
-    ).toBe(false);
-    expect(
-      costTrackerOrganizationRoles[role].authorize({
-        calculatorProjectLifecycle: ["archive", "reopen"],
-      }).success,
-    ).toBe(false);
+    for (const action of ["archive", "reopen"] as const) {
+      expect(
+        calculatorOrganizationRoles[role].authorize({
+          costTrackerProjectLifecycle: [action],
+        }).success,
+      ).toBe(false);
+      expect(
+        costTrackerOrganizationRoles[role].authorize({
+          calculatorProjectLifecycle: [action],
+        }).success,
+      ).toBe(false);
+    }
     expect(calculatorOrganizationRoles[role].statements.project).not.toContain(
       "archive",
     );

@@ -40,6 +40,16 @@ export const archiveProject = authorized
   .handler(async ({ input, context, errors }) => {
     const organizationId = context.session.activeOrganizationId;
     if (!organizationId) throw createSituationErrors(errors).selectOrganization();
+    requireLifecycleDecision(
+      await authorizeCostTrackerProjectLifecycle({
+        executor: db,
+        projectId: input.projectId,
+        actorId: context.user.id,
+        activeOrganizationId: organizationId,
+        action: "archive",
+      }),
+      errors,
+    );
     return db.transaction(async (tx) => {
       const [project] = await tx
         .select({ id: projects.id, archived: projects.costTrackerArchived })
@@ -98,6 +108,16 @@ export const reopenProject = authorized
   .handler(async ({ input, context, errors }) => {
     const organizationId = context.session.activeOrganizationId;
     if (!organizationId) throw createSituationErrors(errors).selectOrganization();
+    requireLifecycleDecision(
+      await authorizeCostTrackerProjectLifecycle({
+        executor: db,
+        projectId: input.projectId,
+        actorId: context.user.id,
+        activeOrganizationId: organizationId,
+        action: "reopen",
+      }),
+      errors,
+    );
     return db.transaction(async (tx) => {
       const [project] = await tx
         .select({ id: projects.id, archived: projects.costTrackerArchived })

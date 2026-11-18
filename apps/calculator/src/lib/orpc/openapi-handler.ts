@@ -1,11 +1,15 @@
+import { getOpenAPIMeta, OpenAPISerializer } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError } from "@orpc/server";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
 
+import { LifecycleRestBodySchema } from "@/features/projects/validation-schemas";
 import { ERROR_STATUS_MAP, getErrorStatus } from "@/lib/orpc/error-status";
 import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 import { router } from "@/lib/orpc/router";
+
+const serializer = new OpenAPISerializer();
 
 /**
  * Centralized OpenAPI handler used by both `/api/openapi` and `/api/docs`.
@@ -45,6 +49,28 @@ export const openapiHandler = new OpenAPIHandler(router, {
     }),
   ],
   interceptors: [
+    async ({ procedure, request, next }) => {
+      const route = getOpenAPIMeta(procedure);
+      if (
+        route?.method === "PATCH" &&
+        (route.path === "/projects/{id}/archive" ||
+          route.path === "/projects/{id}/reopen")
+      ) {
+        let body: unknown;
+        try {
+          body = await request.resolveBody();
+        } catch (error) {
+          throw new ORPCError("BAD_REQUEST", { cause: error });
+        }
+        if (
+          !LifecycleRestBodySchema.safeParse(serializer.deserialize(body)).success
+        ) {
+          throw new ORPCError("BAD_REQUEST");
+        }
+        request.resolveBody = async () => body;
+      }
+      return next();
+    },
     onError((error) => {
       const isParsingError = error instanceof SyntaxError;
       const isClientError =

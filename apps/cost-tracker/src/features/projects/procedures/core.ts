@@ -379,7 +379,10 @@ export const getProject = authorized
 
     const hostedDetail = await db.transaction(async (transaction) => {
       const [hostedProject] = await transaction
-        .select({ id: projectsTable.id })
+        .select({
+          id: projectsTable.id,
+          archived: projectsTable.costTrackerArchived,
+        })
         .from(projectsTable)
         .where(
           and(
@@ -431,6 +434,7 @@ export const getProject = authorized
         actions: ["archive", "reopen"],
       });
       return {
+        archived: hostedProject.archived,
         partnerOrganizations,
         canArchive:
           decisions.get(hostedProject.id)?.get("archive")?.allowed === true,

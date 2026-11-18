@@ -504,7 +504,10 @@ function lifecycleCommand(action: ProjectLifecyclePermission) {
         );
 
       const project = await db.query.projectsTable.findFirst({
-        where: eq(projectsTable.id, input.id),
+        where: and(
+          eq(projectsTable.id, input.id),
+          eq(projectsTable.organizationId, context.session.activeOrganizationId),
+        ),
         with: {
           hostAssignments: { with: { user: true } },
           organization: true,

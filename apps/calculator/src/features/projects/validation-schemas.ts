@@ -92,6 +92,7 @@ export const UpdateProjectInputSchema = ProjectIdInputSchema.extend({
 
 export const ArchiveProjectInputSchema = ProjectIdInputSchema.strict();
 export const ReopenProjectInputSchema = ProjectIdInputSchema.strict();
+export const LifecycleRestBodySchema = z.object({}).strict().optional();
 
 export const SetActiveProjectInputSchema = z.object({
   projectId: projectId.optional(),

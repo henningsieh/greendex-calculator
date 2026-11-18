@@ -38,6 +38,10 @@ export function AssignOrganizationDialog({
   organizations,
   projectId,
   organizationId,
+  tone = "primary",
+  open: controlledOpen,
+  onOpenChange,
+  showTrigger = true,
 }: {
   projects: readonly HostedProjectOption[];
   organizations: readonly OrganizationOption[];
@@ -45,10 +49,19 @@ export function AssignOrganizationDialog({
   projectId?: Values["projectId"];
   /** Preselect the Partner Organization when the dialog was opened in context. */
   organizationId?: Values["organizationId"];
+  /** Secondary card contexts shrink the opener so the card's action stays primary. */
+  tone?: "primary" | "secondary";
+  /** Controlled mode: the caller (e.g. an overflow menu item) opens the dialog. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in trigger when the caller opens the dialog itself. */
+  showTrigger?: boolean;
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [error, setError] = useState<React.ReactNode>(null);
   const form = useForm<Values>({
     resolver: zodResolver(AssignProjectPartnershipInputSchema),
@@ -93,13 +106,21 @@ export function AssignOrganizationDialog({
       }}
       open={open}
     >
-      <DialogTrigger
-        data-testid="assign-organization"
-        render={<Button type="button" variant="outline" />}
-      >
-        <LinkIcon aria-hidden="true" />
-        {t("manager.assignExisting")}
-      </DialogTrigger>
+      {showTrigger ? (
+        <DialogTrigger
+          data-testid="assign-organization"
+          render={
+            <Button
+              type="button"
+              size={tone === "secondary" ? "sm" : "default"}
+              variant="outline"
+            />
+          }
+        >
+          <LinkIcon aria-hidden="true" />
+          {t("manager.assignExisting")}…
+        </DialogTrigger>
+      ) : null}
       <DialogContent
         data-testid="organization-assignment"
         className="sm:max-w-lg"

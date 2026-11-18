@@ -8,6 +8,8 @@ Cost Tracker extends the shared [Project model](../../../../docs/projects/model.
 
 `costTrackerProjectLifecycle.archive` permits active Hosting Organization Owners and Admins, and explicitly assigned Hosting-side Project Coordinators. `costTrackerProjectLifecycle.reopen` permits only Hosting Organization Owners and Admins. Participant-only and Partner-side authority never suffice. Generic Project CRUD grants contain no lifecycle actions.
 
+Participant-only archive requests receive the generic `ACCESS_DENIED` refusal. The former `HOST_COORDINATION_REQUIRED` refusal is not the lifecycle contract; it remains applicable to other coordination checks and assignment-scoped lifecycle refusals.
+
 The [shared lifecycle policy](../../../../docs/projects/permissions.md#application-specific-project-lifecycle-permissions) generates native grants and scopes. Commands and Hosted detail availability use the same full executor-backed authorization decision. Each command reloads current Membership and assignment records inside its existing locked transaction. Availability is only a snapshot.
 
 Archive retains the settled-Claim or zero-Partnership requirement and closes setup links. Reopen requires a reason. Both retain actor/time history, leave Claim statuses unchanged, and affect only Cost Tracker's archive flag. Calculator reopening has independent authority and no reason requirement. [ADR-0028](../../../../docs/adr/0028-scope-project-lifecycle-permissions-by-application.md) records this authorization replacement without changing ADR-0027's business rules.

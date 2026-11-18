@@ -51,7 +51,7 @@ ADR-0022 preserves the original shared-auth decision body from `1bd184f8` (forme
 
 ADR-0003 is superseded by ADR-0006, ADR-0007, and ADR-0011 together. ADR-0002 is superseded in part by ADR-0005.
 
-ADR-0027 supersedes ADR-0011's separate Project-completion action and its availability rule only. Claim-owned progress, separate approval/payment and the rejection of manual Project-wide Claim phases remain accepted. Cost Tracker archive/reopen is an approved, not yet implemented target.
+ADR-0027 supersedes ADR-0011's separate Project-completion action and its availability rule only. Claim-owned progress, separate approval/payment and the rejection of manual Project-wide Claim phases remain accepted. Cost Tracker archive/reopen is implemented.
 
 With explicit user approval, ADR-0014 and the related wording in ADR-0015–0017 received a
 recording correction: the server-only evaluation restriction was an authoring error, not

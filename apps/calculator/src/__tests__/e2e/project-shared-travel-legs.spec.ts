@@ -301,34 +301,44 @@ test.describe("Project Shared Travel Legs", () => {
     const listResponseGate = new Promise<void>((resolve) => {
       releaseListResponse = resolve;
     });
+    let signalListResponse = () => {};
+    const listResponseArrived = new Promise<void>((resolve) => {
+      signalListResponse = resolve;
+    });
     await page.route(
       "**/api/rpc/projectSharedTravelLegs/list**",
       async (route) => {
         const response = await route.fetch();
+        signalListResponse();
         await listResponseGate;
         await route.fulfill({ response });
       },
     );
-    await dialog
-      .getByRole("button", { name: en.project["shared-travel"].form.update })
-      .click();
+    try {
+      await dialog
+        .getByRole("button", { name: en.project["shared-travel"].form.update })
+        .click();
 
-    await expect(dialog).not.toBeVisible();
-    const persistedLeg = await db.query.projectSharedTravelLegsTable.findFirst({
-      where: eq(projectSharedTravelLegsTable.projectId, projectId),
-    });
-    expect(persistedLeg?.description).toBe(
-      `${sharedTravelLegDescription} updated`,
-    );
-    await expect(sharedTravelLegRow).toHaveCount(1);
-    await sharedTravelLegRow
-      .getByRole("button", { name: en.project["shared-travel"].table.edit })
-      .click();
-    await expect(dialog).toBeVisible();
-    releaseListResponse();
-    await expect(
-      dialog.getByLabel(en.project["shared-travel"].form.description),
-    ).toHaveValue(`${sharedTravelLegDescription} updated`);
+      await expect(dialog).not.toBeVisible();
+      const persistedLeg = await db.query.projectSharedTravelLegsTable.findFirst({
+        where: eq(projectSharedTravelLegsTable.projectId, projectId),
+      });
+      expect(persistedLeg?.description).toBe(
+        `${sharedTravelLegDescription} updated`,
+      );
+      await listResponseArrived;
+      await expect(sharedTravelLegRow).toHaveCount(1);
+      await sharedTravelLegRow
+        .getByRole("button", { name: en.project["shared-travel"].table.edit })
+        .click();
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.getByLabel(en.project["shared-travel"].form.description),
+      ).toHaveValue(`${sharedTravelLegDescription} updated`);
+    } finally {
+      releaseListResponse();
+      await page.unrouteAll({ behavior: "wait" });
+    }
     await expect(dialog.locator("select")).toHaveValue("electricCar");
     await dialog.getByTestId("dialog-close").click();
 
