@@ -43,6 +43,10 @@ describe("requireProjectPermissions", () => {
         await expect(client.delete()).resolves.toBe("permitted");
         expect(mocks.getSession).toHaveBeenCalledOnce();
         expect(mocks.hasPermission).toHaveBeenCalledOnce();
+        expect(mocks.hasPermission).toHaveBeenCalledWith({
+          headers: new Headers(),
+          body: { permissions: { project: ["delete"] } },
+        });
       } else {
         await expect(client.delete()).rejects.toMatchObject({
           code: "FORBIDDEN",
