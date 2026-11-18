@@ -70,6 +70,7 @@ import {
   projectVisibilityPreference,
   type ProjectVisibility,
 } from "@/lib/ui-preferences/definitions";
+import { cn } from "@/lib/utils";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -410,6 +411,21 @@ export function ResolvedProjectListResults({
     startDate: t("startDate"),
     endDate: t("endDate"),
   };
+  const cellLabels: Record<string, string> = {
+    settlement: t("settlementFilter"),
+    startDate: t("startDate"),
+    endDate: t("endDate"),
+    location: t("location"),
+    participants: t("participants"),
+  };
+  const hasActiveFilters = Boolean(
+    state.search ||
+    state.dateFrom ||
+    state.dateTo ||
+    state.partnerOrganizationIds.length ||
+    state.archive !== "active" ||
+    state.settlement !== "all",
+  );
 
   return (
     <div
@@ -673,9 +689,9 @@ export function ResolvedProjectListResults({
           </span>
         ))}
       </p>
-      <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-        <Table className="table-fixed" aria-label={t("label")}>
-          <TableHeader>
+      <div className="project-register-shell min-w-0 overflow-hidden rounded-xl border bg-card">
+        <Table className="project-register table-fixed" aria-label={t("label")}>
+          <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -684,7 +700,7 @@ export function ResolvedProjectListResults({
                     className={
                       header.column.id === "name"
                         ? "w-auto"
-                        : "w-[16%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
+                        : "w-[15%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
                     }
                     data-testid={`project-column-header-${header.column.id}`}
                     aria-sort={
@@ -713,7 +729,29 @@ export function ResolvedProjectListResults({
                   className="h-28 text-center"
                   colSpan={table.getVisibleLeafColumns().length}
                 >
-                  {t("noMatch")}
+                  <div className="flex flex-col items-center gap-3">
+                    <span>{t("noMatch")}</span>
+                    {hasActiveFilters && (
+                      <Button
+                        onClick={() =>
+                          void setUrlState({
+                            archive: null,
+                            cursor: null,
+                            dateFrom: null,
+                            dateTo: null,
+                            partnerOrganizationIds: null,
+                            search: null,
+                            settlement: null,
+                          })
+                        }
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {t("clearFilters")}
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -722,7 +760,14 @@ export function ResolvedProjectListResults({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="min-w-0 overflow-hidden px-2 text-xs wrap-anywhere whitespace-normal"
+                      className={cn(
+                        "min-w-0 overflow-hidden px-2 text-xs wrap-anywhere whitespace-normal",
+                        (cell.column.id === "startDate" ||
+                          cell.column.id === "endDate") &&
+                          "whitespace-nowrap tabular-nums",
+                      )}
+                      data-card-title={cell.column.id === "name" ? "" : undefined}
+                      data-label={cellLabels[cell.column.id]}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -734,26 +779,34 @@ export function ResolvedProjectListResults({
         </Table>
       </div>
 
-      <div className="flex justify-end gap-2">
-        {data.previousCursor && (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {t("showingCount", {
+            shown: data.rows.length,
+            total: filtered.projectCount,
+          })}
+        </p>
+        <div className="flex gap-2">
+          {data.previousCursor && (
+            <Button
+              onClick={() => table.previousPage()}
+              data-testid="previous-project-page"
+              type="button"
+              variant="outline"
+            >
+              {t("previousPage")}
+            </Button>
+          )}
           <Button
-            onClick={() => table.previousPage()}
-            data-testid="previous-project-page"
+            disabled={!data.nextCursor}
+            onClick={() => table.nextPage()}
+            data-testid="next-project-page"
             type="button"
             variant="outline"
           >
-            {t("previousPage")}
+            {t("nextPage")}
           </Button>
-        )}
-        <Button
-          disabled={!data.nextCursor}
-          onClick={() => table.nextPage()}
-          data-testid="next-project-page"
-          type="button"
-          variant="outline"
-        >
-          {t("nextPage")}
-        </Button>
+        </div>
       </div>
     </div>
   );

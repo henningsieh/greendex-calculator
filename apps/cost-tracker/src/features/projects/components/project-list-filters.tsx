@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { SearchIcon } from "lucide-react";
-import { Suspense, useEffect, useRef } from "react";
+import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,8 +47,20 @@ export function ProjectListFilters({
 }) {
   const t = useTranslations("projects.list");
   const searchTimeout = useRef<number>(undefined);
+  const pushedSearch = useRef(urlState.search);
+  const [searchDraft, setSearchDraft] = useState(urlState.search);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
+
+  useEffect(() => {
+    // Keep the field in step with back/forward and external resets without
+    // overwriting characters typed since the last debounced URL write.
+    if (urlState.search !== pushedSearch.current) {
+      pushedSearch.current = urlState.search;
+      setSearchDraft(urlState.search);
+    }
+  }, [urlState.search]);
 
   const columnFilters = getProjectColumnFilters(urlState);
 
@@ -68,85 +80,18 @@ export function ProjectListFilters({
     value: String(value),
     label: String(value),
   }));
+  const hiddenFilterCount = [
+    state.archive !== "active",
+    state.settlement !== "all",
+    Boolean(state.dateFrom),
+    Boolean(state.dateTo),
+    state.partnerOrganizationIds.length > 0,
+  ].filter(Boolean).length;
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">
       <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
         <div className="flex min-w-0 flex-col gap-2">
-          <Label htmlFor="project-archive">{t("archiveFilter")}</Label>
-          <Select
-            items={PROJECT_ARCHIVE_FILTERS.map((value) => ({
-              value,
-              label: t(`archive.${value}`),
-            }))}
-            value={state.archive}
-            onValueChange={(value) => {
-              const archive = PROJECT_ARCHIVE_FILTERS.find(
-                (item) => item === value,
-              );
-              if (archive) void setUrlState({ archive, cursor: null });
-            }}
-          >
-            <SelectTrigger
-              id="project-archive"
-              data-testid="project-archive-filter"
-              className="w-full"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PROJECT_ARCHIVE_FILTERS.map((value) => (
-                  <SelectItem
-                    key={value}
-                    value={value}
-                    data-testid={`project-archive-${value}`}
-                  >
-                    {t(`archive.${value}`)}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <Label htmlFor="project-settlement">{t("settlementFilter")}</Label>
-          <Select
-            items={PROJECT_SETTLEMENT_FILTERS.map((value) => ({
-              value,
-              label: t(`settlement.${value}`),
-            }))}
-            value={state.settlement}
-            onValueChange={(value) => {
-              const settlement = PROJECT_SETTLEMENT_FILTERS.find(
-                (item) => item === value,
-              );
-              if (settlement) void setUrlState({ settlement, cursor: null });
-            }}
-          >
-            <SelectTrigger
-              id="project-settlement"
-              data-testid="project-settlement-filter"
-              className="w-full"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PROJECT_SETTLEMENT_FILTERS.map((value) => (
-                  <SelectItem
-                    key={value}
-                    value={value}
-                    data-testid={`project-settlement-${value}`}
-                  >
-                    {t(`settlement.${value}`)}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="order-first flex min-w-0 flex-col gap-2">
           <Label htmlFor="project-search">{t("name")}</Label>
           <div className="relative">
             <SearchIcon
@@ -156,14 +101,15 @@ export function ProjectListFilters({
             <Input
               /* eslint-disable-next-line shadcn/no-restyle -- Search icon overlay requires matching input inset. */
               className="pl-9"
-              defaultValue={urlState.search}
+              value={searchDraft}
               id="project-search"
               data-testid="project-search"
-              key={urlState.search}
               onChange={(event) => {
                 const search = event.target.value;
+                setSearchDraft(search);
                 window.clearTimeout(searchTimeout.current);
                 searchTimeout.current = window.setTimeout(() => {
+                  pushedSearch.current = search;
                   updateProjectFilter(PROJECT_FILTER_IDS.name, search);
                 }, 300);
               }}
@@ -171,40 +117,145 @@ export function ProjectListFilters({
             />
           </div>
         </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <Label htmlFor="project-page-size">{t("perPage")}</Label>
-          <Select
-            items={pageSizeItems}
-            onValueChange={(value) => {
-              const pageSize = Number(value);
-              void setUrlState({
-                cursor: null,
-                pageSize: isProjectPageSize(pageSize) ? pageSize : state.pageSize,
-              });
-            }}
-            value={String(state.pageSize)}
+        <div className="project-filter-more">
+          <button
+            aria-controls="project-filter-more-body"
+            aria-expanded={filtersOpen}
+            className="project-filter-summary w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2 text-left text-sm font-medium"
+            onClick={() => setFiltersOpen((open) => !open)}
+            type="button"
           >
-            <SelectTrigger
-              className="w-full"
-              id="project-page-size"
-              data-testid="project-page-size"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PROJECT_PAGE_SIZES.map((value) => (
-                  <SelectItem
-                    data-testid={`project-page-size-${value}`}
-                    key={value}
-                    value={String(value)}
-                  >
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+            <span className="flex items-center gap-2">
+              <SlidersHorizontalIcon aria-hidden="true" className="size-4" />
+              {t("filters")}
+              {hiddenFilterCount > 0 && (
+                <span className="text-muted-foreground tabular-nums">
+                  {hiddenFilterCount}
+                </span>
+              )}
+            </span>
+            <ChevronDownIcon
+              aria-hidden="true"
+              className={`size-4 shrink-0 text-muted-foreground transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <div
+            className="project-filter-more-body"
+            data-open={filtersOpen}
+            id="project-filter-more-body"
+          >
+            <div className="flex min-w-0 flex-col gap-2">
+              <Label htmlFor="project-archive">{t("archiveFilter")}</Label>
+              <Select
+                items={PROJECT_ARCHIVE_FILTERS.map((value) => ({
+                  value,
+                  label: t(`archive.${value}`),
+                }))}
+                value={state.archive}
+                onValueChange={(value) => {
+                  const archive = PROJECT_ARCHIVE_FILTERS.find(
+                    (item) => item === value,
+                  );
+                  if (archive) void setUrlState({ archive, cursor: null });
+                }}
+              >
+                <SelectTrigger
+                  id="project-archive"
+                  data-testid="project-archive-filter"
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {PROJECT_ARCHIVE_FILTERS.map((value) => (
+                      <SelectItem
+                        key={value}
+                        value={value}
+                        data-testid={`project-archive-${value}`}
+                      >
+                        {t(`archive.${value}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <Label htmlFor="project-settlement">{t("settlementFilter")}</Label>
+              <Select
+                items={PROJECT_SETTLEMENT_FILTERS.map((value) => ({
+                  value,
+                  label: t(`settlement.${value}`),
+                }))}
+                value={state.settlement}
+                onValueChange={(value) => {
+                  const settlement = PROJECT_SETTLEMENT_FILTERS.find(
+                    (item) => item === value,
+                  );
+                  if (settlement) void setUrlState({ settlement, cursor: null });
+                }}
+              >
+                <SelectTrigger
+                  id="project-settlement"
+                  data-testid="project-settlement-filter"
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {PROJECT_SETTLEMENT_FILTERS.map((value) => (
+                      <SelectItem
+                        key={value}
+                        value={value}
+                        data-testid={`project-settlement-${value}`}
+                      >
+                        {t(`settlement.${value}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <Label htmlFor="project-page-size">{t("perPage")}</Label>
+              <Select
+                items={pageSizeItems}
+                onValueChange={(value) => {
+                  const pageSize = Number(value);
+                  void setUrlState({
+                    cursor: null,
+                    pageSize: isProjectPageSize(pageSize)
+                      ? pageSize
+                      : state.pageSize,
+                  });
+                }}
+                value={String(state.pageSize)}
+              >
+                <SelectTrigger
+                  className="w-full"
+                  id="project-page-size"
+                  data-testid="project-page-size"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {PROJECT_PAGE_SIZES.map((value) => (
+                      <SelectItem
+                        data-testid={`project-page-size-${value}`}
+                        key={value}
+                        value={String(value)}
+                      >
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
       <details

@@ -85,7 +85,7 @@ export async function ProtectedShell({
         showPartnerOrganizations={await canViewPartnerNetwork()}
         staffOrganizations={context.memberships}
       />
-      <div className="min-h-svh w-full bg-muted/35">
+      <div className="min-h-svh w-full min-w-0 bg-muted/35">
         <header className="border-b bg-background">
           <div className="flex items-start gap-1">
             <div className="min-w-0 flex-1">
