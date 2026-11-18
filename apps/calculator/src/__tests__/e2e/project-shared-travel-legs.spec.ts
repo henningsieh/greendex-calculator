@@ -4,6 +4,7 @@ import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
   organization,
+  projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
 import { expect, test } from "@playwright/test";
@@ -296,15 +297,35 @@ test.describe("Project Shared Travel Legs", () => {
     await dialog
       .getByLabel(en.project["shared-travel"].form.description)
       .fill(`${sharedTravelLegDescription} updated`);
+    let releaseListResponse = () => {};
+    const listResponseGate = new Promise<void>((resolve) => {
+      releaseListResponse = resolve;
+    });
+    await page.route(
+      "**/api/rpc/projectSharedTravelLegs/list**",
+      async (route) => {
+        const response = await route.fetch();
+        await listResponseGate;
+        await route.fulfill({ response });
+      },
+    );
     await dialog
       .getByRole("button", { name: en.project["shared-travel"].form.update })
       .click();
 
     await expect(dialog).not.toBeVisible();
+    const persistedLeg = await db.query.projectSharedTravelLegsTable.findFirst({
+      where: eq(projectSharedTravelLegsTable.projectId, projectId),
+    });
+    expect(persistedLeg?.description).toBe(
+      `${sharedTravelLegDescription} updated`,
+    );
     await expect(sharedTravelLegRow).toHaveCount(1);
     await sharedTravelLegRow
       .getByRole("button", { name: en.project["shared-travel"].table.edit })
       .click();
+    await expect(dialog).toBeVisible();
+    releaseListResponse();
     await expect(
       dialog.getByLabel(en.project["shared-travel"].form.description),
     ).toHaveValue(`${sharedTravelLegDescription} updated`);
