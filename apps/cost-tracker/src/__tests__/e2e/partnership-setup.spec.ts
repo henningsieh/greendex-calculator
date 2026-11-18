@@ -347,7 +347,12 @@ async function selectAndOpenPartnerProject(
     await expect(selection).toHaveCount(0);
   }
   await expect(project).toBeVisible();
-  await project.click();
+  const destination = await project.getAttribute("href");
+  expect(destination).toBeTruthy();
+  await Promise.all([
+    page.waitForURL(new URL(destination!, page.url()).href),
+    project.click(),
+  ]);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
   const [selectedOrganization] = await db
