@@ -188,6 +188,7 @@ describe("Project workspace", () => {
       "data-project-id",
       "project-1",
     );
+    expect(screen.getByTestId("partnership-shortcut-intro")).toBeInTheDocument();
   });
 
   it("hides the partnership dialogs without the management permission", async () => {
@@ -199,6 +200,24 @@ describe("Project workspace", () => {
     renderWorkspace();
     await screen.findByTestId("project-workspace");
     expect(screen.queryByTestId("partnership-actions")).toBeNull();
+    expect(screen.getByTestId("assigned-partnerships-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
+    expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
+  });
+
+  it("hides empty-state shortcuts for an archived Project", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    renderWorkspace({ canManagePartnerships: true });
+    expect(
+      await screen.findByTestId("assigned-partnerships-empty"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
+    expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -364,6 +383,55 @@ describe("Project workspace", () => {
       projectId: "project-1",
       reason: "Correct a payment",
     });
+  });
+
+  it.each(["FORBIDDEN", "NOT_FOUND"] as const)(
+    "disables reopening after %s refresh removes capability",
+    async (code) => {
+      const user = userEvent.setup();
+      mocks.detail = {
+        ...baseProject,
+        relationship: "hosted",
+        archived: true,
+        partnerOrganizations: [],
+      };
+      mocks.reopen.mockImplementation(async () => {
+        mocks.detail = { ...mocks.detail, canReopen: false };
+        throw new ORPCError(code);
+      });
+      renderWorkspace({ canReopen: true });
+      await user.click(await screen.findByTestId("reopen-project"));
+      await user.type(screen.getByRole("textbox"), "Correction");
+      await user.click(screen.getByTestId("reopen-project-confirm"));
+      await waitFor(() =>
+        expect(screen.getByTestId("reopen-project-confirm")).toBeDisabled(),
+      );
+      await user.click(screen.getByTestId("reopen-project-confirm"));
+      expect(mocks.reopen).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("reopen-project")).toBeNull();
+    },
+  );
+
+  it("keeps reopening retryable without refreshing on network errors", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    mocks.reopen.mockImplementation(async () => {
+      mocks.detail = { ...mocks.detail, canReopen: false };
+      throw new Error("Network unavailable");
+    });
+    renderWorkspace({ canReopen: true });
+    await user.click(await screen.findByTestId("reopen-project"));
+    await user.type(screen.getByRole("textbox"), "Correction");
+    await user.click(screen.getByTestId("reopen-project-confirm"));
+    await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("reopen-project-confirm")).toBeEnabled();
+    await user.click(screen.getByTestId("reopen-project-confirm"));
+    expect(mocks.reopen).toHaveBeenCalledTimes(2);
   });
 
   it("keeps archived Partnership actions visible with a keyboard-accessible explanation", async () => {

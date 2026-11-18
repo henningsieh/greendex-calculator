@@ -120,7 +120,7 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
   }
 
   async function reopenProject() {
-    if (completing || !reason.trim()) return;
+    if (!canReopen || completing || !reason.trim()) return;
     setCompleting(true);
     try {
       await orpc.projects.reopen({ projectId, reason });
@@ -166,7 +166,7 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button
               type="button"
-              disabled={!reason.trim() || completing}
+              disabled={!canReopen || !reason.trim() || completing}
               data-testid="reopen-project-confirm"
               onClick={reopenProject}
             >
