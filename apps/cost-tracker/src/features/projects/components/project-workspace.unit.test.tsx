@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>,
   archive: vi.fn(),
   reopen: vi.fn(),
+  toastAdd: vi.fn(),
+}));
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -40,6 +44,9 @@ vi.mock(
     >()),
     PartnershipActions: ({ projectId }: { projectId?: string }) => (
       <p data-project-id={projectId} data-testid="partnership-actions" />
+    ),
+    PartnershipShortcutLinks: ({ projectId }: { projectId?: string }) => (
+      <p data-project-id={projectId} data-testid="invite-partnership-link" />
     ),
   }),
 );
@@ -86,6 +93,7 @@ beforeEach(() => {
   mocks.detail = {};
   mocks.archive.mockReset();
   mocks.reopen.mockReset();
+  mocks.toastAdd.mockReset();
 });
 
 describe("Project workspace", () => {
@@ -124,12 +132,10 @@ describe("Project workspace", () => {
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
-    // Without a Claim the review affordance stays visible but inert: no dead
-    // end, and no link to a page that has nothing to review.
-    expect(screen.getByTestId("review-claim-partnership-1")).toBeDisabled();
-    expect(
-      screen.getByTestId("review-claim-partnership-1").closest("a"),
-    ).toBeNull();
+    // Without a reviewable Claim there is no review link at all: the badge
+    // already carries the state, so an inert duplicate would only pretend
+    // at navigation to a page that has nothing to review.
+    expect(screen.queryByTestId("review-claim-partnership-1")).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",
@@ -173,6 +179,11 @@ describe("Project workspace", () => {
     };
     renderWorkspace({ canManagePartnerships: true });
     expect(await screen.findByTestId("partnership-actions")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
+    );
+    // The empty state links into the same dialog instead of navigating away.
+    expect(screen.getByTestId("invite-partnership-link")).toHaveAttribute(
       "data-project-id",
       "project-1",
     );
@@ -236,8 +247,21 @@ describe("Project workspace", () => {
     expect(
       screen.getByTestId("review-claim-partnership-4").getAttribute("href"),
     ).toBe("/en-GB/partnerships/partnership-4/claim/review");
-    // An unsubmitted draft has no review page: same row, inert control.
-    expect(screen.getByTestId("review-claim-partnership-6")).toBeDisabled();
+    // Unreviewable Claims (none yet, or still an unsubmitted Partner draft)
+    // have no review page and therefore no review link; every status from
+    // submission onwards links to its review, terminal ones read-only.
+    expect(screen.queryByTestId("review-claim-partnership-5")).toBeNull();
+    expect(screen.queryByTestId("review-claim-partnership-6")).toBeNull();
+    for (const id of [
+      "partnership-0",
+      "partnership-1",
+      "partnership-2",
+      "partnership-3",
+    ]) {
+      expect(screen.getByTestId(`review-claim-${id}`).getAttribute("href")).toBe(
+        `/en-GB/partnerships/${id}/claim/review`,
+      );
+    }
     // Only `submitted` awaits a Hosting decision: a correction request reopens
     // Partner editing, and every other status is decided or unsubmitted.
     expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(
@@ -277,7 +301,9 @@ describe("Project workspace", () => {
     await user.click(screen.getByTestId("archive-project"));
     await user.click(await screen.findByTestId("confirm-dialog-execute"));
     expect(mocks.archive).toHaveBeenCalledWith({ projectId: "project-1" });
-    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
+    expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "success" }),
+    );
     expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 
@@ -357,7 +383,7 @@ describe("Project workspace", () => {
     expect(
       screen.getByTestId("project-workspace").querySelectorAll("button:disabled")
         .length,
-    ).toBeGreaterThanOrEqual(2);
+    ).toBe(0);
   });
 
   it("reports an archive failure without marking the Project archived", async () => {
@@ -373,7 +399,9 @@ describe("Project workspace", () => {
     renderWorkspace();
     await user.click(await screen.findByTestId("archive-project"));
     await user.click(await screen.findByTestId("confirm-dialog-execute"));
-    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
+    expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "error" }),
+    );
     await waitFor(() => {
       expect(screen.getByTestId("archive-project")).toBeEnabled();
     });
