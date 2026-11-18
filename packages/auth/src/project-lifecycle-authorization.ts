@@ -78,10 +78,13 @@ export function bindProjectLifecycleAuthorization(
     ): ProjectLifecycleDecision {
       const scope = scopes.get(action);
       if (!scope) return { allowed: false, reason: "actionDenied" };
+      if (
+        scope === "assigned" &&
+        (!ownedIds.has(projectId) || !assignedIds.has(projectId))
+      )
+        return { allowed: false, reason: "assignmentRequired" };
       if (!ownedIds.has(projectId))
         return { allowed: false, reason: "projectNotFound" };
-      if (scope === "assigned" && !assignedIds.has(projectId))
-        return { allowed: false, reason: "assignmentRequired" };
       return { allowed: true, projectId, scope };
     }
     function result(denial?: ProjectLifecycleDecision) {

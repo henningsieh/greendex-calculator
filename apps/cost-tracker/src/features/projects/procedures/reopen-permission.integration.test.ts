@@ -184,6 +184,43 @@ afterAll(async () => {
 });
 
 describe("Project reopen permission through Better Auth", () => {
+  it.each([actors[3]!, actors[4]!])(
+    "does not disclose Project existence to $role without scope",
+    async ({ id, role }) => {
+      const response = await auth.api.signInEmail({
+        body: { email: email(id), password },
+        asResponse: true,
+      });
+      const cookie = response.headers.get("set-cookie")?.split(";")[0];
+      if (!cookie) throw new Error("Sign-in did not return a session cookie");
+      const headers = new Headers({ cookie });
+      await auth.api.setActiveOrganization({ headers, body: { organizationId } });
+      const client = createRouterClient(
+        { archiveProject, reopenProject },
+        { context: async () => ({ headers }) },
+      );
+      for (const target of [projectId, randomUUID()]) {
+        await expect(
+          client.archiveProject({ projectId: target }),
+        ).rejects.toMatchObject({
+          code: "FORBIDDEN",
+          data: {
+            reason:
+              role === "coordinator"
+                ? "HOST_COORDINATION_REQUIRED"
+                : "ACCESS_DENIED",
+          },
+        });
+        await expect(
+          client.reopenProject({ projectId: target, reason: "Test" }),
+        ).rejects.toMatchObject({
+          code: "FORBIDDEN",
+          data: { reason: "ACCESS_DENIED" },
+        });
+      }
+    },
+  );
+
   it.each(actors)(
     "checks $role assigned=$assigned through native grants and both commands",
     async ({ id, role, archive, reopen }) => {
@@ -368,6 +405,14 @@ describe("Project reopen permission through Better Auth", () => {
       headers,
       body: { organizationId: foreignOrganizationId },
     });
+    await db
+      .delete(hostProjectAssignmentsTable)
+      .where(
+        and(
+          eq(hostProjectAssignmentsTable.projectId, projectId),
+          eq(hostProjectAssignmentsTable.userId, actor.id),
+        ),
+      );
     for (const role of ["owner", "admin", "coordinator"]) {
       await db
         .update(member)
@@ -390,11 +435,13 @@ describe("Project reopen permission through Better Auth", () => {
           .values({ partnershipId, userId: actor.id });
       }
       await expect(client.archiveProject({ projectId })).rejects.toMatchObject({
-        code: "NOT_FOUND",
+        code: role === "coordinator" ? "FORBIDDEN" : "NOT_FOUND",
       });
       await expect(
         client.reopenProject({ projectId, reason: "Foreign" }),
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      ).rejects.toMatchObject({
+        code: role === "coordinator" ? "FORBIDDEN" : "NOT_FOUND",
+      });
     }
     await auth.api.setActiveOrganization({
       headers,
