@@ -16,8 +16,8 @@ import { authorized, requireProjectPermissions } from "./middleware";
 const handler = vi.fn(() => "permitted");
 const client = createRouterClient(
   {
-    archive: authorized
-      .use(requireProjectPermissions(["archive"]))
+    delete: authorized
+      .use(requireProjectPermissions(["delete"]))
       .handler(handler),
   },
   { context: { headers: new Headers() } },
@@ -33,21 +33,18 @@ beforeEach(() => {
 
 describe("requireProjectPermissions", () => {
   it.each(Object.values(ORGANIZATION_ROLES))(
-    "enforces declared archive permission for %s",
+    "enforces declared delete permission for %s",
     async (role) => {
       const success = calculatorOrganizationRoles[role].authorize({
-        project: ["archive"],
+        project: ["delete"],
       }).success;
       mocks.hasPermission.mockResolvedValue({ success, error: null });
-      if (
-        role === ORGANIZATION_ROLES.OrganizationOwner ||
-        role === ORGANIZATION_ROLES.OrganizationAdmin
-      ) {
-        await expect(client.archive()).resolves.toBe("permitted");
+      if (role === ORGANIZATION_ROLES.OrganizationOwner) {
+        await expect(client.delete()).resolves.toBe("permitted");
         expect(mocks.getSession).toHaveBeenCalledOnce();
         expect(mocks.hasPermission).toHaveBeenCalledOnce();
       } else {
-        await expect(client.archive()).rejects.toMatchObject({
+        await expect(client.delete()).rejects.toMatchObject({
           code: "FORBIDDEN",
         });
         expect(handler).not.toHaveBeenCalled();
@@ -57,7 +54,7 @@ describe("requireProjectPermissions", () => {
 
   it("keeps missing sessions unauthorized", async () => {
     mocks.getSession.mockResolvedValue(null);
-    await expect(client.archive()).rejects.toMatchObject({
+    await expect(client.delete()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
     expect(mocks.hasPermission).not.toHaveBeenCalled();
@@ -65,7 +62,7 @@ describe("requireProjectPermissions", () => {
 
   it("denies a missing active Organization before permission lookup", async () => {
     mocks.getSession.mockResolvedValue({ session: {}, user: { id: "user-id" } });
-    await expect(client.archive()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(client.delete()).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.hasPermission).not.toHaveBeenCalled();
   });
 });

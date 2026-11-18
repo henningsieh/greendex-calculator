@@ -40,11 +40,12 @@ import {
   EditProjectFormSkeleton,
 } from "@/features/projects/components/edit-project-form";
 import { SortableHeader } from "@/features/projects/components/sortable-header";
-import type { ProjectType } from "@/features/projects/types";
+import type { ProjectWithLifecycleType } from "@/features/projects/types";
 import {
   getColumnDisplayName,
   getProjectDetailPath,
 } from "@/features/projects/utils";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useProjectPermissions } from "@/lib/better-auth/permissions-utils";
 import { getCountryData } from "@/lib/i18n/countries";
 import { Link } from "@/lib/i18n/routing";
@@ -73,7 +74,7 @@ function DateCell({ date }: { date: Date }) {
 export function ProjectTableColumns(
   t: (key: string) => string,
   locale: string,
-): ColumnDef<typeof projectsTableFeatures, ProjectType>[] {
+): ColumnDef<typeof projectsTableFeatures, ProjectWithLifecycleType>[] {
   return [
     {
       id: "select",
@@ -280,7 +281,8 @@ export function ProjectTableColumns(
  * @param project - The project displayed by this cell; used to determine available actions and their effects.
  * @returns The JSX element for the project actions cell, including the actions dropdown, edit dialog (if permitted), and the confirm dialog component.
  */
-function ProjectActionsCell({ project }: { project: ProjectType }) {
+function ProjectActionsCell({ project }: { project: ProjectWithLifecycleType }) {
+  const hydrated = useHydrated();
   const t = useTranslations("organization.projects");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -289,7 +291,6 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
   const {
     canUpdate,
     canDelete,
-    canArchive,
     isPending: permissionsPending,
   } = useProjectPermissions();
 
@@ -319,10 +320,9 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
   const { mutateAsync: archiveProjectMutation, isPending: isArchiving } =
     useMutation({
       mutationFn: (archived: boolean) =>
-        orpc.projects.archive({
-          id: project.id,
-          archived,
-        }),
+        archived
+          ? orpc.projects.archive({ id: project.id })
+          : orpc.projects.reopen({ id: project.id }),
       onSuccess: (result) => {
         if (result.success) {
           toast.success(
@@ -394,6 +394,8 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            data-testid="project-actions"
+            disabled={!hydrated || permissionsPending}
             onClick={(e) => e.stopPropagation()}
             size="icon-sm"
             variant="secondaryghost"
@@ -416,8 +418,9 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
               {t("table.edit-project")}
             </DropdownMenuItem>
           )}
-          {canArchive && (
+          {(project.archived ? project.canReopen : project.canArchive) && (
             <DropdownMenuItem
+              data-testid="project-lifecycle-action"
               disabled={isArchiving || permissionsPending}
               onClick={handleArchive}
             >

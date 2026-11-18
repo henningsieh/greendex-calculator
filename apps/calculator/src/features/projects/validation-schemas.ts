@@ -59,6 +59,11 @@ export const ProjectWithRelationsSchema = createSelectSchema(
   country: z.enum(EU_COUNTRY_CODES),
 });
 
+export const ProjectWithLifecycleSchema = ProjectWithRelationsSchema.extend({
+  canArchive: z.boolean(),
+  canReopen: z.boolean(),
+});
+
 // Generic edits do not own archive or Cost Tracker lifecycle transitions.
 export const ProjectUpdateFormSchema = createUpdateSchema(projectsTable)
   .pick(projectFormFields)
@@ -85,9 +90,8 @@ export const UpdateProjectInputSchema = ProjectIdInputSchema.extend({
   data: ProjectUpdateFormSchema,
 });
 
-export const ArchiveProjectInputSchema = ProjectIdInputSchema.extend({
-  archived: projectSelectShape.archived.describe("Archive status"),
-});
+export const ArchiveProjectInputSchema = ProjectIdInputSchema.strict();
+export const ReopenProjectInputSchema = ProjectIdInputSchema.strict();
 
 export const SetActiveProjectInputSchema = z.object({
   projectId: projectId.optional(),
@@ -107,7 +111,7 @@ export const BatchDeleteProjectsInputSchema = z.object({
 
 const sharedTravelLegEditFormSchema = ProjectSharedTravelLegFormSchema.extend({
   id: z.string(),
-  projectId: z.string(),
+  projectId: projectId.describe("Project ID"),
   isNew: z.boolean(),
   isDeleted: z.boolean(),
 });

@@ -66,6 +66,7 @@ function renderWorkspace({
   canManagePartnerships = false,
   canReopen = false,
 } = {}) {
+  mocks.detail.canReopen = canReopen;
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -74,7 +75,6 @@ function renderWorkspace({
       <Suspense fallback={<p>Loading workspace</p>}>
         <ProjectWorkspace
           canManagePartnerships={canManagePartnerships}
-          canReopen={canReopen}
           projectId="project-1"
         />
       </Suspense>

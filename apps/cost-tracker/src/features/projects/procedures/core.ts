@@ -16,6 +16,7 @@ import { and, asc, count, eq, isNull, or } from "drizzle-orm";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { authorizeCostTrackerProjectLifecycle } from "@/features/projects/procedures/lifecycle-authorization";
 import {
   getHostedProjectScopeFilters,
   getPartnerProjectScopeFilters,
@@ -376,7 +377,7 @@ export const getProject = authorized
       throw createSituationErrors(errors).hostingStaffRequired();
     }
 
-    const partnerOrganizations = await db.transaction(async (transaction) => {
+    const hostedDetail = await db.transaction(async (transaction) => {
       const [hostedProject] = await transaction
         .select({ id: projectsTable.id })
         .from(projectsTable)
@@ -399,7 +400,7 @@ export const getProject = authorized
         transaction,
       );
 
-      return transaction
+      const partnerOrganizations = await transaction
         .select({
           id: projectPartnerOrganizationsTable.id,
           organizationId: organization.id,
@@ -419,12 +420,26 @@ export const getProject = authorized
         )
         .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
         .orderBy(asc(organization.name), asc(organization.id));
+      const request = {
+        executor: transaction,
+        projectId: hostedProject.id,
+        actorId: context.user.id,
+        activeOrganizationId,
+      };
+      const [archive, reopen] = await Promise.all([
+        authorizeCostTrackerProjectLifecycle({ ...request, action: "archive" }),
+        authorizeCostTrackerProjectLifecycle({ ...request, action: "reopen" }),
+      ]);
+      return {
+        partnerOrganizations,
+        canArchive: archive.allowed,
+        canReopen: reopen.allowed,
+      };
     });
 
     return {
       ...project,
       relationship: "hosted" as const,
-      canArchive: true,
-      partnerOrganizations,
+      ...hostedDetail,
     };
   });

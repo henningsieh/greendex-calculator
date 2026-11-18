@@ -47,6 +47,7 @@ import {
 import { ProjectDetailsTab } from "@/features/projects/components/project-details-tab";
 import { PROJECT_ICONS } from "@/features/projects/components/project-icons";
 import { getProjectStatistics } from "@/features/projects/utils";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useProjectPermissions } from "@/lib/better-auth/permissions-utils";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
@@ -62,11 +63,11 @@ interface ProjectDetailsProps {
  * @returns PageHeader component with project metadata and action dropdown
  */
 export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
+  const hydrated = useHydrated();
   const tProject = useTranslations("organization.projects");
   const {
     canUpdate,
     canDelete,
-    canArchive,
     isPending: permissionsPending,
   } = useProjectPermissions();
   const format = useDateFormat();
@@ -109,10 +110,9 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
   const { mutateAsync: archiveProjectMutation, isPending: isArchiving } =
     useMutation({
       mutationFn: (archived: boolean) =>
-        orpc.projects.archive({
-          id: project.id,
-          archived,
-        }),
+        archived
+          ? orpc.projects.archive({ id: project.id })
+          : orpc.projects.reopen({ id: project.id }),
       onSuccess: (result) => {
         if (result.success) {
           toast.success(
@@ -160,6 +160,8 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          data-testid="project-actions"
+          disabled={!hydrated || permissionsPending}
           aria-label={tProject("form.edit.title")}
           size="icon"
           variant="secondaryoutline"
@@ -177,8 +179,9 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
             {tProject("table.edit-project")}
           </DropdownMenuItem>
         )}
-        {canArchive && (
+        {(project.archived ? project.canReopen : project.canArchive) && (
           <DropdownMenuItem
+            data-testid="project-lifecycle-action"
             disabled={isArchiving || permissionsPending}
             onSelect={async () => {
               const isCurrentlyArchived = project.archived ?? false;

@@ -41,6 +41,7 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0025](0025-let-breadcrumbs-own-navigation-history.md) | Let Breadcrumbs Own Navigation History | accepted | |
 | [0026](0026-own-date-presentation-in-one-formatter.md) | One Date Presenter, and Locale Codes That Are Full BCP-47 Tags | accepted | |
 | [0027](0027-archive-settled-cost-tracker-projects.md) | Archive Settled Cost Tracker Projects Instead of Completing the Project | accepted | 0011, Project completion only |
+| [0028](0028-scope-project-lifecycle-permissions-by-application.md) | Scope Project lifecycle permissions by application | accepted | 0020 and 0027, lifecycle permission wiring only |
 
 [ADR-0023](0023-keep-known-email-participant-entry-app-owned.md) supersedes ADR-0005's known-email delivery mechanism only, affirming ADR-0013's app-owned Participant Invitations and #263's test governance. All other ADR-0005 requirements remain accepted.
 

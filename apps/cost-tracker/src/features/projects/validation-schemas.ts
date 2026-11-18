@@ -217,6 +217,7 @@ export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("hosted"),
     canArchive: z.boolean(),
+    canReopen: z.boolean(),
     partnerOrganizations: z.array(ProjectPartnershipSummarySchema),
   }),
   ProjectDetailBaseSchema.extend({

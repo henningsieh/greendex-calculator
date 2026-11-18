@@ -12,13 +12,16 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { canCompleteProject } from "@/features/claims/claim-lifecycle";
-import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import {
+  authorizeCostTrackerProjectLifecycle,
+  requireLifecycleDecision,
+} from "@/features/projects/procedures/lifecycle-authorization";
 import {
   ProjectDetailInputSchema,
   ReopenProjectInputSchema,
 } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
-import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
+import { authorized } from "@/lib/orpc/middleware";
 
 const transitionResult = z.object({
   projectId: z.string(),
@@ -50,12 +53,15 @@ export const archiveProject = authorized
         .for("update")
         .limit(1);
       if (!project) throw createSituationErrors(errors).projectNotFound();
-      await requireHostCoordination(
-        project.id,
-        context.user.id,
-        organizationId,
+      requireLifecycleDecision(
+        await authorizeCostTrackerProjectLifecycle({
+          executor: tx,
+          projectId: project.id,
+          actorId: context.user.id,
+          activeOrganizationId: organizationId,
+          action: "archive",
+        }),
         errors,
-        tx,
       );
       if (project.archived)
         throw createSituationErrors(errors).projectAlreadyArchived();
@@ -86,12 +92,12 @@ export const archiveProject = authorized
   });
 
 export const reopenProject = authorized
-  .use(requireCostTrackerPermissions({ project: ["reopen"] }))
   .input(ReopenProjectInputSchema)
   .output(transitionResult)
   .meta(openapi({ tags: ["Projects"], summary: "Reopen a Cost Tracker project" }))
   .handler(async ({ input, context, errors }) => {
-    const organizationId = context.session.activeOrganizationId!;
+    const organizationId = context.session.activeOrganizationId;
+    if (!organizationId) throw createSituationErrors(errors).selectOrganization();
     return db.transaction(async (tx) => {
       const [project] = await tx
         .select({ id: projects.id, archived: projects.costTrackerArchived })
@@ -105,12 +111,15 @@ export const reopenProject = authorized
         .for("update")
         .limit(1);
       if (!project) throw createSituationErrors(errors).projectNotFound();
-      await requireHostCoordination(
-        project.id,
-        context.user.id,
-        organizationId,
+      requireLifecycleDecision(
+        await authorizeCostTrackerProjectLifecycle({
+          executor: tx,
+          projectId: project.id,
+          actorId: context.user.id,
+          activeOrganizationId: organizationId,
+          action: "reopen",
+        }),
         errors,
-        tx,
       );
       if (!project.archived)
         throw createSituationErrors(errors).projectNotArchived();

@@ -151,8 +151,8 @@ describe("Calculator project authorization", () => {
     "pins exact project grants for %s",
     (role) => {
       const expected = {
-        owner: ["create", "read", "update", "delete", "archive"],
-        admin: ["create", "read", "update", "archive"],
+        owner: ["create", "read", "update", "delete"],
+        admin: ["create", "read", "update"],
         coordinator: ["create", "read", "update"],
         participant: ["read"],
       };

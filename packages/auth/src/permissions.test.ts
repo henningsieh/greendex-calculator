@@ -10,7 +10,114 @@ import {
   ORGANIZATION_ROLES,
   parseOrganizationRoles,
   projectCoordinatorRole,
+  projectLifecycleScope,
 } from "./permissions";
+
+describe("central Project lifecycle grants and scopes", () => {
+  it.each([
+    ["owner", "organization", "organization", "organization", "organization"],
+    ["admin", "assigned", "assigned", "organization", "organization"],
+    ["coordinator", undefined, undefined, "assigned", undefined],
+    ["participant", undefined, undefined, undefined, undefined],
+  ] as const)("pins both resources for %s", (role, ca, cr, ta, tr) => {
+    expect(
+      projectLifecycleScope("calculatorProjectLifecycle", role, "archive"),
+    ).toBe(ca);
+    expect(
+      projectLifecycleScope("calculatorProjectLifecycle", role, "reopen"),
+    ).toBe(cr);
+    expect(
+      projectLifecycleScope("costTrackerProjectLifecycle", role, "archive"),
+    ).toBe(ta);
+    expect(
+      projectLifecycleScope("costTrackerProjectLifecycle", role, "reopen"),
+    ).toBe(tr);
+    expect(
+      calculatorOrganizationRoles[role].authorize({
+        calculatorProjectLifecycle: ["archive"],
+      }).success,
+    ).toBe(ca !== undefined);
+    expect(
+      calculatorOrganizationRoles[role].authorize({
+        calculatorProjectLifecycle: ["reopen"],
+      }).success,
+    ).toBe(cr !== undefined);
+    expect(
+      costTrackerOrganizationRoles[role].authorize({
+        costTrackerProjectLifecycle: ["archive"],
+      }).success,
+    ).toBe(ta !== undefined);
+    expect(
+      costTrackerOrganizationRoles[role].authorize({
+        costTrackerProjectLifecycle: ["reopen"],
+      }).success,
+    ).toBe(tr !== undefined);
+    expect(
+      calculatorOrganizationRoles[role].authorize({
+        costTrackerProjectLifecycle: ["archive", "reopen"],
+      }).success,
+    ).toBe(false);
+    expect(
+      costTrackerOrganizationRoles[role].authorize({
+        calculatorProjectLifecycle: ["archive", "reopen"],
+      }).success,
+    ).toBe(false);
+    expect(calculatorOrganizationRoles[role].statements.project).not.toContain(
+      "archive",
+    );
+    expect(calculatorOrganizationRoles[role].statements.project).not.toContain(
+      "reopen",
+    );
+  });
+
+  it("unions recognized roles only for the same resource and action", () => {
+    expect(
+      projectLifecycleScope(
+        "calculatorProjectLifecycle",
+        "participant,admin",
+        "reopen",
+      ),
+    ).toBe("assigned");
+    expect(
+      projectLifecycleScope(
+        "calculatorProjectLifecycle",
+        "owner,admin",
+        "archive",
+      ),
+    ).toBe("organization");
+    expect(
+      projectLifecycleScope(
+        "costTrackerProjectLifecycle",
+        "participant,coordinator",
+        "archive",
+      ),
+    ).toBe("assigned");
+    expect(
+      projectLifecycleScope(
+        "costTrackerProjectLifecycle",
+        "participant,coordinator",
+        "reopen",
+      ),
+    ).toBeUndefined();
+    expect(
+      projectLifecycleScope(
+        "calculatorProjectLifecycle",
+        "unknown,coordinator",
+        "archive",
+      ),
+    ).toBeUndefined();
+    expect(
+      projectLifecycleScope(
+        "calculatorProjectLifecycle",
+        "unknown,admin",
+        "archive",
+      ),
+    ).toBe("assigned");
+    expect(
+      projectLifecycleScope("costTrackerProjectLifecycle", "unknown", "archive"),
+    ).toBeUndefined();
+  });
+});
 
 const roles = ORGANIZATION_ROLES;
 
@@ -103,7 +210,8 @@ describe("Organization permissions", () => {
   it("intentionally grants Calculator admins shared Project archive authority without delete", () => {
     expect(
       calculatorOrganizationRoles[roles.OrganizationAdmin].authorize({
-        project: ["create", "read", "update", "archive"],
+        project: ["create", "read", "update"],
+        calculatorProjectLifecycle: ["archive"],
       }).success,
     ).toBe(true);
     expect(
@@ -116,22 +224,22 @@ describe("Organization permissions", () => {
   it("grants Cost Tracker Project reopening only to owners and admins", () => {
     expect(
       costTrackerOrganizationRoles[roles.OrganizationOwner].authorize({
-        project: ["reopen"],
+        costTrackerProjectLifecycle: ["reopen"],
       }).success,
     ).toBe(true);
     expect(
       costTrackerOrganizationRoles[roles.OrganizationAdmin].authorize({
-        project: ["reopen"],
+        costTrackerProjectLifecycle: ["reopen"],
       }).success,
     ).toBe(true);
     expect(
       costTrackerOrganizationRoles[roles.ProjectCoordinator].authorize({
-        project: ["reopen"],
+        costTrackerProjectLifecycle: ["reopen"],
       }).success,
     ).toBe(false);
     expect(
       costTrackerOrganizationRoles[roles.Participant].authorize({
-        project: ["reopen"],
+        costTrackerProjectLifecycle: ["reopen"],
       }).success,
     ).toBe(false);
   });
@@ -142,7 +250,9 @@ describe("Organization permissions", () => {
     expect(
       coordinator.authorize({ project: ["create", "read", "update"] }).success,
     ).toBe(true);
-    expect(coordinator.authorize({ project: ["archive"] }).success).toBe(false);
+    expect(
+      coordinator.authorize({ calculatorProjectLifecycle: ["archive"] }).success,
+    ).toBe(false);
     expect(coordinator.authorize({ project: ["delete"] }).success).toBe(false);
   });
 

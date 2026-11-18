@@ -4,6 +4,7 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
+  hostProjectAssignmentsTable,
   claimsTable,
   member,
   organization,
@@ -310,6 +311,39 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await page.locator("#reopen-reason").fill("Correct a test record");
     await page.getByRole("dialog").getByTestId("reopen-project-confirm").click();
     await expect(page.getByTestId("archive-project")).toBeVisible();
+  });
+
+  test("assigned Hosting Coordinator may archive but cannot reopen", async () => {
+    await db
+      .insert(hostProjectAssignmentsTable)
+      .values({ projectId: ids.zero, userId: ids.hostUser });
+    await db
+      .update(member)
+      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
+      .where(eq(member.userId, ids.hostUser));
+    try {
+      const page = await hostContext!.newPage();
+      await openHostedProject(page, zeroURL);
+      await expect(page.getByTestId("archive-project")).toBeVisible();
+      await page.getByTestId("archive-project").click();
+      await page.getByTestId("confirm-dialog-execute").click();
+      await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+        "data-archived",
+        "true",
+      );
+      await expect(page.getByTestId("archive-project")).toHaveCount(0);
+      await expect(page.getByTestId("reopen-project")).toHaveCount(0);
+      await page.close();
+    } finally {
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(eq(member.userId, ids.hostUser));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.zero));
+    }
   });
 
   test("opens the archived explanation with emulated touch", async ({

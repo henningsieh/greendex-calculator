@@ -158,12 +158,10 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
 export function ProjectWorkspace({
   projectId,
   canManagePartnerships = false,
-  canReopen = false,
 }: {
   projectId: string;
   /** Presentation-only: the dialogs re-enforce on every call. */
   canManagePartnerships?: boolean;
-  canReopen?: boolean;
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
@@ -277,6 +275,7 @@ export function ProjectWorkspace({
     <div
       className="space-y-8"
       data-hydrated={isHydrated ? "true" : undefined}
+      data-archived={project.archived}
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
@@ -320,7 +319,7 @@ export function ProjectWorkspace({
               canComplete={canComplete}
               completing={completing}
               onComplete={completeProject}
-              canReopen={isHosted && project.archived && canReopen}
+              canReopen={isHosted && project.archived && project.canReopen}
               onReopen={() => setReopenOpen(true)}
               archived={project.archived}
               projectId={project.id}
