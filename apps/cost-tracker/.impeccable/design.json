@@ -1,0 +1,291 @@
+{
+  "components": [
+    {
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: var(--primary); color: var(--primary-foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: #002b85; } .ds-btn-primary:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); } .ds-btn-primary:active { transform: translateY(1px); }",
+      "description": "The affirmative action. Erasmus Blue in light, Ember Amber in dark vibes.",
+      "html": "<button class=\"ds-btn-primary\">Approve claim</button>",
+      "kind": "button",
+      "name": "Primary Button",
+      "refersTo": "button-primary"
+    },
+    {
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-ghost:hover { background: var(--muted); color: var(--foreground); } .ds-btn-ghost:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); }",
+      "description": "Text-only until hovered. For secondary actions that must not compete.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "kind": "button",
+      "name": "Ghost Button",
+      "refersTo": "button-ghost"
+    },
+    {
+      "css": ".ds-link { color: var(--link); font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 500; text-decoration: underline; text-decoration-color: var(--brand); text-decoration-thickness: 2px; text-underline-offset: 4px; border-radius: 6px; } .ds-link:hover { color: var(--link-hover); } .ds-link:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }",
+      "description": "The only button allowed to hold a sentence. Prose links with gold underline.",
+      "html": "<a class=\"ds-link\" href=\"#\">View participants</a>",
+      "kind": "button",
+      "name": "Content Link",
+      "refersTo": "button-link"
+    },
+    {
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 32px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--card); color: var(--card-foreground); padding: 32px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 0 0 1px color-mix(in srgb, var(--foreground) 5%, transparent); transition: translate 0.22s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-card:hover { translate: 0 -2px; border-color: var(--primary-border); } .ds-card:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); } .ds-card h3 { margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; } .ds-card p { margin: 0; font-size: 14px; color: var(--muted-foreground); }",
+      "description": "Quiet container with one dramatic exception: 2px lift and fire border on hover.",
+      "html": "<div class=\"ds-card\"><h3>Renewable journey</h3><p>Round trip, 1 participant, funded.</p></div>",
+      "kind": "card",
+      "name": "Card",
+      "refersTo": "card"
+    },
+    {
+      "css": ".ds-ember-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px; border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent); border-radius: 9999px; background: color-mix(in srgb, var(--brand) 15%, transparent); color: var(--foreground); font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: none; white-space: nowrap; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07); }",
+      "description": "Brand seal for theme and edition names. The exception that proves the quiet rule.",
+      "html": "<span class=\"ds-ember-pill\">Midnight</span>",
+      "kind": "chip",
+      "name": "Ember Pill Badge",
+      "refersTo": "badge-ember-pill"
+    },
+    {
+      "css": ".ds-input { height: 40px; width: 100%; min-width: 0; padding: 0 12px; border: 1px solid var(--input); border-radius: 14px; background: color-mix(in srgb, var(--input) 30%, transparent); color: var(--foreground); font-family: Inter, system-ui, sans-serif; font-size: 16px; outline: none; transition: border-color 0.22s, box-shadow 0.22s, background-color 0.22s; } .ds-input::placeholder { color: var(--muted-foreground); } .ds-input:focus-visible { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); }",
+      "description": "Translucent fill, hairline border, ring-plus-border focus. Never a bare outline change.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search projects\" />",
+      "kind": "input",
+      "name": "Text Input",
+      "refersTo": "input"
+    },
+    {
+      "css": ".ds-dialog-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.2); backdrop-filter: blur(4px); } .ds-dialog { position: fixed; top: 50%; left: 50%; translate: -50% -50%; width: min(448px, calc(100% - 32px)); display: grid; gap: 24px; border-radius: 18px; background: var(--popover); color: var(--popover-foreground); padding: 24px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.12), 0 0 0 1px color-mix(in srgb, var(--foreground) 10%, transparent); font-family: Inter, system-ui, sans-serif; } .ds-dialog h2 { margin: 0; font-size: 16px; font-weight: 600; } .ds-dialog p { margin: 0; font-size: 14px; color: var(--muted-foreground); }",
+      "description": "Calm interruption: centered, mid shadow, fade-and-zoom entrance, focus trapped.",
+      "html": "<div class=\"ds-dialog-backdrop\"></div><div class=\"ds-dialog\"><h2>Archive this project?</h2><p>The project becomes read-only and leaves the active list.</p></div>",
+      "kind": "custom",
+      "name": "Dialog",
+      "refersTo": "dialog"
+    }
+  ],
+  "extensions": {
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ],
+    "colorMeta": {
+      "counter-paper": {
+        "canonical": "#edf2f8",
+        "displayName": "Counter Paper",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(0.22 0.02 250)",
+          "oklch(0.35 0.03 250)",
+          "oklch(0.50 0.03 250)",
+          "oklch(0.65 0.03 250)",
+          "oklch(0.78 0.02 250)",
+          "oklch(0.87 0.015 250)",
+          "oklch(0.93 0.01 250)",
+          "oklch(0.97 0.005 250)"
+        ]
+      },
+      "ember-amber": {
+        "canonical": "#ffb800",
+        "displayName": "Ember Amber",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(0.25 0.07 85)",
+          "oklch(0.38 0.11 85)",
+          "oklch(0.50 0.15 85)",
+          "oklch(0.62 0.18 85)",
+          "oklch(0.72 0.19 85)",
+          "oklch(0.80 0.19 85)",
+          "oklch(0.88 0.12 85)",
+          "oklch(0.95 0.05 85)"
+        ]
+      },
+      "erasmus-blue": {
+        "canonical": "#003399",
+        "displayName": "Erasmus Blue",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(0.18 0.08 264)",
+          "oklch(0.28 0.13 264)",
+          "oklch(0.38 0.17 264)",
+          "oklch(0.48 0.17 264)",
+          "oklch(0.60 0.14 264)",
+          "oklch(0.72 0.10 264)",
+          "oklch(0.84 0.06 264)",
+          "oklch(0.94 0.02 264)"
+        ]
+      },
+      "ledger-ink": {
+        "canonical": "#102b50",
+        "displayName": "Ledger Ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(0.16 0.05 260)",
+          "oklch(0.24 0.07 260)",
+          "oklch(0.32 0.09 260)",
+          "oklch(0.42 0.10 260)",
+          "oklch(0.54 0.09 260)",
+          "oklch(0.68 0.06 260)",
+          "oklch(0.82 0.03 260)",
+          "oklch(0.93 0.01 260)"
+        ]
+      },
+      "parchment": {
+        "canonical": "#f7f2e9",
+        "displayName": "Parchment",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(0.20 0.03 90)",
+          "oklch(0.35 0.04 90)",
+          "oklch(0.50 0.05 90)",
+          "oklch(0.65 0.05 90)",
+          "oklch(0.78 0.04 90)",
+          "oklch(0.87 0.03 90)",
+          "oklch(0.93 0.02 90)",
+          "oklch(0.97 0.01 90)"
+        ]
+      },
+      "seal-gold": {
+        "canonical": "#ffcc00",
+        "displayName": "Seal Gold",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(0.28 0.08 95)",
+          "oklch(0.42 0.12 95)",
+          "oklch(0.55 0.15 95)",
+          "oklch(0.68 0.17 95)",
+          "oklch(0.78 0.18 95)",
+          "oklch(0.87 0.19 95)",
+          "oklch(0.93 0.10 95)",
+          "oklch(0.97 0.04 95)"
+        ]
+      }
+    },
+    "motion": [
+      {
+        "name": "ease-out",
+        "purpose": "Default easing for hovers, lifts, and entrances.",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)"
+      },
+      {
+        "name": "ease-in-out",
+        "purpose": "Loops and longer transitions, including the CTA breath.",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)"
+      },
+      {
+        "name": "duration-hover",
+        "purpose": "Card lift, fire border, and control state changes.",
+        "value": "220ms"
+      },
+      {
+        "name": "duration-dialog",
+        "purpose": "Dialog and popover fade-and-zoom entrance.",
+        "value": "100ms"
+      },
+      {
+        "name": "duration-cta-breath",
+        "purpose": "Landing CTA glow loop, opacity only, GPU friendly.",
+        "value": "2.4s"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "card-rest",
+        "purpose": "Quietest lift that still reads as a surface.",
+        "value": "0 1px 2px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(16 43 80 / 0.05)"
+      },
+      {
+        "name": "dialog-float",
+        "purpose": "Overlays above page content.",
+        "value": "0 4px 12px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(16 43 80 / 0.10)"
+      },
+      {
+        "name": "primary-glow",
+        "purpose": "CTA breath and confirmed fire states only.",
+        "value": "0 0 18px rgb(255 184 0 / 0.45)"
+      },
+      {
+        "name": "headline-accent",
+        "purpose": "Static display glow on brand surfaces, never animated.",
+        "value": "0 0 60px rgb(255 184 0 / 0.45)"
+      }
+    ],
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Everything staff reads. 0.875rem in UI, 1rem in documents and dialogs."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Marketing headlines and hero numbers only. Never inside staff workflows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Micro-labels on buttons and form labels. New controls speak sentence case."
+      },
+      "mono": {
+        "displayName": "Official Mono",
+        "purpose": "Eyebrows, statistics, terminal evidence. JetBrains Mono."
+      }
+    }
+  },
+  "generatedAt": "2026-11-18T16:30:00+01:00",
+  "narrative": {
+    "dos": [
+      "Do keep button and dialog copy fixed and compact; render project, organization, and user names only in dedicated truncating surfaces (titles, title attributes), never inside controls.",
+      "Do use the `link-prose` utility (or the Button `link` variant) for every content link — gold underline, generous focus, always visible affordance.",
+      "Do mark numerals tabular in data (`tabular-nums`) and keep dates non-wrapping.",
+      "Do respect `prefers-reduced-motion` — every animation ships a gentler variant, and calm zones opt out of hover motion entirely.",
+      "Do animate opacity, transform, and background-color only; the CTA breath lives on a blurred `::before` layer so only opacity animates."
+    ],
+    "donts": [
+      "Don't interpolate payload data into button labels, dialog titles-as-actions, or any control whose width must stay predictable.",
+      "Don't use display type (Inter Black hero sizes), aura washes, or the CTA breath inside staff workflows — they belong to brand surfaces.",
+      "Don't animate `box-shadow` (it janks under load) or bare-element selectors (navigation needs no exemption list).",
+      "Don't let the spec's unused vibes (`plum`, `royal`) back in — the code owns four themes: light, midnight, violet, dark.",
+      "Don't invent one-off tokens; stop at what is reused. The frontmatter is normative — a value lives in exactly one place."
+    ],
+    "keyCharacteristics": [
+      "Daylight administration, ember accents only as state or signal.",
+      "Predictable controls: fixed copy, generous focus, no payload inside labels.",
+      "Tonal depth: flat surfaces, hairline rings, glow reserved for brand moments.",
+      "Bilingual by construction: seven locales, wrapping-safe, tabular numerals."
+    ],
+    "northStar": "The Quiet Ledger",
+    "overview": "Cost Tracker looks like the desk it replaces: a calm, well-lit counter where every figure is traceable and every decision is signed. Daylight Erasmus blues carry the working day; ember amber appears only where action lives — a hover, a focus ring, a single call to action. Nothing glows for decoration. The interface speaks softly and guides firmly: fixed, predictable controls, sentence-case data, tabular numerals, and generous focus states that make keyboard work first-class.",
+    "rules": [
+      {
+        "body": "Glow and shadow appear only as state — hover lift, focus, the breathing CTA. A surface that glows at rest is a bug.",
+        "name": "The Sacred Glow Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Ember Amber is used sparingly in light (eyebrows, seals, washes); its rarity is the point. If everything is amber, nothing is.",
+        "name": "The One Voice Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Controls guide in plain sentence case; ember encourages, it never shouts. Display type stays out of workflows.",
+        "name": "The Guiding Voice Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Numerals in data are always tabular (`tabular-nums`); a column of amounts must never wobble.",
+        "name": "The Figures Line Up Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Every protected view lives inside the same centered shell and spacing rhythm; full-bleed is reserved for brand moments, never for workflows.",
+        "name": "The Shell Holds Rule",
+        "section": "layout"
+      },
+      {
+        "body": "Surfaces are flat at rest; shadow and glow arrive only as a response to state (hover, focus, confirmation). Calm zones opt out of even hover lift.",
+        "name": "The Flat-By-Default Rule",
+        "section": "elevation"
+      },
+      {
+        "body": "Interactive controls round at 14px, containing surfaces at 18px. Anything rounder must earn the pill; anything sharper must earn the edge.",
+        "name": "The Fourteen-Eighteen Rule",
+        "section": "shapes"
+      }
+    ]
+  },
+  "schemaVersion": 2,
+  "title": "Design System: Cost Tracker"
+}

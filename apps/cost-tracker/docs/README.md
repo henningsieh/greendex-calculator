@@ -4,6 +4,8 @@ These documents describe behavior owned by the Cost Tracker application.
 
 ## Read first
 
+- [Product truth (users, purpose, principles)](../PRODUCT.md)
+- [Design system authority (visual tokens, components)](../DESIGN.md)
 - [Cost Tracking glossary](../GLOSSARY.md)
 - Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 - [Shared Greendex language](../../../GLOSSARY.md)
