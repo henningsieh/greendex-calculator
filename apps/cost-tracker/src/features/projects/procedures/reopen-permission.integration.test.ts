@@ -17,7 +17,7 @@ import {
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { hashPassword } from "better-auth/crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -365,6 +365,109 @@ describe("Project reopen permission through Better Auth", () => {
       code: "FORBIDDEN",
       data: { reason: "ACCESS_DENIED" },
     });
+  });
+
+  it("rejects an unauthorized reopen before locking and rechecks after a lock wait", async () => {
+    const clients = await Promise.all(
+      [actors[0]!, actors[2]!].map(async (actor) => {
+        const response = await auth.api.signInEmail({
+          body: { email: email(actor.id), password },
+          asResponse: true,
+        });
+        const cookie = response.headers.get("set-cookie")?.split(";")[0];
+        if (!cookie) throw new Error("Sign-in did not return a session cookie");
+        const headers = new Headers({ cookie });
+        await auth.api.setActiveOrganization({
+          headers,
+          body: { organizationId },
+        });
+        return createRouterClient(
+          { reopenProject },
+          { context: async () => ({ headers }) },
+        );
+      }),
+    );
+    await db
+      .update(projectsTable)
+      .set({ costTrackerArchived: true })
+      .where(eq(projectsTable.id, projectId));
+    let release!: () => void;
+    let locked!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const held = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const blocker = db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId))
+        .for("update");
+      locked();
+      await gate;
+    });
+    await held;
+    let authorized: Promise<unknown> | undefined;
+    try {
+      const unauthorized = clients[1]!
+        .reopenProject({ projectId, reason: "Denied" })
+        .then(
+          () => "allowed",
+          (error: unknown) => error,
+        );
+      const result = await Promise.race([
+        unauthorized,
+        new Promise<string>((resolve) =>
+          setTimeout(() => resolve("waiting"), 3000),
+        ),
+      ]);
+      expect(result).toMatchObject({ code: "FORBIDDEN" });
+      authorized = clients[0]!
+        .reopenProject({ projectId, reason: "Revoked" })
+        .then(
+          () => "allowed",
+          (error: unknown) => error,
+        );
+      let waiting = false;
+      for (let i = 0; i < 100; i++) {
+        const result = await db.execute(
+          sql`select exists(select 1 from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query ilike '%for update%' and query ilike '%project%') as waiting`,
+        );
+        if (result.rows[0].waiting) {
+          waiting = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(waiting).toBe(true);
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.Participant })
+        .where(
+          and(
+            eq(member.organizationId, organizationId),
+            eq(member.userId, actors[0]!.id),
+          ),
+        );
+    } finally {
+      release();
+      await blocker;
+      if (authorized) {
+        const result = await authorized;
+        await db
+          .update(member)
+          .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+          .where(
+            and(
+              eq(member.organizationId, organizationId),
+              eq(member.userId, actors[0]!.id),
+            ),
+          );
+        expect(result).toMatchObject({ code: "FORBIDDEN" });
+      }
+    }
   });
 
   it("reevaluates revoked assignments, Memberships, active Organization and Partner-only assignments", async () => {
