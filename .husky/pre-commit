@@ -13,39 +13,93 @@ fi
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -n "$staged" ] || exit 0
 
-# Refuse mixed trees instead of stashing. Stashing unstaged edits of staged
-# files and popping after oxfmt rewrote them fails whenever the formatter
-# touches the same region (the stash holds pre-format content), leaving an
-# unmerged tree and an orphaned stash behind. Aborting with guidance keeps
-# the tree intact; stage everything (or stash) and retry. Unstaged edits in
-# files outside this commit are untouched by the tools below and need no
-# protecting.
-if ! git diff --quiet -- $staged; then
-  echo 'husky: staged files also carry unstaged edits — commit from a clean tree.' >&2
-  echo 'Offending files:' >&2
-  git diff --name-only -- $staged >&2
-  echo 'Stage everything (git add -A) or stash your work, then commit again.' >&2
-  echo 'Never bypass with --no-verify.' >&2
-  exit 1
-fi
+# Format and lint the staged snapshot only, and never mix unstaged work into
+# the commit. Two paths per staged file, chosen by whether the file also has
+# unstaged edits:
+#
+#   staged only -> oxfmt rewrites the file in place and the file is re-staged,
+#                  so the commit and the working tree agree.
+#   mixed       -> oxfmt formats the staged blob through stdin (same config,
+#                  same ignore patterns, same Tailwind sorting) and the result
+#                  is written straight into the index. The working tree is
+#                  left untouched, so unstaged edits cannot leak into the
+#                  commit and nothing needs stashing or `git add` of the file.
+#
+# Partial staging is normal workflow, so a mixed tree is not a failure. The
+# invariant is narrower and absolute: the commit contains the staged snapshot,
+# no more.
+format_staged() {
+  staged_format=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+    | grep -vE '^(docs/|\.specify/|specs/)' \
+    || true)
+  [ -n "$staged_format" ] || return 0
 
-# Format every staged source file in place. The first grep keeps only file
-# types the formatter understands; the second grep drops paths the formatter
-# is configured to ignore (.oxfmtrc.json: docs, specs). Without that second
-# filter, a docs-only commit hands the formatter nothing it may touch, and
-# the formatter fails the whole commit instead of passing quietly.
-git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | grep -zvE '^(docs/|\.specify/|specs/)' \
-  | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+
+    # Only regular files carry a blob the formatter may rewrite. Symlinks and
+    # submodule entries keep their entry untouched.
+    entry=$(git ls-files -s -- "$path")
+    mode=${entry%% *}
+    case "$mode" in
+      100644 | 100755) ;;
+      *) continue ;;
+    esac
+
+    if git diff --quiet -- "$path"; then
+      # No unstaged edits: format in place and re-stage that one file.
+      pnpm exec oxfmt --write --no-error-on-unmatched-pattern -- "$path" || exit 1
+      git add -- "$path"
+      continue
+    fi
+
+    # Mixed tree: format the staged blob and update only the index entry.
+    blob_in=$(mktemp) || exit 1
+    blob_out=$(mktemp) || exit 1
+    if ! git show ":$path" > "$blob_in"; then
+      rm -f "$blob_in" "$blob_out"
+      echo "husky: could not read the staged version of $path" >&2
+      exit 1
+    fi
+    if ! pnpm exec oxfmt --stdin-filepath="$path" < "$blob_in" > "$blob_out"; then
+      rm -f "$blob_in" "$blob_out"
+      echo "husky: could not format the staged version of $path" >&2
+      exit 1
+    fi
+    if ! cmp -s "$blob_in" "$blob_out"; then
+      formatted=$(git hash-object -w --path="$path" "$blob_out") || {
+        rm -f "$blob_in" "$blob_out"
+        exit 1
+      }
+      git update-index --cacheinfo "$mode,$formatted,$path" || {
+        rm -f "$blob_in" "$blob_out"
+        exit 1
+      }
+      echo "husky: formatted the staged version of $path (unstaged edits kept)"
+    fi
+    rm -f "$blob_in" "$blob_out"
+  done <<EOF
+$staged_format
+EOF
+}
+
+format_staged
+
 # Lint every staged script file. Same selection idea, narrower file types:
 # only code reaches the linter, docs never do.
-# An oxlint run where every file is ignore-listed reports "No files found
-# to lint" — nothing to do is a pass, not a failure.
+# When every selected file is ignore-listed, oxlint reports "No files found to
+# lint" and exits nonzero — nothing to do is a pass, not a failure. Classify
+# the reported lines instead of comparing the whole output to one string:
+# oxlint wraps that message in its own run summary ("Finished in …"), so an
+# exact comparison fails commits that touch only ignore-listed files. Anything
+# that is not an ignorable line is a real finding and fails the commit.
 lint_out=$(git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json 2>&1) || {
-  if [ "$lint_out" != "No files found to lint. Please check your paths and ignore patterns." ]; then
+  lint_findings=$(printf '%s\n' "$lint_out" \
+    | grep -vE '^(No files found to lint\.|Finished in .*)$' || true)
+  if [ -n "$lint_findings" ]; then
     printf '%s\n' "$lint_out" >&2
     exit 1
   fi
@@ -71,11 +125,3 @@ if [ -n "$staged_tests" ]; then
 else
   echo 'husky: no staged test sources — skipping check:no-copy-assertions (CI still runs it).'
 fi
-
-# Only re-stage files that were selected from the original staged snapshot.
-# Uses the same two filters as the format step above, so exactly the files
-# the formatter may have rewritten get re-staged — nothing more.
-git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | grep -zvE '^(docs/|\.specify/|specs/)' \
-  | xargs -0 -r git add --
