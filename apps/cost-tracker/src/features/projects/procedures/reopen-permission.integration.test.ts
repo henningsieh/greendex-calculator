@@ -340,6 +340,33 @@ describe("Project reopen permission through Better Auth", () => {
     ).toEqual({ projectId, archived: false });
   });
 
+  it("denies Coordinator reopen without an action grant", async () => {
+    const response = await auth.api.signInEmail({
+      body: { email: email(actors[2]!.id), password },
+      asResponse: true,
+    });
+    const cookie = response.headers.get("set-cookie")?.split(";")[0];
+    if (!cookie) throw new Error("Sign-in did not return a session cookie");
+    const headers = new Headers({ cookie });
+    await auth.api.setActiveOrganization({ headers, body: { organizationId } });
+    expect(
+      await auth.api.hasPermission({
+        headers,
+        body: { permissions: { costTrackerProjectLifecycle: ["reopen"] } },
+      }),
+    ).toMatchObject({ success: false });
+    const client = createRouterClient(
+      { reopenProject },
+      { context: async () => ({ headers }) },
+    );
+    await expect(
+      client.reopenProject({ projectId, reason: "No reopen grant" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "ACCESS_DENIED" },
+    });
+  });
+
   it("reevaluates revoked assignments, Memberships, active Organization and Partner-only assignments", async () => {
     const actor = actors[2]!;
     const response = await auth.api.signInEmail({
@@ -376,6 +403,28 @@ describe("Project reopen permission through Better Auth", () => {
       .values({ projectId: otherProjectId, userId: actor.id });
     await expect(client.archiveProject({ projectId })).rejects.toMatchObject({
       code: "FORBIDDEN",
+    });
+    await db
+      .delete(hostProjectAssignmentsTable)
+      .where(eq(hostProjectAssignmentsTable.userId, actor.id));
+    const partnershipId = randomUUID();
+    await db.insert(projectPartnerOrganizationsTable).values({
+      id: partnershipId,
+      projectId,
+      organizationId: foreignOrganizationId,
+    });
+    await db
+      .insert(partnerCoordinatorAssignmentsTable)
+      .values({ partnershipId, userId: actor.id });
+    expect(
+      await auth.api.hasPermission({
+        headers,
+        body: { permissions: { costTrackerProjectLifecycle: ["archive"] } },
+      }),
+    ).toMatchObject({ success: true });
+    await expect(client.archiveProject({ projectId })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "HOST_COORDINATION_REQUIRED" },
     });
     await db.insert(member).values({
       id: randomUUID(),
@@ -423,17 +472,6 @@ describe("Project reopen permission through Better Auth", () => {
             eq(member.organizationId, foreignOrganizationId),
           ),
         );
-      if (role === "coordinator") {
-        const partnershipId = randomUUID();
-        await db.insert(projectPartnerOrganizationsTable).values({
-          id: partnershipId,
-          projectId,
-          organizationId: foreignOrganizationId,
-        });
-        await db
-          .insert(partnerCoordinatorAssignmentsTable)
-          .values({ partnershipId, userId: actor.id });
-      }
       await expect(client.archiveProject({ projectId })).rejects.toMatchObject({
         code: role === "coordinator" ? "FORBIDDEN" : "NOT_FOUND",
       });
