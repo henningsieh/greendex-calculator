@@ -307,6 +307,78 @@ it.each(lifecycleCases)(
   },
 );
 
+it.each(["owner", "admin"])(
+  "bounds list availability database reads for %s as the Project count grows",
+  async (role) => {
+    const actorId = await lifecycleActor(role);
+    useHeaders(await signInSession(actorId));
+    const assignedId = await lifecycleProject();
+    await db.insert(hostProjectAssignmentsTable).values({
+      projectId: assignedId,
+      userId: actorId,
+    });
+    await db
+      .update(projectsTable)
+      .set({ archived: true })
+      .where(eq(projectsTable.id, assignedId));
+    await client.projects.list({});
+    const pool = globalThis.__pool;
+    if (!pool) throw new Error("Database pool was not initialized");
+    const reads = vi.spyOn(pool, "query");
+    try {
+      const before = await client.projects.list({});
+      const beforeReads = reads.mock.calls.length;
+      reads.mockClear();
+      const extraIds = await Promise.all(
+        Array.from({ length: 4 }, () => lifecycleProject()),
+      );
+      reads.mockClear();
+      const after = await client.projects.list({});
+      const afterReads = reads.mock.calls.length;
+      expect(after).toHaveLength(before.length + 4);
+      expect(after.find((project) => project.id === assignedId)).toMatchObject({
+        archived: true,
+        canArchive: true,
+        canReopen: true,
+      });
+      for (const id of extraIds) {
+        expect(after.find((project) => project.id === id)).toMatchObject({
+          canArchive: role === "owner",
+          canReopen: role === "owner",
+        });
+      }
+      console.info(
+        JSON.stringify({
+          role,
+          beforeProjects: before.length,
+          afterProjects: after.length,
+          beforeReads,
+          afterReads,
+        }),
+      );
+      expect(afterReads).toBe(beforeReads);
+      expect(afterReads).toBeLessThanOrEqual(12);
+      await db
+        .delete(hostProjectAssignmentsTable)
+        .where(
+          and(
+            eq(hostProjectAssignmentsTable.projectId, assignedId),
+            eq(hostProjectAssignmentsTable.userId, actorId),
+          ),
+        );
+      const refreshed = await client.projects.list({});
+      expect(
+        refreshed.find((project) => project.id === assignedId),
+      ).toMatchObject({
+        canArchive: role === "owner",
+        canReopen: role === "owner",
+      });
+    } finally {
+      reads.mockRestore();
+    }
+  },
+);
+
 it("reevaluates Calculator Membership, assignment, tenant and actor context on every command", async () => {
   const actorId = await lifecycleActor("admin");
   const id = await lifecycleProject();

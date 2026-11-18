@@ -48,12 +48,17 @@ async function lifecycleAvailability(
   actorId: string,
   activeOrganizationId: string,
 ) {
-  const request = { executor: db, projectId, actorId, activeOrganizationId };
-  const [archive, reopen] = await Promise.all([
-    authorizeCalculatorProjectLifecycle({ ...request, action: "archive" }),
-    authorizeCalculatorProjectLifecycle({ ...request, action: "reopen" }),
-  ]);
-  return { canArchive: archive.allowed, canReopen: reopen.allowed };
+  const decisions = await authorizeCalculatorProjectLifecycle.batch({
+    executor: db,
+    projectIds: [projectId],
+    actorId,
+    activeOrganizationId,
+    actions: ["archive", "reopen"],
+  });
+  return {
+    canArchive: decisions.get(projectId)?.get("archive")?.allowed === true,
+    canReopen: decisions.get(projectId)?.get("reopen")?.allowed === true,
+  };
 }
 
 async function hasHostAssignment(projectId: string, userId: string) {
@@ -190,16 +195,18 @@ export const listProjects = authorized
       },
     });
 
-    return Promise.all(
-      projects.map(async (project) => ({
-        ...project,
-        ...(await lifecycleAvailability(
-          project.id,
-          context.user.id,
-          context.session.activeOrganizationId!,
-        )),
-      })),
-    );
+    const decisions = await authorizeCalculatorProjectLifecycle.batch({
+      executor: db,
+      projectIds: projects.map((project) => project.id),
+      actorId: context.user.id,
+      activeOrganizationId: context.session.activeOrganizationId,
+      actions: ["archive", "reopen"],
+    });
+    return projects.map((project) => ({
+      ...project,
+      canArchive: decisions.get(project.id)?.get("archive")?.allowed === true,
+      canReopen: decisions.get(project.id)?.get("reopen")?.allowed === true,
+    }));
   });
 
 /**

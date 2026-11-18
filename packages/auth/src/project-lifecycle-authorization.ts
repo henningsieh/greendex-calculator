@@ -4,7 +4,7 @@ import {
   projectsTable,
   hostProjectAssignmentsTable,
 } from "@greendex/database/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { parseOrganizationRoles } from "./organization-roles";
 import {
@@ -43,19 +43,64 @@ export type ProjectLifecycleDecision =
         | "assignmentRequired";
     };
 
+export type ProjectLifecycleBatchRequest = Omit<
+  ProjectLifecycleRequest,
+  "projectId" | "action"
+> & {
+  projectIds: readonly ProjectLifecycleRequest["projectId"][];
+  actions: readonly ProjectLifecyclePermission[];
+};
+
 export function bindProjectLifecycleAuthorization(
   resource: ProjectLifecycleResource,
 ) {
-  return async function authorizeProjectLifecycle({
+  async function batch({
     executor,
     actorId,
     activeOrganizationId,
-    projectId,
-    action,
-  }: ProjectLifecycleRequest): Promise<ProjectLifecycleDecision> {
-    if (!actorId) return { allowed: false, reason: "unauthenticated" };
+    projectIds,
+    actions,
+  }: ProjectLifecycleBatchRequest) {
+    const decisions = new Map<
+      ProjectLifecycleRequest["projectId"],
+      Map<ProjectLifecyclePermission, ProjectLifecycleDecision>
+    >();
+    const ids = [...new Set(projectIds)];
+    const scopes = new Map<
+      ProjectLifecyclePermission,
+      ReturnType<typeof projectLifecycleScope>
+    >();
+    const ownedIds = new Set<ProjectLifecycleRequest["projectId"]>();
+    const assignedIds = new Set<ProjectLifecycleRequest["projectId"]>();
+    function decisionFor(
+      projectId: ProjectLifecycleRequest["projectId"],
+      action: ProjectLifecyclePermission,
+    ): ProjectLifecycleDecision {
+      const scope = scopes.get(action);
+      if (!scope) return { allowed: false, reason: "actionDenied" };
+      if (!ownedIds.has(projectId))
+        return { allowed: false, reason: "projectNotFound" };
+      if (scope === "assigned" && !assignedIds.has(projectId))
+        return { allowed: false, reason: "assignmentRequired" };
+      return { allowed: true, projectId, scope };
+    }
+    function result(denial?: ProjectLifecycleDecision) {
+      for (const projectId of ids) {
+        const perAction = new Map<
+          ProjectLifecyclePermission,
+          ProjectLifecycleDecision
+        >();
+        for (const action of actions) {
+          perAction.set(action, denial ?? decisionFor(projectId, action));
+        }
+        decisions.set(projectId, perAction);
+      }
+      return decisions;
+    }
+    if (!ids.length || !actions.length) return decisions;
+    if (!actorId) return result({ allowed: false, reason: "unauthenticated" });
     if (!activeOrganizationId)
-      return { allowed: false, reason: "activeOrganizationRequired" };
+      return result({ allowed: false, reason: "activeOrganizationRequired" });
     const [membership] = await executor
       .select({ role: member.role })
       .from(member)
@@ -66,43 +111,64 @@ export function bindProjectLifecycleAuthorization(
         ),
       )
       .limit(1);
-    if (!membership) return { allowed: false, reason: "membershipRequired" };
+    if (!membership)
+      return result({ allowed: false, reason: "membershipRequired" });
     const roles = parseOrganizationRoles(membership.role);
-    const granted = roles.some((role) =>
-      resource === "calculatorProjectLifecycle"
-        ? calculatorOrganizationRoles[role].authorize({
-            calculatorProjectLifecycle: [action],
-          }).success
-        : costTrackerOrganizationRoles[role].authorize({
-            costTrackerProjectLifecycle: [action],
-          }).success,
-    );
-    const scope = projectLifecycleScope(resource, membership.role, action);
-    if (!granted || !scope) return { allowed: false, reason: "actionDenied" };
-    const [project] = await executor
+    for (const action of actions) {
+      const granted = roles.some((role) =>
+        resource === "calculatorProjectLifecycle"
+          ? calculatorOrganizationRoles[role].authorize({
+              calculatorProjectLifecycle: [action],
+            }).success
+          : costTrackerOrganizationRoles[role].authorize({
+              costTrackerProjectLifecycle: [action],
+            }).success,
+      );
+      if (granted)
+        scopes.set(
+          action,
+          projectLifecycleScope(resource, membership.role, action),
+        );
+    }
+    if (![...scopes.values()].some(Boolean)) return result();
+    const projects = await executor
       .select({ id: projectsTable.id })
       .from(projectsTable)
       .where(
         and(
-          eq(projectsTable.id, projectId),
+          inArray(projectsTable.id, ids),
           eq(projectsTable.organizationId, activeOrganizationId),
         ),
-      )
-      .limit(1);
-    if (!project) return { allowed: false, reason: "projectNotFound" };
-    if (scope === "assigned") {
-      const [assignment] = await executor
-        .select({ userId: hostProjectAssignmentsTable.userId })
+      );
+    for (const project of projects) ownedIds.add(project.id);
+    if (ownedIds.size && [...scopes.values()].includes("assigned")) {
+      const assignments = await executor
+        .select({ projectId: hostProjectAssignmentsTable.projectId })
         .from(hostProjectAssignmentsTable)
         .where(
           and(
-            eq(hostProjectAssignmentsTable.projectId, projectId),
+            inArray(hostProjectAssignmentsTable.projectId, [...ownedIds]),
             eq(hostProjectAssignmentsTable.userId, actorId),
           ),
-        )
-        .limit(1);
-      if (!assignment) return { allowed: false, reason: "assignmentRequired" };
+        );
+      for (const assignment of assignments) assignedIds.add(assignment.projectId);
     }
-    return { allowed: true, projectId: project.id, scope };
-  };
+    return result();
+  }
+
+  return Object.assign(
+    async (
+      request: ProjectLifecycleRequest,
+    ): Promise<ProjectLifecycleDecision> => {
+      const decisions = await batch({
+        ...request,
+        projectIds: [request.projectId],
+        actions: [request.action],
+      });
+      const decision = decisions.get(request.projectId)?.get(request.action);
+      if (!decision) throw new Error("Missing Project lifecycle decision");
+      return decision;
+    },
+    { batch },
+  );
 }

@@ -422,18 +422,20 @@ export const getProject = authorized
         .orderBy(asc(organization.name), asc(organization.id));
       const request = {
         executor: transaction,
-        projectId: hostedProject.id,
+        projectIds: [hostedProject.id],
         actorId: context.user.id,
         activeOrganizationId,
       };
-      const [archive, reopen] = await Promise.all([
-        authorizeCostTrackerProjectLifecycle({ ...request, action: "archive" }),
-        authorizeCostTrackerProjectLifecycle({ ...request, action: "reopen" }),
-      ]);
+      const decisions = await authorizeCostTrackerProjectLifecycle.batch({
+        ...request,
+        actions: ["archive", "reopen"],
+      });
       return {
         partnerOrganizations,
-        canArchive: archive.allowed,
-        canReopen: reopen.allowed,
+        canArchive:
+          decisions.get(hostedProject.id)?.get("archive")?.allowed === true,
+        canReopen:
+          decisions.get(hostedProject.id)?.get("reopen")?.allowed === true,
       };
     });
 
