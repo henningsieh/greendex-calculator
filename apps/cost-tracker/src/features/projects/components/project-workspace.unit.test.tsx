@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -405,6 +406,50 @@ describe("Project workspace", () => {
     await waitFor(() => {
       expect(screen.getByTestId("archive-project")).toBeEnabled();
     });
+    expect(screen.getByTestId("archive-project")).toBeInTheDocument();
+  });
+
+  it.each(["FORBIDDEN", "NOT_FOUND"] as const)(
+    "refreshes lifecycle availability on %s",
+    async (code) => {
+      const user = userEvent.setup();
+      mocks.detail = {
+        ...baseProject,
+        relationship: "hosted",
+        canArchive: true,
+        completedAt: null,
+        partnerOrganizations: [],
+      };
+      mocks.archive.mockImplementation(async () => {
+        mocks.detail = { ...mocks.detail, canArchive: false };
+        throw new ORPCError(code);
+      });
+      renderWorkspace();
+      await user.click(await screen.findByTestId("archive-project"));
+      await user.click(await screen.findByTestId("confirm-dialog-execute"));
+      await waitFor(() =>
+        expect(screen.queryByTestId("archive-project")).toBeNull(),
+      );
+    },
+  );
+
+  it("does not refresh lifecycle availability on a network error", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      canArchive: true,
+      completedAt: null,
+      partnerOrganizations: [],
+    };
+    mocks.archive.mockImplementation(async () => {
+      mocks.detail = { ...mocks.detail, canArchive: false };
+      throw new Error("Network unavailable");
+    });
+    renderWorkspace();
+    await user.click(await screen.findByTestId("archive-project"));
+    await user.click(await screen.findByTestId("confirm-dialog-execute"));
+    await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalled());
     expect(screen.getByTestId("archive-project")).toBeInTheDocument();
   });
 

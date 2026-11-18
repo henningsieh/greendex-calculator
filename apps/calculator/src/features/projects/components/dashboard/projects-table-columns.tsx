@@ -39,6 +39,7 @@ import {
   EditProjectForm,
   EditProjectFormSkeleton,
 } from "@/features/projects/components/edit-project-form";
+import { refreshLifecycleAvailabilityOnRefusal } from "@/features/projects/components/refresh-lifecycle-availability";
 import { SortableHeader } from "@/features/projects/components/sortable-header";
 import type { ProjectWithLifecycleType } from "@/features/projects/types";
 import {
@@ -338,6 +339,7 @@ function ProjectActionsCell({ project }: { project: ProjectWithLifecycleType }) 
         }
       },
       onError: (err: unknown) => {
+        refreshLifecycleAvailabilityOnRefusal(err, queryClient, project.id);
         console.error(err);
         const message = err instanceof Error ? err.message : String(err);
         toast.error(message || t("form.archive.toast-error-generic"));
