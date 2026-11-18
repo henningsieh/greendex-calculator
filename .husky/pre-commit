@@ -98,7 +98,7 @@ lint_out=$(git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json 2>&1) || {
   lint_findings=$(printf '%s\n' "$lint_out" \
-    | grep -vE '^(No files found to lint\.|Finished in .*)$' || true)
+    | grep -vE -e '^No files found to lint\.' -e '^Finished in .*$' || true)
   if [ -n "$lint_findings" ]; then
     printf '%s\n' "$lint_out" >&2
     exit 1
