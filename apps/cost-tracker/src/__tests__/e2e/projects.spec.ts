@@ -249,7 +249,9 @@ test.describe("Cost Tracker Project production path", () => {
     await page.goto("/partner-organizations");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-    // Text-free hook: the assignment dialog carries a stable test id.
+    // Text-free hook: the assignment dialog lives in the actions overflow
+    // menu and carries a stable test id.
+    await page.getByTestId("partnership-actions-menu").click();
     await page.getByTestId("assign-organization").click();
     const assignment = page.locator('[data-testid="organization-assignment"]');
     await assignment

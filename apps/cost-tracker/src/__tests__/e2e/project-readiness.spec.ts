@@ -302,11 +302,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await page.getByTestId("archive-project").click();
     await page.getByTestId("confirm-dialog-execute").click();
     await expect(page.getByTestId("reopen-project")).toBeVisible();
-    const explanation = page.getByTestId("archive-explanation-trigger");
-    await explanation.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
-    await page.keyboard.press("Escape");
+    // The reopen button carries its own reason dialog, so the archived
+    // explanation stays hidden while reopening is available.
+    await expect(page.getByTestId("archive-explanation-trigger")).toHaveCount(0);
     await page.getByTestId("reopen-project").click();
     await page.locator("#reopen-reason").fill("Correct a test record");
     await page.getByRole("dialog").getByTestId("reopen-project-confirm").click();
@@ -333,6 +331,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       );
       await expect(page.getByTestId("archive-project")).toHaveCount(0);
       await expect(page.getByTestId("reopen-project")).toHaveCount(0);
+      // Without reopen permission the header shows the [i] explanation
+      // instead of the button.
+      await expect(page.getByTestId("archive-explanation-trigger")).toBeVisible();
       await page.close();
     } finally {
       await db
@@ -350,21 +351,41 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     browser,
     baseURL,
   }) => {
-    const context = await browser.newContext({
-      baseURL,
-      storageState: await hostContext!.storageState(),
-      hasTouch: true,
-    });
+    // The [i] explanation only shows when reopening is unavailable, so run
+    // as a coordinator without the reopen permission (mirrors the demotion
+    // in "may archive but cannot reopen").
+    await db
+      .update(member)
+      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
+      .where(eq(member.userId, ids.hostUser));
     try {
-      const page = await context.newPage();
-      await openHostedProject(page, zeroURL);
-      await page.getByTestId("archive-project").click();
-      await page.getByTestId("confirm-dialog-execute").click();
-      await expect(page.getByTestId("reopen-project")).toBeVisible();
-      await page.getByTestId("archive-explanation-trigger").tap();
-      await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
+      const context = await browser.newContext({
+        baseURL,
+        storageState: await hostContext!.storageState(),
+        hasTouch: true,
+      });
+      try {
+        const page = await context.newPage();
+        await openHostedProject(page, zeroURL);
+        await page.getByTestId("archive-project").click();
+        await page.getByTestId("confirm-dialog-execute").click();
+        await expect(page.getByTestId("reopen-project")).toHaveCount(0);
+        await page.getByTestId("archive-explanation-trigger").tap();
+        await expect(
+          page.getByTestId("archive-explanation-content"),
+        ).toBeVisible();
+      } finally {
+        await context.close();
+      }
     } finally {
-      await context.close();
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(eq(member.userId, ids.hostUser));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.zero));
     }
   });
 

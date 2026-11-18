@@ -2,9 +2,15 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { CalendarDaysIcon, MapPinIcon, UsersIcon } from "lucide-react";
-import { Suspense, useState, useSyncExternalStore } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  ArrowUpRightIcon,
+  CalendarDaysIcon,
+  MapPinIcon,
+  Users2Icon,
+  UsersIcon,
+} from "lucide-react";
+import { Suspense, useSyncExternalStore } from "react";
 
 import {
   partnershipClaimPath,
@@ -19,13 +25,12 @@ import {
   StatLabel,
   StatNumber,
 } from "@/components/brand/stat-grid";
-import { useConfirmDialog } from "@/components/confirm-dialog";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
-import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { OrgAvatar } from "@/components/org-avatar";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -34,87 +39,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from "@/components/ui/empty";
 import {
   type ClaimStatus,
-  canCompleteProject,
   isClaimAwaitingReview,
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
-import { invalidatePartnershipProjectData } from "@/features/partnerships/components/invalidate-partnership-data";
 import {
-  ArchivedPartnershipActions,
   PartnershipActions,
+  PartnershipShortcutLinks,
 } from "@/features/partnerships/components/partnership-actions";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
+import { ProjectLifecycleActions } from "@/features/projects/components/project-lifecycle-actions";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
-import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-
-function ProjectHeaderActions({
-  canComplete,
-  completing,
-  onComplete,
-  canReopen,
-  onReopen,
-  archived,
-  projectId,
-  showPartnershipDialogs,
-}: {
-  canComplete: boolean;
-  completing: boolean;
-  onComplete: () => void;
-  canReopen: boolean;
-  onReopen: () => void;
-  archived: boolean;
-  projectId: string;
-  showPartnershipDialogs: boolean;
-}) {
-  const t = useTranslations("projects.workspace");
-  if (!canComplete && !canReopen && !showPartnershipDialogs) return null;
-  return (
-    // Stacked like the Partner Organizations header: the actions own the
-    // right edge, one per line, instead of competing for width.
-    <div className="flex flex-col gap-2">
-      {canComplete ? (
-        <Button
-          data-testid="archive-project"
-          disabled={completing}
-          onClick={onComplete}
-          type="button"
-        >
-          {completing ? t("archiving") : t("archive")}
-        </Button>
-      ) : null}
-      {canReopen ? (
-        <Button
-          data-testid="reopen-project"
-          onClick={onReopen}
-          type="button"
-          variant="outline"
-        >
-          {t("reopen")}
-        </Button>
-      ) : null}
-      {showPartnershipDialogs && archived ? (
-        <ArchivedPartnershipActions />
-      ) : showPartnershipDialogs ? (
-        <Suspense fallback={<ProjectOptionsLoading />}>
-          <PartnershipActions projectId={projectId} />
-        </Suspense>
-      ) : null}
-    </div>
-  );
-}
+import { orpcQuery } from "@/lib/orpc/orpc";
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("projects.workspace");
@@ -155,6 +98,226 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   );
 }
 
+type AssignedPartner = {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  claimStatus: ClaimStatus | null;
+  assignedAt: Date;
+};
+
+/**
+ * Assigned Partners card (hosted view). Owns the partnership dialogs in its
+ * header toolbar — secondary outline openers next to the count badge — so
+ * the page header keeps only the single irreversible project action.
+ */
+function AssignedPartnersCard({
+  partners,
+  projectId,
+  archived,
+  showDialogs,
+}: {
+  partners: readonly AssignedPartner[];
+  projectId: string;
+  archived: boolean;
+  showDialogs: boolean;
+}) {
+  const t = useTranslations("projects.workspace");
+  const dateFormat = useDateFormat();
+  return (
+    <Card data-testid="assigned-partner-organizations">
+      <CardHeader>
+        <div>
+          <CardTitle as="h2">{t("assignedPartners")}</CardTitle>
+        </div>
+        <CardAction>
+          {archived ? (
+            <Badge variant="status-destructive-solid">{t("archived")}</Badge>
+          ) : showDialogs ? (
+            <Suspense fallback={<ProjectOptionsLoading />}>
+              <PartnershipActions projectId={projectId} tone="secondary" />
+            </Suspense>
+          ) : null}
+        </CardAction>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="flex items-center justify-start gap-2">
+          <Badge variant="outline">
+            <EntityIcon entity="partnerOrganization" className="size-3" />
+            {t("partnersCount", { count: partners.length })}
+          </Badge>
+        </div>
+        {partners.length === 0 ? (
+          <Empty data-testid="assigned-partnerships-empty" variant="outlined">
+            <EmptyMedia variant="icon">
+              <Users2Icon
+                aria-hidden="true"
+                className="size-7 text-muted-foreground"
+              />
+              {/* <EntityIcon entity="partnerOrganization" /> */}
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyDescription>
+                {t("noPartners")}{" "}
+                {showDialogs && !archived ? (
+                  <Suspense fallback={null}>
+                    <PartnershipShortcutLinks projectId={projectId} />
+                  </Suspense>
+                ) : null}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <div
+            className={showDialogs ? "border-t border-border/60 pt-5" : undefined}
+          >
+            <ul className="divide-y divide-border">
+              {partners.map((partner) => (
+                <li
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4 first:pt-0 last:pb-0"
+                  data-organization-id={partner.organizationId}
+                  data-partnership-id={partner.id}
+                  key={partner.id}
+                >
+                  <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+                    <OrgAvatar name={partner.organizationName} />
+                    <div className="min-w-0 space-y-0.5">
+                      {/* The Partnership detail route is deliberately
+                        header-only this release, so the row links to that
+                        Partner's Participants instead — the actionable
+                        destination for this Partnership. */}
+                      <Link
+                        className="block font-medium wrap-break-word underline-offset-4 hover:underline hover:decoration-brand hover:decoration-2"
+                        href={partnershipParticipantsPath(partner.id)}
+                      >
+                        {partner.organizationName}
+                      </Link>
+                      <p className="text-sm text-muted-foreground">
+                        {t("assigned")}{" "}
+                        {dateFormat.format(partner.assignedAt, "date.medium")}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <ClaimReadiness status={partner.claimStatus} />
+                    {/* The review page hangs under this Hosted Project, so
+                      the row is its way in: the global queue also lists
+                      every submitted Claim, this links one Partnership.
+                      No reviewable Claim means no link at all — the badge
+                      already carries the state, so an inert duplicate would
+                      only pretend at navigation. */}
+                    {isClaimReviewable(partner.claimStatus) ? (
+                      <Link
+                        className={buttonVariants({
+                          variant: "link",
+                          size: "sm",
+                        })}
+                        href={partnershipClaimReviewPath(partner.id)}
+                        data-testid={`review-claim-${partner.id}`}
+                      >
+                        <EntityIcon entity="claim" className="size-3.5" />
+                        {t("claimReview")}
+                        <ArrowUpRightIcon aria-hidden="true" />
+                      </Link>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Partner view: hosting identity and the two related workspaces as links. */
+function PartnerProjectCard({
+  hostingId,
+  hostingName,
+  partnership,
+}: {
+  hostingId: string;
+  hostingName: string;
+  partnership: {
+    id: string;
+    claimStatus: ClaimStatus | null;
+    assignedAt: Date;
+    updatedAt: Date;
+  };
+}) {
+  const t = useTranslations("projects.workspace");
+  const dateFormat = useDateFormat();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("partnership")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div
+          className="flex items-center gap-3"
+          data-organization-id={hostingId}
+          data-testid="hosting-organization"
+        >
+          <EntityIcon
+            entity="organization"
+            className="size-5 shrink-0 text-muted-foreground"
+          />
+          <p className="text-sm">
+            <span className="text-muted-foreground">
+              {t("hostingOrganization")}{" "}
+            </span>
+            <span className="font-medium">{hostingName}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="w-5 shrink-0" aria-hidden="true" />
+          <p className="text-sm">
+            <span className="text-muted-foreground">{t("claimReadiness")} </span>
+            <ClaimReadiness status={partnership.claimStatus} />
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {t("assignedLabel")}{" "}
+          {dateFormat.format(partnership.assignedAt, "date.medium")}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("assignmentUpdated")}{" "}
+          {dateFormat.format(partnership.updatedAt, "date.medium")}
+        </p>
+        {/* Both entries navigate to related workspaces: typographic
+            links with arrows, never outline buttons that read as actions. */}
+        <div className="flex flex-wrap gap-x-2 gap-y-1 pt-1">
+          <Link
+            className={buttonVariants({
+              variant: "link",
+              size: "sm",
+            })}
+            href={partnershipParticipantsPath(partnership.id)}
+            data-testid="coordinate-participants"
+          >
+            <UsersIcon aria-hidden="true" />
+            {t("projectParticipations")}
+            <ArrowUpRightIcon aria-hidden="true" />
+          </Link>
+          <Link
+            className={buttonVariants({
+              variant: "link",
+              size: "sm",
+            })}
+            href={partnershipClaimPath(partnership.id)}
+            data-testid="open-claim-workspace"
+          >
+            <EntityIcon entity="claim" className="size-3.5" />
+            {t("openClaim")}
+            <ArrowUpRightIcon aria-hidden="true" />
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ProjectWorkspace({
   projectId,
   canManagePartnerships = false,
@@ -163,14 +326,8 @@ export function ProjectWorkspace({
   /** Presentation-only: the dialogs re-enforce on every call. */
   canManagePartnerships?: boolean;
 }) {
-  const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
-  const [completing, setCompleting] = useState(false);
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
-  const [reopenOpen, setReopenOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const { confirm, dialog } = useConfirmDialog();
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -184,74 +341,6 @@ export function ProjectWorkspace({
   );
 
   const isHosted = project.relationship === "hosted";
-  const canComplete =
-    project.relationship === "hosted" &&
-    project.canArchive === true &&
-    !project.archived &&
-    canCompleteProject(
-      project.partnerOrganizations.map(({ claimStatus }) => claimStatus),
-    );
-
-  async function refreshProjectState() {
-    await Promise.all([
-      invalidatePartnershipProjectData(queryClient),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projectPartnerships.listSetupLinks.key({
-          type: "query",
-        }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.claims.reviewerAccess.key({ type: "query" }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.participations.listPartnership.key({ type: "query" }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.participations.get.key({ type: "query" }),
-      }),
-    ]);
-  }
-
-  async function completeProject() {
-    if (completing) return;
-    if (
-      !(await confirm({
-        title: t("archiveConfirmTitle"),
-        description: t("archiveConfirmDescription"),
-        confirmText: t("archive"),
-        isDestructive: true,
-      }))
-    )
-      return;
-    setCompleting(true);
-    setFeedback("");
-    try {
-      await orpc.projects.archive({ projectId });
-      setFeedback(t("archiveFeedback"));
-      await refreshProjectState();
-    } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
-    } finally {
-      setCompleting(false);
-    }
-  }
-
-  async function reopenProject() {
-    if (completing || !reason.trim()) return;
-    setCompleting(true);
-    setFeedback("");
-    try {
-      await orpc.projects.reopen({ projectId, reason });
-      setReopenOpen(false);
-      setReason("");
-      setFeedback(t("reopenFeedback"));
-      await refreshProjectState();
-    } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
-    } finally {
-      setCompleting(false);
-    }
-  }
 
   const daysLeft = project.daysLeft;
   // All stats share one fate: the numbers below mix long-standing fields
@@ -281,32 +370,8 @@ export function ProjectWorkspace({
       data-testid="project-workspace"
     >
       <header className="space-y-4">
-        {dialog}
-        <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("reopen")}</DialogTitle>
-              <DialogDescription>{t("reopenDescription")}</DialogDescription>
-            </DialogHeader>
-            <Label htmlFor="reopen-reason">{t("reopenReason")}</Label>
-            <Textarea
-              id="reopen-reason"
-              value={reason}
-              maxLength={2000}
-              onChange={(event) => setReason(event.target.value)}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                disabled={!reason.trim() || completing}
-                data-testid="reopen-project-confirm"
-                onClick={reopenProject}
-              >
-                {t("reopen")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Lifecycle owns its buttons, dialogs and feedback: the header
+            only hands the component over into its action slot. */}
         <ProtectedPageHeader
           eyebrow={
             project.relationship === "hosted"
@@ -314,32 +379,16 @@ export function ProjectWorkspace({
               : t("partnerProject")
           }
           title={project.name}
-          rightButton={
-            <ProjectHeaderActions
-              canComplete={canComplete}
-              completing={completing}
-              onComplete={completeProject}
-              canReopen={isHosted && project.archived && project.canReopen}
-              onReopen={() => setReopenOpen(true)}
-              archived={project.archived}
-              projectId={project.id}
-              showPartnershipDialogs={canManagePartnerships && isHosted}
-            />
-          }
+          rightButton={<ProjectLifecycleActions projectId={project.id} />}
         />
-        <div className="flex flex-wrap items-center gap-2">
-          {project.archived && <Badge variant="secondary">{t("archived")}</Badge>}
-        </div>
-        {feedback && (
-          <div
-            data-testid="project-feedback"
-            aria-live="polite"
-            aria-atomic="true"
-            className="text-sm"
-          >
-            {feedback}
+        {/* Hosted archived state lives as a destructive badge in the
+            AssignedPartnersCard action slot; the header keeps it only for
+            partner views, which have no such card. */}
+        {project.archived && !isHosted ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{t("archived")}</Badge>
           </div>
-        )}
+        ) : null}
       </header>
 
       {statsReady ? (
@@ -445,6 +494,7 @@ export function ProjectWorkspace({
         </div>
         {project.relationship === "hosted" && (
           <div className="flex shrink-0 items-center">
+            {/* Navigation, not an action: typographic link with an arrow. */}
             <Link
               className={buttonVariants({ variant: "link", size: "sm" })}
               href={projectParticipantsPath(project.id)}
@@ -452,172 +502,25 @@ export function ProjectWorkspace({
             >
               <UsersIcon aria-hidden="true" />
               {t("participants")}
+              <ArrowUpRightIcon aria-hidden="true" />
             </Link>
           </div>
         )}
       </section>
 
       {project.relationship === "hosted" ? (
-        <Card data-testid="assigned-partner-organizations">
-          <CardHeader>
-            <div>
-              <CardTitle as="h2">{t("assignedPartners")}</CardTitle>
-            </div>
-            <CardAction>
-              <Badge variant="outline">
-                <EntityIcon entity="partnerOrganization" className="size-3" />
-                {t("partnersCount", {
-                  count: project.partnerOrganizations.length,
-                })}
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {project.partnerOrganizations.length === 0 ? (
-              <Empty data-testid="assigned-partnerships-empty" variant="outlined">
-                <EmptyHeader>
-                  <EmptyDescription>
-                    {t("noPartners")}{" "}
-                    <Link
-                      className={buttonVariants({ variant: "link" })}
-                      href="/partner-organizations"
-                    >
-                      {t("invitePartners")}
-                    </Link>
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <ul className="divide-y divide-border">
-                {project.partnerOrganizations.map((partner) => (
-                  <li
-                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4 first:pt-0 last:pb-0"
-                    data-organization-id={partner.organizationId}
-                    data-partnership-id={partner.id}
-                    key={partner.id}
-                  >
-                    <div className="min-w-0 space-y-0.5">
-                      {/* The Partnership detail route is deliberately
-                          header-only this release, so the row links to that
-                          Partner's Participants instead — the actionable
-                          destination for this Partnership. */}
-                      <Link
-                        className="block truncate font-medium hover:underline"
-                        href={partnershipParticipantsPath(partner.id)}
-                      >
-                        {partner.organizationName}
-                      </Link>
-                      <p className="text-sm text-muted-foreground">
-                        {t("assigned")}{" "}
-                        {dateFormat.format(partner.assignedAt, "date.medium")}
-                      </p>
-                    </div>
-                    <span className="flex flex-wrap items-center gap-3">
-                      <ClaimReadiness status={partner.claimStatus} />
-                      {/* The review page hangs under this Hosted Project, so
-                          the row is its way in: the global queue also lists
-                          every submitted Claim, this links one Partnership. */}
-                      {isClaimReviewable(partner.claimStatus) ? (
-                        <Link
-                          className={buttonVariants({
-                            variant: "link",
-                            size: "sm",
-                          })}
-                          href={partnershipClaimReviewPath(partner.id)}
-                          data-testid={`review-claim-${partner.id}`}
-                        >
-                          <EntityIcon entity="claim" className="size-3.5" />
-                          {t("claimReview")}
-                        </Link>
-                      ) : (
-                        // No Claim exists for this Partnership yet: keep the
-                        // affordance visible but inert, so the row reads the
-                        // same for every Partner without offering a dead end.
-                        <Button
-                          data-testid={`review-claim-${partner.id}`}
-                          disabled
-                          size="sm"
-                          type="button"
-                          variant="link"
-                        >
-                          <EntityIcon entity="claim" className="size-3.5" />
-                          {t("claimReview")}
-                        </Button>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <AssignedPartnersCard
+          archived={project.archived}
+          partners={project.partnerOrganizations}
+          projectId={project.id}
+          showDialogs={canManagePartnerships && isHosted}
+        />
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle as="h2">{t("partnership")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div
-              className="flex items-center gap-3"
-              data-organization-id={project.hostingOrganization.id}
-              data-testid="hosting-organization"
-            >
-              <EntityIcon
-                entity="organization"
-                className="size-5 shrink-0 text-muted-foreground"
-              />
-              <p className="text-sm">
-                <span className="text-muted-foreground">
-                  {t("hostingOrganization")}{" "}
-                </span>
-                <span className="font-medium">
-                  {project.hostingOrganization.name}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-5 shrink-0" aria-hidden="true" />
-              <p className="text-sm">
-                <span className="text-muted-foreground">
-                  {t("claimReadiness")}{" "}
-                </span>
-                <ClaimReadiness status={project.partnership.claimStatus} />
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t("assignedLabel")}{" "}
-              {dateFormat.format(project.partnership.assignedAt, "date.medium")}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {t("assignmentUpdated")}{" "}
-              {dateFormat.format(project.partnership.updatedAt, "date.medium")}
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Link
-                className={buttonVariants({
-                  variant: "outline",
-                  size: "sm",
-                })}
-                href={partnershipParticipantsPath(project.partnership.id)}
-                data-testid="coordinate-participants"
-              >
-                <UsersIcon aria-hidden="true" />
-                {t("projectParticipations")}
-              </Link>
-              <Link
-                className={buttonVariants({
-                  variant: "link",
-                  size: "sm",
-                })}
-                href={partnershipClaimPath(project.partnership.id)}
-                data-testid="open-claim-workspace"
-              >
-                <EntityIcon entity="claim" className="size-3.5" />
-                {t("openClaim")}
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <PartnerProjectCard
+          hostingId={project.hostingOrganization.id}
+          hostingName={project.hostingOrganization.name}
+          partnership={project.partnership}
+        />
       )}
     </div>
   );

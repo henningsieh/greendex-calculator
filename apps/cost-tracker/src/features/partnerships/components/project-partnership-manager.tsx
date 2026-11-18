@@ -7,7 +7,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { EyeIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { ArrowUpRightIcon, EyeIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
 import { partnershipPath, projectPath } from "@/app/paths";
@@ -15,6 +15,7 @@ import { ArchivedActionExplanation } from "@/components/archived-action-explanat
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { OrgAvatar } from "@/components/org-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -24,6 +25,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "@/lib/i18n/routing";
@@ -167,12 +174,14 @@ export function ProjectPartnershipManager({
         </div>
       )}
       {partnerships.length === 0 ? (
-        <p
-          data-testid="partnerships-empty"
-          className="rounded-2xl border p-8 text-center text-muted-foreground"
-        >
-          {t("manager.none")}
-        </p>
+        <Empty data-testid="partnerships-empty" variant="outlined">
+          <EmptyMedia variant="icon">
+            <EntityIcon entity="partnerOrganization" className="size-5" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyDescription>{t("manager.none")}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : groups.length === 0 ? (
         <p className="rounded-2xl border p-8 text-center text-muted-foreground">
           {t("manager.emptySearch")}
@@ -195,7 +204,7 @@ export function ProjectPartnershipManager({
                     </span>
                     <CardTitle as="h3" className="min-w-0">
                       <Link
-                        className="block truncate hover:underline"
+                        className="block wrap-break-word underline-offset-4 hover:underline hover:decoration-brand hover:decoration-2"
                         href={projectPath(group.projectId)}
                       >
                         {group.projectName}
@@ -211,83 +220,91 @@ export function ProjectPartnershipManager({
                   </CardAction>
                 </CardHeader>
                 <CardContent>
-                  <ul className="divide-y divide-border">
+                  <ul className="grid gap-3">
                     {group.items.map((partnership) => (
                       <li
-                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                        className="flex flex-col gap-3 rounded-xl border border-border/70 p-4 transition-colors hover:border-primary/40"
                         data-testid={`partnership-row-${partnership.organizationId}`}
                         key={partnership.id}
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">
-                            {partnership.organizationName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {t("manager.since", {
-                              date: dateFormat.format(
-                                partnership.assignedAt,
-                                "date.medium",
-                              ),
-                            })}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <OrgAvatar name={partnership.organizationName} />
+                          <div className="min-w-0 flex-1">
+                            <p className="leading-snug font-semibold wrap-break-word">
+                              {partnership.organizationName}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {t("manager.since", {
+                                date: dateFormat.format(
+                                  partnership.assignedAt,
+                                  "date.medium",
+                                ),
+                              })}
+                            </p>
+                          </div>
                         </div>
-                        <Link
-                          className={buttonVariants({
-                            variant: "link",
-                            size: "sm",
-                          })}
-                          href={partnershipPath(partnership.id)}
-                        >
-                          <EyeIcon aria-hidden="true" />
-                          {t("manager.viewDetails")}
-                        </Link>
-                        {canAssign && (
-                          <>
-                            <Button
-                              disabled={
-                                removeMutation.isPending ||
-                                partnership.costTrackerArchived
-                              }
-                              data-testid={`remove-partnership-${partnership.id}`}
-                              onClick={async () => {
-                                if (
-                                  await confirm({
-                                    title: t(
-                                      "confirmations.removePartnership.title",
-                                    ),
-                                    description: t(
-                                      "confirmations.removePartnership.description",
-                                      {
-                                        organization:
-                                          partnership.organizationName,
-                                        project: partnership.projectName,
-                                      },
-                                    ),
-                                    confirmText: t(
-                                      "confirmations.removePartnership.execute",
-                                    ),
-                                    isDestructive: true,
-                                  })
-                                ) {
-                                  setFeedback(undefined);
-                                  removeMutation.mutate(partnership.id);
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+                          {/* Navigation: typographic link with an arrow so it
+                              never reads as a button next to the remove action. */}
+                          <Link
+                            className={buttonVariants({
+                              variant: "link",
+                              size: "sm",
+                            })}
+                            href={partnershipPath(partnership.id)}
+                          >
+                            <EyeIcon aria-hidden="true" />
+                            {t("manager.viewDetails")}
+                            <ArrowUpRightIcon aria-hidden="true" />
+                          </Link>
+                          {canAssign && (
+                            <>
+                              <Button
+                                disabled={
+                                  removeMutation.isPending ||
+                                  partnership.costTrackerArchived
                                 }
-                              }}
-                              size="sm"
-                              type="button"
-                              variant="destructive"
-                            >
-                              <Trash2Icon aria-hidden="true" />
-                              {removeMutation.isPending &&
-                              removeMutation.variables === partnership.id
-                                ? t("confirmations.pending")
-                                : t("manager.remove")}
-                            </Button>
-                            {partnership.costTrackerArchived && (
-                              <ArchivedActionExplanation />
-                            )}
-                          </>
-                        )}
+                                data-testid={`remove-partnership-${partnership.id}`}
+                                onClick={async () => {
+                                  if (
+                                    await confirm({
+                                      title: t(
+                                        "confirmations.removePartnership.title",
+                                      ),
+                                      description: t(
+                                        "confirmations.removePartnership.description",
+                                        {
+                                          organization:
+                                            partnership.organizationName,
+                                          project: partnership.projectName,
+                                        },
+                                      ),
+                                      confirmText: t(
+                                        "confirmations.removePartnership.execute",
+                                      ),
+                                      isDestructive: true,
+                                    })
+                                  ) {
+                                    setFeedback(undefined);
+                                    removeMutation.mutate(partnership.id);
+                                  }
+                                }}
+                                size="sm"
+                                type="button"
+                                variant="outline-destructive"
+                              >
+                                <Trash2Icon aria-hidden="true" />
+                                {removeMutation.isPending &&
+                                removeMutation.variables === partnership.id
+                                  ? t("confirmations.pending")
+                                  : t("manager.remove")}
+                              </Button>
+                              {partnership.costTrackerArchived && (
+                                <ArchivedActionExplanation />
+                              )}
+                            </>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
