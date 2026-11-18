@@ -5,7 +5,7 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import { PartnerNetworkGuide } from "@/features/partnerships/components/partner-network-guide";
+import { PartnerGuideDialog } from "@/features/partnerships/components/partner-guide-dialog";
 import { PartnerOrganizationsTabs } from "@/features/partnerships/components/partner-organizations-tabs";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
@@ -37,20 +37,29 @@ export default async function PartnerOrganizationsPage() {
   return (
     <div>
       <ProjectDataErrorBoundary resource="Project Partnerships">
+        {/* Title-only header: this page has no irreversible action, so no
+            primary button lives here. Both setup dialogs sit in the toolbar
+            below — Invite as the single primary, Assign as secondary — where
+            they act on the listed partnerships instead of competing in the
+            header. */}
         <ProtectedPageHeader
           eyebrow={t("eyebrow")}
           title={t("title")}
           description={t("description")}
-          rightButton={
-            canCreateProjectPartnership ? (
-              <Suspense fallback={<ProjectOptionsLoading />}>
-                <PartnershipActionsSection />
-              </Suspense>
-            ) : undefined
-          }
         />
 
-        <PartnerNetworkGuide />
+        {canCreateProjectPartnership ? (
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-2">
+            <Suspense fallback={<ProjectOptionsLoading />}>
+              <PartnershipActionsSection />
+            </Suspense>
+            <PartnerGuideDialog />
+          </div>
+        ) : (
+          <div className="mt-8 flex flex-wrap items-center justify-end gap-2">
+            <PartnerGuideDialog />
+          </div>
+        )}
 
         <PartnerOrganizationsTabs
           showInvitations={canCreateProjectPartnership}

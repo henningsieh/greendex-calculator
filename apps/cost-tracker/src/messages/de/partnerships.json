@@ -40,6 +40,7 @@
       "status": "Status",
       "expires": "Läuft ab",
       "action": "Aktion",
+      "assignPartner": "bestehenden Partner zuweisen",
       "recipientLink": "Empfänger-Setup-Link",
       "copy": "Kopieren",
       "copied": "Link kopiert. Teile ihn nur mit der eingeladenen Person.",
@@ -76,8 +77,10 @@
       "complete": "Einrichtung abschließen",
       "invitationRejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
       "invite": "Partner einladen",
+      "invitePartner": "neuen Partner einladen",
       "invitationColumn": "Einladung",
       "openSummary": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}",
+      "orSeparator": "oder einen",
       "searchLabel": "Einladungen filtern",
       "searchPlaceholder": "Nach Projekt oder E-Mail filtern…",
       "emptySearch": "Keine Einladung passt zu diesem Filter."
@@ -95,7 +98,8 @@
         "joinTitle": "Partner tritt bei",
         "joinText": "Der Partner bestätigt mit der eingeladenen E-Mail-Adresse. Jeder Link ist einmal verwendbar und läuft nach 7 Tagen ab.",
         "collaborateTitle": "Zusammenarbeiten",
-        "collaborateText": "Die Partnerschaft erscheint im Tab „Partnerschaften“ — bereit für Teilnahmen und Abrechnungen."
+        "collaborateText": "Die Partnerschaft erscheint im Tab „Partnerschaften“ — bereit für Teilnahmen und Abrechnungen.",
+        "dialogTrigger": "So funktioniert's"
       },
       "tabs": {
         "label": "Bereiche der Partnerorganisationen",
