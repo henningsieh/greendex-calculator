@@ -40,6 +40,7 @@
       "status": "Status",
       "expires": "Expires",
       "action": "Action",
+      "assignPartner": "assign an existing partner",
       "recipientLink": "Recipient setup link",
       "copy": "Copy",
       "copied": "Link copied. Share it only with the invited person.",
@@ -76,8 +77,10 @@
       "complete": "Dokončaj nastavitev",
       "invitationRejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj.",
       "invite": "Invite partner",
+      "invitePartner": "invite a new partner",
       "invitationColumn": "Invitation",
       "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}",
+      "orSeparator": "or",
       "searchLabel": "Filter invitations",
       "searchPlaceholder": "Filter by project or email…",
       "emptySearch": "No invitations match this filter."
@@ -95,7 +98,8 @@
         "joinTitle": "Partner joins",
         "joinText": "They confirm with the invited email address. Each link is single-use and expires after 7 days.",
         "collaborateTitle": "Collaborate",
-        "collaborateText": "The partnership appears under the Partnerships tab, ready for participants and claims."
+        "collaborateText": "The partnership appears under the Partnerships tab, ready for participants and claims.",
+        "dialogTrigger": "How it works"
       },
       "tabs": {
         "label": "Partner Organizations sections",

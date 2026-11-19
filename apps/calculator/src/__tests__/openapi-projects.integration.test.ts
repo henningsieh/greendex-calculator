@@ -197,9 +197,13 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
   );
   expect(await ok(legs)).toEqual([]);
 
-  expect(await ok(`${path}/archive`, "PATCH", { archived: true })).toMatchObject({
+  expect(await ok(`${path}/archive`, "PATCH", {})).toMatchObject({
     success: true,
     project: { id, archived: true },
+  });
+  expect(await ok(`${path}/reopen`, "PATCH", {})).toMatchObject({
+    success: true,
+    project: { id, archived: false },
   });
   expect(await ok(path, "DELETE", {})).toEqual({ success: true });
   const second = await resolveSeedRestProject();
@@ -262,7 +266,8 @@ it.each([
 it.each([
   ["GET", "/projects/missing", undefined, 404],
   ["DELETE", "/projects/missing", {}, 404],
-  ["PATCH", "/projects/missing/archive", { archived: true }, 404],
+  ["PATCH", "/projects/missing/archive", {}, 404],
+  ["PATCH", "/projects/missing/reopen", {}, 404],
   ["POST", "/projects/active", { projectId: "missing" }, 404],
   ["DELETE", "/projects/batch", { projectIds: ["missing"] }, 403],
   ["GET", "/projects/missing/participants", undefined, 403],

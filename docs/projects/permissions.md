@@ -24,7 +24,7 @@ Neither answer replaces the other. A role never grants access to every Project, 
 
 Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator grants `coordinator` Project create, read, and update rights. It grants neither archive nor delete.
 
-Calculator `admin` intentionally converges to the shared Project `archive` grant; Project deletion remains reserved to Organization Owners.
+Project lifecycle permissions are application-specific under [ADR-0028](../adr/0028-scope-project-lifecycle-permissions-by-application.md). Project deletion remains reserved to Organization Owners.
 
 Library table/field names and ordinary Membership wording are unaffected.
 
@@ -90,15 +90,32 @@ A recipient completes their profile and accepts the current agreement version be
 
 Cost Tracker applies assignment-scoped coordination and authenticated Participant entry. Calculator retains its existing administrative Project checks: the `admin` value still manages Projects, while `coordinator` grants Project create, read, and update rights, but no archive or delete. No stored-role compatibility map or data backfill is retained; development mock data is wiped and reseeded with final roles before applying the required country column.
 
-## Declared Calculator Project permissions
+## Declared Calculator Project CRUD permissions
 
-| Stored role | create | read | update | delete | archive |
-| --- | --- | --- | --- | --- | --- |
-| `owner` | Yes | Yes | Yes | Yes | Yes |
-| `admin` | Yes | Yes | Yes | No | Yes |
-| `coordinator` | Yes | Yes | Yes | No | No |
-| `participant` | No | Yes | No | No | No |
+| Stored role | create | read | update | delete |
+| --- | --- | --- | --- | --- |
+| `owner` | Yes | Yes | Yes | Yes |
+| `admin` | Yes | Yes | Yes | No |
+| `coordinator` | Yes | Yes | Yes | No |
+| `participant` | No | Yes | No | No |
 
 The [shared auth factory](../../packages/auth/src/server-auth.ts) owns validation and selects the app's role map. Calculator uses `calculatorOrganizationRoles`. Cost Tracker uses `costTrackerOrganizationRoles` and keeps assignment-scoped coordination. Both maps live in [permissions.ts](../../packages/auth/src/permissions.ts). Pure role helpers live in [organization-roles.ts](../../packages/auth/src/organization-roles.ts).
 
-Calculator archive checks the declared archive permission. It also checks the active Organization and permits an Owner or an Admin with a Host assignment. A Coordinator cannot archive. Browser permission checks are presentation aids, not server authorization.
+## Application-specific Project lifecycle permissions
+
+`calculatorProjectLifecycle` and `costTrackerProjectLifecycle` each declare `archive` and `reopen`. The generic `project` resource has no lifecycle actions or aliases.
+
+| Application | Stored role | Archive scope | Reopen scope |
+| --- | --- | --- | --- |
+| Calculator | `owner` | organization | organization |
+| Calculator | `admin` | assigned | assigned |
+| Calculator | `coordinator` | denied | denied |
+| Calculator | `participant` | denied | denied |
+| Cost Tracker | `owner` | organization | organization |
+| Cost Tracker | `admin` | organization | organization |
+| Cost Tracker | `coordinator` | assigned | denied |
+| Cost Tracker | `participant` | denied | denied |
+
+Organization scope requires ownership by the active Organization. Assigned scope additionally requires the acting User's hosted-Project assignment. Partner-side assignments do not qualify. Current Membership and assignment records are read on each command, including archived Projects. Roles combine only within the same application and action; absent grants deny.
+
+[`permissions.ts`](../../packages/auth/src/permissions.ts) owns the canonical Better Auth statements and scoped lifecycle declaration alongside all other permissions. Resource and action types derive from those statements; native lifecycle grants and runtime scope requirements derive from the same scope metadata. [`project-lifecycle-authorization.ts`](../../packages/auth/src/project-lifecycle-authorization.ts) supplies the full executor-backed decision used by commands and list/detail availability. Static permission imports do not initialize a database. The server fixes the canonical resource and never trusts client capability claims.
