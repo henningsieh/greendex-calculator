@@ -1,7 +1,7 @@
 import { getOpenAPIMeta, OpenAPISerializer } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
-import { ORPCError, onError } from "@orpc/server";
+import { ORPCError, ValidationError, onError } from "@orpc/server";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
 
 import { LifecycleRestBodySchema } from "@/features/projects/validation-schemas";
@@ -60,12 +60,24 @@ export const openapiHandler = new OpenAPIHandler(router, {
         try {
           body = await request.resolveBody();
         } catch (error) {
-          throw new ORPCError("BAD_REQUEST", { cause: error });
+          throw new ORPCError("BAD_REQUEST", {
+            message:
+              "Malformed request. Ensure the request body is properly formatted and the 'Content-Type' header is set correctly.",
+            cause: error,
+          });
         }
-        if (
-          !LifecycleRestBodySchema.safeParse(serializer.deserialize(body)).success
-        ) {
-          throw new ORPCError("BAD_REQUEST");
+        const input = serializer.deserialize(body);
+        const result = await LifecycleRestBodySchema["~standard"].validate(input);
+        if (result.issues) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: "Input validation failed",
+            data: { issues: result.issues },
+            cause: new ValidationError({
+              message: "Input validation failed",
+              issues: result.issues,
+              invalidData: input,
+            }),
+          });
         }
         request.resolveBody = async () => body;
       }
