@@ -333,7 +333,23 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       await expect(page.getByTestId("reopen-project")).toHaveCount(0);
       // Without reopen permission the header shows the [i] explanation
       // instead of the button.
-      await expect(page.getByTestId("archive-explanation-trigger")).toBeVisible();
+      const trigger = page.getByTestId("archive-explanation-trigger");
+      const explanation = page.getByTestId("archive-explanation-content");
+      await expect(trigger).toBeVisible();
+      await trigger.hover();
+      await expect(explanation).toBeVisible();
+      await explanation.hover();
+      const hoverStarted = Date.now();
+      await expect(async () => {
+        await expect(explanation).toBeVisible();
+        expect(Date.now() - hoverStarted).toBeGreaterThan(120);
+      }).toPass({ intervals: [50], timeout: 2000 });
+      await page.keyboard.press("Escape");
+      await expect(explanation).toBeHidden();
+      await trigger.click();
+      await expect(explanation).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(explanation).toBeHidden();
       await page.close();
     } finally {
       await db

@@ -44,7 +44,17 @@ vi.mock("@/features/projects/list-query-options", () => ({
   getProjectListQueryOptions: () => ({ queryKey: ["list"] }),
   loadProjectListSearchParams: async () => ({}),
   normalizeProjectListState: () => ({}),
-  resolveProjectListState: () => ({ scope: "hosted", state: {} }),
+  resolveProjectListState: () => ({
+    scope: "hosted",
+    state: {
+      scope: "hosted",
+      archive: "active",
+      settlement: "all",
+      partnerOrganizationIds: [],
+      sort: [{ field: "startDate", direction: "asc" }],
+      pageSize: 25,
+    },
+  }),
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => ({ query: mocks.query }),

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import type { ProjectListState } from "@/features/projects/list-query-options";
 import messagesDe from "@/messages/de";
 import messagesEn from "@/messages/en-GB";
 import messagesSi from "@/messages/sl";
@@ -55,6 +56,12 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
       };
     },
   ),
+  getProjectPartnerFilterQueryOptions: (state: ProjectListState) =>
+    mocks.getListOptions("hosted", {
+      ...state,
+      partnerOrganizationIds: [],
+      cursor: undefined,
+    }),
 }));
 
 import { ProjectList } from "@/features/projects/components/project-list";

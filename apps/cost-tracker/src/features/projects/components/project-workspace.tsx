@@ -161,6 +161,9 @@ function AssignedPartnersCard({
                 {t("noPartners")}{" "}
                 {showDialogs && !archived ? (
                   <Suspense fallback={null}>
+                    <span data-testid="partnership-shortcut-intro">
+                      {t("noPartnersActionIntro")}{" "}
+                    </span>
                     <PartnershipShortcutLinks projectId={projectId} />
                   </Suspense>
                 ) : null}

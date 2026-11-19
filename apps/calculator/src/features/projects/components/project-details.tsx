@@ -46,6 +46,7 @@ import {
 } from "@/features/projects/components/edit-project-form";
 import { ProjectDetailsTab } from "@/features/projects/components/project-details-tab";
 import { PROJECT_ICONS } from "@/features/projects/components/project-icons";
+import { refreshLifecycleAvailabilityOnRefusal } from "@/features/projects/components/refresh-lifecycle-availability";
 import { getProjectStatistics } from "@/features/projects/utils";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useProjectPermissions } from "@/lib/better-auth/permissions-utils";
@@ -133,6 +134,7 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
         }
       },
       onError: (err: unknown) => {
+        refreshLifecycleAvailabilityOnRefusal(err, queryClient, project.id);
         console.error(err);
         const message = err instanceof Error ? err.message : String(err);
         toast.error(message || tProject("form.archive.toast-error-generic"));

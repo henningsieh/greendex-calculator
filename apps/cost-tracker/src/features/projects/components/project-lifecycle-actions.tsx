@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { ORPCError } from "@orpc/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -102,6 +103,12 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
       toast.add({ title: t("archiveFeedback"), type: "success" });
       await refreshProjectState();
     } catch (error) {
+      if (
+        error instanceof ORPCError &&
+        (error.code === "FORBIDDEN" || error.code === "NOT_FOUND")
+      ) {
+        await invalidatePartnershipProjectData(queryClient);
+      }
       toast.add({
         title: t("archiveError"),
         description: <ErrorPresentation error={error} />,
@@ -113,7 +120,7 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
   }
 
   async function reopenProject() {
-    if (completing || !reason.trim()) return;
+    if (!canReopen || completing || !reason.trim()) return;
     setCompleting(true);
     try {
       await orpc.projects.reopen({ projectId, reason });
@@ -122,6 +129,12 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
       toast.add({ title: t("reopenFeedback"), type: "success" });
       await refreshProjectState();
     } catch (error) {
+      if (
+        error instanceof ORPCError &&
+        (error.code === "FORBIDDEN" || error.code === "NOT_FOUND")
+      ) {
+        await invalidatePartnershipProjectData(queryClient);
+      }
       toast.add({
         title: t("reopenError"),
         description: <ErrorPresentation error={error} />,
@@ -153,7 +166,7 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button
               type="button"
-              disabled={!reason.trim() || completing}
+              disabled={!canReopen || !reason.trim() || completing}
               data-testid="reopen-project-confirm"
               onClick={reopenProject}
             >

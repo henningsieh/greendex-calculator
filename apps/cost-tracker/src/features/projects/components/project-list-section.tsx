@@ -5,6 +5,7 @@ import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
+  getProjectPartnerFilterQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
@@ -61,7 +62,7 @@ export async function ProjectListSection({
       availableScopes,
     );
     if (resolution.scope) {
-      await (
+      const selected = (
         resolution.scope === "hosted"
           ? queryClient.query(
               getProjectListQueryOptions("hosted", resolution.state),
@@ -70,6 +71,18 @@ export async function ProjectListSection({
               getProjectListQueryOptions("partner", resolution.state),
             )
       ).catch(swallowPrefetchError);
+      await Promise.all([
+        selected,
+        ...(resolution.scope === "hosted" &&
+        (resolution.state.partnerOrganizationIds.length > 0 ||
+          resolution.state.cursor)
+          ? [
+              queryClient
+                .query(getProjectPartnerFilterQueryOptions(resolution.state))
+                .catch(swallowPrefetchError),
+            ]
+          : []),
+      ]);
     }
   }
 
