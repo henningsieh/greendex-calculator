@@ -11,10 +11,13 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { test } from "vitest";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Each case runs the real hook, including its separate Vitest policy process.
+const hookCheckTimeoutMs = 30_000;
 function fixture() {
   const temp = mkdtempSync(path.join(os.tmpdir(), "hook-test-"));
   const repo = path.join(temp, "repo");
@@ -23,9 +26,9 @@ function fixture() {
   for (const file of [".husky/pre-commit", "scripts/pre-commit.mjs"]) {
     cpSync(path.join(root, file), path.join(repo, file));
   }
-  const git = (...args) =>
+  const git = (...args: string[]) =>
     execFileSync("git", args, { cwd: repo, encoding: "utf8" });
-  const write = (file, content) => {
+  const write = (file: string, content: string) => {
     mkdirSync(path.dirname(path.join(repo, file)), { recursive: true });
     writeFileSync(path.join(repo, file), content);
   };
@@ -34,15 +37,19 @@ function fixture() {
     spawnSync("sh", [".husky/pre-commit"], { cwd: repo, encoding: "utf8" });
   return { temp, repo, git, write, hook };
 }
-function check(name, fn) {
-  test(name, () => {
-    const f = fixture();
-    try {
-      fn(f);
-    } finally {
-      rmSync(f.temp, { recursive: true, force: true });
-    }
-  });
+function check(name: string, fn: (context: ReturnType<typeof fixture>) => void) {
+  test(
+    name,
+    () => {
+      const f = fixture();
+      try {
+        fn(f);
+      } finally {
+        rmSync(f.temp, { recursive: true, force: true });
+      }
+    },
+    hookCheckTimeoutMs,
+  );
 }
 const file = "scripts/staged example.js";
 check("staged valid, unstaged invalid and unrelated dirty config pass", (f) => {
