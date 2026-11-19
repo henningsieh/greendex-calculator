@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import type { ProjectListState } from "@/features/projects/list-query-options";
 
 const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
@@ -37,18 +38,10 @@ vi.mock("@/lib/orpc/orpc", () => ({
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
-vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
-  ...((await importOriginal()) as Record<string, unknown>),
-  getProjectAvailableScopesQueryOptions: () => ({
-    queryKey: ["projects", "available-scopes"],
-    queryFn: async () => ({
-      hosted: true,
-      partner: true,
-    }),
-  }),
-  getProjectListQueryOptions: (
+vi.mock("@/features/projects/list-query-options", async (importOriginal) => {
+  const getListOptions = (
     scope: "hosted" | "partner",
-    state: { cursor?: string },
+    state: ProjectListState,
   ) => ({
     queryKey: ["projects", scope, state],
     queryFn: async () => ({
@@ -78,8 +71,23 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
       },
       partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
     }),
-  }),
-}));
+  });
+
+  return {
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+      queryFn: async () => ({ hosted: true, partner: true }),
+    }),
+    getProjectListQueryOptions: getListOptions,
+    getProjectPartnerFilterQueryOptions: (state: ProjectListState) =>
+      getListOptions("hosted", {
+        ...state,
+        partnerOrganizationIds: [],
+        cursor: undefined,
+      }),
+  };
+});
 
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectList } from "@/features/projects/components/project-list";
