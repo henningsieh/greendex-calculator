@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   getListOptions: vi.fn((scope: string) => ({
     queryKey: ["projects", scope],
   })),
+  getPartnerFilterOptions: vi.fn(() => ({
+    queryKey: ["projects", "partner-options"],
+  })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
   getSession: vi.fn(),
   hasCostTrackerPermissions: vi.fn().mockResolvedValue(true),
@@ -115,6 +118,7 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
     queryKey: ["projects", "available-scopes"],
   }),
   getProjectListQueryOptions: mocks.getListOptions,
+  getProjectPartnerFilterQueryOptions: mocks.getPartnerFilterOptions,
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { scopes: mocks.availableScopes } },
@@ -330,6 +334,29 @@ describe("Cost Tracker Project data routes", () => {
       queryKey: ["projects", "hosted"],
     });
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
+  });
+
+  it("prefetches Partner options alongside a filtered Hosted deep link", async () => {
+    render(
+      await RealProjectListSection({
+        searchParams: Promise.resolve({
+          scope: "hosted",
+          partnerOrganizationIds: ["partner-1"],
+          cursor: "page-two",
+        }),
+      }),
+    );
+
+    expect(mocks.getPartnerFilterOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partnerOrganizationIds: ["partner-1"],
+        cursor: "page-two",
+      }),
+    );
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["projects", "partner-options"],
+    });
+    expect(mocks.query).toHaveBeenCalledTimes(3);
   });
 
   it("uses Partner when requested and available", async () => {

@@ -146,6 +146,14 @@ export function getProjectAvailableScopesQueryOptions() {
   return { ...options, meta: { costTrackerORPC: true } };
 }
 
+export function getProjectPartnerFilterQueryOptions(state: ProjectListState) {
+  return getProjectListQueryOptions("hosted", {
+    ...state,
+    partnerOrganizationIds: [],
+    cursor: undefined,
+  });
+}
+
 /**
  * Bridges two intentionally different safe output projections into one
  * discriminated client view while preserving the generated oRPC query key and

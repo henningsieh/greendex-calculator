@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getProjectListQueryOptions,
+  getProjectPartnerFilterQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
@@ -155,6 +156,13 @@ describe("Project list URL state", () => {
         },
       },
     ]);
+    expect(getProjectPartnerFilterQueryOptions(state).queryKey).toEqual(
+      getProjectListQueryOptions("hosted", {
+        ...state,
+        partnerOrganizationIds: [],
+        cursor: undefined,
+      }).queryKey,
+    );
     expect(getProjectListQueryOptions("partner", state).queryKey).toEqual([
       ["projects", "listPartner"],
       {

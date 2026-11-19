@@ -2,7 +2,7 @@
 
 Cost Tracker extends the shared [Project model](../../../../docs/projects/model.md) with Project Partnerships and Claim workflows. Project identity, Project Participation identity, and shared permissions remain repository-level concerns.
 
-**Status:** [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) owns the delivery package. Archive/reopen acceptance remains under [#416](https://github.com/henningsieh/greendex-calculator/issues/416). Settlement filters and table controls are owned by [#332](https://github.com/henningsieh/greendex-calculator/issues/332), Claim naming by [#418](https://github.com/henningsieh/greendex-calculator/issues/418), and UI cookies by [#415](https://github.com/henningsieh/greendex-calculator/issues/415). The interim list order is start date ascending, not the approved settlement order described below.
+**Status:** [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) tracks the implemented delivery package and its final release acceptance. Archive/reopen belongs to [#416](https://github.com/henningsieh/greendex-calculator/issues/416), settlement filters and table controls to [#332](https://github.com/henningsieh/greendex-calculator/issues/332), Claim naming to [#418](https://github.com/henningsieh/greendex-calculator/issues/418), and UI cookies to [#415](https://github.com/henningsieh/greendex-calculator/issues/415). The list uses the settlement-first order described below.
 
 ## Lifecycle authorization
 
@@ -50,7 +50,7 @@ The Project detail's Partner projection does not expose financial data, Proof Do
 
 ## Table state and performance
 
-Use current TanStack Table v9 feature/state APIs for the result table; baseline and registry-latest at clarification are both 9.3.1. The baseline already uses `useTable`, but does not yet expose the full visibility and multi-sort behavior. TanStack supplies headless table logic, not a ready-made visual control set.
+The result table uses TanStack Table v9 controlled sorting and visibility state. Sortable headers show direction and priority; the sorting menu supports adding, reordering, removing and resetting criteria. A column menu restores personal visibility preferences. TanStack supplies headless table logic; the visual controls use the shared UI components.
 
 The shared nuqs URL contract owns scope, normalized name search, archive/settlement filters, overlap dates, Partner filters, ordered allowlisted sorts, cursor and page size. Shared links carry filters/sorts, not another User's column preferences. The procedures own filtering, sorting, exact metrics and cursor pagination across the entire authorized filtered result. TanStack renders the returned page with controlled state, not client row stages that reorder/filter just one page. Query keys/cursor fingerprints include the complete ordered state; changing filters/sorts resets the cursor.
 

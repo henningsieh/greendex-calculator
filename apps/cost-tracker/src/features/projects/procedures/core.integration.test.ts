@@ -1510,24 +1510,29 @@ describe("projects procedures", () => {
       });
     });
 
-    it("reports no Hosted scope when the only assigned Project is archived", async () => {
-      // Archived Projects satisfy no visibility predicate in listHosted,
-      // so the availability flag must not promise them either.
+    it("keeps archived assigned Projects discoverable through archive filters", async () => {
       await db
         .update(projectsTable)
         .set({ costTrackerArchived: true })
         .where(eq(projectsTable.id, assignedProject));
       try {
         expect(await client.projects.scopes()).toEqual({
-          hosted: false,
+          hosted: true,
           partner: false,
         });
-        await expect(
-          client.projects.listHosted({ pageSize: 25 }),
-        ).rejects.toMatchObject({
-          code: "FORBIDDEN",
-          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
-        });
+        const active = await client.projects.listHosted({ pageSize: 25 });
+        expect(active.rows).toEqual([]);
+        expect(active.metrics.whole.projectCount).toBe(1);
+        expect(active.metrics.filtered.projectCount).toBe(0);
+        for (const archive of ["archived", "all"] as const) {
+          const result = await client.projects.listHosted({
+            pageSize: 25,
+            archive,
+          });
+          expect(result.rows.map(({ id }) => id)).toEqual([assignedProject]);
+          expect(result.metrics.whole.projectCount).toBe(1);
+          expect(result.metrics.filtered.projectCount).toBe(1);
+        }
       } finally {
         await db
           .update(projectsTable)

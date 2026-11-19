@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import {
-  getProjectListQueryOptions,
+  getProjectPartnerFilterQueryOptions,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 
@@ -37,13 +37,7 @@ export function ProjectListPartnerFilter({
   );
   // Options belong to the whole authorized scope. Keep their query stable
   // while selecting partners or paging so the open multi-select stays mounted.
-  const { data } = useSuspenseQuery(
-    getProjectListQueryOptions("hosted", {
-      ...state,
-      partnerOrganizationIds: [],
-      cursor: undefined,
-    }),
-  );
+  const { data } = useSuspenseQuery(getProjectPartnerFilterQueryOptions(state));
 
   if (data.partnerOptions.length === 0) return null;
 

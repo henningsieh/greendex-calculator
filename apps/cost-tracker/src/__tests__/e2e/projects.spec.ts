@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
-import { projectsTable } from "@greendex/database/schema";
+import {
+  projectPartnerOrganizationsTable,
+  projectsTable,
+} from "@greendex/database/schema";
 import { expect, test } from "@playwright/test";
 import { eq, inArray } from "drizzle-orm";
 
@@ -158,6 +161,62 @@ test.describe("Cost Tracker Project production path", () => {
         inArray(
           projectsTable.id,
           rows.map((row) => row.id),
+        ),
+      );
+    }
+  });
+
+  test("prefetches Partner options on filtered and cursor deep links", async ({
+    page,
+  }) => {
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, fixture.projectId));
+    if (!project) throw new Error("Project fixture is missing");
+    const prefix = `Prefetch ${randomUUID()}`;
+    const rows = Array.from({ length: 26 }, (_, index) => ({
+      id: randomUUID(),
+      organizationId: project.organizationId,
+      name: `${prefix} ${String(index).padStart(2, "0")}`,
+      startDate: new Date("2026-01-01T00:00:00.000Z"),
+      endDate: new Date("2026-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE" as const,
+    }));
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      const path = new URL(request.url()).pathname;
+      if (path === "/api/rpc/projects/listHosted") requests.push(path);
+    });
+    try {
+      await db.insert(projectsTable).values(rows);
+      await db.insert(projectPartnerOrganizationsTable).values(
+        rows.map((row) => ({
+          id: randomUUID(),
+          projectId: row.id,
+          organizationId: fixture.partnerOrganizationId,
+        })),
+      );
+      await page.goto(
+        `/projects?scope=hosted&search=${encodeURIComponent(prefix)}&partnerOrganizationIds=${fixture.partnerOrganizationId}`,
+      );
+      await expect(page.locator("tbody tr[data-project-id]")).toHaveCount(25);
+      await expect(page.getByTestId("project-partner-filter-menu")).toBeEnabled();
+      expect(requests).toEqual([]);
+      await page.getByTestId("next-project-page").click();
+      await expect(page.locator("tbody tr[data-project-id]")).toHaveCount(1);
+      await expect(page).toHaveURL((url) => url.searchParams.has("cursor"));
+      requests.length = 0;
+      await page.reload();
+      await expect(page.locator("tbody tr[data-project-id]")).toHaveCount(1);
+      await expect(page.getByTestId("project-partner-filter-menu")).toBeEnabled();
+      expect(requests).toEqual([]);
+    } finally {
+      await db.delete(projectsTable).where(
+        inArray(
+          projectsTable.id,
+          rows.map(({ id }) => id),
         ),
       );
     }
