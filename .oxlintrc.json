@@ -352,7 +352,8 @@
         "**/*.stories.*"
       ],
       "rules": {
-        "greendex-domain/validation-schema-location": "error"
+        "greendex-domain/validation-schema-location": "error",
+        "greendex-domain/no-handcrafted-component-type": "error"
       }
     },
     {

@@ -266,6 +266,25 @@ export default {
         };
       },
     },
+    "no-handcrafted-component-type": {
+      meta: {
+        type: "problem",
+        messages: {
+          local:
+            "Import this entity type from the feature's validation-schemas module (z.infer<typeof ...Schema>) instead of hand-writing it in a component.",
+        },
+      },
+      create(context) {
+        return {
+          // Types only — never interfaces. Every hand-written object
+          // type in a component must come from validation schemas.
+          TSTypeAliasDeclaration(node) {
+            if (node.typeAnnotation?.type !== "TSTypeLiteral") return;
+            context.report({ node, messageId: "local" });
+          },
+        };
+      },
+    },
     "procedure-input-schema": {
       meta: {
         type: "suggestion",
