@@ -117,11 +117,11 @@ export function ProjectListFilters({
             />
           </div>
         </div>
-        <div className="project-filter-more">
+        <div className="max-md:block md:contents">
           <button
             aria-controls="project-filter-more-body"
             aria-expanded={filtersOpen}
-            className="project-filter-summary w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2 text-left text-sm font-medium"
+            className="w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2 text-left text-sm font-medium max-md:flex md:hidden"
             onClick={() => setFiltersOpen((open) => !open)}
             type="button"
           >
@@ -140,7 +140,7 @@ export function ProjectListFilters({
             />
           </button>
           <div
-            className="project-filter-more-body"
+            className="max-md:mt-3 max-md:hidden max-md:gap-3 max-md:data-[open=true]:grid md:contents"
             data-open={filtersOpen}
             id="project-filter-more-body"
           >
@@ -267,47 +267,47 @@ export function ProjectListFilters({
         <summary className="w-fit cursor-pointer rounded-sm text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring">
           {t("dateRange")}
         </summary>
-        <div className="mt-3 grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
           {state.scope === "hosted" && (
-            <Suspense
-              fallback={<Skeleton className="h-16 w-full sm:col-span-2" />}
-            >
+            <Suspense fallback={<Skeleton className="h-16 w-full" />}>
               <ProjectListPartnerFilter state={state} setUrlState={setUrlState} />
             </Suspense>
           )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="project-date-from">{t("activeAfter")}</Label>
-            <Input
-              id="project-date-from"
-              data-testid="project-date-from"
-              onChange={(event) =>
-                updateProjectFilter(
-                  PROJECT_FILTER_IDS.dateFrom,
-                  event.target.value
-                    ? new Date(`${event.target.value}T00:00:00.000Z`)
-                    : null,
-                )
-              }
-              type="date"
-              value={state.dateFrom?.toISOString().slice(0, 10) ?? ""}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="project-date-to">{t("activeBefore")}</Label>
-            <Input
-              id="project-date-to"
-              data-testid="project-date-to"
-              onChange={(event) =>
-                updateProjectFilter(
-                  PROJECT_FILTER_IDS.dateTo,
-                  event.target.value
-                    ? new Date(`${event.target.value}T00:00:00.000Z`)
-                    : null,
-                )
-              }
-              type="date"
-              value={state.dateTo?.toISOString().slice(0, 10) ?? ""}
-            />
+          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-2 xl:col-start-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-date-from">{t("activeAfter")}</Label>
+              <Input
+                id="project-date-from"
+                data-testid="project-date-from"
+                onChange={(event) =>
+                  updateProjectFilter(
+                    PROJECT_FILTER_IDS.dateFrom,
+                    event.target.value
+                      ? new Date(`${event.target.value}T00:00:00.000Z`)
+                      : null,
+                  )
+                }
+                type="date"
+                value={state.dateFrom?.toISOString().slice(0, 10) ?? ""}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-date-to">{t("activeBefore")}</Label>
+              <Input
+                id="project-date-to"
+                data-testid="project-date-to"
+                onChange={(event) =>
+                  updateProjectFilter(
+                    PROJECT_FILTER_IDS.dateTo,
+                    event.target.value
+                      ? new Date(`${event.target.value}T00:00:00.000Z`)
+                      : null,
+                  )
+                }
+                type="date"
+                value={state.dateTo?.toISOString().slice(0, 10) ?? ""}
+              />
+            </div>
           </div>
         </div>
       </details>

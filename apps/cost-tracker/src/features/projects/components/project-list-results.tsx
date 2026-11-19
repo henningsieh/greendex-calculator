@@ -26,7 +26,7 @@ import {
   RefreshCwIcon,
   XIcon,
 } from "lucide-react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
@@ -124,7 +124,7 @@ function SortHeader({
       <span className="min-w-0 wrap-anywhere">{label}</span>
       <Icon aria-hidden="true" data-icon="inline-end" />
       {direction && (
-        <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-[10px] tabular-nums">
+        <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-xs tabular-nums">
           {priority + 1}
         </span>
       )}
@@ -426,6 +426,32 @@ export function ResolvedProjectListResults({
     state.archive !== "active" ||
     state.settlement !== "all",
   );
+  const rows = table.getRowModel().rows;
+  const emptyState = (
+    <div className="flex flex-col items-center gap-3">
+      <span>{t("noMatch")}</span>
+      {hasActiveFilters && (
+        <Button
+          onClick={() =>
+            void setUrlState({
+              archive: null,
+              cursor: null,
+              dateFrom: null,
+              dateTo: null,
+              partnerOrganizationIds: null,
+              search: null,
+              settlement: null,
+            })
+          }
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {t("clearFilters")}
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -689,94 +715,131 @@ export function ResolvedProjectListResults({
           </span>
         ))}
       </p>
-      <div className="project-register-shell min-w-0 overflow-hidden rounded-xl border bg-card">
-        <Table className="project-register table-fixed" aria-label={t("label")}>
-          <TableHeader className="bg-muted/40">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={
-                      header.column.id === "name"
-                        ? "w-auto"
-                        : "w-[15%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
-                    }
-                    data-testid={`project-column-header-${header.column.id}`}
-                    aria-sort={
-                      sorting[0]?.id === header.column.id
-                        ? sorting[0].desc
-                          ? "descending"
-                          : "ascending"
-                        : undefined
-                    }
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  className="h-28 text-center"
-                  colSpan={table.getVisibleLeafColumns().length}
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <span>{t("noMatch")}</span>
-                    {hasActiveFilters && (
-                      <Button
-                        onClick={() =>
-                          void setUrlState({
-                            archive: null,
-                            cursor: null,
-                            dateFrom: null,
-                            dateTo: null,
-                            partnerOrganizationIds: null,
-                            search: null,
-                            settlement: null,
-                          })
-                        }
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
-                        {t("clearFilters")}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow data-project-id={row.id} key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        "min-w-0 overflow-hidden px-2 text-xs wrap-anywhere whitespace-normal",
-                        (cell.column.id === "startDate" ||
-                          cell.column.id === "endDate") &&
-                          "whitespace-nowrap tabular-nums",
-                      )}
-                      data-card-title={cell.column.id === "name" ? "" : undefined}
-                      data-label={cellLabels[cell.column.id]}
+
+      {/* Desktop: dense table. */}
+      <div className="hidden xl:block">
+        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+          <Table aria-label={t("label")}>
+            <TableHeader className="bg-muted/40">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={
+                        header.column.id === "name"
+                          ? "w-auto"
+                          : "w-[15%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
+                      }
+                      data-testid={`project-column-header-${header.column.id}`}
+                      aria-sort={
+                        sorting[0]?.id === header.column.id
+                          ? sorting[0].desc
+                            ? "descending"
+                            : "ascending"
+                          : undefined
+                      }
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className="h-28 text-center"
+                    colSpan={table.getVisibleLeafColumns().length}
+                  >
+                    {emptyState}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => (
+                  <TableRow data-project-id={row.id} key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          "min-w-0 overflow-hidden px-2 text-xs wrap-anywhere",
+                          (cell.column.id === "startDate" ||
+                            cell.column.id === "endDate") &&
+                            "whitespace-nowrap tabular-nums",
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Below xl: one card per Project. */}
+      <div className="grid gap-3 xl:hidden">
+        {rows.length === 0 ? (
+          <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
+        ) : (
+          rows.map((row) => {
+            const [titleCell, ...cellList] = row.getVisibleCells();
+            if (!titleCell) return null;
+            return (
+              <article
+                className="rounded-xl border bg-card px-4 py-3.5"
+                data-project-id={row.id}
+                key={row.id}
+              >
+                <div className="text-sm font-medium">
+                  <Link
+                    className="block link-prose"
+                    data-testid={`project-link-${row.original.id}-card`}
+                    href={projectPath(row.original.id)}
+                  >
+                    {row.original.name}
+                  </Link>
+                </div>
+                <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
+                  {cellList.map((cell) => (
+                    <Fragment key={cell.id}>
+                      <dt className="text-xs text-muted-foreground">
+                        {cellLabels[cell.column.id]}
+                      </dt>
+                      <dd className="min-w-0 text-right text-xs wrap-anywhere">
+                        {cell.column.id === "participants" ? (
+                          <Link
+                            className="link-prose"
+                            data-testid={`project-participants-${row.original.id}-card`}
+                            href={projectParticipantsPath(row.original.id)}
+                          >
+                            {t("viewParticipants")}
+                          </Link>
+                        ) : (
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )
+                        )}
+                      </dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </article>
+            );
+          })
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
