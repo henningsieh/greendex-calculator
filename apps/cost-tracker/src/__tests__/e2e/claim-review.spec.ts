@@ -604,14 +604,14 @@ test.describe.serial("Claim review journey 25–26", () => {
     const host = await pageFor(browser, "H", baseURL!);
     await host.goto("/claims/review");
     await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
-    const first = host.locator(
-      `a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`,
-    );
+    const first = host
+      .locator(`a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`)
+      .filter({ visible: true });
     await expect(first).toBeVisible();
     await expect(
-      host.locator(
-        `a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`,
-      ),
+      host
+        .locator(`a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await first.click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -736,9 +736,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(0))!.status).toBe("correction_requested");
     await host.goto("/claims/review");
     await expect(
-      host.locator(
-        `a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`,
-      ),
+      host
+        .locator(`a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await expect(first).toHaveCount(0);
 

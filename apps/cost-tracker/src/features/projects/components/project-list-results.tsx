@@ -26,7 +26,7 @@ import {
   RefreshCwIcon,
   XIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
@@ -83,12 +83,14 @@ function SortHeader({
   label,
   direction,
   priority,
+  disabled,
   onClick,
   testId,
 }: {
   label: string;
   direction: false | "asc" | "desc";
   priority: number;
+  disabled: boolean;
   onClick: () => void;
   testId: string;
 }) {
@@ -112,6 +114,7 @@ function SortHeader({
           : t("sortHeaderInactive", { field: label })
       }
       data-testid={testId}
+      disabled={disabled}
       type="button"
       size="sm"
       variant="ghost"
@@ -198,6 +201,11 @@ export function ResolvedProjectListResults({
 }) {
   const t = useTranslations("projects.list");
   const dateFormat = useDateFormat();
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [columnVisibility, setColumnVisibility] = useState<
     Record<string, boolean>
   >(preference.visibility);
@@ -237,6 +245,7 @@ export function ResolvedProjectListResults({
             direction={column.getIsSorted()}
             priority={column.getSortIndex()}
             testId="sort-project-name"
+            disabled={!isHydrated}
             onClick={() =>
               column.toggleSorting(column.getIsSorted() === "asc", true)
             }
@@ -261,6 +270,7 @@ export function ResolvedProjectListResults({
             direction={column.getIsSorted()}
             priority={column.getSortIndex()}
             testId="sort-project-settlement"
+            disabled={!isHydrated}
             onClick={() =>
               column.toggleSorting(column.getIsSorted() === "asc", true)
             }
@@ -280,6 +290,7 @@ export function ResolvedProjectListResults({
               direction={column.getIsSorted()}
               priority={column.getSortIndex()}
               testId="sort-project-start"
+              disabled={!isHydrated}
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc", true)
               }
@@ -298,6 +309,7 @@ export function ResolvedProjectListResults({
               direction={column.getIsSorted()}
               priority={column.getSortIndex()}
               testId="sort-project-end"
+              disabled={!isHydrated}
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc", true)
               }
@@ -339,7 +351,7 @@ export function ResolvedProjectListResults({
           ]
         : []),
     ],
-    [scope, t, dateFormat],
+    [scope, t, dateFormat, isHydrated],
   );
   const table = useTable({
     columns,
@@ -416,6 +428,7 @@ export function ResolvedProjectListResults({
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger
+              disabled={!isHydrated}
               render={
                 <Button
                   type="button"
@@ -456,6 +469,7 @@ export function ResolvedProjectListResults({
                         field: sortLabels[criterion.id] ?? criterion.id,
                       })}
                       data-testid={`project-sort-direction-${criterion.id}`}
+                      disabled={!isHydrated}
                       onClick={() =>
                         table.setSorting(
                           sorting.map((entry, i) =>
@@ -479,7 +493,7 @@ export function ResolvedProjectListResults({
                         field: sortLabels[criterion.id] ?? criterion.id,
                       })}
                       data-testid={`project-sort-up-${criterion.id}`}
-                      disabled={index === 0}
+                      disabled={!isHydrated || index === 0}
                       onClick={() =>
                         table.setSorting(
                           sorting.map((entry, i) =>
@@ -502,7 +516,7 @@ export function ResolvedProjectListResults({
                         field: sortLabels[criterion.id] ?? criterion.id,
                       })}
                       data-testid={`project-sort-down-${criterion.id}`}
-                      disabled={index === sorting.length - 1}
+                      disabled={!isHydrated || index === sorting.length - 1}
                       onClick={() =>
                         table.setSorting(
                           sorting.map((entry, i) =>
@@ -525,7 +539,7 @@ export function ResolvedProjectListResults({
                         field: sortLabels[criterion.id] ?? criterion.id,
                       })}
                       data-testid={`project-sort-remove-${criterion.id}`}
-                      disabled={sorting.length === 1}
+                      disabled={!isHydrated || sorting.length === 1}
                       onClick={() =>
                         table.setSorting(sorting.filter((_, i) => i !== index))
                       }
@@ -538,14 +552,16 @@ export function ResolvedProjectListResults({
               <div className="flex flex-wrap justify-between gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger
+                    disabled={
+                      !isHydrated ||
+                      sorting.length === Object.keys(sortLabels).length
+                    }
                     render={
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={
-                          sorting.length === Object.keys(sortLabels).length
-                        }
+                        data-testid="project-sort-add"
                       />
                     }
                   >
@@ -560,6 +576,7 @@ export function ResolvedProjectListResults({
                         .map(([id, label]) => (
                           <DropdownMenuItem
                             key={id}
+                            disabled={!isHydrated}
                             onClick={() =>
                               table.setSorting([...sorting, { id, desc: false }])
                             }
@@ -576,6 +593,7 @@ export function ResolvedProjectListResults({
                   variant="ghost"
                   onClick={() => void setUrlState({ sort: null, cursor: null })}
                   data-testid="project-sort-reset"
+                  disabled={!isHydrated}
                 >
                   {t("resetSort")}
                 </Button>

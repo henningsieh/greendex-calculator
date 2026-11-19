@@ -10,6 +10,7 @@
     "./oauth-icons": "./src/oauth-icons.tsx",
     "./organization-roles": "./src/organization-roles.ts",
     "./project-authorization": "./src/project-authorization.ts",
+    "./project-lifecycle-authorization": "./src/project-lifecycle-authorization.ts",
     "./seed-user": "./src/seed-user.ts"
   },
   "scripts": {

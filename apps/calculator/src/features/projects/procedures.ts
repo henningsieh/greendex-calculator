@@ -1,4 +1,6 @@
 import { hasOrganizationRole } from "@greendex/auth/organization-roles";
+import type { ProjectLifecyclePermission } from "@greendex/auth/permissions";
+import { bindProjectLifecycleAuthorization } from "@greendex/auth/project-lifecycle-authorization";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
@@ -28,12 +30,36 @@ import {
   ProjectIdInputSchema,
   UpdateProjectInputSchema,
   ArchiveProjectInputSchema,
+  ReopenProjectInputSchema,
   SetActiveProjectInputSchema,
   ProjectParticipantsInputSchema,
   BatchDeleteProjectsInputSchema,
   ProjectForParticipationSchema,
   ProjectWithRelationsSchema,
+  ProjectWithLifecycleSchema,
 } from "./validation-schemas";
+
+const authorizeCalculatorProjectLifecycle = bindProjectLifecycleAuthorization(
+  "calculatorProjectLifecycle",
+);
+
+async function lifecycleAvailability(
+  projectId: string,
+  actorId: string,
+  activeOrganizationId: string,
+) {
+  const decisions = await authorizeCalculatorProjectLifecycle.batch({
+    executor: db,
+    projectIds: [projectId],
+    actorId,
+    activeOrganizationId,
+    actions: ["archive", "reopen"],
+  });
+  return {
+    canArchive: decisions.get(projectId)?.get("archive")?.allowed === true,
+    canReopen: decisions.get(projectId)?.get("reopen")?.allowed === true,
+  };
+}
 
 async function hasHostAssignment(projectId: string, userId: string) {
   const [assignment] = await db
@@ -140,7 +166,7 @@ export const listProjects = authorized
     }),
   )
   .input(ListProjectsInputSchema)
-  .output(z.array(ProjectWithRelationsSchema))
+  .output(z.array(ProjectWithLifecycleSchema))
   .handler(async ({ input, context, errors }) => {
     if (!context.session.activeOrganizationId) {
       throw errors.BAD_REQUEST({
@@ -169,7 +195,18 @@ export const listProjects = authorized
       },
     });
 
-    return projects;
+    const decisions = await authorizeCalculatorProjectLifecycle.batch({
+      executor: db,
+      projectIds: projects.map((project) => project.id),
+      actorId: context.user.id,
+      activeOrganizationId: context.session.activeOrganizationId,
+      actions: ["archive", "reopen"],
+    });
+    return projects.map((project) => ({
+      ...project,
+      canArchive: decisions.get(project.id)?.get("archive")?.allowed === true,
+      canReopen: decisions.get(project.id)?.get("reopen")?.allowed === true,
+    }));
   });
 
 /**
@@ -191,7 +228,7 @@ export const getProjectById = authorized
     }),
   )
   .input(ProjectIdInputSchema)
-  .output(ProjectWithRelationsSchema)
+  .output(ProjectWithLifecycleSchema)
   .handler(async ({ input, context, errors }) => {
     if (!context.session.activeOrganizationId) {
       throw errors.BAD_REQUEST({
@@ -228,7 +265,14 @@ export const getProjectById = authorized
       });
     }
 
-    return existingProject;
+    return {
+      ...existingProject,
+      ...(await lifecycleAvailability(
+        existingProject.id,
+        context.user.id,
+        context.session.activeOrganizationId,
+      )),
+    };
   });
 
 /**
@@ -401,95 +445,90 @@ export const deleteProject = authorized
  * - Organization Owner role, or admin role with a Host assignment
  * - Project must belong to user's active organization
  */
-export const archiveProject = authorized
-  .use(requireProjectPermissions(["archive"]))
-  .meta(
-    openapi({
-      method: "PATCH",
-      path: "/projects/{id}/archive",
-      summary: "Archive a project",
-      tags: ["project"],
-    }),
-  )
-  .input(ArchiveProjectInputSchema)
-  .output(
-    z.object({
-      success: z.boolean(),
-      project: ProjectWithRelationsSchema,
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
-    if (!context.session.activeOrganizationId) {
-      throw errors.BAD_REQUEST({
-        message: "No active organization. Please select an organization first.",
+function lifecycleCommand(action: ProjectLifecyclePermission) {
+  return authorized
+    .meta(
+      openapi({
+        method: "PATCH",
+        path: `/projects/{id}/${action}`,
+        summary: action === "archive" ? "Archive a project" : "Reopen a project",
+        tags: ["project"],
+      }),
+    )
+    .input(
+      action === "archive" ? ArchiveProjectInputSchema : ReopenProjectInputSchema,
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        project: ProjectWithRelationsSchema,
+      }),
+    )
+    .handler(async ({ input, context, errors }) => {
+      if (!context.session.activeOrganizationId) {
+        throw errors.FORBIDDEN({
+          message: "No active organization. Please select an organization first.",
+        });
+      }
+
+      const decision = await authorizeCalculatorProjectLifecycle({
+        executor: db,
+        projectId: input.id,
+        actorId: context.user.id,
+        activeOrganizationId: context.session.activeOrganizationId,
+        action,
       });
-    }
+      if (!decision.allowed) {
+        if (decision.reason === "projectNotFound") {
+          throw errors.NOT_FOUND({
+            message: "Project not found or you don't have access to it",
+          });
+        }
+        throw errors.FORBIDDEN({
+          message:
+            "You don't have permission to change this project's archive state.",
+        });
+      }
 
-    // Get current member role
-    const { role } = await auth.api.getActiveMemberRole({
-      headers: await headers(),
-    });
+      await db
+        .update(projectsTable)
+        .set({ archived: action === "archive" })
+        .where(
+          and(
+            eq(projectsTable.id, input.id),
+            eq(
+              projectsTable.organizationId,
+              context.session.activeOrganizationId,
+            ),
+          ),
+        );
 
-    // Verify project exists and belongs to organization
-    const [existingProject] = await db
-      .select()
-      .from(projectsTable)
-      .where(
-        and(
+      const project = await db.query.projectsTable.findFirst({
+        where: and(
           eq(projectsTable.id, input.id),
           eq(projectsTable.organizationId, context.session.activeOrganizationId),
         ),
-      )
-      .limit(1);
-
-    if (!existingProject) {
-      throw errors.NOT_FOUND({
-        message: "Project not found or you don't have access to it",
+        with: {
+          hostAssignments: { with: { user: true } },
+          organization: true,
+        },
       });
-    }
 
-    // Organization Owners can archive any project; admins need a Host assignment.
-    const isOrganizationOwner = hasOrganizationRole(
-      role ?? "",
-      MEMBER_ROLES.OrganizationOwner,
-    );
-    const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) &&
-      (await hasHostAssignment(existingProject.id, context.user.id));
+      if (!project) {
+        throw errors.BAD_REQUEST({
+          message: "Failed to fetch archived project",
+        });
+      }
 
-    if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
-      throw errors.FORBIDDEN({
-        message:
-          "You don't have permission to archive this project. Only an Organization Administrator or the responsible Project Coordinator can archive it.",
-      });
-    }
-
-    // Archive/unarchive the project
-    await db
-      .update(projectsTable)
-      .set({ archived: input.archived })
-      .where(eq(projectsTable.id, input.id));
-
-    // Fetch the updated project with relations
-    const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, input.id),
-      with: {
-        hostAssignments: { with: { user: true } },
-        organization: true,
-      },
+      return {
+        success: true,
+        project,
+      };
     });
+}
 
-    if (!project) {
-      throw errors.BAD_REQUEST({
-        message: "Failed to fetch archived project",
-      });
-    }
-
-    return {
-      success: true,
-      project,
-    };
-  });
+export const archiveProject = lifecycleCommand("archive");
+export const reopenProject = lifecycleCommand("reopen");
 
 /**
  * Set active project for the session

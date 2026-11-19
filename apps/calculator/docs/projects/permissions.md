@@ -17,12 +17,16 @@ Both applications use the shared final role constants. Memberships may carry sev
 
 ## Project permissions
 
-| Current role  | create | read | update | delete | archive                       |
-| ------------- | ------ | ---- | ------ | ------ | ----------------------------- |
-| `owner`       | yes    | yes  | yes    | yes    | yes                           |
-| `admin`       | yes    | yes  | yes    | no     | only Projects they coordinate |
-| `coordinator` | yes    | yes  | yes    | no     | no                            |
-| `participant` | no     | yes  | no     | no     | no                            |
+| Current role  | create | read | update | delete | archive / reopen scope    |
+| ------------- | ------ | ---- | ------ | ------ | ------------------------- |
+| `owner`       | yes    | yes  | yes    | yes    | active Organization       |
+| `admin`       | yes    | yes  | yes    | no     | hosted-Project assignment |
+| `coordinator` | yes    | yes  | yes    | no     | denied                    |
+| `participant` | no     | yes  | no     | no     | denied                    |
+
+Lifecycle actions use `calculatorProjectLifecycle`, not generic `project`. Explicit `projects.archive({ id })` and `projects.reopen({ id })` replace the boolean toggle. Reopening requires no reason. Repeating either command succeeds. Neither command changes Cost Tracker's archive flag.
+
+Both commands and list/detail availability use the common full authorization decision. It reloads the current active Organization Membership and hosted assignment, including on archived Projects. See [ADR-0028](../../../../docs/adr/0028-scope-project-lifecycle-permissions-by-application.md).
 
 Organization Owners may manage every Project in the active Organization and alone may delete Projects. Organization Admins retain the existing Project-management grants and resource checks, including responsibility checks for archiving. The separate `coordinator` value mirrors Admin Project create, read, and update rights, without archive.
 

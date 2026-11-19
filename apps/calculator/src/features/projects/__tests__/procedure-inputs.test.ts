@@ -6,6 +6,7 @@ import {
   ProjectIdInputSchema,
   UpdateProjectInputSchema,
   ArchiveProjectInputSchema,
+  ReopenProjectInputSchema,
   SetActiveProjectInputSchema,
   ProjectParticipantsInputSchema,
   BatchDeleteProjectsInputSchema,
@@ -84,7 +85,6 @@ describe("project procedure inputs", () => {
   it("exposes descriptions in the JSON schema used for API documentation", () => {
     expect(z.toJSONSchema(ArchiveProjectInputSchema).properties).toEqual({
       id: { type: "string", description: "Project ID" },
-      archived: { type: "boolean", description: "Archive status" },
     });
     expect(z.toJSONSchema(ProjectParticipantsInputSchema).properties).toEqual({
       projectId: { type: "string", description: "Project ID" },
@@ -93,19 +93,15 @@ describe("project procedure inputs", () => {
       projectId: { type: "string" },
     });
   });
-  it("requires archive status and preserves descriptions", () => {
-    expect(
-      ArchiveProjectInputSchema.parse({ id: "", archived: false, extra: 1 }),
-    ).toEqual({ id: "", archived: false });
-    expect(ArchiveProjectInputSchema.shape.archived.description).toBe(
-      "Archive status",
-    );
-    expect(
-      ArchiveProjectInputSchema.safeParse({ id: "x" }).error?.issues[0]?.message,
-    ).toBe("Invalid input: expected boolean, received undefined");
-    expect(
-      ArchiveProjectInputSchema.safeParse({ id: "x", archived: null }).success,
-    ).toBe(false);
+  it("uses explicit lifecycle commands without a boolean toggle or reason", () => {
+    for (const schema of [ArchiveProjectInputSchema, ReopenProjectInputSchema]) {
+      expect(schema.parse({ id: "x" })).toEqual({ id: "x" });
+      expect(schema.safeParse({ id: "x", archived: false }).success).toBe(false);
+      expect(schema.safeParse({}).success).toBe(false);
+      expect(
+        schema.safeParse({ id: "x", application: "costTracker" }).success,
+      ).toBe(false);
+    }
   });
   it("distinguishes an optional active ID from the required object", () => {
     expect(SetActiveProjectInputSchema.parse({ extra: true })).toEqual({});

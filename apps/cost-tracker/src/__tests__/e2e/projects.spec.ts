@@ -54,9 +54,39 @@ test.describe("Cost Tracker Project production path", () => {
         { field: "endDate", direction: "desc" },
         { field: "name", direction: "asc" },
       ];
-      await page.goto(
-        `/projects?search=${encodeURIComponent(prefix)}&sort=${encodeURIComponent(JSON.stringify(sort))}`,
-      );
+      let releaseScripts = () => {};
+      const scriptsReleased = new Promise<void>((resolve) => {
+        releaseScripts = resolve;
+      });
+      await page.route("**/*", async (route) => {
+        if (route.request().resourceType() === "script") {
+          await scriptsReleased;
+        }
+        await route.continue();
+      });
+      const sortControls = [
+        page.getByTestId("sort-project-name"),
+        page.getByTestId("sort-project-settlement"),
+        page.getByTestId("sort-project-start"),
+        page.getByTestId("sort-project-end"),
+        page.getByTestId("project-sort-menu"),
+      ];
+      try {
+        await page.goto(
+          `/projects?search=${encodeURIComponent(prefix)}&sort=${encodeURIComponent(JSON.stringify(sort))}`,
+          { waitUntil: "commit" },
+        );
+        for (const control of sortControls) {
+          await expect(control).toBeVisible();
+          await expect(control).toBeDisabled();
+        }
+      } finally {
+        releaseScripts();
+        await page.unrouteAll({ behavior: "wait" });
+      }
+      for (const control of sortControls) {
+        await expect(control).toBeEnabled();
+      }
       const visibleIds = () =>
         page
           .locator("tbody tr[data-project-id]")
@@ -68,6 +98,16 @@ test.describe("Cost Tracker Project production path", () => {
       await assertOrder([6, 7, 4, 5, 2, 3, 0, 1]);
       await page.getByTestId("sort-project-end").focus();
       await page.getByTestId("sort-project-end").press("Enter");
+      await expect(page).toHaveURL(
+        (url) =>
+          url.searchParams.get("sort") ===
+          JSON.stringify([
+            { field: "settlement", direction: "asc" },
+            { field: "startDate", direction: "desc" },
+            { field: "endDate", direction: "asc" },
+            { field: "name", direction: "asc" },
+          ]),
+      );
       await assertOrder([4, 5, 6, 7, 0, 1, 2, 3]);
       await page.getByTestId("sort-project-name").click();
       await assertOrder([5, 4, 7, 6, 1, 0, 3, 2]);
@@ -75,6 +115,21 @@ test.describe("Cost Tracker Project production path", () => {
       await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
       await page.reload();
       await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
+      await expect(page.getByTestId("project-sort-menu")).toBeEnabled();
+      await page.getByTestId("project-sort-menu").click();
+      for (const field of ["settlement", "startDate", "endDate", "name"]) {
+        await expect(
+          page.getByTestId(`project-sort-direction-${field}`),
+        ).toBeEnabled();
+        await expect(
+          page.getByTestId(`project-sort-remove-${field}`),
+        ).toBeEnabled();
+      }
+      await expect(page.getByTestId("project-sort-up-settlement")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-down-name")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-add")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-reset")).toBeEnabled();
+      await page.keyboard.press("Escape");
 
       for (const width of [1440, 1024, 768, 390]) {
         await page.setViewportSize({ width, height: 900 });
@@ -194,7 +249,9 @@ test.describe("Cost Tracker Project production path", () => {
     await page.goto("/partner-organizations");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-    // Text-free hook: the assignment dialog carries a stable test id.
+    // Text-free hook: the assignment dialog lives in the actions overflow
+    // menu and carries a stable test id.
+    await page.getByTestId("partnership-actions-menu").click();
     await page.getByTestId("assign-organization").click();
     const assignment = page.locator('[data-testid="organization-assignment"]');
     await assignment

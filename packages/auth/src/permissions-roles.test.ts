@@ -14,7 +14,11 @@ describe("calculator role map", () => {
     const actions = projectActions(
       calculatorOrganizationRoles[ORGANIZATION_ROLES.OrganizationAdmin],
     );
-    expect(actions).toContain("archive");
+    expect(
+      calculatorOrganizationRoles.admin.authorize({
+        calculatorProjectLifecycle: ["archive"],
+      }).success,
+    ).toBe(true);
     expect(actions).not.toContain("delete");
   });
 
@@ -37,8 +41,6 @@ describe("calculator role map", () => {
     const actions = projectActions(
       calculatorOrganizationRoles[ORGANIZATION_ROLES.OrganizationOwner],
     );
-    expect(actions).toEqual(
-      expect.arrayContaining(["create", "read", "update", "delete", "archive"]),
-    );
+    expect(actions).toEqual(["create", "read", "update", "delete"]);
   });
 });
