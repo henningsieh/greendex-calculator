@@ -5,7 +5,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
 import { Suspense, useEffect, useRef, useSyncExternalStore } from "react";
 
-import { CardSkeleton } from "@/components/loading-skeletons";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import {
   Empty,
@@ -13,6 +12,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
 import { ProjectListMetrics } from "@/features/projects/components/project-list-results";
@@ -27,11 +27,16 @@ import {
   type ProjectListScopeAvailability,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectVisibility } from "@/lib/ui-preferences/definitions";
+
+type VisibilityPreference = { accountKey: string; visibility: ProjectVisibility };
 
 export function ProjectList({
   hasStaffMembership,
+  preference,
 }: {
   hasStaffMembership: boolean;
+  preference: VisibilityPreference;
 }) {
   const t = useTranslations("projects.list");
   const { data: availableScopes } = useSuspenseQuery(
@@ -59,7 +64,10 @@ export function ProjectList({
   return (
     <>
       <ProjectDataErrorBoundary resource="Projects">
-        <AvailableProjectList availableScopes={availableScopes} />
+        <AvailableProjectList
+          availableScopes={availableScopes}
+          preference={preference}
+        />
       </ProjectDataErrorBoundary>
     </>
   );
@@ -69,8 +77,10 @@ type ProjectListQueryState = UseQueryStatesReturn<typeof projectListParsers>;
 
 function AvailableProjectList({
   availableScopes,
+  preference,
 }: {
   availableScopes: ProjectListScopeAvailability;
+  preference: VisibilityPreference;
 }) {
   const [urlState, setUrlState] = useQueryStates(projectListParsers, {
     history: "push",
@@ -86,6 +96,7 @@ function AvailableProjectList({
   return (
     <ResolvedProjectList
       availableScopes={availableScopes}
+      preference={preference}
       didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
       requestedState={requestedState}
       scope={resolution.scope}
@@ -98,6 +109,7 @@ function AvailableProjectList({
 
 function ResolvedProjectList({
   availableScopes,
+  preference,
   didPartnerToHostedFallback,
   requestedState,
   scope,
@@ -106,6 +118,7 @@ function ResolvedProjectList({
   urlState,
 }: {
   availableScopes: ProjectListScopeAvailability;
+  preference: VisibilityPreference;
   didPartnerToHostedFallback: boolean;
   requestedState: ProjectListState;
   scope: "hosted" | "partner";
@@ -149,29 +162,20 @@ function ResolvedProjectList({
   return (
     <section
       aria-label={t("label")}
-      className="mt-10 space-y-8"
+      className="mt-6 flex min-w-0 flex-col gap-4"
       data-hydrated={isHydrated ? "true" : undefined}
       data-testid="project-list"
     >
-      <ProjectScopeTabs
-        scope={scope}
-        availableScopes={availableScopes}
-        updateListState={updateListState}
-      />
-      <Suspense
-        fallback={
-          <div
-            aria-hidden="true"
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            <CardSkeleton rows={1} />
-            <CardSkeleton rows={1} />
-            {scope === "hosted" && <CardSkeleton rows={1} />}
-          </div>
-        }
-      >
-        <ProjectListMetrics scope={scope} state={state} />
-      </Suspense>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <ProjectScopeTabs
+          scope={scope}
+          availableScopes={availableScopes}
+          updateListState={updateListState}
+        />
+        <Suspense fallback={<Skeleton className="h-5 w-56" />}>
+          <ProjectListMetrics scope={scope} state={state} />
+        </Suspense>
+      </div>
       <ProjectListFilters
         state={state}
         urlState={urlState}
@@ -179,6 +183,8 @@ function ResolvedProjectList({
       />
       <Suspense fallback={<ProjectListSkeleton />}>
         <ResolvedProjectListResults
+          key={preference.accountKey}
+          preference={preference}
           scope={scope}
           state={state}
           urlState={urlState}

@@ -2,16 +2,20 @@
 
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   claimsTable,
   hostProjectAssignmentsTable as hostAssignments,
   principalQuotaCounters as counters,
+  member,
+  organization,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
+  user,
 } from "@greendex/database/schema";
 import { createRouterClient, ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -29,13 +33,228 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
 import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
-import { PROJECT_SORT_MODES } from "@/features/projects/list-query-options";
 import { resolveRelationship } from "@/features/projects/procedures/core";
 import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerProjects.
 describe("projects procedures", () => {
+  it("orders and traverses isolated mixed settlement Projects globally", async () => {
+    const actor = randomUUID();
+    const host = randomUUID();
+    const partner = randomUUID();
+    const now = new Date();
+    const sessionId = randomUUID();
+    const client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
+    });
+    const useSession = (activeOrganizationId: string) =>
+      authMocks.getSession.mockResolvedValue({
+        session: { id: sessionId, userId: actor, activeOrganizationId },
+        user: {
+          id: actor,
+          name: "Isolated sort user",
+          email: `${actor}@example.com`,
+        },
+      });
+    const rows = Array.from({ length: 33 }, (_, index) => ({
+      id: randomUUID(),
+      name: `${"Long project name ".repeat(100)}Sort fixture ${Math.floor(index / 4) % 2}`,
+      startDate: new Date(Date.UTC(2026, 0, 1 + (index % 4))),
+      endDate: new Date(Date.UTC(2026, 1, 1 + (Math.floor(index / 8) % 2))),
+      location: "Berlin",
+      country: "DE" as const,
+      organizationId: host,
+      costTrackerArchived: index >= 24,
+      rank: index < 12 ? 0 : index < 24 ? 1 : 2,
+    }));
+    try {
+      vi.clearAllMocks();
+      authMocks.hasPermission.mockResolvedValue({ success: true });
+      await db.insert(user).values({
+        id: actor,
+        name: "Isolated sort user",
+        email: `${actor}@example.com`,
+        emailVerified: true,
+      });
+      await db.insert(organization).values(
+        [host, partner].map((id) => ({
+          id,
+          name: id,
+          slug: id,
+          country: "DE" as const,
+          createdAt: now,
+        })),
+      );
+      await db.insert(member).values(
+        [host, partner].map((organizationId) => ({
+          id: randomUUID(),
+          userId: actor,
+          organizationId,
+          role: ORGANIZATION_ROLES.OrganizationOwner,
+          createdAt: now,
+        })),
+      );
+      await db
+        .insert(projectsTable)
+        .values(rows.map(({ rank: _rank, ...row }) => row));
+      const links = rows.map((row) => ({
+        id: randomUUID(),
+        projectId: row.id,
+        organizationId: partner,
+        rank: row.rank,
+      }));
+      await db
+        .insert(partnerships)
+        .values(links.map(({ rank: _rank, ...link }) => link));
+      await db.insert(claimsTable).values(
+        links
+          .filter((link) => link.rank === 1)
+          .map((link) => ({
+            id: randomUUID(),
+            partnershipId: link.id,
+            status: "paid" as const,
+          })),
+      );
+      const order = [...rows]
+        .sort(
+          (a, b) =>
+            a.rank - b.rank ||
+            a.startDate.getTime() - b.startDate.getTime() ||
+            a.id.localeCompare(b.id),
+        )
+        .map((row) => row.id);
+      const customOrder = [...rows]
+        .sort(
+          (a, b) =>
+            b.name.localeCompare(a.name) ||
+            b.startDate.getTime() - a.startDate.getTime() ||
+            a.id.localeCompare(b.id),
+        )
+        .map((row) => row.id);
+      const customSort = [
+        { field: "name" as const, direction: "desc" as const },
+        { field: "startDate" as const, direction: "desc" as const },
+      ];
+      // The first 24 rows include pairs tied through three keys. The fourth
+      // key must decide their order rather than the final ID tie-break.
+      const deepSort = [
+        { field: "startDate" as const, direction: "desc" as const },
+        { field: "endDate" as const, direction: "desc" as const },
+        { field: "name" as const, direction: "asc" as const },
+        { field: "settlement" as const, direction: "desc" as const },
+      ];
+      for (const scope of ["hosted", "partner"] as const) {
+        useSession(scope === "hosted" ? host : partner);
+        for (const sort of [
+          undefined,
+          customSort,
+          ...[2, 3, 4].map((depth) => deepSort.slice(0, depth)),
+        ]) {
+          const expected = !sort
+            ? order
+            : sort === customSort
+              ? customOrder
+              : [...rows]
+                  .sort((a, b) => {
+                    for (const { field, direction } of sort) {
+                      const difference =
+                        field === "startDate"
+                          ? a.startDate.getTime() - b.startDate.getTime()
+                          : field === "endDate"
+                            ? a.endDate.getTime() - b.endDate.getTime()
+                            : field === "name"
+                              ? a.name.localeCompare(b.name)
+                              : a.rank - b.rank;
+                      if (difference)
+                        return direction === "asc" ? difference : -difference;
+                    }
+                    return a.id.localeCompare(b.id);
+                  })
+                  .map((row) => row.id);
+          const input = { pageSize: 25 as const, archive: "all" as const, sort };
+          const list = (cursor?: string) =>
+            scope === "hosted"
+              ? client.projects.listHosted({ ...input, cursor })
+              : client.projects.listPartner({ ...input, cursor });
+          const first = await list();
+          expect(first.nextCursor!.length).toBeLessThanOrEqual(2048);
+          const second = await list(first.nextCursor);
+          expect([...first.rows, ...second.rows].map((row) => row.id)).toEqual(
+            expected,
+          );
+          expect(first.metrics.filtered.projectCount).toBe(33);
+          expect(second.metrics).toEqual(first.metrics);
+          expect(
+            (await list(second.previousCursor)).rows.map((row) => row.id),
+          ).toEqual(first.rows.map((row) => row.id));
+          expect(second.nextCursor).toBeUndefined();
+          await expect(
+            list(first.nextCursor && `${first.nextCursor}x`),
+          ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+        }
+      }
+      useSession(host);
+      const ready = await client.projects.listHosted({
+        pageSize: 25,
+        archive: "all",
+        settlement: "ready",
+      });
+      expect(ready.metrics.filtered.projectCount).toBe(12);
+      expect(ready.rows.map((row) => row.id).sort()).toEqual(
+        rows
+          .filter((row) => row.rank === 1)
+          .map((row) => row.id)
+          .sort(),
+      );
+      const impossible = await client.projects.listHosted({
+        pageSize: 25,
+        archive: "archived",
+        settlement: "ready",
+      });
+      expect(impossible.metrics.filtered.projectCount).toBe(0);
+      const first = await client.projects.listHosted({
+        pageSize: 25,
+        archive: "all",
+      });
+      await expect(
+        client.projects.listHosted({
+          pageSize: 25,
+          archive: "all",
+          sort: customSort,
+          cursor: first.nextCursor,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      const nameInput = {
+        pageSize: 25 as const,
+        archive: "all" as const,
+        sort: [{ field: "name" as const, direction: "asc" as const }],
+      };
+      const hostedNamePage = await client.projects.listHosted(nameInput);
+      useSession(partner);
+      const partnerNamePage = await client.projects.listPartner(nameInput);
+      const removedAnchor = hostedNamePage.rows.at(-1)!.id;
+      expect(partnerNamePage.rows.at(-1)!.id).toBe(removedAnchor);
+      await db.delete(projectsTable).where(eq(projectsTable.id, removedAnchor));
+      await expect(
+        client.projects.listPartner({
+          ...nameInput,
+          cursor: partnerNamePage.nextCursor,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      useSession(host);
+      await expect(
+        client.projects.listHosted({
+          ...nameInput,
+          cursor: hostedNamePage.nextCursor,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    } finally {
+      await db.delete(organization).where(eq(organization.id, host));
+      await db.delete(organization).where(eq(organization.id, partner));
+      await db.delete(user).where(eq(user.id, actor));
+    }
+  });
   describe("derived readiness and completion", () => {
     let actor = SEED_IDS.user.readinessActor;
     const host = SEED_IDS.organization.readinessHost;
@@ -138,9 +357,97 @@ describe("projects procedures", () => {
       }
       useScenario("empty");
     });
+
+    it("intersects archive and settlement filters over missing, mixed and settled Claims", async () => {
+      useScenario("terminal");
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: true })
+        .where(eq(projectsTable.id, projectId));
+      const archivedId = projectId;
+      const emptyId = readinessProjectIds[0]!;
+      await db.delete(partnerships).where(eq(partnerships.projectId, emptyId));
+      const mixedId = readinessProjectIds[1]!;
+      const missingId = readinessProjectIds[2]!;
+      const open = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "all",
+        settlement: "open",
+      });
+      const ready = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "all",
+        settlement: "ready",
+      });
+      const archived = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "archived",
+      });
+      const contradictory = await client.projects.listHosted({
+        pageSize: 100,
+        archive: "archived",
+        settlement: "ready",
+      });
+      expect(open.rows.map((row) => row.id)).toEqual(
+        expect.arrayContaining([mixedId, missingId]),
+      );
+      expect(ready.rows.map((row) => row.id)).toContain(emptyId);
+      expect(ready.rows.map((row) => row.id)).not.toContain(archivedId);
+      expect(archived.rows.map((row) => row.id)).toContain(archivedId);
+      expect(contradictory.rows).toEqual([]);
+      expect(contradictory.metrics.filtered.projectCount).toBe(0);
+    });
     afterEach(async () => {
       for (const id of readinessProjectIds)
         await db.delete(projectsTable).where(eq(projectsTable.id, id));
+    });
+
+    it("returns the locked archived state when a Hosted detail waits for an archive", async () => {
+      actor = SEED_IDS.user.projectsUser4;
+      useSession(host);
+      let release!: () => void;
+      let locked!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const held = new Promise<void>((resolve) => {
+        locked = resolve;
+      });
+      const blocker = db.transaction(async (tx) => {
+        await tx
+          .update(projectsTable)
+          .set({ costTrackerArchived: true })
+          .where(eq(projectsTable.id, projectId));
+        locked();
+        await gate;
+      });
+      await held;
+      const detail = client.projects.get({ projectId });
+      try {
+        let waiting = false;
+        for (let i = 0; i < 100; i++) {
+          const result = await db.execute(
+            sql`select exists(select 1 from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query ilike '%for share%' and query ilike '%project%') as waiting`,
+          );
+          if (result.rows[0].waiting) {
+            waiting = true;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        expect(waiting).toBe(true);
+      } finally {
+        release();
+        await blocker;
+      }
+      expect(await detail).toMatchObject({
+        relationship: "hosted",
+        archived: true,
+        canReopen: true,
+      });
+      await expect(
+        client.projects.reopen({ projectId, reason: "Correct state" }),
+      ).resolves.toEqual({ projectId, archived: false });
     });
 
     it("derives each Partnership's Claim state without mixing Projects or exposing other Partners", async () => {
@@ -507,11 +814,19 @@ describe("projects procedures", () => {
         partnerOrganizationCount: 2,
       });
       expect(result.metrics.filtered).toEqual(result.metrics.whole);
-      expect(result.rows.slice(0, 3).map((project) => project.id)).toEqual([
-        calculatorArchivedId,
-        alphaId,
-        betaId,
-      ]);
+      const settlementPriority = { open: 0, ready: 1, archived: 2 };
+      for (const [index, row] of result.rows.entries()) {
+        const previous = result.rows[index - 1];
+        if (!previous) continue;
+        const stateDifference =
+          settlementPriority[row.settlement] -
+          settlementPriority[previous.settlement];
+        expect(stateDifference).toBeGreaterThanOrEqual(0);
+        if (stateDifference === 0)
+          expect(row.startDate.getTime()).toBeGreaterThanOrEqual(
+            previous.startDate.getTime(),
+          );
+      }
       expect(result.rows[0]).not.toHaveProperty("organizationId");
 
       const largerPage = await client.projects.listHosted({ pageSize: 50 });
@@ -523,7 +838,24 @@ describe("projects procedures", () => {
       expect(await quotaRows()).toEqual(quotaBefore);
     });
 
-    it.each(PROJECT_SORT_MODES)(
+    it.each([
+      [[{ field: "startDate" as const, direction: "asc" as const }]],
+      [[{ field: "startDate" as const, direction: "desc" as const }]],
+      [[{ field: "endDate" as const, direction: "asc" as const }]],
+      [[{ field: "endDate" as const, direction: "desc" as const }]],
+      [
+        [
+          { field: "name" as const, direction: "desc" as const },
+          { field: "startDate" as const, direction: "asc" as const },
+        ],
+      ],
+      [
+        [
+          { field: "settlement" as const, direction: "asc" as const },
+          { field: "startDate" as const, direction: "desc" as const },
+        ],
+      ],
+    ])(
       "provides stable bidirectional %s cursors for Hosted and Partner Projects",
       async (sort) => {
         for (const [scope, activeOrganizationId] of [
@@ -609,7 +941,7 @@ describe("projects procedures", () => {
         client.projects.listHosted({
           pageSize: 25,
           cursor: first.nextCursor,
-          sort: "end-desc",
+          sort: [{ field: "endDate", direction: "desc" }],
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
@@ -1178,24 +1510,29 @@ describe("projects procedures", () => {
       });
     });
 
-    it("reports no Hosted scope when the only assigned Project is archived", async () => {
-      // Archived Projects satisfy no visibility predicate in listHosted,
-      // so the availability flag must not promise them either.
+    it("keeps archived assigned Projects discoverable through archive filters", async () => {
       await db
         .update(projectsTable)
         .set({ costTrackerArchived: true })
         .where(eq(projectsTable.id, assignedProject));
       try {
         expect(await client.projects.scopes()).toEqual({
-          hosted: false,
+          hosted: true,
           partner: false,
         });
-        await expect(
-          client.projects.listHosted({ pageSize: 25 }),
-        ).rejects.toMatchObject({
-          code: "FORBIDDEN",
-          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
-        });
+        const active = await client.projects.listHosted({ pageSize: 25 });
+        expect(active.rows).toEqual([]);
+        expect(active.metrics.whole.projectCount).toBe(1);
+        expect(active.metrics.filtered.projectCount).toBe(0);
+        for (const archive of ["archived", "all"] as const) {
+          const result = await client.projects.listHosted({
+            pageSize: 25,
+            archive,
+          });
+          expect(result.rows.map(({ id }) => id)).toEqual([assignedProject]);
+          expect(result.metrics.whole.projectCount).toBe(1);
+          expect(result.metrics.filtered.projectCount).toBe(1);
+        }
       } finally {
         await db
           .update(projectsTable)

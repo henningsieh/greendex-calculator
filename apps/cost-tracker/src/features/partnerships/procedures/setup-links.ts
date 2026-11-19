@@ -91,6 +91,7 @@ export const listSetupLinks = authorized
       z.object({
         id: z.string(),
         projectName: z.string(),
+        costTrackerArchived: z.boolean(),
         recipientEmail: z.string(),
         enabled: z.boolean(),
         expired: z.boolean(),
@@ -110,6 +111,7 @@ export const listSetupLinks = authorized
       .select({
         id: links.id,
         projectName: projectsTable.name,
+        costTrackerArchived: projectsTable.costTrackerArchived,
         recipientEmail: links.recipientEmail,
         enabled: links.enabled,
         expired: sql<boolean>`${links.expiresAt} <= current_timestamp`,

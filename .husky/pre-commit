@@ -1,81 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-# Default: check only files in this commit. Use PRE_COMMIT_FULL=1 for the
-# repository-wide checks. Never bypass this hook with HUSKY=0 or
-# git commit --no-verify: fix the failure instead and re-run the commit.
-if [ "${PRE_COMMIT_FULL:-0}" = "1" ]; then
-  pnpm run format
-  pnpm run lint
-  exit 0
-fi
-
-staged=$(git diff --cached --name-only --diff-filter=ACMR)
-[ -n "$staged" ] || exit 0
-
-# Refuse mixed trees instead of stashing. Stashing unstaged edits of staged
-# files and popping after oxfmt rewrote them fails whenever the formatter
-# touches the same region (the stash holds pre-format content), leaving an
-# unmerged tree and an orphaned stash behind. Aborting with guidance keeps
-# the tree intact; stage everything (or stash) and retry. Unstaged edits in
-# files outside this commit are untouched by the tools below and need no
-# protecting.
-if ! git diff --quiet -- $staged; then
-  echo 'husky: staged files also carry unstaged edits — commit from a clean tree.' >&2
-  echo 'Offending files:' >&2
-  git diff --name-only -- $staged >&2
-  echo 'Stage everything (git add -A) or stash your work, then commit again.' >&2
-  echo 'Never bypass with --no-verify.' >&2
-  exit 1
-fi
-
-# Format every staged source file in place. The first grep keeps only file
-# types the formatter understands; the second grep drops paths the formatter
-# is configured to ignore (.oxfmtrc.json: docs, specs). Without that second
-# filter, a docs-only commit hands the formatter nothing it may touch, and
-# the formatter fails the whole commit instead of passing quietly.
-git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | grep -zvE '^(docs/|\.specify/|specs/)' \
-  | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
-# Lint every staged script file. Same selection idea, narrower file types:
-# only code reaches the linter, docs never do.
-# An oxlint run where every file is ignore-listed reports "No files found
-# to lint" — nothing to do is a pass, not a failure.
-lint_out=$(git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
-  | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json 2>&1) || {
-  if [ "$lint_out" != "No files found to lint. Please check your paths and ignore patterns." ]; then
-    printf '%s\n' "$lint_out" >&2
-    exit 1
-  fi
-}
-[ -n "$lint_out" ] && printf '%s\n' "$lint_out"
-
-# Keep agent-context quality high: the drift guard and its policy tests are
-# build-free reads (node + single-file vitest, ~seconds) and block the commit
-# on drift. Never bypass with --no-verify; fix the drift instead.
-pnpm run check:agent-instructions
-
-# Tests must never assert visible copy: rewording or translation must not
-# break suites. This scan is a build-free read (~1s) over test sources and
-# blocks the commit on violation. Never bypass with --no-verify;
-# reword the test instead.
-# Scoped to staged test sources: WIP violations in untouched files must not
-# block unrelated commits. CI runs the full scan as the backstop.
-staged_tests=$(git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '(^apps/[^/]+/(src/__tests__/(e2e|merge)/|test/e2e/)|\.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$)' \
-  || true)
-if [ -n "$staged_tests" ]; then
-  pnpm run check:no-copy-assertions
-else
-  echo 'husky: no staged test sources — skipping check:no-copy-assertions (CI still runs it).'
-fi
-
-# Only re-stage files that were selected from the original staged snapshot.
-# Uses the same two filters as the format step above, so exactly the files
-# the formatter may have rewritten get re-staged — nothing more.
-git diff --cached --name-only -z --diff-filter=ACMR \
-  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | grep -zvE '^(docs/|\.specify/|specs/)' \
-  | xargs -0 -r git add --
+root=$(git rev-parse --show-toplevel)
+snapshot=$(mktemp -d "${TMPDIR:-/tmp}/greendex-index.XXXXXXXX")
+trap 'rm -rf "$snapshot"' EXIT HUP INT TERM
+git checkout-index --all --prefix="$snapshot/"
+node "$snapshot/scripts/pre-commit.mjs" "$root" "$snapshot"

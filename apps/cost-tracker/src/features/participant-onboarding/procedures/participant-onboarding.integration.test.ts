@@ -911,11 +911,11 @@ describe("Participant onboarding procedures", () => {
       });
       const completed = Promise.allSettled([firstOutcome, second]);
       // Do not let the first transaction finish until PostgreSQL proves that
-      // the second has attempted the User lock and is waiting on the first.
+      // the second has attempted the Project lock and is waiting on the first.
       try {
         const secondPid = await secondArrived;
         const blockedQuery = await waitForBlockedQuery(secondPid, firstPid);
-        expect(blockedQuery).toMatch(/from "user".*for no key update/i);
+        expect(blockedQuery).toMatch(/from "project".*for update/i);
       } finally {
         release();
         await completed;

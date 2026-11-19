@@ -39,6 +39,10 @@ export const ProjectPartnershipSchema = z.object({
   updatedAt: ProjectPartnershipSelectSchema.shape.updatedAt,
 });
 
+export const ListedProjectPartnershipSchema = ProjectPartnershipSchema.extend({
+  costTrackerArchived: z.boolean(),
+});
+
 export const AssignProjectPartnershipInputSchema =
   ProjectPartnershipInsertSchema.pick({
     projectId: true,

@@ -31,7 +31,15 @@ vi.mock("@/features/partnerships/procedures/coordination", () => {
     requirePartnerCoordination: mocks.scope,
   };
 });
-vi.mock("@greendex/database", () => {
+vi.mock("@greendex/database", async () => {
+  const schema = await import("@greendex/database/schema");
+  const projectQuery = {
+    from: () => projectQuery,
+    where: () => projectQuery,
+    innerJoin: () => projectQuery,
+    for: () => projectQuery,
+    limit: async () => [{ id: "project" }],
+  };
   const query = {
     from: () => query,
     where: () => query,
@@ -40,7 +48,10 @@ vi.mock("@greendex/database", () => {
     limit: mocks.limit,
   };
   const executor = {
-    select: () => query,
+    select: () => ({
+      from: (table: unknown) =>
+        table === schema.projectsTable ? projectQuery : query,
+    }),
     insert: () => ({ values: () => ({ returning: mocks.returning }) }),
   };
   return {

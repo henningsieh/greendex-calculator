@@ -50,12 +50,30 @@ export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   });
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
-export const PROJECT_SORT_MODES = [
-  "start-asc",
-  "start-desc",
-  "end-asc",
-  "end-desc",
+export const PROJECT_ARCHIVE_FILTERS = ["active", "archived", "all"] as const;
+export const PROJECT_SETTLEMENT_FILTERS = ["all", "open", "ready"] as const;
+export const PROJECT_SORT_FIELDS = [
+  "settlement",
+  "name",
+  "startDate",
+  "endDate",
 ] as const;
+export const ProjectSortCriterionSchema = z.object({
+  field: z.enum(PROJECT_SORT_FIELDS),
+  direction: z.enum(["asc", "desc"]),
+});
+export const ProjectSortOrderSchema = z
+  .array(ProjectSortCriterionSchema)
+  .min(1)
+  .max(PROJECT_SORT_FIELDS.length)
+  .refine(
+    (criteria) =>
+      new Set(criteria.map(({ field }) => field)).size === criteria.length,
+  );
+export const DEFAULT_PROJECT_SORT: z.infer<typeof ProjectSortOrderSchema> = [
+  { field: "settlement", direction: "asc" },
+  { field: "startDate", direction: "asc" },
+];
 export const PROJECT_PAGE_SIZES = [25, 50, 100] as const;
 
 const ProjectListInputBaseSchema = z
@@ -69,7 +87,9 @@ const ProjectListInputBaseSchema = z
       .optional(),
     dateFrom: z.date().optional(),
     dateTo: z.date().optional(),
-    sort: z.enum(PROJECT_SORT_MODES).default("start-asc"),
+    archive: z.enum(PROJECT_ARCHIVE_FILTERS).default("active"),
+    settlement: z.enum(PROJECT_SETTLEMENT_FILTERS).default("all"),
+    sort: ProjectSortOrderSchema.default(DEFAULT_PROJECT_SORT),
     cursor: z.string().min(1).max(2048).optional(),
     pageSize: z.union([
       z.literal(PROJECT_PAGE_SIZES[0]),
@@ -95,14 +115,16 @@ export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExten
 
 export const PartnerProjectListInputSchema = ProjectListInputBaseSchema;
 
-export const ProjectListRowSchema = projectColumns.pick({
-  id: true,
-  name: true,
-  startDate: true,
-  endDate: true,
-  location: true,
-  country: true,
-});
+export const ProjectListRowSchema = projectColumns
+  .pick({
+    id: true,
+    name: true,
+    startDate: true,
+    endDate: true,
+    location: true,
+    country: true,
+  })
+  .extend({ settlement: z.enum(["open", "ready", "archived"]) });
 
 const ProjectListMetricsSchema = z.object({
   projectCount: z.number().int().nonnegative(),
@@ -195,6 +217,7 @@ export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("hosted"),
     canArchive: z.boolean(),
+    canReopen: z.boolean(),
     partnerOrganizations: z.array(ProjectPartnershipSummarySchema),
   }),
   ProjectDetailBaseSchema.extend({

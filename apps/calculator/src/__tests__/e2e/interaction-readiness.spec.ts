@@ -37,7 +37,14 @@ test("Project tabs accept the first available click after a slow script load", a
     const participants = page.getByTestId("project-participants-tab");
     await expect(participants).toBeVisible();
     await expect(participants).toBeDisabled();
+    const actions = page.getByTestId("project-actions");
+    await expect(actions).toBeDisabled();
     release();
+    await expect(actions).toBeEnabled();
+    await actions.click();
+    await expect(page.getByTestId("project-lifecycle-action")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("menu")).toHaveCount(0);
     await expect(participants).toBeEnabled();
     await participants.click();
     await expect(participants).toHaveAttribute("aria-selected", "true");
@@ -47,6 +54,24 @@ test("Project tabs accept the first available click after a slow script load", a
         .locator('[data-slot="card-title"]'),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: project.name })).toBeVisible();
+  } finally {
+    release();
+  }
+});
+
+test("Dashboard lifecycle menu accepts the first available click after a slow script load", async ({
+  page,
+}) => {
+  const release = await holdClientScripts(page);
+  try {
+    await page.goto("/en-GB/org/dashboard?tab=projects", { waitUntil: "commit" });
+    const actions = page.getByTestId("project-actions").first();
+    await expect(actions).toBeVisible();
+    await expect(actions).toBeDisabled();
+    release();
+    await expect(actions).toBeEnabled();
+    await actions.click();
+    await expect(page.getByTestId("project-lifecycle-action")).toBeVisible();
   } finally {
     release();
   }

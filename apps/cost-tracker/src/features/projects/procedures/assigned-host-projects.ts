@@ -10,9 +10,8 @@ import { and, eq } from "drizzle-orm";
  * Hosted Projects in one Organization explicitly assigned to one coordinator.
  * DB-only helper shared by procedure gates so every gate enforces the same
  * assignment scope. Assignment scope narrows Hosted discovery: it never
- * widens it. Archived Projects never count, mirroring the visibility
- * predicates listHosted already applies — availability must not promise
- * what the list will not show.
+ * widens it. Archive selection belongs to the list filters, not assignment
+ * discovery, so archived assignments remain reachable.
  */
 export async function assignedHostProjectIds(
   userId: string,
@@ -26,7 +25,6 @@ export async function assignedHostProjectIds(
       and(
         eq(hostAssignments.userId, userId),
         eq(projectsTable.organizationId, organizationId),
-        eq(projectsTable.costTrackerArchived, false),
       ),
     );
   return rows.map((row) => row.id);

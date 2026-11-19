@@ -5,15 +5,18 @@ import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
+  getProjectPartnerFilterQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
+import { requireSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
+import { readProjectVisibility } from "@/lib/ui-preferences/server";
 
 type ProjectListSectionProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -39,6 +42,8 @@ export async function ProjectListSection({
   searchParams,
 }: ProjectListSectionProps) {
   const queryClient = getQueryClient();
+  const session = await requireSession();
+  const preference = await readProjectVisibility(session.user.id);
   const [urlState, availableScopes, hasStaffMembership] = await Promise.all([
     loadProjectListSearchParams(searchParams),
     queryClient
@@ -57,7 +62,7 @@ export async function ProjectListSection({
       availableScopes,
     );
     if (resolution.scope) {
-      await (
+      const selected = (
         resolution.scope === "hosted"
           ? queryClient.query(
               getProjectListQueryOptions("hosted", resolution.state),
@@ -66,13 +71,28 @@ export async function ProjectListSection({
               getProjectListQueryOptions("partner", resolution.state),
             )
       ).catch(swallowPrefetchError);
+      await Promise.all([
+        selected,
+        ...(resolution.scope === "hosted" &&
+        (resolution.state.partnerOrganizationIds.length > 0 ||
+          resolution.state.cursor)
+          ? [
+              queryClient
+                .query(getProjectPartnerFilterQueryOptions(resolution.state))
+                .catch(swallowPrefetchError),
+            ]
+          : []),
+      ]);
     }
   }
 
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Projects">
-        <ProjectList hasStaffMembership={hasStaffMembership} />
+        <ProjectList
+          hasStaffMembership={hasStaffMembership}
+          preference={preference}
+        />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

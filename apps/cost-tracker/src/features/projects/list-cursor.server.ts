@@ -3,17 +3,31 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
-import { PROJECT_SORT_MODES } from "@/features/projects/validation-schemas";
+import { ProjectSortOrderSchema } from "@/features/projects/validation-schemas";
 
 const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
 
 const CursorSchema = z.object({
-  version: z.literal(3),
+  version: z.literal(4),
   direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
-  sort: z.enum(PROJECT_SORT_MODES),
   id: z.string().min(1).max(128),
-  date: z.iso.datetime(),
+  values: z
+    .array(
+      z.discriminatedUnion("field", [
+        z.object({
+          field: z.literal("settlement"),
+          value: z.number().int().min(0).max(2),
+        }),
+        // Names are unbounded in the shared Project model. Resolve the name
+        // from the cursor's ID inside the authorized scope, not in the token.
+        z.object({ field: z.literal("name") }),
+        z.object({ field: z.literal("startDate"), value: z.iso.datetime() }),
+        z.object({ field: z.literal("endDate"), value: z.iso.datetime() }),
+      ]),
+    )
+    .min(1)
+    .max(4),
 });
 
 export type ProjectListCursor = z.infer<typeof CursorSchema>;
@@ -23,7 +37,9 @@ export function getProjectListFingerprint(input: {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
-  sort: (typeof PROJECT_SORT_MODES)[number];
+  archive?: "active" | "archived" | "all";
+  settlement?: "all" | "open" | "ready";
+  sort: z.infer<typeof ProjectSortOrderSchema>;
   pageSize: 25 | 50 | 100;
   partnerOrganizationIds?: string[];
 }) {
@@ -34,6 +50,8 @@ export function getProjectListFingerprint(input: {
         search: input.search,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString(),
+        archive: input.archive ?? "active",
+        settlement: input.settlement ?? "all",
         sort: input.sort,
         pageSize: input.pageSize,
         partnerOrganizationIds: [...(input.partnerOrganizationIds ?? [])].sort(),
@@ -56,13 +74,13 @@ export function decodeProjectListCursor(
   | { status: "unsupported-version" }
   | { status: "invalid" } {
   try {
-    const payload: unknown = JSON.parse(
-      Buffer.from(value, "base64url").toString("utf8"),
-    );
+    const bytes = Buffer.from(value, "base64url");
+    if (bytes.toString("base64url") !== value) return { status: "invalid" };
+    const payload: unknown = JSON.parse(bytes.toString("utf8"));
     const version = CursorVersionSchema.safeParse(payload);
 
     if (!version.success) return { status: "invalid" };
-    if (version.data.version !== 3) return { status: "unsupported-version" };
+    if (version.data.version !== 4) return { status: "unsupported-version" };
 
     const cursor = CursorSchema.safeParse(payload);
     if (!cursor.success || cursor.data.fingerprint !== fingerprint) {

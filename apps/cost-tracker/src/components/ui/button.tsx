@@ -16,7 +16,16 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-[color-mix(in_oklch,var(--destructive),black_12%)] focus-visible:border-destructive/40 focus-visible:ring-destructive/30",
-        link: "link-prose whitespace-nowrap decoration-brand",
+      // Navigation: typographic prose link, never a button shape. The base
+      // stays uppercase for true buttons; this override restores sentence
+      // case, wrapping text and an always-visible underline so links read
+      // as navigation at a glance.
+      link: "link-prose h-auto min-h-9 gap-1 rounded-md px-1.5 py-1 text-sm font-medium normal-case tracking-normal underline decoration-brand underline-offset-4 whitespace-normal",
+      // Repeated destructive row action: hairline + destructive text instead
+      // of the solid block, so a list of them never competes with the one
+      // primary action per view.
+      "outline-destructive":
+        "border border-destructive/40 bg-transparent text-destructive shadow-xs hover:bg-destructive/10 hover:text-destructive aria-expanded:bg-destructive/10 aria-expanded:text-destructive dark:border-destructive/50 dark:hover:bg-destructive/20",
       },
       size: {
         default:
@@ -26,6 +35,7 @@ const buttonVariants = cva(
         lg: "h-11 gap-1.5 px-8 has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-10",
         "icon-xs": "size-7 [&_svg:not([class*='size-'])]:size-3",
+        "icon-SidebarTrigger": "size-8",
         "icon-sm": "size-9",
         "icon-lg": "size-11",
       },

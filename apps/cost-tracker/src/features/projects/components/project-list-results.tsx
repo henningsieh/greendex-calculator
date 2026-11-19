@@ -1,10 +1,13 @@
 "use client";
 
+/* eslint-disable shadcn/no-restyle -- This dense project register owns sentence-case sorting controls and compact data-cell typography, distinct from the product's display/action typography. */
+
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
+  columnVisibilityFeature,
   filterFn_includesString,
   flexRender,
   functionalUpdate,
@@ -15,12 +18,33 @@ import {
   type PaginationState,
   useTable,
 } from "@tanstack/react-table";
-import { RefreshCwIcon } from "lucide-react";
-import { useMemo } from "react";
+import {
+  ArrowDownIcon,
+  ArrowDownUpIcon,
+  ArrowUpIcon,
+  Columns3Icon,
+  RefreshCwIcon,
+  XIcon,
+} from "lucide-react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  PopoverTitle,
+  PopoverDescription,
+} from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -34,7 +58,6 @@ import {
   getProjectSortMode,
   getSortingState,
   isProjectPageSize,
-  PROJECT_FILTER_IDS,
   pushColumnFiltersToUrl,
   type ProjectListQueryState,
 } from "@/features/projects/components/project-list-filtering";
@@ -42,27 +65,78 @@ import { getProjectListQueryOptions } from "@/features/projects/list-query-optio
 import type { ProjectListState } from "@/features/projects/list-query-options";
 import type { ProjectListRow } from "@/features/projects/types";
 import { Link } from "@/lib/i18n/routing";
+import { writePreference } from "@/lib/ui-preferences/browser";
+import {
+  projectVisibilityPreference,
+  type ProjectVisibility,
+} from "@/lib/ui-preferences/definitions";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
+  columnVisibilityFeature,
   rowPaginationFeature,
   rowSortingFeature,
   filterFns: { includesString: filterFn_includesString },
 });
 
-function MetricCard({ label, value }: { label: string; value: number }) {
+function SortHeader({
+  label,
+  direction,
+  priority,
+  disabled,
+  onClick,
+  testId,
+}: {
+  label: string;
+  direction: false | "asc" | "desc";
+  priority: number;
+  disabled: boolean;
+  onClick: () => void;
+  testId: string;
+}) {
+  const t = useTranslations("projects.list");
+  const Icon =
+    direction === "asc"
+      ? ArrowUpIcon
+      : direction === "desc"
+        ? ArrowDownIcon
+        : ArrowDownUpIcon;
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        {/* eslint-disable-next-line shadcn/no-restyle -- MetricCard label intentionally uses muted text. */}
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <span className="text-3xl font-semibold tabular-nums">{value}</span>
-      </CardContent>
-    </Card>
+    <Button
+      className="-ml-2 h-auto min-h-9 max-w-full flex-wrap justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-normal normal-case"
+      aria-label={
+        direction
+          ? t("sortHeaderActive", {
+              field: label,
+              direction: direction === "asc" ? t("ascending") : t("descending"),
+              priority: priority + 1,
+            })
+          : t("sortHeaderInactive", { field: label })
+      }
+      data-testid={testId}
+      disabled={disabled}
+      type="button"
+      size="sm"
+      variant="ghost"
+      onClick={onClick}
+    >
+      <span className="min-w-0 wrap-anywhere">{label}</span>
+      <Icon aria-hidden="true" data-icon="inline-end" />
+      {direction && (
+        <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-[10px] tabular-nums">
+          {priority + 1}
+        </span>
+      )}
+    </Button>
+  );
+}
+
+function ListMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-baseline gap-2 text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-semibold tabular-nums">{value}</dd>
+    </div>
   );
 }
 
@@ -86,8 +160,8 @@ export function ProjectListMetrics({
   const whole = data.metrics.whole;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <MetricCard
+    <dl className="flex flex-wrap gap-x-6 gap-y-1">
+      <ListMetric
         label={
           filtered.projectCount === whole.projectCount
             ? t("metrics.projects")
@@ -96,7 +170,7 @@ export function ProjectListMetrics({
         value={filtered.projectCount}
       />
       {data.scope === "hosted" && (
-        <MetricCard
+        <ListMetric
           label={
             data.metrics.filtered.partnerOrganizationCount ===
             data.metrics.whole.partnerOrganizationCount
@@ -108,16 +182,18 @@ export function ProjectListMetrics({
           value={data.metrics.filtered.partnerOrganizationCount}
         />
       )}
-    </div>
+    </dl>
   );
 }
 
 export function ResolvedProjectListResults({
+  preference,
   scope,
   state,
   urlState,
   setUrlState,
 }: {
+  preference: { accountKey: string; visibility: ProjectVisibility };
   scope: "hosted" | "partner";
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
@@ -125,6 +201,14 @@ export function ResolvedProjectListResults({
 }) {
   const t = useTranslations("projects.list");
   const dateFormat = useDateFormat();
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >(preference.visibility);
 
   // Single-element suspense list (not a singular query): the hosted and
   // partner query functions carry incompatible scope-specific tagged key
@@ -134,25 +218,43 @@ export function ResolvedProjectListResults({
     queries: [getProjectListQueryOptions(scope, state)],
   });
 
-  const columnFilters = getProjectColumnFilters(urlState);
-  const sorting = getSortingState(state.sort);
+  const columnFilters = useMemo(
+    () => getProjectColumnFilters(urlState),
+    [urlState],
+  );
+  const sorting = useMemo(() => getSortingState(state.sort), [state.sort]);
   // Cursors are opaque, so Table tracks whether this is the first page or a
   // cursor page. The oRPC response supplies the actual forward/backward value.
-  const pagination: PaginationState = {
-    pageIndex: state.cursor ? 1 : 0,
-    pageSize: state.pageSize,
-  };
+  const pagination: PaginationState = useMemo(
+    () => ({
+      pageIndex: state.cursor ? 1 : 0,
+      pageSize: state.pageSize,
+    }),
+    [state.cursor, state.pageSize],
+  );
   const columns = useMemo<
     ColumnDef<typeof projectListTableFeatures, ProjectListRow>[]
   >(
     () => [
       {
         accessorKey: "name",
-        enableSorting: false,
-        header: t("project"),
+        enableHiding: false,
+        header: ({ column }) => (
+          <SortHeader
+            label={t("project")}
+            direction={column.getIsSorted()}
+            priority={column.getSortIndex()}
+            testId="sort-project-name"
+            disabled={!isHydrated}
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc", true)
+            }
+          />
+        ),
         cell: ({ row }) => (
           <Link
-            className="font-medium link-prose"
+            className="block truncate font-medium link-prose"
+            title={row.original.name}
             href={projectPath(row.original.id)}
             data-testid={`project-link-${row.original.id}`}
           >
@@ -161,28 +263,60 @@ export function ResolvedProjectListResults({
         ),
       },
       {
+        accessorKey: "settlement",
+        header: ({ column }) => (
+          <SortHeader
+            label={t("settlementFilter")}
+            direction={column.getIsSorted()}
+            priority={column.getSortIndex()}
+            testId="sort-project-settlement"
+            disabled={!isHydrated}
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc", true)
+            }
+          />
+        ),
+        cell: ({ row }) =>
+          row.original.settlement === "archived"
+            ? t("archive.archived")
+            : t(`settlement.${row.original.settlement}`),
+      },
+      {
         accessorKey: "startDate",
         header: ({ column }) => {
-          const sortDirection = column.getIsSorted();
           return (
-            <Button
-              aria-label={t("sortByStartDate")}
-              data-testid="sort-project-start"
-              onClick={() => column.toggleSorting(sortDirection === "asc")}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              {t("schedule")}
-            </Button>
+            <SortHeader
+              label={t("startDate")}
+              direction={column.getIsSorted()}
+              priority={column.getSortIndex()}
+              testId="sort-project-start"
+              disabled={!isHydrated}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc", true)
+              }
+            />
           );
         },
         cell: ({ row }) =>
-          dateFormat.range(
-            row.original.startDate,
-            row.original.endDate,
-            "date.medium",
-          ),
+          dateFormat.format(row.original.startDate, "date.medium"),
+      },
+      {
+        accessorKey: "endDate",
+        header: ({ column }) => {
+          return (
+            <SortHeader
+              label={t("endDate")}
+              direction={column.getIsSorted()}
+              priority={column.getSortIndex()}
+              testId="sort-project-end"
+              disabled={!isHydrated}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc", true)
+              }
+            />
+          );
+        },
+        cell: ({ row }) => dateFormat.format(row.original.endDate, "date.medium"),
       },
       {
         id: "location",
@@ -217,7 +351,7 @@ export function ResolvedProjectListResults({
           ]
         : []),
     ],
-    [scope, t, dateFormat],
+    [scope, t, dateFormat, isHydrated],
   );
   const table = useTable({
     columns,
@@ -227,6 +361,11 @@ export function ResolvedProjectListResults({
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
+    onColumnVisibilityChange: (updater) => {
+      const next = functionalUpdate(updater, columnVisibility);
+      setColumnVisibility(next);
+      writePreference(projectVisibilityPreference(preference.accountKey), next);
+    },
     onColumnFiltersChange: (updater) => {
       pushColumnFiltersToUrl(
         functionalUpdate(updater, columnFilters),
@@ -261,60 +400,24 @@ export function ResolvedProjectListResults({
       });
     },
     pageCount: -1,
-    state: { columnFilters, pagination, sorting },
+    state: { columnFilters, columnVisibility, pagination, sorting },
   });
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
+  const sortLabels: Record<string, string> = {
+    name: t("project"),
+    settlement: t("settlementFilter"),
+    startDate: t("startDate"),
+    endDate: t("endDate"),
+  };
 
   return (
     <div
-      className="space-y-8"
+      className="flex min-w-0 flex-col gap-3"
       data-project-count={whole.projectCount}
       data-filtered-project-count={filtered.projectCount}
     >
-      {data.scope === "hosted" && data.partnerOptions.length > 0 && (
-        <fieldset className="space-y-2 rounded-xl border p-5">
-          <legend className="text-sm font-medium">
-            {t("partnerOrganizations")}
-          </legend>
-          <div className="flex flex-wrap gap-3">
-            {data.partnerOptions.map((partner) => (
-              <label className="flex items-center gap-2 text-sm" key={partner.id}>
-                <input
-                  data-testid={`project-partner-filter-${partner.id}`}
-                  checked={state.partnerOrganizationIds.includes(partner.id)}
-                  onChange={(event) => {
-                    const ids = event.target.checked
-                      ? [...state.partnerOrganizationIds, partner.id]
-                      : state.partnerOrganizationIds.filter(
-                          (id) => id !== partner.id,
-                        );
-                    pushColumnFiltersToUrl(
-                      [
-                        ...columnFilters.filter(
-                          (filter) =>
-                            filter.id !==
-                            PROJECT_FILTER_IDS.partnerOrganizationIds,
-                        ),
-                        {
-                          id: PROJECT_FILTER_IDS.partnerOrganizationIds,
-                          value: ids,
-                        },
-                      ],
-                      urlState,
-                      setUrlState,
-                    );
-                  }}
-                  type="checkbox"
-                />
-                {partner.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
         <span aria-live="polite">
           {isFetching
             ? t("refreshing")
@@ -322,28 +425,276 @@ export function ResolvedProjectListResults({
                 time: dateFormat.format(dataUpdatedAt, "time.seconds"),
               })}
         </span>
-        <Button
-          disabled={isFetching}
-          onClick={() => void refetch()}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <RefreshCwIcon
-            aria-hidden="true"
-            className={isFetching ? "animate-spin" : undefined}
-          />
-          {t("refresh")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger
+              disabled={!isHydrated}
+              render={
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="project-sort-menu"
+                />
+              }
+            >
+              <ArrowDownUpIcon data-icon="inline-start" />
+              {t("sort")} <span className="tabular-nums">{sorting.length}</span>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-[min(30rem,calc(100vw-2rem))]"
+            >
+              <PopoverTitle>{t("sortOrder")}</PopoverTitle>
+              <PopoverDescription>{t("sortDescription")}</PopoverDescription>
+              <ol className="flex flex-col gap-2">
+                {sorting.map((criterion, index) => (
+                  <li
+                    key={criterion.id}
+                    data-testid={`project-sort-rule-${criterion.id}`}
+                    className="flex min-w-0 flex-wrap items-center gap-1 rounded-lg border p-2"
+                  >
+                    <span className="mr-1 text-xs text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 text-sm font-medium">
+                      {sortLabels[criterion.id]}
+                    </span>
+                    <Button
+                      className="tracking-normal normal-case"
+                      size="xs"
+                      variant="ghost"
+                      type="button"
+                      aria-label={t("toggleSortDirection", {
+                        field: sortLabels[criterion.id] ?? criterion.id,
+                      })}
+                      data-testid={`project-sort-direction-${criterion.id}`}
+                      disabled={!isHydrated}
+                      onClick={() =>
+                        table.setSorting(
+                          sorting.map((entry, i) =>
+                            i === index ? { ...entry, desc: !entry.desc } : entry,
+                          ),
+                        )
+                      }
+                    >
+                      {criterion.desc ? (
+                        <ArrowDownIcon data-icon="inline-start" />
+                      ) : (
+                        <ArrowUpIcon data-icon="inline-start" />
+                      )}
+                      {criterion.desc ? t("descending") : t("ascending")}
+                    </Button>
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      type="button"
+                      aria-label={t("moveSortUp", {
+                        field: sortLabels[criterion.id] ?? criterion.id,
+                      })}
+                      data-testid={`project-sort-up-${criterion.id}`}
+                      disabled={!isHydrated || index === 0}
+                      onClick={() =>
+                        table.setSorting(
+                          sorting.map((entry, i) =>
+                            i === index - 1
+                              ? criterion
+                              : i === index
+                                ? sorting[index - 1]!
+                                : entry,
+                          ),
+                        )
+                      }
+                    >
+                      <ArrowUpIcon />
+                    </Button>
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      type="button"
+                      aria-label={t("moveSortDown", {
+                        field: sortLabels[criterion.id] ?? criterion.id,
+                      })}
+                      data-testid={`project-sort-down-${criterion.id}`}
+                      disabled={!isHydrated || index === sorting.length - 1}
+                      onClick={() =>
+                        table.setSorting(
+                          sorting.map((entry, i) =>
+                            i === index + 1
+                              ? criterion
+                              : i === index
+                                ? sorting[index + 1]!
+                                : entry,
+                          ),
+                        )
+                      }
+                    >
+                      <ArrowDownIcon />
+                    </Button>
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      type="button"
+                      aria-label={t("removeSort", {
+                        field: sortLabels[criterion.id] ?? criterion.id,
+                      })}
+                      data-testid={`project-sort-remove-${criterion.id}`}
+                      disabled={!isHydrated || sorting.length === 1}
+                      onClick={() =>
+                        table.setSorting(sorting.filter((_, i) => i !== index))
+                      }
+                    >
+                      <XIcon />
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+              <div className="flex flex-wrap justify-between gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={
+                      !isHydrated ||
+                      sorting.length === Object.keys(sortLabels).length
+                    }
+                    render={
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        data-testid="project-sort-add"
+                      />
+                    }
+                  >
+                    {t("addSort")}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuGroup>
+                      {Object.entries(sortLabels)
+                        .filter(
+                          ([id]) => !sorting.some((entry) => entry.id === id),
+                        )
+                        .map(([id, label]) => (
+                          <DropdownMenuItem
+                            key={id}
+                            disabled={!isHydrated}
+                            onClick={() =>
+                              table.setSorting([...sorting, { id, desc: false }])
+                            }
+                          >
+                            {label}
+                          </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void setUrlState({ sort: null, cursor: null })}
+                  data-testid="project-sort-reset"
+                  disabled={!isHydrated}
+                >
+                  {t("resetSort")}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="project-columns-menu"
+                />
+              }
+            >
+              <Columns3Icon data-icon="inline-start" />
+              {t("columns")}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                {table
+                  .getAllLeafColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      data-testid={`project-column-toggle-${column.id}`}
+                      checked={column.getIsVisible()}
+                      closeOnClick={false}
+                      onCheckedChange={(checked) =>
+                        column.toggleVisibility(checked)
+                      }
+                    >
+                      {sortLabels[column.id] ??
+                        (column.id === "location"
+                          ? t("location")
+                          : t("participants"))}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                <DropdownMenuItem
+                  data-testid="project-columns-reset"
+                  onClick={() => table.resetColumnVisibility(true)}
+                >
+                  {t("resetColumns")}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            disabled={isFetching}
+            onClick={() => void refetch()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <RefreshCwIcon
+              aria-hidden="true"
+              className={isFetching ? "animate-spin" : undefined}
+            />
+            {t("refresh")}
+          </Button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border">
-        <Table>
+      <p
+        className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
+        aria-label={t("sortOrder")}
+      >
+        {sorting.map((criterion, index) => (
+          <span key={criterion.id}>
+            {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
+            <span className="sr-only">
+              {criterion.desc ? t("descending") : t("ascending")}
+            </span>
+          </span>
+        ))}
+      </p>
+      <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+        <Table className="table-fixed" aria-label={t("label")}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className={
+                      header.column.id === "name"
+                        ? "w-auto"
+                        : "w-[16%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
+                    }
+                    data-testid={`project-column-header-${header.column.id}`}
+                    aria-sort={
+                      sorting[0]?.id === header.column.id
+                        ? sorting[0].desc
+                          ? "descending"
+                          : "ascending"
+                        : undefined
+                    }
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -358,15 +709,21 @@ export function ResolvedProjectListResults({
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell className="h-28 text-center" colSpan={columns.length}>
+                <TableCell
+                  className="h-28 text-center"
+                  colSpan={table.getVisibleLeafColumns().length}
+                >
                   {t("noMatch")}
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
                 <TableRow data-project-id={row.id} key={row.id}>
-                  {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className="min-w-0 overflow-hidden px-2 text-xs wrap-anywhere whitespace-normal"
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

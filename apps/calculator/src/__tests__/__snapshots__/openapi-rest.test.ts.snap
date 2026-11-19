@@ -58,6 +58,9 @@ exports[`OpenAPI Specification > should serve OpenAPI specification 1`] = `
     "/projects/{id}/participate": [
       "get",
     ],
+    "/projects/{id}/reopen": [
+      "patch",
+    ],
     "/projects/{projectId}/participants": [
       "get",
     ],

@@ -81,6 +81,5 @@ export function useProjectPermissions() {
     canRead: checkProjectPermission(role, ["read"]),
     canUpdate: checkProjectPermission(role, ["update"]),
     canDelete: checkProjectPermission(role, ["delete"]),
-    canArchive: checkProjectPermission(role, ["archive"]),
   };
 }

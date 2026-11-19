@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -10,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>,
   archive: vi.fn(),
   reopen: vi.fn(),
+  toastAdd: vi.fn(),
+}));
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -19,6 +24,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       listPartnership: { key: () => ["participations"] },
       get: { key: () => ["participation"] },
     },
+    projectPartnerships: { listSetupLinks: { key: () => ["setup-links"] } },
     projects: {
       get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
@@ -39,6 +45,9 @@ vi.mock(
     >()),
     PartnershipActions: ({ projectId }: { projectId?: string }) => (
       <p data-project-id={projectId} data-testid="partnership-actions" />
+    ),
+    PartnershipShortcutLinks: ({ projectId }: { projectId?: string }) => (
+      <p data-project-id={projectId} data-testid="invite-partnership-link" />
     ),
   }),
 );
@@ -65,6 +74,7 @@ function renderWorkspace({
   canManagePartnerships = false,
   canReopen = false,
 } = {}) {
+  mocks.detail.canReopen = canReopen;
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -73,7 +83,6 @@ function renderWorkspace({
       <Suspense fallback={<p>Loading workspace</p>}>
         <ProjectWorkspace
           canManagePartnerships={canManagePartnerships}
-          canReopen={canReopen}
           projectId="project-1"
         />
       </Suspense>
@@ -85,6 +94,7 @@ beforeEach(() => {
   mocks.detail = {};
   mocks.archive.mockReset();
   mocks.reopen.mockReset();
+  mocks.toastAdd.mockReset();
 });
 
 describe("Project workspace", () => {
@@ -123,12 +133,10 @@ describe("Project workspace", () => {
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
-    // Without a Claim the review affordance stays visible but inert: no dead
-    // end, and no link to a page that has nothing to review.
-    expect(screen.getByTestId("review-claim-partnership-1")).toBeDisabled();
-    expect(
-      screen.getByTestId("review-claim-partnership-1").closest("a"),
-    ).toBeNull();
+    // Without a reviewable Claim there is no review link at all: the badge
+    // already carries the state, so an inert duplicate would only pretend
+    // at navigation to a page that has nothing to review.
+    expect(screen.queryByTestId("review-claim-partnership-1")).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",
@@ -175,6 +183,12 @@ describe("Project workspace", () => {
       "data-project-id",
       "project-1",
     );
+    // The empty state links into the same dialog instead of navigating away.
+    expect(screen.getByTestId("invite-partnership-link")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
+    );
+    expect(screen.getByTestId("partnership-shortcut-intro")).toBeInTheDocument();
   });
 
   it("hides the partnership dialogs without the management permission", async () => {
@@ -186,6 +200,24 @@ describe("Project workspace", () => {
     renderWorkspace();
     await screen.findByTestId("project-workspace");
     expect(screen.queryByTestId("partnership-actions")).toBeNull();
+    expect(screen.getByTestId("assigned-partnerships-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
+    expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
+  });
+
+  it("hides empty-state shortcuts for an archived Project", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    renderWorkspace({ canManagePartnerships: true });
+    expect(
+      await screen.findByTestId("assigned-partnerships-empty"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
+    expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -235,8 +267,21 @@ describe("Project workspace", () => {
     expect(
       screen.getByTestId("review-claim-partnership-4").getAttribute("href"),
     ).toBe("/en-GB/partnerships/partnership-4/claim/review");
-    // An unsubmitted draft has no review page: same row, inert control.
-    expect(screen.getByTestId("review-claim-partnership-6")).toBeDisabled();
+    // Unreviewable Claims (none yet, or still an unsubmitted Partner draft)
+    // have no review page and therefore no review link; every status from
+    // submission onwards links to its review, terminal ones read-only.
+    expect(screen.queryByTestId("review-claim-partnership-5")).toBeNull();
+    expect(screen.queryByTestId("review-claim-partnership-6")).toBeNull();
+    for (const id of [
+      "partnership-0",
+      "partnership-1",
+      "partnership-2",
+      "partnership-3",
+    ]) {
+      expect(screen.getByTestId(`review-claim-${id}`).getAttribute("href")).toBe(
+        `/en-GB/partnerships/${id}/claim/review`,
+      );
+    }
     // Only `submitted` awaits a Hosting decision: a correction request reopens
     // Partner editing, and every other status is decided or unsubmitted.
     expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(
@@ -276,7 +321,9 @@ describe("Project workspace", () => {
     await user.click(screen.getByTestId("archive-project"));
     await user.click(await screen.findByTestId("confirm-dialog-execute"));
     expect(mocks.archive).toHaveBeenCalledWith({ projectId: "project-1" });
-    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
+    expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "success" }),
+    );
     expect(screen.queryByTestId("archive-project")).toBeNull();
   });
 
@@ -338,6 +385,55 @@ describe("Project workspace", () => {
     });
   });
 
+  it.each(["FORBIDDEN", "NOT_FOUND"] as const)(
+    "disables reopening after %s refresh removes capability",
+    async (code) => {
+      const user = userEvent.setup();
+      mocks.detail = {
+        ...baseProject,
+        relationship: "hosted",
+        archived: true,
+        partnerOrganizations: [],
+      };
+      mocks.reopen.mockImplementation(async () => {
+        mocks.detail = { ...mocks.detail, canReopen: false };
+        throw new ORPCError(code);
+      });
+      renderWorkspace({ canReopen: true });
+      await user.click(await screen.findByTestId("reopen-project"));
+      await user.type(screen.getByRole("textbox"), "Correction");
+      await user.click(screen.getByTestId("reopen-project-confirm"));
+      await waitFor(() =>
+        expect(screen.getByTestId("reopen-project-confirm")).toBeDisabled(),
+      );
+      await user.click(screen.getByTestId("reopen-project-confirm"));
+      expect(mocks.reopen).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("reopen-project")).toBeNull();
+    },
+  );
+
+  it("keeps reopening retryable without refreshing on network errors", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      archived: true,
+      partnerOrganizations: [],
+    };
+    mocks.reopen.mockImplementation(async () => {
+      mocks.detail = { ...mocks.detail, canReopen: false };
+      throw new Error("Network unavailable");
+    });
+    renderWorkspace({ canReopen: true });
+    await user.click(await screen.findByTestId("reopen-project"));
+    await user.type(screen.getByRole("textbox"), "Correction");
+    await user.click(screen.getByTestId("reopen-project-confirm"));
+    await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("reopen-project-confirm")).toBeEnabled();
+    await user.click(screen.getByTestId("reopen-project-confirm"));
+    expect(mocks.reopen).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps archived Partnership actions visible with a keyboard-accessible explanation", async () => {
     const user = userEvent.setup();
     mocks.detail = {
@@ -356,7 +452,7 @@ describe("Project workspace", () => {
     expect(
       screen.getByTestId("project-workspace").querySelectorAll("button:disabled")
         .length,
-    ).toBeGreaterThanOrEqual(2);
+    ).toBe(0);
   });
 
   it("reports an archive failure without marking the Project archived", async () => {
@@ -372,10 +468,56 @@ describe("Project workspace", () => {
     renderWorkspace();
     await user.click(await screen.findByTestId("archive-project"));
     await user.click(await screen.findByTestId("confirm-dialog-execute"));
-    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
+    expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "error" }),
+    );
     await waitFor(() => {
       expect(screen.getByTestId("archive-project")).toBeEnabled();
     });
+    expect(screen.getByTestId("archive-project")).toBeInTheDocument();
+  });
+
+  it.each(["FORBIDDEN", "NOT_FOUND"] as const)(
+    "refreshes lifecycle availability on %s",
+    async (code) => {
+      const user = userEvent.setup();
+      mocks.detail = {
+        ...baseProject,
+        relationship: "hosted",
+        canArchive: true,
+        completedAt: null,
+        partnerOrganizations: [],
+      };
+      mocks.archive.mockImplementation(async () => {
+        mocks.detail = { ...mocks.detail, canArchive: false };
+        throw new ORPCError(code);
+      });
+      renderWorkspace();
+      await user.click(await screen.findByTestId("archive-project"));
+      await user.click(await screen.findByTestId("confirm-dialog-execute"));
+      await waitFor(() =>
+        expect(screen.queryByTestId("archive-project")).toBeNull(),
+      );
+    },
+  );
+
+  it("does not refresh lifecycle availability on a network error", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      canArchive: true,
+      completedAt: null,
+      partnerOrganizations: [],
+    };
+    mocks.archive.mockImplementation(async () => {
+      mocks.detail = { ...mocks.detail, canArchive: false };
+      throw new Error("Network unavailable");
+    });
+    renderWorkspace();
+    await user.click(await screen.findByTestId("archive-project"));
+    await user.click(await screen.findByTestId("confirm-dialog-execute"));
+    await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalled());
     expect(screen.getByTestId("archive-project")).toBeInTheDocument();
   });
 

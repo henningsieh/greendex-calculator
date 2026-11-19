@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   getListOptions: vi.fn((scope: string) => ({
     queryKey: ["projects", scope],
   })),
+  getPartnerFilterOptions: vi.fn(() => ({
+    queryKey: ["projects", "partner-options"],
+  })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
   getSession: vi.fn(),
   hasCostTrackerPermissions: vi.fn().mockResolvedValue(true),
@@ -115,6 +118,7 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
     queryKey: ["projects", "available-scopes"],
   }),
   getProjectListQueryOptions: mocks.getListOptions,
+  getProjectPartnerFilterQueryOptions: mocks.getPartnerFilterOptions,
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { scopes: mocks.availableScopes } },
@@ -151,6 +155,7 @@ vi.mock("@/features/participations/components/participant-page-header", () => ({
 }));
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
+  cookies: () => Promise.resolve({ get: () => undefined }),
 }));
 vi.mock("next/server", () => ({
   connection: () => Promise.resolve(),
@@ -166,6 +171,7 @@ vi.mock("@/lib/orpc/middleware", () => ({
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.hasOrganizationMembership,
   getSession: mocks.getSession,
+  requireSession: vi.fn().mockResolvedValue({ user: { id: "test-user" } }),
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => queryClient,
@@ -312,7 +318,13 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.availableScopes).toHaveBeenCalledOnce();
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
-      expect.objectContaining({ pageSize: 25, sort: "start-asc" }),
+      expect.objectContaining({
+        pageSize: 25,
+        sort: [
+          { field: "settlement", direction: "asc" },
+          { field: "startDate", direction: "asc" },
+        ],
+      }),
     );
     expect(mocks.query).toHaveBeenCalledTimes(2);
     expect(mocks.query).toHaveBeenNthCalledWith(1, {
@@ -324,6 +336,29 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
+  it("prefetches Partner options alongside a filtered Hosted deep link", async () => {
+    render(
+      await RealProjectListSection({
+        searchParams: Promise.resolve({
+          scope: "hosted",
+          partnerOrganizationIds: ["partner-1"],
+          cursor: "page-two",
+        }),
+      }),
+    );
+
+    expect(mocks.getPartnerFilterOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partnerOrganizationIds: ["partner-1"],
+        cursor: "page-two",
+      }),
+    );
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["projects", "partner-options"],
+    });
+    expect(mocks.query).toHaveBeenCalledTimes(3);
+  });
+
   it("uses Partner when requested and available", async () => {
     render(
       await RealProjectListSection({
@@ -333,7 +368,12 @@ describe("Cost Tracker Project data routes", () => {
 
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "partner",
-      expect.objectContaining({ sort: "start-asc" }),
+      expect.objectContaining({
+        sort: [
+          { field: "settlement", direction: "asc" },
+          { field: "startDate", direction: "asc" },
+        ],
+      }),
     );
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });

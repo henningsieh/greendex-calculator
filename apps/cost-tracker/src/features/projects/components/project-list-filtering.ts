@@ -4,8 +4,9 @@ import type { UseQueryStatesReturn } from "nuqs";
 import {
   projectListParsers,
   PROJECT_PAGE_SIZES,
-  PROJECT_SORT_MODES,
+  DEFAULT_PROJECT_SORT,
 } from "@/features/projects/list-query-options";
+import { ProjectSortOrderSchema } from "@/features/projects/validation-schemas";
 
 export const PROJECT_FILTER_IDS = {
   dateFrom: "dateFrom",
@@ -77,31 +78,22 @@ export function getStringArrayFilterValue(
 }
 
 export function getSortingState(
-  sort: (typeof PROJECT_SORT_MODES)[number],
+  sort: ProjectListQueryState[0]["sort"],
 ): SortingState {
-  switch (sort) {
-    case "start-asc":
-      return [{ id: "startDate", desc: false }];
-    case "start-desc":
-      return [{ id: "startDate", desc: true }];
-    case "end-asc":
-      return [{ id: "endDate", desc: false }];
-    case "end-desc":
-      return [{ id: "endDate", desc: true }];
-    default:
-      return [{ id: "startDate", desc: false }];
-  }
+  return sort.map(({ field, direction }) => ({
+    id: field,
+    desc: direction === "desc",
+  }));
 }
 
 export function getProjectSortMode(sorting: SortingState) {
-  const currentSort = sorting[0];
-  if (currentSort?.id === "startDate") {
-    return currentSort.desc ? "start-desc" : "start-asc";
-  }
-  if (currentSort?.id === "endDate") {
-    return currentSort.desc ? "end-desc" : "end-asc";
-  }
-  return "start-asc";
+  const parsed = ProjectSortOrderSchema.safeParse(
+    sorting.map(({ id, desc }) => ({
+      field: id,
+      direction: desc ? "desc" : "asc",
+    })),
+  );
+  return parsed.success ? parsed.data : DEFAULT_PROJECT_SORT;
 }
 
 /**

@@ -1,9 +1,8 @@
 import "server-only";
-import { createRouterClient } from "@orpc/server";
+import { createRouterClient, os } from "@orpc/server";
 import { headers } from "next/headers";
 
-import { router } from "@/lib/orpc/router";
-
-globalThis.$costTrackerClient = createRouterClient(router, {
-  context: async () => ({ headers: await headers() }),
-});
+globalThis.$costTrackerClient = createRouterClient(
+  os.lazy(async () => ({ default: (await import("@/lib/orpc/router")).router })),
+  { context: async () => ({ headers: await headers() }) },
+);

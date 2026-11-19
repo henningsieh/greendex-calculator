@@ -21,7 +21,13 @@ export default defineConfig({
   outputDir: "src/__tests__/e2e/.playwright/results",
   reporter: [
     ["../../scripts/playwright-retries-reporter.ts"],
-    ["html", { outputFolder: "src/__tests__/e2e/.playwright/report" }],
+    [
+      "html",
+      {
+        open: "never",
+        outputFolder: "src/__tests__/e2e/.playwright/report",
+      },
+    ],
   ],
   timeout: 60_000,
   expect: { timeout: 10_000 },

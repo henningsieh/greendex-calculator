@@ -179,11 +179,42 @@ async function openDialog(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("Setup Link UI", () => {
+  it("disables close and offers an explanation only for archived Projects", async () => {
+    const link = {
+      projectName: "Hosted Example",
+      recipientEmail: "partner@example.org",
+      enabled: true,
+      consumedAt: null,
+      expired: false,
+      expiresAt: new Date("2099-01-01"),
+    };
+    mocks.listSetupLinks.mockResolvedValue([
+      { ...link, id: "active", costTrackerArchived: false },
+      { ...link, id: "archived", costTrackerArchived: true },
+    ]);
+    listOnly();
+    await screen.findByRole("table");
+    const active = document.querySelector<HTMLElement>(
+      '[data-setup-link-id="active"]',
+    )!;
+    const archived = document.querySelector<HTMLElement>(
+      '[data-setup-link-id="archived"]',
+    )!;
+    expect(within(active).getByTestId("close-setup-link")).toBeEnabled();
+    expect(within(archived).getByTestId("close-setup-link")).toBeDisabled();
+    expect(
+      within(archived).getByTestId("archive-explanation-trigger"),
+    ).toBeVisible();
+    expect(
+      within(active).queryByTestId("archive-explanation-trigger"),
+    ).toBeNull();
+  });
   it("renders the server-provided expiry status without reading the clock during render", async () => {
     mocks.listSetupLinks.mockResolvedValue([
       {
         id: "expired-link",
         projectName: "Hosted Example",
+        costTrackerArchived: false,
         recipientEmail: "partner@example.org",
         enabled: true,
         consumedAt: null,

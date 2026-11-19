@@ -12,6 +12,7 @@ import { Controller, useForm } from "react-hook-form";
 import { type z } from "zod";
 
 import { destinationHref } from "@/app/paths";
+import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { EntityCombobox } from "@/components/entity-combobox";
 import {
   ErrorPresentation,
@@ -414,13 +415,20 @@ export function SetupLinkList() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          disabled={!existing.enabled || !!closingId}
+                          disabled={
+                            !existing.enabled ||
+                            !!closingId ||
+                            existing.costTrackerArchived
+                          }
                           onClick={() => void closeLink(existing.id)}
                         >
                           {closingId === existing.id
                             ? t("closing")
                             : t("closeLink")}
                         </Button>
+                        {existing.costTrackerArchived && (
+                          <ArchivedActionExplanation />
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -437,23 +445,47 @@ export function SetupLinkList() {
 export function CreateSetupLinkDialog({
   projects,
   projectId,
+  tone = "primary",
+  open: controlledOpen,
+  onOpenChange,
+  showTrigger = true,
 }: {
   projects: readonly HostedProjectOption[];
   /** Preselects the Hosted Project when the dialog was opened in context. */
   projectId?: SetupLinkFormValues["projectId"];
+  /**
+   * Secondary contexts (a card that already has a primary action) render
+   * the opener as outline so it never competes with the view's action.
+   */
+  tone?: "primary" | "secondary";
+  /** Controlled mode: the caller (e.g. an overflow menu item) opens the dialog. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in trigger when the caller opens the dialog itself. */
+  showTrigger?: boolean;
 }) {
   const t = useTranslations("partnerships.setup");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger
-        data-testid="new-setup-link"
-        render={<Button type="button" />}
-      >
-        <MailPlusIcon aria-hidden="true" />
-        {t("invite")}
-      </DialogTrigger>
+      {showTrigger ? (
+        <DialogTrigger
+          data-testid="new-setup-link"
+          render={
+            <Button
+              type="button"
+              size={tone === "secondary" ? "sm" : "default"}
+              variant={tone === "secondary" ? "outline" : "default"}
+            />
+          }
+        >
+          <MailPlusIcon aria-hidden="true" />
+          {t("invite")}…
+        </DialogTrigger>
+      ) : null}
       <DialogContent data-testid="setup-link-creator" className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>

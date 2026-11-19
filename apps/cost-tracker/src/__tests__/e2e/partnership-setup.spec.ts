@@ -246,6 +246,7 @@ async function issueThroughUI(
 ) {
   await page.goto("/partner-organizations");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.getByTestId("partnership-actions-menu").click();
   await page.getByTestId("new-setup-link").click();
   const creator = page.getByTestId("setup-link-creator");
   await selectEntity(
@@ -347,7 +348,12 @@ async function selectAndOpenPartnerProject(
     await expect(selection).toHaveCount(0);
   }
   await expect(project).toBeVisible();
-  await project.click();
+  const destination = await project.getAttribute("href");
+  expect(destination).toBeTruthy();
+  await Promise.all([
+    page.waitForURL(new URL(destination!, page.url()).href),
+    project.click(),
+  ]);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
   const [selectedOrganization] = await db
@@ -1136,6 +1142,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const context = await fixture.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
     await page.goto("/partner-organizations");
+    await page.getByTestId("partnership-actions-menu").click();
     await page.getByTestId("assign-organization").click();
     await expect(
       page.locator('[data-testid="organization-assignment"]'),
@@ -1338,6 +1345,7 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
       country: "DE",
     });
     await page.goto("/partner-organizations");
+    await page.getByTestId("partnership-actions-menu").click();
     await page.getByTestId("assign-organization").click();
     const section = page.getByTestId("organization-assignment");
     await selectEntity(

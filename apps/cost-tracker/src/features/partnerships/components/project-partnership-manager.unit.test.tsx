@@ -85,6 +85,7 @@ type Partnership = {
   id: string;
   projectId: string;
   projectName: string;
+  costTrackerArchived: boolean;
   organizationId: string;
   organizationName: string;
   assignedAt: Date;
@@ -95,6 +96,7 @@ const existingPartnership: Partnership = {
   id: "partnership-existing",
   projectId: "project-existing",
   projectName: "Existing Project",
+  costTrackerArchived: false,
   organizationId: "organization-existing",
   organizationName: "Existing Partner Organization",
   assignedAt: new Date("2026-02-01T12:00:00.000Z"),
@@ -156,6 +158,27 @@ describe("ProjectPartnershipManager", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("disables removal and offers an explanation only for archived Projects", async () => {
+    const archived = {
+      ...existingPartnership,
+      id: "archived",
+      organizationId: "archived-org",
+      costTrackerArchived: true,
+    };
+    mocks.list.mockResolvedValue([existingPartnership, archived]);
+    await renderManager([existingPartnership, archived]);
+    expect(screen.getByTestId("remove-partnership-archived")).toBeDisabled();
+    expect(
+      screen.getByTestId("remove-partnership-partnership-existing"),
+    ).toBeEnabled();
+    expect(screen.getAllByTestId("archive-explanation-trigger")).toHaveLength(1);
+    expect(
+      within(screen.getByTestId("partnership-row-archived-org")).getByRole(
+        "link",
+      ),
+    ).toBeVisible();
   });
 
   it("reports success after a failed removal followed by a successful removal", async () => {

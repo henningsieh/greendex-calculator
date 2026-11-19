@@ -1,0 +1,113 @@
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, readFileSync, symlinkSync } from "node:fs";
+import path from "node:path";
+
+const [root, snapshot] = process.argv.slice(2);
+const git = (...args) => execFileSync("git", args, { cwd: root });
+const paths = git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR")
+  .toString()
+  .split("\0")
+  .filter(Boolean);
+if (paths.length === 0) process.exit(0);
+
+for (const dir of [
+  "",
+  ...["apps", "packages"].flatMap((parent) => pathsFromIndex(parent)),
+]) {
+  const modules = path.join(root, dir, "node_modules");
+  if (existsSync(modules))
+    symlinkSync(modules, path.join(snapshot, dir, "node_modules"), "dir");
+}
+
+function pathsFromIndex(parent) {
+  return [
+    ...new Set(
+      git("ls-files", "-z", `${parent}/*/package.json`)
+        .toString()
+        .split("\0")
+        .filter(Boolean)
+        .map((file) => path.dirname(file)),
+    ),
+  ];
+}
+
+function run(binary, args) {
+  const result = spawnSync(path.join(root, "node_modules/.bin", binary), args, {
+    cwd: snapshot,
+    encoding: "utf8",
+  });
+  if (result.error) throw result.error;
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  return result.status;
+}
+
+const format = paths.filter(
+  (file) =>
+    /\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$/.test(
+      file,
+    ) && !/^(docs|\.specify|specs)\//.test(file),
+);
+for (const file of format) {
+  const entry = git("ls-files", "-s", "--", file).toString();
+  const mode = entry.slice(0, 6);
+  if (mode !== "100644" && mode !== "100755") continue;
+  const target = path.join(snapshot, file);
+  const before = readFileSync(target);
+  if (
+    run("oxfmt", ["--write", "--no-error-on-unmatched-pattern", "--", file]) !== 0
+  )
+    process.exit(1);
+  const after = readFileSync(target);
+  if (!before.equals(after)) {
+    const hash = execFileSync(
+      "git",
+      ["hash-object", "-w", "--stdin", "--path", file],
+      { cwd: root, input: after },
+    );
+    git(
+      "update-index",
+      "--cacheinfo",
+      `${mode},${hash.toString().trim()},${file}`,
+    );
+  }
+}
+
+const lint = paths.filter((file) =>
+  /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/.test(file),
+);
+if (lint.length) {
+  const result = spawnSync(
+    path.join(root, "node_modules/.bin/oxlint"),
+    ["--config", ".oxlintrc.json", "--", ...lint],
+    { cwd: snapshot, encoding: "utf8" },
+  );
+  if (result.error) throw result.error;
+  const output = result.stdout + result.stderr;
+  if (output) process.stdout.write(output);
+  if (
+    result.status !== 0 &&
+    (!output.includes("No files found to lint.") ||
+      output
+        .split("\n")
+        .some(
+          (line) =>
+            line && !/^No files found to lint\.|^Finished in .*$/.test(line),
+        ))
+  )
+    process.exit(1);
+}
+if (run("tsx", ["scripts/check-agent-instructions.ts"]) !== 0) process.exit(1);
+if (
+  run("vitest", ["run", "scripts/check-agent-instructions.policy.test.ts"]) !== 0
+)
+  process.exit(1);
+if (
+  paths.some((file) =>
+    /(^apps\/[^/]+\/(src\/__tests__\/(e2e|merge)\/|test\/e2e\/)|\.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$)/.test(
+      file,
+    ),
+  )
+) {
+  if (run("tsx", ["scripts/check-no-copy-assertions.ts"]) !== 0) process.exit(1);
+}

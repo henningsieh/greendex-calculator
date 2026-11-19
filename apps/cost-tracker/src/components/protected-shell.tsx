@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -20,6 +19,7 @@ import {
 import { resolveStaffOrganizationContext } from "@/features/organizations/staff-eligibility";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession } from "@/lib/session";
+import { readSidebarPreference } from "@/lib/ui-preferences/server";
 
 export async function ProtectedShell({
   children,
@@ -73,12 +73,7 @@ export async function ProtectedShell({
   if (context.status !== "ready") return null;
 
   const canViewOrganization = await canManageOrganization();
-  // The provider writes this cookie on toggle but never reads it (upstream
-  // design); restore persisted collapsed state here so reloads keep it.
-  // Missing cookie (first visit) stays open.
-  // Cookie name hardcoded (not imported) so this read has zero dependencies.
-  const sidebarDefaultOpen =
-    (await cookies()).get("sidebar_state")?.value !== "false";
+  const sidebarDefaultOpen = await readSidebarPreference();
   return (
     <SidebarProvider defaultOpen={sidebarDefaultOpen}>
       <AppSidebar

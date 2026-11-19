@@ -12,19 +12,23 @@ import {
 const fingerprintInput = {
   scope: "hosted" as const,
   search: "climate",
-  sort: "start-asc" as const,
+  sort: [{ field: "startDate" as const, direction: "asc" as const }],
   pageSize: 25 as const,
   partnerOrganizationIds: ["partner-2", "partner-1"],
 };
 
 function buildCursor(fingerprint: string): ProjectListCursor {
   return {
-    version: 3,
+    version: 4,
     direction: "next",
     fingerprint,
-    sort: "start-asc",
     id: "project-1",
-    date: new Date("2026-06-01T00:00:00.000Z").toISOString(),
+    values: [
+      {
+        field: "startDate",
+        value: new Date("2026-06-01T00:00:00.000Z").toISOString(),
+      },
+    ],
   };
 }
 
@@ -45,6 +49,58 @@ describe("project list cursor", () => {
         partnerOrganizationIds: ["partner-1", "partner-2"],
       }),
     ).toBe(getProjectListFingerprint(fingerprintInput));
+  });
+
+  it("rejects a cursor after either aggregate filter changes", () => {
+    const fingerprint = getProjectListFingerprint(fingerprintInput);
+    const encoded = encodeProjectListCursor(buildCursor(fingerprint));
+    const archived = getProjectListFingerprint({
+      ...fingerprintInput,
+      archive: "archived",
+    });
+    const ready = getProjectListFingerprint({
+      ...fingerprintInput,
+      settlement: "ready",
+    });
+    expect(decodeProjectListCursor(encoded, archived).status).toBe("invalid");
+    expect(decodeProjectListCursor(encoded, ready).status).toBe("invalid");
+  });
+
+  it("rejects cursors when priority or direction changes", () => {
+    const sort = [
+      { field: "name" as const, direction: "asc" as const },
+      { field: "startDate" as const, direction: "desc" as const },
+    ];
+    const fingerprint = getProjectListFingerprint({ ...fingerprintInput, sort });
+    const cursor: ProjectListCursor = {
+      version: 4,
+      direction: "next",
+      fingerprint,
+      id: "project-1",
+      values: [
+        { field: "name" },
+        { field: "startDate", value: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+    const encoded = encodeProjectListCursor(cursor);
+    expect(
+      decodeProjectListCursor(
+        encoded,
+        getProjectListFingerprint({
+          ...fingerprintInput,
+          sort: [...sort].reverse(),
+        }),
+      ).status,
+    ).toBe("invalid");
+    expect(
+      decodeProjectListCursor(
+        encoded,
+        getProjectListFingerprint({
+          ...fingerprintInput,
+          sort: [sort[0]!, { ...sort[1]!, direction: "asc" }],
+        }),
+      ).status,
+    ).toBe("invalid");
   });
 
   it("round-trips a cursor sealed with the same fingerprint", () => {
@@ -80,7 +136,7 @@ describe("project list cursor", () => {
     );
     expect(
       decodeProjectListCursor(
-        Buffer.from(JSON.stringify({ version: 3 }), "utf8").toString("base64url"),
+        Buffer.from(JSON.stringify({ version: 4 }), "utf8").toString("base64url"),
         fingerprint,
       ).status,
     ).toBe("invalid");

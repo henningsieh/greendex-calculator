@@ -15,6 +15,7 @@ import {
 } from "@/features/project-shared-travel-legs/procedures";
 import {
   archiveProject,
+  reopenProject,
   batchDeleteProjects,
   createProject,
   deleteProject,
@@ -79,6 +80,7 @@ export const router = {
     update: updateProject,
     delete: deleteProject,
     archive: archiveProject,
+    reopen: reopenProject,
     batchDelete: batchDeleteProjects,
     setActive: setActiveProject,
     getParticipants: getProjectParticipants,

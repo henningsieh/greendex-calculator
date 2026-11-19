@@ -27,6 +27,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: async () => true,
+  requireSession: async () => ({ user: { id: "streaming-user" } }),
+}));
+vi.mock("@/features/organizations/access", () => ({
+  resolveActiveMembershipRole: async () => undefined,
 }));
 vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p>Hydrated Project list</p>,
@@ -40,7 +44,17 @@ vi.mock("@/features/projects/list-query-options", () => ({
   getProjectListQueryOptions: () => ({ queryKey: ["list"] }),
   loadProjectListSearchParams: async () => ({}),
   normalizeProjectListState: () => ({}),
-  resolveProjectListState: () => ({ scope: "hosted", state: {} }),
+  resolveProjectListState: () => ({
+    scope: "hosted",
+    state: {
+      scope: "hosted",
+      archive: "active",
+      settlement: "all",
+      partnerOrganizationIds: [],
+      sort: [{ field: "startDate", direction: "asc" }],
+      pageSize: 25,
+    },
+  }),
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => ({ query: mocks.query }),
@@ -89,7 +103,7 @@ it.each([LocalizedProjectsPage])(
     );
 
     await shell;
-    expect(html).toContain("Project workspace");
+    expect(html).toMatch(/<h1[^>]*>/);
     expect(html).toContain("Loading Project list");
     expect(html).not.toContain("Hydrated Project list");
     mocks.resolveScopes?.({ hosted: true, partner: false });

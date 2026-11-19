@@ -149,8 +149,8 @@ vi.mock("@/components/ui/popover", async () => {
         },
       );
     },
-    PopoverContent: ({ children }: { children: React.ReactNode }) =>
-      useContext(Context).open ? <div>{children}</div> : null,
+    PopoverContent: ({ children, ...props }: React.ComponentProps<"div">) =>
+      useContext(Context).open ? <div {...props}>{children}</div> : null,
   };
 });
 

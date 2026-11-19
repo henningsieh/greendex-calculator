@@ -1,20 +1,42 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getProjectListQueryOptions,
+  getProjectPartnerFilterQueryOptions,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
 
 describe("Project list URL state", () => {
+  it("restores an ordered sort from a shared URL", () => {
+    const order = [
+      { field: "name", direction: "desc" },
+      { field: "endDate", direction: "asc" },
+    ];
+    const state = loadProjectListSearchParams({ sort: JSON.stringify(order) });
+    expect(normalizeProjectListState(state).sort).toEqual(order);
+    expect(
+      loadProjectListSearchParams({ sort: JSON.stringify([order[0], order[0]]) })
+        .sort,
+    ).toEqual([
+      { field: "settlement", direction: "asc" },
+      { field: "startDate", direction: "asc" },
+    ]);
+  });
   it("parses typed defaults without adding URL-only state", () => {
     expect(loadProjectListSearchParams({})).toEqual({
       scope: null,
       search: "",
       dateFrom: null,
       dateTo: null,
+      archive: "active",
+      settlement: "all",
       partnerOrganizationIds: [],
-      sort: "start-asc",
+      sort: [
+        { field: "settlement", direction: "asc" },
+        { field: "startDate", direction: "asc" },
+      ],
       cursor: "",
       pageSize: 25,
     });
@@ -32,8 +54,13 @@ describe("Project list URL state", () => {
       search: "",
       dateFrom: null,
       dateTo: null,
+      archive: "active",
+      settlement: "all",
       partnerOrganizationIds: [],
-      sort: "start-asc",
+      sort: [
+        { field: "settlement", direction: "asc" },
+        { field: "startDate", direction: "asc" },
+      ],
       cursor: "",
       pageSize: 25,
     });
@@ -46,8 +73,10 @@ describe("Project list URL state", () => {
         search: "  CLIMATE  ",
         dateFrom: new Date("2026-06-30T00:00:00.000Z"),
         dateTo: new Date("2026-06-01T00:00:00.000Z"),
+        archive: "archived",
+        settlement: "ready",
         partnerOrganizationIds: ["partner-2", "", "partner-1", "partner-2"],
-        sort: "start-desc",
+        sort: [{ field: "startDate", direction: "desc" }],
         cursor: "opaque",
         pageSize: 50,
       }),
@@ -56,8 +85,10 @@ describe("Project list URL state", () => {
       search: "climate",
       dateFrom: undefined,
       dateTo: undefined,
+      archive: "archived",
+      settlement: "ready",
       partnerOrganizationIds: ["partner-1", "partner-2"],
-      sort: "start-desc",
+      sort: [{ field: "startDate", direction: "desc" }],
       cursor: "opaque",
       pageSize: 50,
     });
@@ -69,7 +100,9 @@ describe("Project list URL state", () => {
         scope: "partner",
         search: undefined,
         partnerOrganizationIds: [],
-        sort: "start-asc",
+        archive: "active",
+        settlement: "all",
+        sort: [{ field: "startDate", direction: "asc" }],
         cursor: "stale-partner-cursor",
         pageSize: 25,
       },
@@ -82,12 +115,70 @@ describe("Project list URL state", () => {
         scope: null,
         search: undefined,
         partnerOrganizationIds: [],
-        sort: "start-asc",
+        archive: "active",
+        settlement: "all",
+        sort: [{ field: "startDate", direction: "asc" }],
         cursor: undefined,
         pageSize: 25,
       },
       didPartnerToHostedFallback: false,
     });
+  });
+
+  it("includes scope-specific procedure inputs in generated query keys", () => {
+    const state = {
+      scope: "hosted" as const,
+      search: "climate",
+      dateFrom: new Date("2026-01-01T00:00:00.000Z"),
+      dateTo: new Date("2026-12-31T00:00:00.000Z"),
+      archive: "archived" as const,
+      settlement: "ready" as const,
+      partnerOrganizationIds: ["partner-1"],
+      sort: [{ field: "startDate" as const, direction: "desc" as const }],
+      cursor: "opaque",
+      pageSize: 50 as const,
+    };
+
+    expect(getProjectListQueryOptions("hosted", state).queryKey).toEqual([
+      ["projects", "listHosted"],
+      {
+        type: "query",
+        input: {
+          search: "climate",
+          dateFrom: state.dateFrom,
+          dateTo: state.dateTo,
+          archive: "archived",
+          settlement: "ready",
+          partnerOrganizationIds: ["partner-1"],
+          sort: [{ field: "startDate", direction: "desc" }],
+          cursor: "opaque",
+          pageSize: 50,
+        },
+      },
+    ]);
+    expect(getProjectPartnerFilterQueryOptions(state).queryKey).toEqual(
+      getProjectListQueryOptions("hosted", {
+        ...state,
+        partnerOrganizationIds: [],
+        cursor: undefined,
+      }).queryKey,
+    );
+    expect(getProjectListQueryOptions("partner", state).queryKey).toEqual([
+      ["projects", "listPartner"],
+      {
+        type: "query",
+        input: {
+          search: "climate",
+          dateFrom: state.dateFrom,
+          dateTo: state.dateTo,
+          archive: "archived",
+          settlement: "ready",
+          sort: [{ field: "startDate", direction: "desc" }],
+          cursor: "opaque",
+          pageSize: 50,
+        },
+      },
+    ]);
   });
 
   it("omits search values shorter than three normalized characters", () => {
@@ -96,8 +187,10 @@ describe("Project list URL state", () => {
       search: " ab ",
       dateFrom: null,
       dateTo: null,
+      archive: "active",
+      settlement: "all",
       partnerOrganizationIds: [],
-      sort: "start-asc",
+      sort: [{ field: "startDate", direction: "asc" }],
       cursor: "",
       pageSize: 25,
     });

@@ -24,6 +24,7 @@ vi.mock("@greendex/database", async () => {
     [schema.projectPartnerOrganizationsTable, "partnerships"],
     [schema.partnershipPayoutAccountsTable, "selections"],
     [schema.claimsTable, "claims"],
+    [schema.projectsTable, "projects"],
   ]);
   /** The next queued read for one table, repeating its final entry. */
   const nextRows = (name: string) => {
@@ -82,6 +83,7 @@ beforeEach(() => {
     projectId: "project",
   });
   mocks.returning.mockResolvedValue([]);
+  mocks.queues.set("projects", [[{ id: "project" }]]);
   mocks.queues.set("partnerships", [[{ id: "own" }]]);
   mocks.queues.set("selections", [[{ id: "account" }]]);
   mocks.queues.set("claims", [[]]);

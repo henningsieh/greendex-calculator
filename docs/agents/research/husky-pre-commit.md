@@ -11,6 +11,9 @@
 
 ## Applied design
 
-The hook now formats and lints only staged files by default. It temporarily
-stashes unstaged tracked edits and restores them after checks. Set
-`PRE_COMMIT_FULL=1` for repository-wide `format` and `lint` behavior.
+The hook checks an isolated checkout of the index with the installed tools and
+dependencies. Formatting updates selected index entries without changing the
+working tree, including partially staged files. Lint examines staged code; the
+instruction guard and, when applicable, the copy guard examine the staged
+snapshot. Unstaged and untracked files do not participate. Run the repository-wide
+`pnpm run format` and `pnpm run lint` separately before committing.

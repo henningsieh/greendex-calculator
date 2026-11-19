@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import type { ProjectListState } from "@/features/projects/list-query-options";
 
 const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
@@ -15,8 +16,10 @@ const mocks = vi.hoisted(() => ({
     search: "",
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
+    archive: "active" as const,
+    settlement: "all" as const,
     partnerOrganizationIds: [] as string[],
-    sort: "start-asc" as const,
+    sort: [{ field: "startDate" as const, direction: "asc" as const }],
     cursor: "",
     pageSize: 25 as const,
   },
@@ -35,18 +38,10 @@ vi.mock("@/lib/orpc/orpc", () => ({
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
-vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
-  ...((await importOriginal()) as Record<string, unknown>),
-  getProjectAvailableScopesQueryOptions: () => ({
-    queryKey: ["projects", "available-scopes"],
-    queryFn: async () => ({
-      hosted: true,
-      partner: true,
-    }),
-  }),
-  getProjectListQueryOptions: (
+vi.mock("@/features/projects/list-query-options", async (importOriginal) => {
+  const getListOptions = (
     scope: "hosted" | "partner",
-    state: { cursor?: string },
+    state: ProjectListState,
   ) => ({
     queryKey: ["projects", scope, state],
     queryFn: async () => ({
@@ -59,6 +54,7 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
           endDate: new Date("2026-06-03T00:00:00.000Z"),
           location: "Berlin",
           country: "DE",
+          settlement: "open",
         },
       ],
       nextCursor: "next-page",
@@ -75,8 +71,23 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
       },
       partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
     }),
-  }),
-}));
+  });
+
+  return {
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+      queryFn: async () => ({ hosted: true, partner: true }),
+    }),
+    getProjectListQueryOptions: getListOptions,
+    getProjectPartnerFilterQueryOptions: (state: ProjectListState) =>
+      getListOptions("hosted", {
+        ...state,
+        partnerOrganizationIds: [],
+        cursor: undefined,
+      }),
+  };
+});
 
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectList } from "@/features/projects/components/project-list";
@@ -89,7 +100,10 @@ function renderList(withCreation = false) {
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
         {withCreation && mocks.canCreate ? <CreateProjectDialog /> : null}
-        <ProjectList hasStaffMembership />
+        <ProjectList
+          hasStaffMembership
+          preference={{ accountKey: "test", visibility: {} }}
+        />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -143,7 +157,8 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(counts).toHaveAttribute("data-project-count", "3");
     expect(counts).toHaveAttribute("data-filtered-project-count", "1");
     expect(screen.queryByTestId("project-window-project-1")).toBeNull();
-    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(screen.getByTestId("project-column-header-startDate")).toBeVisible();
+    expect(screen.getByTestId("project-column-header-endDate")).toBeVisible();
   });
 
   it("offers the Hosting Participant view beside the details destination", async () => {
@@ -186,14 +201,34 @@ describe("Project list", { timeout: 20_000 }, () => {
       cursor: null,
     });
 
-    fireEvent.click(screen.getByTestId("project-partner-filter-partner-1"));
+    const advanced = screen.getByTestId("project-advanced-filters");
+    expect(advanced).toContainElement(
+      screen.getByTestId("project-partner-filter-menu"),
+    );
+    await userEvent.click(advanced.querySelector("summary")!);
+    expect(advanced).toHaveAttribute("open");
+    await userEvent.click(screen.getByTestId("project-partner-filter-menu"));
+    await userEvent.click(
+      await screen.findByTestId("project-partner-filter-partner-1"),
+    );
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
-      dateFrom: null,
-      dateTo: null,
       partnerOrganizationIds: ["partner-1"],
-      search: "",
     });
+  });
+
+  it("keeps active Partner filters discoverable inside the expanded date-and-partner panel", async () => {
+    mocks.state.partnerOrganizationIds = ["partner-1"];
+    renderList();
+    await screen.findByTestId("project-link-project-1");
+    expect(screen.getByTestId("project-advanced-filters")).toHaveAttribute(
+      "open",
+    );
+    expect(screen.getAllByTestId("project-partner-filter-menu")).toHaveLength(1);
+    await userEvent.click(screen.getByTestId("project-partner-filter-menu"));
+    expect(
+      await screen.findByTestId("project-partner-filter-partner-1"),
+    ).toHaveAttribute("aria-checked", "true");
   });
 
   it("clears explicit Project date filters instead of restoring their previous values", async () => {
@@ -285,7 +320,15 @@ describe("Project list", { timeout: 20_000 }, () => {
     fireEvent.click(screen.getByTestId("sort-project-start"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
-      sort: "start-desc",
+      sort: [{ field: "startDate", direction: "desc" }],
+    });
+    fireEvent.click(screen.getByTestId("sort-project-end"));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: [
+        { field: "startDate", direction: "asc" },
+        { field: "endDate", direction: "asc" },
+      ],
     });
 
     fireEvent.change(screen.getByTestId("project-search"), {
@@ -303,7 +346,7 @@ describe("Project list", { timeout: 20_000 }, () => {
 
     const user = userEvent.setup();
     expect(screen.queryByTestId("project-submission-window")).toBeNull();
-    expect(screen.getByTestId("project-sort")).toBeTruthy();
+    expect(screen.getByTestId("sort-project-start")).toBeTruthy();
 
     const pageSizeSelect = screen.getByTestId("project-page-size");
     await user.click(pageSizeSelect);

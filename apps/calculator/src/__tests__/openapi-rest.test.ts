@@ -700,6 +700,49 @@ describe("OpenAPI contract gaps", () => {
     }
   });
 
+  it.each(["archive", "reopen"])(
+    "preserves standard validation details for %s request bodies",
+    async (action) => {
+      for (const body of [{ archived: "yes" }, null, [], "invalid", 42]) {
+        const response = await routeFetch(
+          `${baseUrl}/projects/missing/${action}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
+        expect(response.status).toBe(400);
+        expect(await response.json()).toMatchObject({
+          code: "BAD_REQUEST",
+          message: "Input validation failed",
+          data: {
+            issues: expect.arrayContaining([
+              expect.objectContaining({ message: expect.any(String) }),
+            ]),
+          },
+        });
+      }
+    },
+  );
+
+  it.each(["archive", "reopen"])(
+    "uses the standard malformed request message for %s",
+    async (action) => {
+      const response = await routeFetch(`${baseUrl}/projects/missing/${action}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: "invalid json",
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        code: "BAD_REQUEST",
+        message:
+          "Malformed request. Ensure the request body is properly formatted and the 'Content-Type' header is set correctly.",
+      });
+    },
+  );
+
   it.each([
     ["/helloWorld", { name: 42 }],
     ["/auth/sign-in", { email: "not-an-email", password: "" }],

@@ -45,6 +45,17 @@ The direct router client must exist before the owning app's `src/lib/orpc/orpc.t
 - `client.server.ts` resolves `headers()` inside its context function so request data remains request-specific.
 - Preserve both initialization paths and their effective order. Validate this seam with app-local SSR regression coverage.
 
+Cost Tracker keeps the shared client in `globalThis`, but resolves its router through oRPC's lazy loader:
+
+```ts
+globalThis.$costTrackerClient = createRouterClient(
+  os.lazy(async () => ({ default: (await import("@/lib/orpc/router")).router })),
+  { context: async () => ({ headers: await headers() }) },
+);
+```
+
+The loader resolves the router on each procedure call, so captured client and query-utility references can reach hot-updated procedures. Headers remain request-specific. Reuse the common query-options path for SSR and browser consumers rather than adding feature-local router clients.
+
 ## Procedures and consumers
 
 1. Put domain procedures in the owning feature and register them in the owning app's `src/lib/orpc/router.ts`.

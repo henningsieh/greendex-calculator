@@ -4,9 +4,11 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
+  hostProjectAssignmentsTable,
   claimsTable,
   member,
   organization,
+  partnerOrganizationSetupLinksTable,
   projectPartnerOrganizationsTable,
   projectsTable,
   session,
@@ -14,7 +16,7 @@ import {
 } from "@greendex/database/schema";
 import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { count, inArray } from "drizzle-orm";
+import { count, eq, inArray } from "drizzle-orm";
 
 import { expect, test, registerPrivateValues } from "./fixtures/artifact-privacy";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
@@ -38,16 +40,19 @@ const ids = {
   main: randomUUID(),
   isolation: randomUUID(),
   zero: randomUUID(),
+  settled: randomUUID(),
   other: randomUUID(),
   mainA: randomUUID(),
   mainB: randomUUID(),
   isolationA: randomUUID(),
   otherB: randomUUID(),
+  settledA: randomUUID(),
 };
 const names = {
   main: `CT ${suffix} Main`,
   isolation: `CT ${suffix} Isolation`,
   zero: `CT ${suffix} Zero Partnerships`,
+  settled: `CT ${suffix} Settled`,
   other: `CT ${suffix} E Other Project`,
   partnerA: `CT ${suffix} Partner A`,
   partnerB: `CT ${suffix} Partner B`,
@@ -55,8 +60,14 @@ const names = {
 const password = randomUUID();
 registerPrivateValues(password);
 const hostEmail = `ct-${suffix}-h@example.invalid`;
-const projectIds = [ids.main, ids.isolation, ids.zero, ids.other];
-const partnershipIds = [ids.mainA, ids.mainB, ids.isolationA, ids.otherB];
+const projectIds = [ids.main, ids.isolation, ids.zero, ids.other, ids.settled];
+const partnershipIds = [
+  ids.mainA,
+  ids.mainB,
+  ids.isolationA,
+  ids.otherB,
+  ids.settledA,
+];
 const organizationIds = [ids.host, ids.existing, ids.partnerA, ids.partnerB];
 const userIds = [ids.hostUser, ids.existingUser];
 const mainURL = `/projects/${ids.main}`;
@@ -177,7 +188,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       },
     ]);
     await db.insert(projectsTable).values(
-      (["main", "isolation", "zero", "other"] as const).map((key) => ({
+      (["main", "isolation", "zero", "other", "settled"] as const).map((key) => ({
         id: ids[key],
         name: names[key],
         startDate: now,
@@ -196,13 +207,15 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
         organizationId: ids.partnerA,
       },
       { id: ids.otherB, projectId: ids.other, organizationId: ids.partnerB },
+      { id: ids.settledA, projectId: ids.settled, organizationId: ids.partnerA },
     ]);
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
       { partnershipId: ids.mainA, status: "rejected" },
       { partnershipId: ids.otherB, status: "in_preparation" },
+      { partnershipId: ids.settledA, status: "rejected" },
     ]);
-    expect(await ownedCounts()).toEqual([2, 4, 4, 4, 2]);
+    expect(await ownedCounts()).toEqual([2, 4, 5, 5, 3]);
   });
 
   test.afterAll(async () => {
@@ -289,14 +302,260 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await page.getByTestId("archive-project").click();
     await page.getByTestId("confirm-dialog-execute").click();
     await expect(page.getByTestId("reopen-project")).toBeVisible();
-    const explanation = page.getByTestId("archive-explanation-trigger");
-    await explanation.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
-    await page.keyboard.press("Escape");
+    // The reopen button carries its own reason dialog, so the archived
+    // explanation stays hidden while reopening is available.
+    await expect(page.getByTestId("archive-explanation-trigger")).toHaveCount(0);
     await page.getByTestId("reopen-project").click();
     await page.locator("#reopen-reason").fill("Correct a test record");
     await page.getByRole("dialog").getByTestId("reopen-project-confirm").click();
     await expect(page.getByTestId("archive-project")).toBeVisible();
+  });
+
+  test("assigned Hosting Coordinator may archive but cannot reopen", async () => {
+    await db
+      .insert(hostProjectAssignmentsTable)
+      .values({ projectId: ids.zero, userId: ids.hostUser });
+    await db
+      .update(member)
+      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
+      .where(eq(member.userId, ids.hostUser));
+    try {
+      const page = await hostContext!.newPage();
+      await openHostedProject(page, zeroURL);
+      await expect(page.getByTestId("archive-project")).toBeVisible();
+      await page.getByTestId("archive-project").click();
+      await page.getByTestId("confirm-dialog-execute").click();
+      await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+        "data-archived",
+        "true",
+      );
+      await expect(page.getByTestId("archive-project")).toHaveCount(0);
+      await expect(page.getByTestId("reopen-project")).toHaveCount(0);
+      // Without reopen permission the header shows the [i] explanation
+      // instead of the button.
+      const trigger = page.getByTestId("archive-explanation-trigger");
+      const explanation = page.getByTestId("archive-explanation-content");
+      await expect(trigger).toBeVisible();
+      await trigger.hover();
+      await expect(explanation).toBeVisible();
+      await explanation.hover();
+      const hoverStarted = Date.now();
+      await expect(async () => {
+        await expect(explanation).toBeVisible();
+        expect(Date.now() - hoverStarted).toBeGreaterThan(120);
+      }).toPass({ intervals: [50], timeout: 2000 });
+      await page.keyboard.press("Escape");
+      await expect(explanation).toBeHidden();
+      await trigger.click();
+      await expect(explanation).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(explanation).toBeHidden();
+      await page.close();
+    } finally {
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(eq(member.userId, ids.hostUser));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.zero));
+    }
+  });
+
+  test("opens the archived explanation with emulated touch", async ({
+    browser,
+    baseURL,
+  }) => {
+    // The [i] explanation only shows when reopening is unavailable, so run
+    // as a coordinator without the reopen permission (mirrors the demotion
+    // in "may archive but cannot reopen").
+    await db
+      .update(member)
+      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
+      .where(eq(member.userId, ids.hostUser));
+    try {
+      const context = await browser.newContext({
+        baseURL,
+        storageState: await hostContext!.storageState(),
+        hasTouch: true,
+      });
+      try {
+        const page = await context.newPage();
+        await openHostedProject(page, zeroURL);
+        await page.getByTestId("archive-project").click();
+        await page.getByTestId("confirm-dialog-execute").click();
+        await expect(page.getByTestId("reopen-project")).toHaveCount(0);
+        await page.getByTestId("archive-explanation-trigger").tap();
+        await expect(
+          page.getByTestId("archive-explanation-content"),
+        ).toBeVisible();
+      } finally {
+        await context.close();
+      }
+    } finally {
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(eq(member.userId, ids.hostUser));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.zero));
+    }
+  });
+
+  test("partner organizations keeps archived actions disabled with keyboard and touch explanations", async ({
+    browser,
+    baseURL,
+  }) => {
+    const linkId = randomUUID();
+    await db.insert(partnerOrganizationSetupLinksTable).values({
+      id: linkId,
+      projectId: ids.settled,
+      secretHash: randomUUID(),
+      recipientEmail: `ct-${suffix}-setup@example.invalid`,
+      createdByUserId: ids.hostUser,
+      expiresAt: new Date(Date.now() + 86_400_000),
+    });
+    const page = await hostContext!.newPage();
+    await page.goto("/partner-organizations");
+    const warmResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/rpc/projectPartnerships/listSetupLinks") &&
+        response.ok(),
+    );
+    await page.getByTestId("partner-organizations-tab-invitations").click();
+    expect(JSON.stringify(await (await warmResponse).json())).toContain(
+      '"costTrackerArchived":false',
+    );
+    const link = page.locator(`[data-setup-link-id="${linkId}"]`);
+    await expect(link.locator("[data-link-status]")).toHaveAttribute(
+      "data-link-status",
+      "open",
+    );
+    await expect(link.getByTestId("close-setup-link")).toBeEnabled();
+    await page.evaluate(() => Reflect.set(window, "__warmCacheNavigation", true));
+    await page.getByTestId("partner-organizations-tab-partnerships").click();
+    await page.getByRole("link", { name: names.settled, exact: true }).click();
+    await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+      "data-hydrated",
+      "true",
+    );
+    expect(
+      await page.evaluate(() => Reflect.get(window, "__warmCacheNavigation")),
+    ).toBe(true);
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-cancel").click();
+    expect(
+      (
+        await db
+          .select({ enabled: partnerOrganizationSetupLinksTable.enabled })
+          .from(partnerOrganizationSetupLinksTable)
+          .where(eq(partnerOrganizationSetupLinksTable.id, linkId))
+      )[0]?.enabled,
+    ).toBe(true);
+    await page.getByTestId("archive-project").click();
+    await page.getByTestId("confirm-dialog-execute").click();
+    await expect(page.getByTestId("reopen-project")).toBeVisible();
+    expect(
+      (
+        await db
+          .select({ enabled: partnerOrganizationSetupLinksTable.enabled })
+          .from(partnerOrganizationSetupLinksTable)
+          .where(eq(partnerOrganizationSetupLinksTable.id, linkId))
+      )[0]?.enabled,
+    ).toBe(false);
+    await page.getByTestId("sidebar-nav-partner-organizations").click();
+    expect(
+      await page.evaluate(() => Reflect.get(window, "__warmCacheNavigation")),
+    ).toBe(true);
+    const archivedResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/rpc/projectPartnerships/listSetupLinks") &&
+        response.ok(),
+    );
+    await page.getByTestId("partner-organizations-tab-invitations").click();
+    expect(JSON.stringify(await (await archivedResponse).json())).toContain(
+      '"costTrackerArchived":true',
+    );
+    await expect(link.locator("[data-link-status]")).toHaveAttribute(
+      "data-link-status",
+      "closed",
+    );
+    await expect(link.getByTestId("close-setup-link")).toBeDisabled();
+    await expect(link.getByTestId("archive-explanation-trigger")).toBeVisible();
+    await page.getByTestId("partner-organizations-tab-partnerships").click();
+    const partnership = page
+      .getByTestId(`partnership-row-${ids.partnerA}`)
+      .filter({ has: page.getByTestId(`remove-partnership-${ids.settledA}`) });
+    await expect(
+      partnership.getByTestId(`remove-partnership-${ids.settledA}`),
+    ).toBeDisabled();
+    await expect(partnership.getByRole("link")).toBeVisible();
+    await partnership.getByTestId("archive-explanation-trigger").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("archive-explanation-content")).toBeVisible();
+    await page.keyboard.press("Escape");
+    const touch = await browser.newContext({
+      baseURL,
+      storageState: await hostContext!.storageState(),
+      hasTouch: true,
+    });
+    try {
+      const touchPage = await touch.newPage();
+      await touchPage.goto("/partner-organizations");
+      await touchPage
+        .getByTestId("partner-organizations-tab-invitations")
+        .click();
+      await touchPage
+        .locator(`[data-setup-link-id="${linkId}"]`)
+        .getByTestId("archive-explanation-trigger")
+        .tap();
+      await expect(
+        touchPage.getByTestId("archive-explanation-content"),
+      ).toBeVisible();
+    } finally {
+      await touch.close();
+      await page.close();
+      await db
+        .delete(partnerOrganizationSetupLinksTable)
+        .where(eq(partnerOrganizationSetupLinksTable.id, linkId));
+      await db
+        .update(projectsTable)
+        .set({ costTrackerArchived: false })
+        .where(eq(projectsTable.id, ids.settled));
+    }
+  });
+
+  test("refuses a stale rejected Claim reopening after another tab archives its Project", async () => {
+    const reviewPage = await hostContext!.newPage();
+    await reviewPage.goto(`/partnerships/${ids.settledA}/claim/review`);
+    const review = reviewPage.getByTestId("claim-review");
+    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await review.getByTestId("claim-decision-reopen").click();
+    const confirm = review.getByTestId("claim-decision-confirm-reopen");
+    await expect(confirm).toBeEnabled();
+
+    const archivePage = await hostContext!.newPage();
+    await openHostedProject(archivePage, `/projects/${ids.settled}`);
+    await archivePage.getByTestId("archive-project").click();
+    await archivePage.getByTestId("confirm-dialog-execute").click();
+    await expect(archivePage.getByTestId("reopen-project")).toBeVisible();
+
+    await expect(confirm).toBeVisible();
+    await confirm.click();
+    await expect(review.getByRole("alert")).toBeVisible();
+    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    const [claim] = await db
+      .select({ status: claimsTable.status })
+      .from(claimsTable)
+      .where(eq(claimsTable.partnershipId, ids.settledA));
+    const [project] = await db
+      .select({ archived: projectsTable.costTrackerArchived })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, ids.settled));
+    expect(claim?.status).toBe("rejected");
+    expect(project?.archived).toBe(true);
   });
 });

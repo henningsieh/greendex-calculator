@@ -16,6 +16,7 @@ import { and, asc, count, eq, isNull, or } from "drizzle-orm";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { authorizeCostTrackerProjectLifecycle } from "@/features/projects/procedures/lifecycle-authorization";
 import {
   getHostedProjectScopeFilters,
   getPartnerProjectScopeFilters,
@@ -376,9 +377,12 @@ export const getProject = authorized
       throw createSituationErrors(errors).hostingStaffRequired();
     }
 
-    const partnerOrganizations = await db.transaction(async (transaction) => {
+    const hostedDetail = await db.transaction(async (transaction) => {
       const [hostedProject] = await transaction
-        .select({ id: projectsTable.id })
+        .select({
+          id: projectsTable.id,
+          archived: projectsTable.costTrackerArchived,
+        })
         .from(projectsTable)
         .where(
           and(
@@ -399,7 +403,7 @@ export const getProject = authorized
         transaction,
       );
 
-      return transaction
+      const partnerOrganizations = await transaction
         .select({
           id: projectPartnerOrganizationsTable.id,
           organizationId: organization.id,
@@ -419,12 +423,29 @@ export const getProject = authorized
         )
         .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
         .orderBy(asc(organization.name), asc(organization.id));
+      const request = {
+        executor: transaction,
+        projectIds: [hostedProject.id],
+        actorId: context.user.id,
+        activeOrganizationId,
+      };
+      const decisions = await authorizeCostTrackerProjectLifecycle.batch({
+        ...request,
+        actions: ["archive", "reopen"],
+      });
+      return {
+        archived: hostedProject.archived,
+        partnerOrganizations,
+        canArchive:
+          decisions.get(hostedProject.id)?.get("archive")?.allowed === true,
+        canReopen:
+          decisions.get(hostedProject.id)?.get("reopen")?.allowed === true,
+      };
     });
 
     return {
       ...project,
       relationship: "hosted" as const,
-      canArchive: true,
-      partnerOrganizations,
+      ...hostedDetail,
     };
   });

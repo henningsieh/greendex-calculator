@@ -73,7 +73,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { MEMBER_ROLES } from "@/features/organizations/types";
 import { ProjectTableColumns } from "@/features/projects/components/dashboard/projects-table-columns";
 import { projectsTableFeatures } from "@/features/projects/components/dashboard/projects-table-features";
-import type { PageSizeOption, ProjectType } from "@/features/projects/types";
+import type {
+  PageSizeOption,
+  ProjectWithLifecycleType,
+} from "@/features/projects/types";
 import {
   getProjectDetailPath,
   getProjectsDefaultSorting,
@@ -92,7 +95,11 @@ import { cn } from "@/lib/utils";
  * @param projects - Array of project objects to display in the table.
  * @returns The JSX element for the projects table including its header controls, table body, pagination footer, and confirm dialog.
  */
-export function ProjectsTable({ projects }: { projects: ProjectType[] }) {
+export function ProjectsTable({
+  projects,
+}: {
+  projects: ProjectWithLifecycleType[];
+}) {
   const locale = useLocale();
 
   const queryClient = useQueryClient();

@@ -3,6 +3,7 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { db } from "@greendex/database";
 import {
+  claimsTable,
   member,
   organization,
   projectPartnerOrganizationsTable,
@@ -21,6 +22,7 @@ import {
   inArray,
   lt,
   lte,
+  notExists,
   or,
   sql,
   type SQL,
@@ -51,6 +53,39 @@ import {
 } from "@/lib/orpc/errors";
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
+// Build imports the router without runtime database configuration. Construct
+// database-backed expressions only when a request calls these helpers.
+function getProjectBlockers() {
+  return db
+    .select({ id: projectPartnerOrganizationsTable.id })
+    .from(projectPartnerOrganizationsTable)
+    .where(
+      and(
+        eq(projectPartnerOrganizationsTable.projectId, projectsTable.id),
+        notExists(
+          db
+            .select({ id: claimsTable.id })
+            .from(claimsTable)
+            .where(
+              and(
+                eq(
+                  claimsTable.partnershipId,
+                  projectPartnerOrganizationsTable.id,
+                ),
+                inArray(claimsTable.status, ["paid", "rejected"]),
+              ),
+            ),
+        ),
+      ),
+    );
+}
+
+function getSettlementRank() {
+  return sql<number>`case when ${projectsTable.costTrackerArchived} then 2 when ${exists(getProjectBlockers())} then 0 else 1 end`.mapWith(
+    Number,
+  );
+}
+
 function getProjectFilters(input: ProjectListInput): SQL[] {
   const filters: SQL[] = [];
 
@@ -63,21 +98,27 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
   if (input.dateFrom) filters.push(gte(projectsTable.endDate, input.dateFrom));
   if (input.dateTo) filters.push(lte(projectsTable.startDate, input.dateTo));
 
+  if (input.archive !== "all") {
+    filters.push(
+      eq(projectsTable.costTrackerArchived, input.archive === "archived"),
+    );
+  }
+  if (input.settlement !== "all") {
+    const blockers = getProjectBlockers();
+    filters.push(eq(projectsTable.costTrackerArchived, false));
+    filters.push(
+      input.settlement === "open" ? exists(blockers) : notExists(blockers),
+    );
+  }
+
   return filters;
 }
 
 type ProjectCursorDirection = ProjectListCursor["direction"];
-type ProjectCursorPosition = Pick<ProjectListCursor, "date" | "direction" | "id">;
 type ProjectListCursorRow = Pick<
   typeof projectsTable.$inferSelect,
-  "endDate" | "id" | "startDate"
->;
-
-type ProjectSortDescription = {
-  getCursorFilter: (cursor: ProjectCursorPosition) => SQL;
-  getCursorValues: (row: ProjectListCursorRow) => Pick<ProjectListCursor, "date">;
-  getOrder: (direction: ProjectCursorDirection) => SQL[];
-};
+  "endDate" | "id" | "startDate" | "name"
+> & { settlementRank: number };
 
 function allOf(...conditions: SQL[]): SQL {
   const condition = and(...conditions);
@@ -91,87 +132,109 @@ function anyOf(...conditions: SQL[]): SQL {
   return condition;
 }
 
-function createChronologicalSortDescriptions({
-  ascendingOrder,
-  descendingOrder,
-  getCursorDate,
-  isAfter,
-  isBefore,
-  isEqual,
-}: {
-  ascendingOrder: SQL;
-  descendingOrder: SQL;
-  getCursorDate: (row: ProjectListCursorRow) => Date;
-  isAfter: (date: Date) => SQL;
-  isBefore: (date: Date) => SQL;
-  isEqual: (date: Date) => SQL;
-}) {
-  const createDescription = (ascending: boolean): ProjectSortDescription => ({
-    getCursorFilter(cursor) {
-      const date = new Date(cursor.date);
-      const movingForward = cursor.direction === "next";
-      const compareDate =
-        ascending === movingForward ? isAfter(date) : isBefore(date);
-      const compareId = movingForward
+const PROJECT_SORT_DESCRIPTORS = {
+  settlement: {
+    getExpression: getSettlementRank,
+    value: (row: ProjectListCursorRow) => ({
+      field: "settlement" as const,
+      value: row.settlementRank,
+    }),
+  },
+  name: {
+    getExpression: () => projectsTable.name,
+    value: () => ({
+      field: "name" as const,
+    }),
+  },
+  startDate: {
+    getExpression: () => projectsTable.startDate,
+    value: (row: ProjectListCursorRow) => ({
+      field: "startDate" as const,
+      value: row.startDate.toISOString(),
+    }),
+  },
+  endDate: {
+    getExpression: () => projectsTable.endDate,
+    value: (row: ProjectListCursorRow) => ({
+      field: "endDate" as const,
+      value: row.endDate.toISOString(),
+    }),
+  },
+};
+
+function getOrder(
+  sort: ProjectListInput["sort"],
+  direction: ProjectCursorDirection,
+) {
+  return [
+    ...sort.map(({ field, direction: order }) => {
+      const expression = PROJECT_SORT_DESCRIPTORS[field].getExpression();
+      return (order === "asc") === (direction === "next")
+        ? asc(expression)
+        : desc(expression);
+    }),
+    direction === "next" ? asc(projectsTable.id) : desc(projectsTable.id),
+  ];
+}
+
+function getCursorFilter(
+  sort: ProjectListInput["sort"],
+  cursor: ProjectListCursor,
+  cursorName: string | undefined,
+): SQL {
+  const equals: SQL[] = [];
+  const alternatives: SQL[] = [];
+  for (const [index, criterion] of sort.entries()) {
+    const value = cursor.values[index];
+    if (
+      !value ||
+      value.field !== criterion.field ||
+      (value.field === "name" && cursorName === undefined)
+    )
+      throw new Error("Invalid cursor sort values");
+    const expression = PROJECT_SORT_DESCRIPTORS[criterion.field].getExpression();
+    const parameter =
+      value.field === "name"
+        ? cursorName
+        : value.field === "startDate"
+          ? sql.param(new Date(value.value), projectsTable.startDate)
+          : value.field === "endDate"
+            ? sql.param(new Date(value.value), projectsTable.endDate)
+            : value.value;
+    const forward =
+      (criterion.direction === "asc") === (cursor.direction === "next");
+    alternatives.push(
+      allOf(
+        ...equals,
+        forward
+          ? sql`${expression} > ${parameter}`
+          : sql`${expression} < ${parameter}`,
+      ),
+    );
+    equals.push(sql`${expression} = ${parameter}`);
+  }
+  alternatives.push(
+    allOf(
+      ...equals,
+      cursor.direction === "next"
         ? gt(projectsTable.id, cursor.id)
-        : lt(projectsTable.id, cursor.id);
+        : lt(projectsTable.id, cursor.id),
+    ),
+  );
+  return anyOf(...alternatives);
+}
 
-      return anyOf(compareDate, allOf(isEqual(date), compareId));
-    },
-    getCursorValues: (row) => ({ date: getCursorDate(row).toISOString() }),
-    getOrder(direction) {
-      const movingForward = direction === "next";
-      return [
-        ascending === movingForward ? ascendingOrder : descendingOrder,
-        movingForward ? asc(projectsTable.id) : desc(projectsTable.id),
-      ];
-    },
-  });
-
+function getProjectRowSelection() {
   return {
-    ascending: createDescription(true),
-    descending: createDescription(false),
+    id: projectsTable.id,
+    name: projectsTable.name,
+    startDate: projectsTable.startDate,
+    endDate: projectsTable.endDate,
+    location: projectsTable.location,
+    country: projectsTable.country,
+    settlementRank: getSettlementRank(),
   };
 }
-
-const startDateSortDescriptions = createChronologicalSortDescriptions({
-  ascendingOrder: asc(projectsTable.startDate),
-  descendingOrder: desc(projectsTable.startDate),
-  getCursorDate: (row) => row.startDate,
-  isAfter: (date) => gt(projectsTable.startDate, date),
-  isBefore: (date) => lt(projectsTable.startDate, date),
-  isEqual: (date) => eq(projectsTable.startDate, date),
-});
-const endDateSortDescriptions = createChronologicalSortDescriptions({
-  ascendingOrder: asc(projectsTable.endDate),
-  descendingOrder: desc(projectsTable.endDate),
-  getCursorDate: (row) => row.endDate,
-  isAfter: (date) => gt(projectsTable.endDate, date),
-  isBefore: (date) => lt(projectsTable.endDate, date),
-  isEqual: (date) => eq(projectsTable.endDate, date),
-});
-
-const PROJECT_SORT_DESCRIPTIONS = {
-  "start-asc": startDateSortDescriptions.ascending,
-  "start-desc": startDateSortDescriptions.descending,
-  "end-asc": endDateSortDescriptions.ascending,
-  "end-desc": endDateSortDescriptions.descending,
-} satisfies Record<ProjectListInput["sort"], ProjectSortDescription>;
-
-function getProjectSortDescription(
-  sort: ProjectListInput["sort"],
-): ProjectSortDescription {
-  return PROJECT_SORT_DESCRIPTIONS[sort];
-}
-
-const rowSelection = {
-  id: projectsTable.id,
-  name: projectsTable.name,
-  startDate: projectsTable.startDate,
-  endDate: projectsTable.endDate,
-  location: projectsTable.location,
-  country: projectsTable.country,
-};
 
 const projectMetricsSelection = {
   projectCount: countDistinct(projectsTable.id),
@@ -203,10 +266,7 @@ function mapHostedProjectMetrics(
 export function getHostedProjectScopeFilters(
   activeOrganizationId: string,
 ): SQL[] {
-  return [
-    eq(projectsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.costTrackerArchived, false),
-  ];
+  return [eq(projectsTable.organizationId, activeOrganizationId)];
 }
 
 export function getPartnerProjectScopeFilters(
@@ -214,7 +274,6 @@ export function getPartnerProjectScopeFilters(
 ): SQL[] {
   return [
     eq(projectPartnerOrganizationsTable.organizationId, activeOrganizationId),
-    eq(projectsTable.costTrackerArchived, false),
   ];
 }
 
@@ -230,7 +289,10 @@ function parseCursor(
 
   if (
     decodedCursor.status === "invalid" ||
-    decodedCursor.cursor.sort !== input.sort
+    decodedCursor.cursor.values.length !== input.sort.length ||
+    decodedCursor.cursor.values.some(
+      (value, index) => value.field !== input.sort[index]?.field,
+    )
   ) {
     throw createSituationErrors(errors).invalidProjectCursor();
   }
@@ -254,22 +316,30 @@ function finalizeProjectListPage<T extends ProjectListCursorRow>(
   const lastRow = rows.at(-1);
   const hasPrevious = isPreviousPage ? hasAdditionalRows : Boolean(cursor);
   const hasNext = isPreviousPage ? Boolean(cursor) : hasAdditionalRows;
-  const sortDescription = getProjectSortDescription(input.sort);
   const createCursor = (
     direction: ProjectCursorDirection,
     row: ProjectListCursorRow,
   ) =>
     encodeProjectListCursor({
-      version: 3,
+      version: 4,
       direction,
       fingerprint,
-      sort: input.sort,
       id: row.id,
-      ...sortDescription.getCursorValues(row),
+      values: input.sort.map(({ field }) =>
+        PROJECT_SORT_DESCRIPTORS[field].value(row),
+      ),
     });
 
   return {
-    rows,
+    rows: rows.map(({ settlementRank: rank, ...row }) => ({
+      ...row,
+      settlement:
+        rank === 0
+          ? ("open" as const)
+          : rank === 1
+            ? ("ready" as const)
+            : ("archived" as const),
+    })),
     previousCursor:
       hasPrevious && firstRow ? createCursor("previous", firstRow) : undefined,
     nextCursor: hasNext && lastRow ? createCursor("next", lastRow) : undefined,
@@ -366,16 +436,27 @@ export const listHosted = authorized
       );
     }
     const pageFilters = [...filteredScopeFilters];
-    const sortDescription = getProjectSortDescription(input.sort);
-    if (cursor) pageFilters.push(sortDescription.getCursorFilter(cursor));
+    if (cursor) {
+      let cursorName: string | undefined;
+      if (input.sort.some(({ field }) => field === "name")) {
+        const [anchor] = await db
+          .select({ name: projectsTable.name })
+          .from(projectsTable)
+          .where(and(...wholeFilters, eq(projectsTable.id, cursor.id)))
+          .limit(1);
+        if (!anchor) throw createSituationErrors(errors).invalidProjectCursor();
+        cursorName = anchor.name;
+      }
+      pageFilters.push(getCursorFilter(input.sort, cursor, cursorName));
+    }
 
     const [pageRows, wholeMetricRows, filteredMetricRows, partnerOptions] =
       await Promise.all([
         db
-          .select(rowSelection)
+          .select(getProjectRowSelection())
           .from(projectsTable)
           .where(and(...pageFilters))
-          .orderBy(...sortDescription.getOrder(cursor?.direction ?? "next"))
+          .orderBy(...getOrder(input.sort, cursor?.direction ?? "next"))
           .limit(input.pageSize + 1),
         db
           .select(hostedProjectMetricsSelection)
@@ -468,19 +549,34 @@ export const listPartner = authorized
       );
     const filteredScopeFilters = [...wholeFilters, ...getProjectFilters(input)];
     const pageFilters = [...filteredScopeFilters];
-    const sortDescription = getProjectSortDescription(input.sort);
-    if (cursor) pageFilters.push(sortDescription.getCursorFilter(cursor));
+    if (cursor) {
+      let cursorName: string | undefined;
+      if (input.sort.some(({ field }) => field === "name")) {
+        const [anchor] = await db
+          .select({ name: projectsTable.name })
+          .from(projectPartnerOrganizationsTable)
+          .innerJoin(
+            projectsTable,
+            eq(projectsTable.id, projectPartnerOrganizationsTable.projectId),
+          )
+          .where(and(...wholeFilters, eq(projectsTable.id, cursor.id)))
+          .limit(1);
+        if (!anchor) throw createSituationErrors(errors).invalidProjectCursor();
+        cursorName = anchor.name;
+      }
+      pageFilters.push(getCursorFilter(input.sort, cursor, cursorName));
+    }
 
     const [pageRows, wholeMetricRows, filteredMetricRows] = await Promise.all([
       db
-        .select(rowSelection)
+        .select(getProjectRowSelection())
         .from(projectPartnerOrganizationsTable)
         .innerJoin(
           projectsTable,
           eq(projectsTable.id, projectPartnerOrganizationsTable.projectId),
         )
         .where(and(...pageFilters))
-        .orderBy(...sortDescription.getOrder(cursor?.direction ?? "next"))
+        .orderBy(...getOrder(input.sort, cursor?.direction ?? "next"))
         .limit(input.pageSize + 1),
       db
         .select(projectMetricsSelection)

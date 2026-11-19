@@ -80,6 +80,15 @@ export function ProjectSharedTravelLegForm({
         return;
       }
 
+      queryClient.setQueryData(
+        orpcQuery.projectSharedTravelLegs.list.queryOptions({
+          input: { projectId },
+        }).queryKey,
+        (legs) =>
+          legs?.map((leg) =>
+            leg.id === result.sharedTravelLeg.id ? result.sharedTravelLeg : leg,
+          ),
+      );
       toast.success(
         t(isEditing ? "toast.update-success" : "toast.create-success"),
       );
