@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 
-import { projectParticipantsPath, projectPath } from "@/app/paths";
+import { projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -53,6 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   getProjectColumnFilters,
   getProjectSortMode,
@@ -104,7 +105,7 @@ function SortHeader({
         : ArrowDownUpIcon;
   return (
     <Button
-      className="-ml-2 h-auto min-h-9 max-w-full flex-wrap justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-normal normal-case"
+      className="-ml-2 h-auto min-h-9 justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-nowrap normal-case"
       aria-label={
         direction
           ? t("sortHeaderActive", {
@@ -121,7 +122,7 @@ function SortHeader({
       variant="ghost"
       onClick={onClick}
     >
-      <span className="min-w-0 wrap-anywhere">{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
       <Icon aria-hidden="true" data-icon="inline-end" />
       {direction && (
         <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-xs tabular-nums">
@@ -337,13 +338,11 @@ export function ResolvedProjectListResults({
               enableSorting: false,
               header: t("participants"),
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
-                <Link
-                  className="link-prose"
-                  href={projectParticipantsPath(row.original.id)}
-                  data-testid={`project-participants-${row.original.id}`}
-                >
-                  {t("viewParticipants")}
-                </Link>
+                <ParticipantsLink
+                  density="compact"
+                  projectId={row.original.id}
+                  testId={`project-participants-${row.original.id}`}
+                />
               ),
             } satisfies ColumnDef<
               typeof projectListTableFeatures,
@@ -459,14 +458,7 @@ export function ResolvedProjectListResults({
       data-project-count={whole.projectCount}
       data-filtered-project-count={filtered.projectCount}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span aria-live="polite">
-          {isFetching
-            ? t("refreshing")
-            : t("updatedAt", {
-                time: dateFormat.format(dataUpdatedAt, "time.seconds"),
-              })}
-        </span>
+      <div className="flex flex-col items-end justify-end gap-1 text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger
@@ -687,6 +679,7 @@ export function ResolvedProjectListResults({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
+            aria-label={t("refresh")}
             disabled={isFetching}
             onClick={() => void refetch()}
             size="sm"
@@ -697,27 +690,55 @@ export function ResolvedProjectListResults({
               aria-hidden="true"
               className={isFetching ? "animate-spin" : undefined}
             />
-            {t("refresh")}
+            <span className="hidden @lg/content:inline">{t("refresh")}</span>
           </Button>
         </div>
       </div>
 
-      <p
-        className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
-        aria-label={t("sortOrder")}
-      >
-        {sorting.map((criterion, index) => (
-          <span key={criterion.id}>
-            {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
-            <span className="sr-only">
-              {criterion.desc ? t("descending") : t("ascending")}
+      <div className="flex items-center justify-between gap-x-3 gap-y-1">
+        <p
+          className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
+          aria-label={t("sortOrder")}
+        >
+          {sorting.map((criterion, index) => (
+            <span className="inline-flex items-center" key={criterion.id}>
+              {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
+              <span className="sr-only">
+                {criterion.desc ? t("descending") : t("ascending")}
+              </span>
+              <Button
+                aria-label={t("removeSort", {
+                  field: sortLabels[criterion.id] ?? criterion.id,
+                })}
+                className="text-muted-foreground"
+                data-testid={`sort-summary-remove-${criterion.id}`}
+                disabled={sorting.length === 1}
+                onClick={() =>
+                  table.setSorting(sorting.filter((_, i) => i !== index))
+                }
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <XIcon aria-hidden="true" />
+              </Button>
             </span>
+          ))}
+        </p>
+
+        <p className="hidden flex-nowrap justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground @lg/content:inline">
+          <span aria-live="polite">
+            {isFetching
+              ? t("refreshing")
+              : t("updatedAt", {
+                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
+                })}
           </span>
-        ))}
-      </p>
+        </p>
+      </div>
 
       {/* Desktop: dense table. */}
-      <div className="hidden xl:block">
+      <div className="hidden @4xl/content:block">
         <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
           <Table aria-label={t("label")}>
             <TableHeader className="bg-muted/40">
@@ -728,8 +749,8 @@ export function ResolvedProjectListResults({
                       key={header.id}
                       className={
                         header.column.id === "name"
-                          ? "w-auto"
-                          : "w-[15%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
+                          ? "w-auto whitespace-nowrap"
+                          : "w-[15%] px-2 tracking-normal whitespace-nowrap normal-case"
                       }
                       data-testid={`project-column-header-${header.column.id}`}
                       aria-sort={
@@ -789,7 +810,7 @@ export function ResolvedProjectListResults({
       </div>
 
       {/* Below xl: one card per Project. */}
-      <div className="grid gap-3 xl:hidden">
+      <div className="grid gap-3 @4xl/content:hidden">
         {rows.length === 0 ? (
           <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
         ) : (
@@ -819,13 +840,11 @@ export function ResolvedProjectListResults({
                       </dt>
                       <dd className="min-w-0 text-right text-xs wrap-anywhere">
                         {cell.column.id === "participants" ? (
-                          <Link
-                            className="link-prose"
-                            data-testid={`project-participants-${row.original.id}-card`}
-                            href={projectParticipantsPath(row.original.id)}
-                          >
-                            {t("viewParticipants")}
-                          </Link>
+                          <ParticipantsLink
+                            density="compact"
+                            projectId={row.original.id}
+                            testId={`project-participants-${row.original.id}-card`}
+                          />
                         ) : (
                           flexRender(
                             cell.column.columnDef.cell,

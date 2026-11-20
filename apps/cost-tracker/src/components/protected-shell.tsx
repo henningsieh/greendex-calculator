@@ -97,7 +97,11 @@ export async function ProtectedShell({
           </div>
           <Suspense fallback={<BreadcrumbTrailFallback />}>{breadcrumb}</Suspense>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
+        {/* `@container/content` makes the Project register and its filters
+            respond to this content column, not the viewport. Expanding or
+            collapsing the sidebar changes the column width and therefore
+            switches the table to record cards (and back) on its own. */}
+        <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
           <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
         </main>
       </div>

@@ -90,7 +90,7 @@ export function ProjectListFilters({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2 @4xl/content:grid-cols-4">
         <div className="flex min-w-0 flex-col gap-2">
           <Label htmlFor="project-search">{t("name")}</Label>
           <div className="relative">
@@ -267,13 +267,13 @@ export function ProjectListFilters({
         <summary className="w-fit cursor-pointer rounded-sm text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring">
           {t("dateRange")}
         </summary>
-        <div className="mt-3 grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
+        <div className="mt-3 grid items-start gap-3 sm:grid-cols-2 @4xl/content:grid-cols-4">
           {state.scope === "hosted" && (
             <Suspense fallback={<Skeleton className="h-16 w-full" />}>
               <ProjectListPartnerFilter state={state} setUrlState={setUrlState} />
             </Suspense>
           )}
-          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-2 xl:col-start-3">
+          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 @4xl/content:col-span-2 @4xl/content:col-start-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="project-date-from">{t("activeAfter")}</Label>
               <Input
