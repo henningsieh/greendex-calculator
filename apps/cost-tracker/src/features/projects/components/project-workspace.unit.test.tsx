@@ -216,6 +216,10 @@ describe("Project workspace", () => {
     expect(
       await screen.findByTestId("assigned-partnerships-empty"),
     ).toBeInTheDocument();
+    const header = screen.getByRole("heading", { level: 1 }).closest("header");
+    expect(header).toContainElement(
+      screen.getByTestId("project-archived-status"),
+    );
     expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
     expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
   });
