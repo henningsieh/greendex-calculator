@@ -10,9 +10,9 @@ import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
 
-type ProjectsPageProps = {
+interface ProjectsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+}
 
 export default async function ProjectsPage(
   { searchParams }: ProjectsPageProps = {

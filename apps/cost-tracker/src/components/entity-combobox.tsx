@@ -14,7 +14,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type Entity = { id: string; name: string };
+interface Entity {
+  id: string;
+  name: string;
+}
 
 export function EntityCombobox<T extends Entity>({
   label,

@@ -5,10 +5,7 @@ import { useLocale, useTranslations } from "@greendex/i18n/client";
 import { useMemo, type ComponentProps } from "react";
 
 import { CountryFlag } from "@/components/country-flag";
-import {
-  getEUCountryOptions,
-  type EUCountryOption,
-} from "@/components/eu-country-names";
+import { getEUCountryOptions } from "@/components/eu-country-names";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -21,7 +18,7 @@ import {
   ComboboxValue,
 } from "@/components/ui/combobox";
 
-export type EUCountrySelectorProps = Pick<
+type EUCountrySelectorProps = Pick<
   ComponentProps<typeof ComboboxTrigger>,
   | "id"
   | "ref"
@@ -40,6 +37,8 @@ export type EUCountrySelectorProps = Pick<
   name?: string;
   "data-testid"?: string;
 };
+
+type EUCountryOption = ReturnType<typeof getEUCountryOptions>[number];
 
 function CountryPresentation({ country }: { country: EUCountryOption }) {
   return (

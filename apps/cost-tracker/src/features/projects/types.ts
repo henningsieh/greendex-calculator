@@ -1,5 +1,7 @@
+import type { UseQueryStatesReturn } from "nuqs";
 import type { z } from "zod";
 
+import type { projectListParsers } from "@/features/projects/list-query-options";
 import type {
   HostedProjectListInputSchema,
   HostedProjectListSchema,
@@ -7,6 +9,10 @@ import type {
   PartnerProjectListSchema,
   ProjectListRowSchema,
 } from "@/features/projects/validation-schemas";
+
+export type ProjectListQueryState = UseQueryStatesReturn<
+  typeof projectListParsers
+>;
 
 export type HostedProjectListInput = z.output<
   typeof HostedProjectListInputSchema

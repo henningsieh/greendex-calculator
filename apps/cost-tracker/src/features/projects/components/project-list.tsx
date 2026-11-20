@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
-import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
 import {
   ProjectListMetrics,
@@ -30,6 +29,7 @@ import {
   type ProjectListScopeAvailability,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 import type { ProjectVisibility } from "@/lib/ui-preferences/definitions";
 
 interface VisibilityPreference {

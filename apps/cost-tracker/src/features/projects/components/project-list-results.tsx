@@ -60,10 +60,10 @@ import {
   getSortingState,
   isProjectPageSize,
   pushColumnFiltersToUrl,
-  type ProjectListQueryState,
 } from "@/features/projects/components/project-list-filtering";
 import { getProjectListQueryOptions } from "@/features/projects/list-query-options";
 import type { ProjectListState } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 import type { ProjectListRow } from "@/features/projects/types";
 import { Link } from "@/lib/i18n/routing";
 import { writePreference } from "@/lib/ui-preferences/browser";

@@ -7,13 +7,12 @@ import type { AppHref } from "@/app/routes";
 import { AccountMenu } from "@/components/account-menu";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import type { UserSummary } from "@/features/authentication/types";
 
-type AppNavigationProps = {
-  email?: string;
-  name?: string;
+interface AppNavigationProps extends Partial<UserSummary> {
   brandHref?: AppHref;
   actions?: ReactNode;
-};
+}
 
 export function AppNavigation({
   email,

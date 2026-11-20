@@ -3,7 +3,10 @@ import {
   type EUCountryCode,
 } from "@greendex/config/eu-countries";
 
-export type EUCountryOption = { code: EUCountryCode | ""; label: string };
+interface EUCountryOption {
+  code: EUCountryCode | "";
+  label: string;
+}
 
 function regionNames(locale: string): Intl.DisplayNames | undefined {
   try {

@@ -20,7 +20,7 @@ import type { OrganizationMembershipSummary } from "@/features/organizations/sta
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "@/lib/i18n/routing";
 
-type OrganizationSwitcherProps = {
+interface OrganizationSwitcherProps {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
   activeOrganizationId: string;
   /**
@@ -28,7 +28,7 @@ type OrganizationSwitcherProps = {
    * SidebarMenuButton team-switcher trigger with identical switch behavior.
    */
   layout?: "header" | "sidebar";
-};
+}
 
 /**
  * The single staff Organization switcher (ADR-0015). Lists only the

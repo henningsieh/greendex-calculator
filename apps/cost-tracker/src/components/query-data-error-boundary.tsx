@@ -15,10 +15,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/routing";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 
-type ProjectDataErrorBoundaryProps = {
+interface ProjectDataErrorBoundaryProps {
   children: React.ReactNode;
   resource: string;
-};
+}
 
 type ProjectDataErrorFallbackProps = FallbackProps & {
   resource: string;

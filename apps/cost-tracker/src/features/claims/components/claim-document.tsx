@@ -82,7 +82,7 @@ export function PayoutAccountLines({
   );
 }
 
-export type ClaimCostRow = Pick<
+type ClaimCostRow = Pick<
   typeof travelCostEntriesTable.$inferSelect,
   "id" | "amountEur"
 > & {

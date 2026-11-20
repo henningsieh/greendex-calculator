@@ -4,8 +4,8 @@ import { useTranslations } from "@greendex/i18n/client";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import type { ProjectListScopeAvailability } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 
 /**
  * Hosted / Partner scope tabs. Above the Suspense boundary on purpose:

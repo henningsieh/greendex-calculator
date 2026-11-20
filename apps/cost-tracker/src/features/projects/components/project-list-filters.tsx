@@ -20,7 +20,6 @@ import {
   isProjectPageSize,
   PROJECT_FILTER_IDS,
   pushColumnFiltersToUrl,
-  type ProjectListQueryState,
 } from "@/features/projects/components/project-list-filtering";
 import { ProjectListPartnerFilter } from "@/features/projects/components/project-list-partner-filter";
 import {
@@ -29,6 +28,7 @@ import {
   PROJECT_SETTLEMENT_FILTERS,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 
 /**
  * Filter controls above the Suspense boundary: search, selects, and date

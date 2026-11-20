@@ -24,6 +24,7 @@ import {
   ClaimCostTable,
   PayoutAccountLines,
 } from "@/features/claims/components/claim-document";
+import type { ClaimDecisionInput } from "@/features/claims/types";
 import { authClient } from "@/lib/auth-client";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -34,11 +35,7 @@ type ReviewDetails = Outputs["claims"]["getReviewDetails"];
 // The offered decisions come from the shared Claim lifecycle; this surface
 // keeps presentation copy only, never its own status-to-action rule.
 type Decision = ClaimPanelAction;
-type DecisionInput = {
-  partnershipId: string;
-  reason?: string;
-  amountEur?: string;
-};
+type DecisionInput = ClaimDecisionInput;
 
 const decisionDefinitions: Record<
   Decision,

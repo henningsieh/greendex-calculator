@@ -14,11 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import {
   getProjectPartnerFilterQueryOptions,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 
 export function ProjectListPartnerFilter({
   state,
