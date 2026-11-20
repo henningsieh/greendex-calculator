@@ -20,6 +20,7 @@ import {
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -373,19 +374,20 @@ export function ProjectWorkspace({
       data-relationship={project.relationship}
       data-testid="project-workspace"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <h1 className="min-w-0 text-3xl font-semibold tracking-tight wrap-anywhere">
-            {project.name}
-          </h1>
-          {project.archived && (
-            <Badge variant="secondary" data-testid="project-archived-status">
-              {t("archived")}
-            </Badge>
-          )}
-        </div>
-        <ProjectLifecycleActions projectId={project.id} />
-      </header>
+      <ProtectedPageHeader
+        eyebrow={isHosted ? t("hostedProject") : t("partnerProject")}
+        title={project.name}
+        rightButton={
+          <div className="flex flex-wrap items-center gap-3">
+            {project.archived && (
+              <Badge variant="secondary" data-testid="project-archived-status">
+                {t("archived")}
+              </Badge>
+            )}
+            <ProjectLifecycleActions projectId={project.id} />
+          </div>
+        }
+      />
       <section
         aria-label={t("details")}
         className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3"

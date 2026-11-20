@@ -116,6 +116,9 @@ describe("Project workspace", () => {
     renderWorkspace();
 
     expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1 }).previousElementSibling,
+    ).toHaveClass("type-ember-eyebrow");
     expect(screen.getByTestId("project-workspace")).toHaveAttribute(
       "data-project-id",
       "project-1",

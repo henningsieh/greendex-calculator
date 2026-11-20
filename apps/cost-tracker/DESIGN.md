@@ -230,7 +230,7 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 
 ### Project Workspace
 
-- The Project name uses the register's page-title scale; the breadcrumb carries the Hosted/Partner context. Archived status stays beside the title.
+- Use the shared `ProtectedPageHeader` on the register and detail pages. Keep its orientation eyebrow above the page title: **Project workspace** on the register and **Hosted Project** or **Partner Project** on the detail page. Breadcrumbs complement the eyebrow; they do not replace it. Archived status remains visible in the detail header.
 - Schedule and location lead into a compact, divided metric strip with sentence-case labels and tabular values. The Hosted Participants link sits with the Project facts and wraps below them on narrow screens.
 - The partnership section contains the relevant work: Hosted rows pair each Partner with Claim status and available review links; the Partner view groups Hosting identity, assignment dates, and links to its own workspaces.
 
