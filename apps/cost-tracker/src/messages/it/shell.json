@@ -16,7 +16,7 @@
       "projects": "Projects",
       "partnerOrganizations": "Partner",
       "organization": "Organization",
-      "workspace": "Workspace",
+      "workspace": "Area di lavoro",
       "manage": "Administration",
       "claimReview": "Claim review"
     },
@@ -261,7 +261,7 @@
       "claimWorkspace": "Claim",
       "userSettings": "User settings",
       "claimReview": "Claim review",
-      "hostedProject": "Hosted Project",
+      "hostedProject": "Progetto ospitato",
       "partnerProject": "Partner Project"
     }
   }

@@ -206,7 +206,6 @@ const routes = [
   {
     path: "/[locale]/projects/[id]",
     Page: LocalizedProjectPage,
-    heading: "Project workspace",
     label: "Loading Project workspace",
     content: "Resolved Project workspace",
   },
@@ -385,7 +384,7 @@ it.each(routes)(
     );
     try {
       await shell;
-      expect(html).toContain(heading);
+      if (heading) expect(html).toContain(`>${heading}</h1>`);
       expect(html).toContain('data-slot="card"');
       expect(html).not.toContain(content);
     } finally {

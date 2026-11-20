@@ -73,7 +73,7 @@
       "title": "Claim review",
       "contextLoading": "Loading context",
       "contextUnavailable": "Claim context unavailable",
-      "queueEyebrow": "Workspace"
+      "queueEyebrow": "Area di lavoro"
     },
     "submission": {
       "title": "Submission",

@@ -9,7 +9,7 @@
     },
     "manager": {
       "assignExisting": "Assign existing organization",
-      "hostedProject": "Hosted Project",
+      "hostedProject": "Progetto ospitato",
       "partnerOrganization": "Partner",
       "current": "Partnerships by project",
       "none": "No partners are assigned yet. Invite a partner or assign an existing organization to get started.",
@@ -29,7 +29,7 @@
     "setup": {
       "title": "Partner Setup Link",
       "description": "Share this recipient-bound link privately. It does not grant Hosting Organization access.",
-      "hostedProject": "Hosted Project",
+      "hostedProject": "Progetto ospitato",
       "recipientEmail": "Recipient email",
       "existingLinks": "Pending invitations",
       "existingLinksHint": "A link works for one email address and expires after 7 days. Only a freshly created link can be copied — secrets are never stored.",
@@ -87,7 +87,7 @@
     },
     "partnerOrganizations": {
       "page": {
-        "eyebrow": "Workspace",
+        "eyebrow": "Area di lavoro",
         "title": "Partner",
         "description": "Invite a new partner with a setup link, or assign an organization you already work with. Each partnership connects one hosted project with one partner."
       },

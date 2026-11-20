@@ -1,7 +1,7 @@
 {
   "projects": {
     "page": {
-      "eyebrow": "Workspace",
+      "eyebrow": "Werkruimte",
       "title": "Projects",
       "description": "Review Projects hosted by or assigned to your active Organization."
     },
@@ -126,7 +126,7 @@
       "assignedLabel": "Assigned:",
       "assignmentUpdated": "Assignment updated:",
       "openClaim": "Claim",
-      "hostedProject": "Hosted Project",
+      "hostedProject": "Gehost project",
       "partnerProject": "Partner Project",
       "noClaim": "Geen declaratie",
       "completing": "Afronden…",
