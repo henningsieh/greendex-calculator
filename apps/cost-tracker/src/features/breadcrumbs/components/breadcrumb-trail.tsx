@@ -12,11 +12,11 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Link } from "@/lib/i18n/routing";
 
-export type BreadcrumbTrailItem = {
+interface BreadcrumbTrailItem {
   label: string;
   href?: AppHref;
   testId?: string;
-};
+}
 
 /**
  * Server-rendered breadcrumb trail for the shell header. Labels are static

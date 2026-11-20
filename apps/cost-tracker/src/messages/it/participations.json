@@ -180,6 +180,9 @@
         "description": "Rimuovere la Partecipazione al Progetto di {participant}? Questa rimozione è irreversibile.",
         "execute": "Rimuovi Partecipazione al Progetto"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }

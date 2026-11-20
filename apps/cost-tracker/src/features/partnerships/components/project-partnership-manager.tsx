@@ -38,10 +38,10 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
 
-export type PartnershipFeedback = {
+interface PartnershipFeedback {
   message: React.ReactNode;
   status: "success" | "error";
-};
+}
 
 function mutationMessage(error: unknown) {
   return <ErrorPresentation error={error} />;
@@ -176,7 +176,7 @@ export function ProjectPartnershipManager({
       {partnerships.length === 0 ? (
         <Empty data-testid="partnerships-empty" variant="outlined">
           <EmptyMedia variant="icon">
-            <EntityIcon entity="partnerOrganization" className="size-5" />
+            <EntityIcon entity="partner" className="size-5" />
           </EmptyMedia>
           <EmptyHeader>
             <EmptyDescription>{t("manager.none")}</EmptyDescription>

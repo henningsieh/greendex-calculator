@@ -180,6 +180,9 @@
         "description": "¿Eliminar la participación de {participant} en el Proyecto? Esta acción no se puede deshacer.",
         "execute": "Eliminar participación"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }

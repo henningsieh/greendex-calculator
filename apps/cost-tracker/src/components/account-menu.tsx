@@ -17,20 +17,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
+import type { UserSummary } from "@/features/authentication/types";
 import { usePathname } from "@/lib/i18n/routing";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
-type AccountMenuProps = {
-  email: string;
-  name: string;
+interface AccountMenuProps extends UserSummary {
   compact?: boolean;
   /** `sidebar` mirrors the Organization switcher's collapsed-rail behaviour. */
   layout?: "header" | "sidebar";
   /** Stock Button variant; layout-only className may be added separately. */
   variant?: ComponentProps<typeof Button>["variant"];
   className?: string;
-};
+}
 
 function getInitials(name: string) {
   const initials = name

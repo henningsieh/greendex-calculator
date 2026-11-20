@@ -18,9 +18,9 @@ import {
 } from "@/lib/tanstack-react-query/hydration";
 import { readProjectVisibility } from "@/lib/ui-preferences/server";
 
-type ProjectListSectionProps = {
+interface ProjectListSectionProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+}
 
 /**
  * Presentation-only staff check for the scope-less Empty: members with staff

@@ -302,10 +302,10 @@ async function JourneyLedger() {
   );
 }
 
-type ValuePointProps = {
+interface ValuePointProps {
   description: string;
   title: string;
-};
+}
 
 function ValuePoint({ description, title }: ValuePointProps) {
   return (
@@ -318,11 +318,11 @@ function ValuePoint({ description, title }: ValuePointProps) {
   );
 }
 
-type ProcessStepProps = {
+interface ProcessStepProps {
   description: string;
   number: string;
   title: string;
-};
+}
 
 function ProcessStep({ description, number, title }: ProcessStepProps) {
   return (

@@ -67,7 +67,9 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 type SetupLinkFormValues = z.infer<typeof CreateSetupLinkInputSchema>;
 
-type SetupFeedback = { error: unknown };
+interface SetupFeedback {
+  error: unknown;
+}
 
 function SetupStatus({ error }: SetupFeedback) {
   const t = useTranslations("partnerships.setup");

@@ -16,7 +16,6 @@ import {
   partnershipClaimPath,
   partnershipClaimReviewPath,
   partnershipParticipantsPath,
-  projectParticipantsPath,
 } from "@/app/paths";
 import {
   StatCell,
@@ -49,6 +48,7 @@ import {
   isClaimAwaitingReview,
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
+import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   PartnershipActions,
   PartnershipShortcutLinks,
@@ -56,6 +56,7 @@ import {
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { ProjectLifecycleActions } from "@/features/projects/components/project-lifecycle-actions";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
+import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
 import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
@@ -98,14 +99,6 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   );
 }
 
-type AssignedPartner = {
-  id: string;
-  organizationId: string;
-  organizationName: string;
-  claimStatus: ClaimStatus | null;
-  assignedAt: Date;
-};
-
 /**
  * Assigned Partners card (hosted view). Owns the partnership dialogs in its
  * header toolbar — secondary outline openers next to the count badge — so
@@ -117,7 +110,7 @@ function AssignedPartnersCard({
   archived,
   showDialogs,
 }: {
-  partners: readonly AssignedPartner[];
+  partners: readonly ProjectPartnershipSummary[];
   projectId: string;
   archived: boolean;
   showDialogs: boolean;
@@ -143,7 +136,7 @@ function AssignedPartnersCard({
       <CardContent className="space-y-5">
         <div className="flex items-center justify-start gap-2">
           <Badge variant="outline">
-            <EntityIcon entity="partnerOrganization" className="size-3" />
+            <EntityIcon entity="partner" className="size-3" />
             {t("partnersCount", { count: partners.length })}
           </Badge>
         </div>
@@ -154,7 +147,7 @@ function AssignedPartnersCard({
                 aria-hidden="true"
                 className="size-7 text-muted-foreground"
               />
-              {/* <EntityIcon entity="partnerOrganization" /> */}
+              {/* <EntityIcon entity="partner" /> */}
             </EmptyMedia>
             <EmptyHeader>
               <EmptyDescription>
@@ -498,15 +491,7 @@ export function ProjectWorkspace({
         {project.relationship === "hosted" && (
           <div className="flex shrink-0 items-center">
             {/* Navigation, not an action: typographic link with an arrow. */}
-            <Link
-              className={buttonVariants({ variant: "link", size: "sm" })}
-              href={projectParticipantsPath(project.id)}
-              data-testid="hosted-participants"
-            >
-              <UsersIcon aria-hidden="true" />
-              {t("participants")}
-              <ArrowUpRightIcon aria-hidden="true" />
-            </Link>
+            <ParticipantsLink density="default" projectId={project.id} />
           </div>
         )}
       </section>

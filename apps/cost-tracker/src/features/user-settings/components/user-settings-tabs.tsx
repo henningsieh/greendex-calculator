@@ -3,13 +3,11 @@
 import { useTranslations } from "@greendex/i18n/client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { UserSummary } from "@/features/authentication/types";
 import { EditNameForm } from "@/features/user-settings/components/edit-name-form";
 import { ThemeSettings } from "@/features/user-settings/components/theme-settings";
 
-type UserSettingsTabsProps = {
-  email: string;
-  name: string;
-};
+type UserSettingsTabsProps = UserSummary;
 
 export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
   const t = useTranslations("settings.tabs");
@@ -51,11 +49,11 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
   );
 }
 
-type SettingsPanelProps = {
+interface SettingsPanelProps {
   children: React.ReactNode;
   description: string;
   title: string;
-};
+}
 
 function SettingsPanel({ children, description, title }: SettingsPanelProps) {
   return (

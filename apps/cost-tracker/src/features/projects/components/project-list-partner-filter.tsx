@@ -2,9 +2,9 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { ChevronDownIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -14,11 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import {
   getProjectPartnerFilterQueryOptions,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 
 export function ProjectListPartnerFilter({
   state,
@@ -43,29 +43,40 @@ export function ProjectListPartnerFilter({
 
   return (
     <div
-      className="flex min-w-0 flex-col gap-2 sm:col-span-2"
+      className="flex min-w-0 flex-col gap-2"
       data-testid="project-partner-filter"
     >
-      <Label htmlFor="project-partner-filter-trigger">
+      <Label
+        htmlFor="project-partner-filter-trigger"
+        id="project-partner-filter-label"
+      >
         {t("partnerOrganizations")}
       </Label>
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={!isHydrated}
           render={
-            <Button
+            <button
               id="project-partner-filter-trigger"
               type="button"
-              variant="outline"
+              aria-labelledby="project-partner-filter-label"
               data-testid="project-partner-filter-menu"
-              aria-describedby="project-partner-filter-help"
+              className="flex h-10 w-full min-w-0 items-center justify-between gap-1.5 rounded-xl border border-input bg-input/30 px-3 py-2 text-base font-normal whitespace-nowrap transition-[color,box-shadow,background-color] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
             />
           }
         >
-          {t("selectPartners")}
+          <span className="min-w-0 flex-1 truncate text-left">
+            {t("selectPartners")}
+          </span>
           {state.partnerOrganizationIds.length > 0 && (
-            <span>{state.partnerOrganizationIds.length}</span>
+            <span className="shrink-0 text-muted-foreground tabular-nums">
+              {state.partnerOrganizationIds.length}
+            </span>
           )}
+          <ChevronDownIcon
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-muted-foreground"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuGroup>
@@ -100,12 +111,6 @@ export function ProjectListPartnerFilter({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <p
-        id="project-partner-filter-help"
-        className="text-xs text-muted-foreground"
-      >
-        {t("partnerFilterHelp")}
-      </p>
     </div>
   );
 }

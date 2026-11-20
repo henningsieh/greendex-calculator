@@ -215,6 +215,7 @@ async function openPartnerParticipants(page: Page, projectName: string) {
     .locator(
       `a[href$="/projects/${projectName === names.main ? ids.main : ids.other}"]`,
     )
+    .filter({ visible: true })
     .click();
   await page.locator('a[href*="/partnerships/"][href$="/participants"]').click();
   await expect(page.getByTestId("project-participations")).toBeVisible();
@@ -855,9 +856,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
     await c.goto("/projects");
-    await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toBeVisible();
+    await expect(
+      c.locator(`a[href$="/projects/${ids.main}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await expect(c.locator(`a[href$="/projects/${ids.other}"]`)).toHaveCount(0);
-    await c.locator(`a[href$="/projects/${ids.main}"]`).click();
+    await c
+      .locator(`a[href$="/projects/${ids.main}"]`)
+      .filter({ visible: true })
+      .click();
     await c.locator('a[href*="/partnerships/"][href$="/participants"]').click();
     await expect(c.getByTestId("project-participations")).toBeVisible();
     // Text-free: membership proven by assertJoined DB proof in this flow (no email copy).

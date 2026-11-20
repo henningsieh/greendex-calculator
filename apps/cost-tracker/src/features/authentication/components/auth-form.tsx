@@ -27,7 +27,7 @@ import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
-type AuthFormProps = {
+interface AuthFormProps {
   mode: "sign-in" | "sign-up";
   returnTo?: string;
   entryContext?: OnboardingDecision["entryContext"];
@@ -35,7 +35,7 @@ type AuthFormProps = {
     OnboardingDecision,
     { nextStep: "authenticate"; entryContext: "organization-invitation" }
   >;
-};
+}
 
 export function AuthForm({
   mode,

@@ -5,10 +5,10 @@ import { StarWreath } from "@/components/brand/star-wreath";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
-type SiteBrandProps = {
+interface SiteBrandProps {
   className?: string;
   href?: AppHref;
-};
+}
 
 /* Header lockup (LOCKED 2026-10-11; spelling corrected in #313): StarWreath (34px) + GreenDex
    (Sans 800, 19px) + Cost Tracker (Mono, 12px, tracking .18em). */

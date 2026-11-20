@@ -368,6 +368,7 @@
    one font trio in :root; every theme inherits both, no per-theme pins.
    These keys must NOT live in @theme inline (inlined values can't vary). */
 @theme {
+  --breakpoint-xs: 30rem;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

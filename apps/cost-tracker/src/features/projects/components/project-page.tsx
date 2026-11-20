@@ -5,9 +5,9 @@ import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
-type ProjectPageProps = {
+interface ProjectPageProps {
   params: Promise<{ id: string }>;
-};
+}
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   await connection();

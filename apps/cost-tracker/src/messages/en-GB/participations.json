@@ -180,6 +180,9 @@
         "description": "Remove the Project Participation for {participant}? This removal cannot be undone.",
         "execute": "Remove Project Participation"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }

@@ -423,25 +423,24 @@ const checkDesignSystemLint = async (): Promise<void> => {
     rootManifest.devDependencies?.[designSystemPlugin],
     `package.json: declare ${designSystemPlugin} as a root devDependency so one version serves the workspace`,
   );
-  const rootLintDesignSystem = rootManifest.scripts?.["lint:design-system"] ?? "";
+  const rootLintCheck = rootManifest.scripts?.["lint:check"] ?? "";
   for (const workspace of designSystemLintWorkspaces) {
     assert(
-      rootLintDesignSystem.includes(workspace) &&
-        rootLintDesignSystem.includes("run lint:design-system"),
-      `package.json: the root \`lint:design-system\` script must fan out to the ${workspace} workspace implementation`,
+      rootLintCheck.includes(workspace) &&
+        rootLintCheck.includes("run lint:check"),
+      `package.json: the root \`lint:check\` script must fan out to the ${workspace} workspace implementation`,
     );
   }
   const costTrackerManifest = (await readJson(
     resolveRoot("apps/cost-tracker/package.json"),
   )) as { scripts?: Record<string, string> };
-  const costTrackerLintDesignSystem =
-    costTrackerManifest.scripts?.["lint:design-system"] ?? "";
+  const costTrackerLintCheck = costTrackerManifest.scripts?.["lint:check"] ?? "";
   assert(
-    costTrackerLintDesignSystem.includes("src") &&
-      !costTrackerLintDesignSystem.includes("--fix") &&
-      !costTrackerLintDesignSystem.includes("-A") &&
-      !costTrackerLintDesignSystem.includes("-D"),
-    "apps/cost-tracker/package.json: keep the focused `lint:design-system` script as a check-only `oxlint src` run so it enforces exactly the shared `.oxlintrc.json` policy, scoped to the enforced app source",
+    costTrackerLintCheck.includes("src") &&
+      !costTrackerLintCheck.includes("--fix") &&
+      !costTrackerLintCheck.includes("-A") &&
+      !costTrackerLintCheck.includes("-D"),
+    "apps/cost-tracker/package.json: keep `lint:check` as a check-only `oxlint src` run enforcing the shared `.oxlintrc.json` policy",
   );
 
   const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {

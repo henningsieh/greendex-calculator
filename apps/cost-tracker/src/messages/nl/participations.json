@@ -180,6 +180,9 @@
         "description": "De Projectdeelname van {participant} verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "execute": "Projectdeelname verwijderen"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }

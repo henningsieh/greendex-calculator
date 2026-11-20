@@ -373,7 +373,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await expect(p.locator(`a[href$="/projects/${ids.project}"]`)).toBeVisible();
+    await expect(
+      p.locator(`a[href$="/projects/${ids.project}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await p.goBack();
     await expect(p).toHaveURL(claimURL);
     const [persisted] = await db
@@ -392,7 +394,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await expect(p.locator(`a[href$="/projects/${ids.project}"]`)).toBeVisible();
+    await expect(
+      p.locator(`a[href$="/projects/${ids.project}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await p.goto(claimURL);
     await submissionState(p);
     await p.reload();

@@ -20,11 +20,11 @@ import type { OrganizationMembershipSummary } from "@/features/organizations/sta
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "@/lib/i18n/routing";
 
-type SelectOrganizationProps = {
+interface SelectOrganizationProps {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
   onSelected?: () => Promise<void>;
   signOutDestination?: AppHref;
-};
+}
 
 export function SelectOrganization({
   organizations,

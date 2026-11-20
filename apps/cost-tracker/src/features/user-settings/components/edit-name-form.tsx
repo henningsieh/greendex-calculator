@@ -17,15 +17,13 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
+import type { UserSummary } from "@/features/authentication/types";
 import type { EditNameValues } from "@/features/user-settings/types";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
-type EditNameFormProps = {
-  email: string;
-  name: string;
-};
+type EditNameFormProps = UserSummary;
 
 export function EditNameForm({ email, name }: EditNameFormProps) {
   const router = useRouter();

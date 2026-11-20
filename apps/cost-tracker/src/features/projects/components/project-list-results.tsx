@@ -26,9 +26,9 @@ import {
   RefreshCwIcon,
   XIcon,
 } from "lucide-react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 
-import { projectParticipantsPath, projectPath } from "@/app/paths";
+import { projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -53,16 +53,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   getProjectColumnFilters,
   getProjectSortMode,
   getSortingState,
   isProjectPageSize,
   pushColumnFiltersToUrl,
-  type ProjectListQueryState,
 } from "@/features/projects/components/project-list-filtering";
 import { getProjectListQueryOptions } from "@/features/projects/list-query-options";
 import type { ProjectListState } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 import type { ProjectListRow } from "@/features/projects/types";
 import { Link } from "@/lib/i18n/routing";
 import { writePreference } from "@/lib/ui-preferences/browser";
@@ -70,6 +71,7 @@ import {
   projectVisibilityPreference,
   type ProjectVisibility,
 } from "@/lib/ui-preferences/definitions";
+import { cn } from "@/lib/utils";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -103,7 +105,7 @@ function SortHeader({
         : ArrowDownUpIcon;
   return (
     <Button
-      className="-ml-2 h-auto min-h-9 max-w-full flex-wrap justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-normal normal-case"
+      className="-ml-2 h-auto min-h-9 justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-nowrap normal-case"
       aria-label={
         direction
           ? t("sortHeaderActive", {
@@ -120,10 +122,10 @@ function SortHeader({
       variant="ghost"
       onClick={onClick}
     >
-      <span className="min-w-0 wrap-anywhere">{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
       <Icon aria-hidden="true" data-icon="inline-end" />
       {direction && (
-        <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-[10px] tabular-nums">
+        <span className="flex size-4 items-center justify-center rounded-sm bg-secondary text-xs tabular-nums">
           {priority + 1}
         </span>
       )}
@@ -336,13 +338,11 @@ export function ResolvedProjectListResults({
               enableSorting: false,
               header: t("participants"),
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
-                <Link
-                  className="link-prose"
-                  href={projectParticipantsPath(row.original.id)}
-                  data-testid={`project-participants-${row.original.id}`}
-                >
-                  {t("viewParticipants")}
-                </Link>
+                <ParticipantsLink
+                  density="compact"
+                  projectId={row.original.id}
+                  testId={`project-participants-${row.original.id}`}
+                />
               ),
             } satisfies ColumnDef<
               typeof projectListTableFeatures,
@@ -410,6 +410,47 @@ export function ResolvedProjectListResults({
     startDate: t("startDate"),
     endDate: t("endDate"),
   };
+  const cellLabels: Record<string, string> = {
+    settlement: t("settlementFilter"),
+    startDate: t("startDate"),
+    endDate: t("endDate"),
+    location: t("location"),
+    participants: t("participants"),
+  };
+  const hasActiveFilters = Boolean(
+    state.search ||
+    state.dateFrom ||
+    state.dateTo ||
+    state.partnerOrganizationIds.length ||
+    state.archive !== "active" ||
+    state.settlement !== "all",
+  );
+  const rows = table.getRowModel().rows;
+  const emptyState = (
+    <div className="flex flex-col items-center gap-3">
+      <span>{t("noMatch")}</span>
+      {hasActiveFilters && (
+        <Button
+          onClick={() =>
+            void setUrlState({
+              archive: null,
+              cursor: null,
+              dateFrom: null,
+              dateTo: null,
+              partnerOrganizationIds: null,
+              search: null,
+              settlement: null,
+            })
+          }
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {t("clearFilters")}
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -417,14 +458,7 @@ export function ResolvedProjectListResults({
       data-project-count={whole.projectCount}
       data-filtered-project-count={filtered.projectCount}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span aria-live="polite">
-          {isFetching
-            ? t("refreshing")
-            : t("updatedAt", {
-                time: dateFormat.format(dataUpdatedAt, "time.seconds"),
-              })}
-        </span>
+      <div className="flex flex-col items-end justify-end gap-1 text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger
@@ -645,6 +679,7 @@ export function ResolvedProjectListResults({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
+            aria-label={t("refresh")}
             disabled={isFetching}
             onClick={() => void refetch()}
             size="sm"
@@ -655,105 +690,205 @@ export function ResolvedProjectListResults({
               aria-hidden="true"
               className={isFetching ? "animate-spin" : undefined}
             />
-            {t("refresh")}
+            <span className="hidden @lg/content:inline">{t("refresh")}</span>
           </Button>
         </div>
       </div>
 
-      <p
-        className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
-        aria-label={t("sortOrder")}
-      >
-        {sorting.map((criterion, index) => (
-          <span key={criterion.id}>
-            {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
-            <span className="sr-only">
-              {criterion.desc ? t("descending") : t("ascending")}
+      <div className="flex items-center justify-between gap-x-3 gap-y-1">
+        <p
+          className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
+          aria-label={t("sortOrder")}
+        >
+          {sorting.map((criterion, index) => (
+            <span className="inline-flex items-center" key={criterion.id}>
+              {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
+              <span className="sr-only">
+                {criterion.desc ? t("descending") : t("ascending")}
+              </span>
+              <Button
+                aria-label={t("removeSort", {
+                  field: sortLabels[criterion.id] ?? criterion.id,
+                })}
+                className="text-muted-foreground"
+                data-testid={`sort-summary-remove-${criterion.id}`}
+                disabled={sorting.length === 1}
+                onClick={() =>
+                  table.setSorting(sorting.filter((_, i) => i !== index))
+                }
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <XIcon aria-hidden="true" />
+              </Button>
             </span>
+          ))}
+        </p>
+
+        <p className="hidden flex-nowrap justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground @lg/content:inline">
+          <span aria-live="polite">
+            {isFetching
+              ? t("refreshing")
+              : t("updatedAt", {
+                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
+                })}
           </span>
-        ))}
-      </p>
-      <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-        <Table className="table-fixed" aria-label={t("label")}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={
-                      header.column.id === "name"
-                        ? "w-auto"
-                        : "w-[16%] px-2 tracking-normal wrap-anywhere whitespace-normal normal-case"
-                    }
-                    data-testid={`project-column-header-${header.column.id}`}
-                    aria-sort={
-                      sorting[0]?.id === header.column.id
-                        ? sorting[0].desc
-                          ? "descending"
-                          : "ascending"
-                        : undefined
-                    }
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  className="h-28 text-center"
-                  colSpan={table.getVisibleLeafColumns().length}
-                >
-                  {t("noMatch")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow data-project-id={row.id} key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="min-w-0 overflow-hidden px-2 text-xs wrap-anywhere whitespace-normal"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        </p>
       </div>
 
-      <div className="flex justify-end gap-2">
-        {data.previousCursor && (
+      {/* Desktop: dense table. */}
+      <div className="hidden @4xl/content:block">
+        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+          <Table aria-label={t("label")}>
+            <TableHeader className="bg-muted/40">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={
+                        header.column.id === "name"
+                          ? "w-auto whitespace-nowrap"
+                          : "w-[15%] px-2 tracking-normal whitespace-nowrap normal-case"
+                      }
+                      data-testid={`project-column-header-${header.column.id}`}
+                      aria-sort={
+                        sorting[0]?.id === header.column.id
+                          ? sorting[0].desc
+                            ? "descending"
+                            : "ascending"
+                          : undefined
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className="h-28 text-center"
+                    colSpan={table.getVisibleLeafColumns().length}
+                  >
+                    {emptyState}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => (
+                  <TableRow data-project-id={row.id} key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          "min-w-0 overflow-hidden px-2 text-xs wrap-anywhere",
+                          (cell.column.id === "startDate" ||
+                            cell.column.id === "endDate") &&
+                            "whitespace-nowrap tabular-nums",
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Below xl: one card per Project. */}
+      <div className="grid gap-3 @4xl/content:hidden">
+        {rows.length === 0 ? (
+          <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
+        ) : (
+          rows.map((row) => {
+            const [titleCell, ...cellList] = row.getVisibleCells();
+            if (!titleCell) return null;
+            return (
+              <article
+                className="rounded-xl border bg-card px-4 py-3.5"
+                data-project-id={row.id}
+                key={row.id}
+              >
+                <div className="text-sm font-medium">
+                  <Link
+                    className="block wrap-anywhere link-prose"
+                    data-testid={`project-link-${row.original.id}-card`}
+                    href={projectPath(row.original.id)}
+                  >
+                    {row.original.name}
+                  </Link>
+                </div>
+                <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
+                  {cellList.map((cell) => (
+                    <Fragment key={cell.id}>
+                      <dt className="text-xs text-muted-foreground">
+                        {cellLabels[cell.column.id]}
+                      </dt>
+                      <dd className="min-w-0 text-right text-xs wrap-anywhere">
+                        {cell.column.id === "participants" ? (
+                          <ParticipantsLink
+                            density="compact"
+                            projectId={row.original.id}
+                            testId={`project-participants-${row.original.id}-card`}
+                          />
+                        ) : (
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )
+                        )}
+                      </dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {t("showingCount", {
+            shown: data.rows.length,
+            total: filtered.projectCount,
+          })}
+        </p>
+        <div className="flex gap-2">
+          {data.previousCursor && (
+            <Button
+              onClick={() => table.previousPage()}
+              data-testid="previous-project-page"
+              type="button"
+              variant="outline"
+            >
+              {t("previousPage")}
+            </Button>
+          )}
           <Button
-            onClick={() => table.previousPage()}
-            data-testid="previous-project-page"
+            disabled={!data.nextCursor}
+            onClick={() => table.nextPage()}
+            data-testid="next-project-page"
             type="button"
             variant="outline"
           >
-            {t("previousPage")}
+            {t("nextPage")}
           </Button>
-        )}
-        <Button
-          disabled={!data.nextCursor}
-          onClick={() => table.nextPage()}
-          data-testid="next-project-page"
-          type="button"
-          variant="outline"
-        >
-          {t("nextPage")}
-        </Button>
+        </div>
       </div>
     </div>
   );

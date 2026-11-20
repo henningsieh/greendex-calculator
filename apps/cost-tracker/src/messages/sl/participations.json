@@ -180,6 +180,9 @@
         "description": "Odstraniti udeležbo osebe {participant} v projektu? Tega dejanja ni mogoče razveljaviti.",
         "execute": "Odstrani udeležbo v projektu"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }

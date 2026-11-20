@@ -1,11 +1,10 @@
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
-import type { UseQueryStatesReturn } from "nuqs";
 
 import {
-  projectListParsers,
   PROJECT_PAGE_SIZES,
   DEFAULT_PROJECT_SORT,
 } from "@/features/projects/list-query-options";
+import type { ProjectListQueryState } from "@/features/projects/types";
 import { ProjectSortOrderSchema } from "@/features/projects/validation-schemas";
 
 export const PROJECT_FILTER_IDS = {
@@ -14,10 +13,6 @@ export const PROJECT_FILTER_IDS = {
   name: "name",
   partnerOrganizationIds: "partnerOrganizationIds",
 } as const;
-
-export type ProjectListQueryState = UseQueryStatesReturn<
-  typeof projectListParsers
->;
 
 export function getProjectColumnFilters({
   dateFrom,

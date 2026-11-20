@@ -11,9 +11,11 @@ export async function projectLink(page: Page, name: string): Promise<Locator> {
     .from(projectsTable)
     .where(eq(projectsTable.name, name));
   expect(project).toBeDefined();
-  return page.locator(
-    `a[href$="/projects/${project!.id}"], a[href*="/projects/${project!.id}?"]`,
-  );
+  return page
+    .locator(
+      `a[href$="/projects/${project!.id}"], a[href*="/projects/${project!.id}?"]`,
+    )
+    .filter({ visible: true });
 }
 
 export async function staffRow(page: Page, userId: string): Promise<Locator> {

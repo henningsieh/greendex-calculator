@@ -1,10 +1,10 @@
-type ProtectedPageHeaderProps = {
+interface ProtectedPageHeaderProps {
   eyebrow: string;
   title: string;
   /** A string or a streamed node (the shell renders it inside one paragraph). */
   description?: React.ReactNode;
   rightButton?: React.ReactNode;
-};
+}
 
 export default function ProtectedPageHeader({
   eyebrow,
