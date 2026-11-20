@@ -1,10 +1,20 @@
 // Test setup file
 // This file runs before all tests
 
-import { vi } from "vitest";
+import { afterAll, vi } from "vitest";
 
 // Tell React that this test environment supports act().
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// With `isolate: false`, module state and mocks survive a file boundary.
+// Clearing the registry after each file gives the next file a fresh module
+// graph without spawning a new process per file.
+afterAll(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  vi.resetModules();
+});
 
 // Environment variables are loaded in global-setup.ts
 
