@@ -49,7 +49,8 @@ export const openapiHandler = new OpenAPIHandler(router, {
     }),
   ],
   interceptors: [
-    async ({ procedure, request, next }) => {
+    async (options) => {
+      const { procedure, request } = options;
       const route = getOpenAPIMeta(procedure);
       if (
         route?.method === "PATCH" &&
@@ -81,7 +82,7 @@ export const openapiHandler = new OpenAPIHandler(router, {
         }
         request.resolveBody = async () => body;
       }
-      return next();
+      return options.next();
     },
     onError((error) => {
       const isParsingError = error instanceof SyntaxError;
