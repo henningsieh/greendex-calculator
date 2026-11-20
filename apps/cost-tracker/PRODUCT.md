@@ -12,7 +12,7 @@ Hosting-side staff and partner-side coordinators are co-primary; participants ar
 
 - **Hosting Organization staff** — Organization Owners, Organization Admins, and explicitly assigned Hosting-side Project Coordinators. They run projects day to day, manage Project Partnerships, review/approve/reject Claims, record payment, and archive/reopen projects.
 - **Partner-side Project Coordinators** — set up their Project Partnership, select the Payout Account, onboard participants via Participant Invitations or Registration Links, record Participant Journeys, and prepare, correct, and submit their partnership's Claim.
-- **Participants** — Users holding the `participant` role in the Hosting Organization. They accept the Participant Agreement, join through an entry point, and supply the journey their funding is based on. They never create, edit, or submit Claim data.
+- **Participants** — people viewed through their Project Participation in a specific Project. Participant-facing access requires their User to hold the `participant` role in the Hosting Organization; that Organization-level role is distinct from their involvement in the Project. They accept the Participant Agreement, join through an entry point, and supply the journey their funding is based on. They never create, edit, or submit Claim data.
 
 Success means every Project Partnership ends in a paid or rejected Claim and the project archives with a complete, traceable record: correct, auditable payouts with minimal correction loops. No quantitative success metric is established (open).
 

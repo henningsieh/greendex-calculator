@@ -149,7 +149,7 @@ Three self-sufficient themes, no cross-theme inheritance: **Midnight** (ground #
 
 ## Layout
 
-One shell holds every protected view: centered content at `max-w-7xl` (1280px), horizontal padding 20px on phones, 34px on tablets, 40px on desktops, vertical rhythm 24–32px. Forms and filters use responsive grids (single column on phones, up to four across on desktop); the project register keeps one flat filter row on desktop and collapses secondary filters behind a `Filters` disclosure with an active-count on phones. Below the `xl` breakpoint (1280px) the dense register table becomes labelled record cards; the sort, filter, and pagination path stays identical. Cards breathe on a 32px desktop / 16px mobile spacing token.
+One shell holds every protected view: centered content at `max-w-7xl` (1280px), horizontal padding 20px on phones, 34px on tablets, 40px on desktops, vertical rhythm 24–32px. Forms and filters use responsive grids (single column on phones, up to four across on desktop); the project register keeps one flat filter row on desktop and collapses secondary filters behind a `Filters` disclosure with an active-count on phones. The register switches through the `@4xl/content` query on the named `@container/content` on `<main>`: below 56rem of container content width the dense register table becomes labelled record cards; the sort, filter, and pagination path stays identical. Cards breathe on a 32px desktop / 16px mobile spacing token.
 
 ### Named Rules
 
@@ -222,7 +222,7 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 
 ### Project Register (signature pattern)
 
-- **Character:** one table, two compositions — dense tabular register on desktop, labelled record cards below 1280px, same data path.
+- **Character:** one table, two compositions — dense tabular register at or above the `@4xl/content` threshold (56rem of `<main>` container content width), labelled record cards below that threshold, same data path.
 - **Desktop:** tinted header row, non-wrapping tabular dates, wide name column, truncation with full titles on hover.
 - **Cards:** each row becomes a bordered card; the name leads as a title row, remaining cells read as label/value pairs from `data-label`.
 - **Footer:** result count ("Showing X of Y") plus pager; the empty state offers a `Clear filters` recovery.

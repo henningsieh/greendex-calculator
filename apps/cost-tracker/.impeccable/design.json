@@ -1,7 +1,7 @@
 {
   "components": [
     {
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: var(--primary); color: var(--primary-foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: #002b85; } .ds-btn-primary:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); } .ds-btn-primary:active { transform: translateY(1px); }",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: var(--primary); color: var(--primary-foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: var(--primary-hover, var(--primary)); } .ds-btn-primary:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); } .ds-btn-primary:active { transform: translateY(1px); }",
       "description": "The affirmative action. Erasmus Blue in light, Ember Amber in dark vibes.",
       "html": "<button class=\"ds-btn-primary\">Approve claim</button>",
       "kind": "button",
