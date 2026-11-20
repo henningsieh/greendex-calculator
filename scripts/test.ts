@@ -1,6 +1,7 @@
 import { execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { globSync, readFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { dirname, resolve } from "node:path";
 import { parseEnv } from "node:util";
 
@@ -32,6 +33,15 @@ function candidateLine(): string {
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
 const modes = ["unit", "integration", "e2e"] as const;
+// Unit files are server-free and isolated per file, so worker count can track
+// the available cores. Integration and E2E stay serial because they share the
+// development database and fixtures. An explicit value keeps shard sizing
+// under the operator's control on larger runners.
+const configuredWorkers = Number(process.env.GREENDEX_TEST_WORKERS);
+const unitWorkers =
+  Number.isInteger(configuredWorkers) && configuredWorkers > 0
+    ? Math.min(8, configuredWorkers)
+    : Math.max(1, Math.min(8, availableParallelism()));
 const filter = process.argv[3];
 const appScope =
   filter === "--app"
@@ -111,10 +121,12 @@ async function vitest(
     [
       "vitest",
       "run",
-      integration ? "--maxWorkers=1" : "--maxWorkers=2",
+      `--maxWorkers=${integration ? 1 : unitWorkers}`,
       ...(!process.stdout.isTTY ? ["--no-color"] : []),
       "--retry=0",
-      ...(integration ? ["--no-file-parallelism", "--isolate"] : []),
+      ...(integration
+        ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
+        : ["--pool=threads"]),
       ...files,
     ],
     { ...environment, NODE_ENV: "test" },
