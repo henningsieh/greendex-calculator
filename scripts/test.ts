@@ -130,7 +130,7 @@ async function vitest(
       "--retry=0",
       ...(integration
         ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
-        : ["--pool=threads", ...(appUnit ? ["--file-parallelism"] : [])]),
+        : ["--pool=threads", ...(appUnit ? ["--file-parallelism=true"] : [])]),
       ...files,
     ],
     {

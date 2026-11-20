@@ -141,7 +141,7 @@ it.concurrent.each([
                 "--retry=0",
                 ...(suite === "integration"
                   ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
-                  : ["--pool=threads", "--file-parallelism"]),
+                  : ["--pool=threads", "--file-parallelism=true"]),
                 suite === "integration"
                   ? "src/service.integration.test.ts"
                   : "src/pure.test.ts",
