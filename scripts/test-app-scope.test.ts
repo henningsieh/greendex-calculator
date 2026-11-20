@@ -1,10 +1,47 @@
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { expect, it } from "vitest";
+
+interface FixtureResult {
+  error?: Error;
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+function runFixture(
+  args: string[],
+  options: {
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    timeout: number;
+  },
+): Promise<FixtureResult> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, {
+      ...options,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8").on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.setEncoding("utf8").on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      resolve({ error, status: null, stdout, stderr });
+    });
+    child.on("close", (status) => {
+      resolve({ status, stdout, stderr });
+    });
+  });
+}
 
 it.concurrent.each([
   ["unit", 0],
@@ -52,8 +89,7 @@ it.concurrent.each([
         resolve(root, "fetch.mjs"),
         'globalThis.fetch = async () => new Response("null");\n',
       );
-      const result = spawnSync(
-        process.execPath,
+      const result = await runFixture(
         [
           "--import",
           fileURLToPath(import.meta.resolve("tsx/esm")),
@@ -74,7 +110,6 @@ it.concurrent.each([
             GREENDEX_TEST_WORKERS: "2",
             FIXTURE_EXIT: String(exit),
           },
-          encoding: "utf8",
           timeout: 15_000,
         },
       );
