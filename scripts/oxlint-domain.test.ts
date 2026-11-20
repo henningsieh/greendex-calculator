@@ -309,6 +309,33 @@ describe("greendex-domain/procedure-input-schema", () => {
 });
 
 describe("greendex-domain/exported-type-location", () => {
+  it.each([
+    ["apps/cost-tracker/src/components/example.tsx", true],
+    ["apps/cost-tracker/src/features/example/components/example.tsx", true],
+    ["apps/calculator/src/components/example.tsx", false],
+    ["apps/calculator/src/features/example/components/example.tsx", false],
+    ["apps/documentation/src/components/example.tsx", false],
+    ["apps/cost-tracker/src/components/ui/example.tsx", false],
+    ["apps/cost-tracker/src/components/example.test.tsx", false],
+  ])("enforces the repository scope for %s", (path, enforced) => {
+    const result = lint({
+      path,
+      source: "export type ExampleProps = { title: string };",
+    });
+    // Ignored UI primitives may exit nonzero because no files remain to lint.
+    if (!path.includes("/components/ui/"))
+      expect(result.status).toBe(enforced ? 1 : 0);
+    expect(byCode(result.diagnostics, exportedType)).toHaveLength(
+      enforced ? 1 : 0,
+    );
+    expect(
+      byCode(
+        result.diagnostics,
+        "greendex-domain(no-handcrafted-component-type)",
+      ),
+    ).toHaveLength(enforced ? 1 : 0);
+  });
+
   it("reports an exported type alias in an implementation module", () => {
     const result = run(
       [
