@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures/artifact-privacy";
+import { expect, test, waitForReactHydration } from "./fixtures/artifact-privacy";
 
 // #390 follow-up: the auth view announces itself by moving focus to its
 // heading, so assistive technology lands in the new content. That announcement
@@ -27,8 +27,9 @@ test("loading the login page never focuses the heading", async ({ page }) => {
   await page.context().clearCookies();
   await page.goto("/login", { waitUntil: "load" });
   await expect(page.getByTestId("email")).toBeVisible();
-  // Grace window for hydration work that starts after network idle.
-  await page.waitForTimeout(5_000);
+  // The focus effect can only run after hydration commits. Waiting for the
+  // hydrated form removes the old five-second fixed grace window.
+  await waitForReactHydration(page, "form");
 
   const observed = await page.evaluate(() => ({
     focusLog: (window as unknown as { __focusLog: string[] }).__focusLog,
