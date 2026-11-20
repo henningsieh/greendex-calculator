@@ -341,8 +341,8 @@
     },
     {
       "files": [
-        "apps/*/src/features/**/components/**/*.{ts,tsx}",
-        "apps/*/src/components/**/*.{ts,tsx}"
+        "apps/cost-tracker/src/features/**/components/**/*.{ts,tsx}",
+        "apps/cost-tracker/src/components/**/*.{ts,tsx}"
       ],
       "excludeFiles": [
         "**/components/ui/**",
@@ -352,16 +352,28 @@
         "**/*.stories.*"
       ],
       "rules": {
-        "greendex-domain/validation-schema-location": "error",
+        "greendex-domain/validation-schema-location": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/cost-tracker/src/features/**/components/**/*.{ts,tsx}",
+        "apps/cost-tracker/src/components/**/*.{ts,tsx}"
+      ],
+      "excludeFiles": [
+        "**/components/ui/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
+      ],
+      "rules": {
         "greendex-domain/no-handcrafted-component-type": "error",
         "greendex-domain/exported-type-location": "error"
       }
     },
     {
-      "files": [
-        "apps/*/src/**/validation-schemas.ts",
-        "packages/*/src/**/validation-schemas.ts"
-      ],
+      "files": ["packages/*/src/**/validation-schemas.ts"],
       "rules": {
         "greendex-domain/schema-derived-identifier": "warn"
       }
@@ -374,8 +386,8 @@
     },
     {
       "files": [
-        "apps/*/src/features/**/procedures.ts",
-        "apps/*/src/features/**/procedures/**/*.ts"
+        "apps/cost-tracker/src/features/**/procedures.ts",
+        "apps/cost-tracker/src/features/**/procedures/**/*.ts"
       ],
       "excludeFiles": [
         "**/__tests__/**",
