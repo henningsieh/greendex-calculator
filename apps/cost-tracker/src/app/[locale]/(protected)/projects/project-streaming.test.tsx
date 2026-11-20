@@ -103,6 +103,7 @@ it.each([LocalizedProjectsPage])(
     );
 
     await shell;
+    expect(html).toContain('class="type-ember-eyebrow"');
     expect(html).toMatch(/<h1[^>]*>/);
     expect(html).toContain("Loading Project list");
     expect(html).not.toContain("Hydrated Project list");

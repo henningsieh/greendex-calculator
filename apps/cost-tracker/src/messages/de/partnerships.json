@@ -1,7 +1,7 @@
 {
   "partnerships": {
     "loading": {
-      "partnerOrganizations": "Partnerorganisationen werden geladen",
+      "partnerOrganizations": "Partner werden geladen",
       "projectPartnerships": "Projektpartnerschaften werden geladen"
     },
     "projectOptions": {
@@ -10,9 +10,9 @@
     "manager": {
       "assignExisting": "Bestehende Organisation zuweisen",
       "hostedProject": "Gehostetes Projekt",
-      "partnerOrganization": "Partnerorganisation",
+      "partnerOrganization": "Partner",
       "current": "Partnerschaften nach Projekt",
-      "none": "Noch sind keine Partnerorganisationen zugewiesen. Lade einen Partner ein oder weise eine bestehende Organisation zu.",
+      "none": "Noch sind keine Partner zugewiesen. Lade einen Partner ein oder weise eine bestehende Organisation zu.",
       "assigning": "Wird zugewiesen…",
       "assign": "Zuweisen",
       "cancel": "Abbrechen",
@@ -27,16 +27,16 @@
       "removed": "Projektpartnerschaft entfernt."
     },
     "setup": {
-      "title": "Setup-Link für Partnerorganisation",
+      "title": "Setup-Link für Partner",
       "description": "Teile diesen empfängergebundenen Link privat. Er gewährt keinen Zugriff auf die Hosting-Organisation.",
       "hostedProject": "Gehostetes Projekt",
       "recipientEmail": "E-Mail der empfangenden Person",
       "existingLinks": "Ausstehende Einladungen",
       "existingLinksHint": "Ein Link gilt für eine E-Mail-Adresse und läuft nach 7 Tagen ab. Nur ein frisch erstellter Link kann kopiert werden — Geheimnisse werden nie gespeichert.",
-      "loading": "Setup-Links für Partnerorganisationen werden geladen…",
-      "loadError": "Setup-Links für Partnerorganisationen konnten nicht geladen werden",
+      "loading": "Setup-Links für Partner werden geladen…",
+      "loadError": "Setup-Links für Partner konnten nicht geladen werden",
       "retry": "Erneut versuchen",
-      "empty": "Noch keine Einladungen. Lade eine Partnerorganisation ein, um zu beginnen.",
+      "empty": "Noch keine Einladungen. Lade einen Partner ein, um zu beginnen.",
       "status": "Status",
       "expires": "Läuft ab",
       "action": "Aktion",
@@ -55,10 +55,10 @@
       "created": "Projektpartnerschaft erstellt",
       "selectOrganization": "Wähle deine Organisation, bevor du ihr Projekt öffnest.",
       "useOrganization": "Diese Organisation verwenden",
-      "openPartnerProject": "Partnerprojekt öffnen",
+      "openPartnerProject": "Partnerprojekt",
       "signIn": "Anmelden, um fortzufahren",
       "checking": "Setup-Link wird geprüft…",
-      "partnerSetup": "Partnerorganisation einrichten",
+      "partnerSetup": "Partner einrichten",
       "continueEmail": "Fahre mit der E-Mail-Adresse fort, an die dieser Setup-Link gesendet wurde. Das verbindet deine Organisation mit dem Projekt.",
       "retained": "Organisation beibehalten",
       "retainedDescription": "Deine Organisation ist bereit. Fahre fort, um sie mit dem Projekt zu verbinden. Es wird keine neue Organisation erstellt.",
@@ -87,9 +87,9 @@
     },
     "partnerOrganizations": {
       "page": {
-        "eyebrow": "Projektnetzwerk",
-        "title": "Partnerorganisationen",
-        "description": "Lade neue Partner über einen Setup-Link ein oder weise eine Organisation zu, mit der du bereits arbeitest. Jede Partnerschaft verbindet ein gehostetes Projekt mit einer Partnerorganisation."
+        "eyebrow": "Arbeitsbereich",
+        "title": "Partner",
+        "description": "Lade neue Partner über einen Setup-Link ein oder weise eine Organisation zu, mit der du bereits arbeitest. Jede Partnerschaft verbindet ein gehostetes Projekt mit einem Partner."
       },
       "guide": {
         "title": "So funktioniert die Partnerschaft",
@@ -102,7 +102,7 @@
         "dialogTrigger": "So funktioniert's"
       },
       "tabs": {
-        "label": "Bereiche der Partnerorganisationen",
+        "label": "Bereiche der Partner",
         "partnerships": "Partnerschaften",
         "invitations": "Ausstehende Einladungen"
       }

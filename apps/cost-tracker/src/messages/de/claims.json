@@ -27,11 +27,11 @@
       "empty": "Keine eingereichten Claims zur Prüfung verfügbar."
     },
     "page": {
-      "eyebrow": "Partner-Claim",
-      "title": "Claim-Arbeitsbereich"
+      "eyebrow": "Partnerschaft",
+      "title": "Claim"
     },
     "review": {
-      "eyebrow": "Claim-Prüfung",
+      "eyebrow": "Partnerschaft",
       "sectionLabel": "Claim-Prüfung",
       "bandTitle": "Claim-Prüfung",
       "historyLabel": "Claim-Verlauf",
@@ -56,7 +56,7 @@
       "noJourneys": "Keine Journeys erfasst.",
       "km": "km",
       "noClaim": "Für diese Projektpartnerschaft wurde kein Claim erstellt.",
-      "hostingTitle": "Hosting-Claim-Prüfung",
+      "hostingTitle": "Claim-Prüfung",
       "status": {
         "approved": "Genehmigt · unbezahlt",
         "paid": "Bezahlt",
@@ -70,9 +70,10 @@
       "confirmAction": "{action} für diesen Erstattungsantrag bestätigen.",
       "unavailable": "Nicht verfügbar",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
-      "title": "Claim prüfen",
+      "title": "Claim-Prüfung",
       "contextLoading": "Kontext wird geladen",
-      "contextUnavailable": "Claim-Kontext nicht verfügbar"
+      "contextUnavailable": "Claim-Kontext nicht verfügbar",
+      "queueEyebrow": "Arbeitsbereich"
     },
     "submission": {
       "title": "Einreichung",

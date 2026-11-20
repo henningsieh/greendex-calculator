@@ -14,10 +14,10 @@
     "nav": {
       "primaryLabel": "Primary navigation",
       "projects": "Projects",
-      "partnerOrganizations": "Partner organizations",
+      "partnerOrganizations": "Partnerji",
       "organization": "Organization",
-      "workspace": "Workspace",
-      "manage": "Manage",
+      "workspace": "Delovni prostor",
+      "manage": "Administration",
       "claimReview": "Claim review"
     },
     "account": {
@@ -106,7 +106,7 @@
         },
         "partners": {
           "title": "Partners stay aligned",
-          "description": "Hosting and Partner Organizations see one project-specific record."
+          "description": "Hosting Organizations and Partners see one project-specific record."
         }
       },
       "cta": {
@@ -255,13 +255,13 @@
     "crumbs": {
       "projectDetails": "Project details",
       "partnership": "Partnership",
-      "participants": "Participants",
-      "participantDetails": "Participant details",
-      "claimReviews": "Claim reviews",
-      "claimWorkspace": "Claim workspace",
+      "participants": "Participations",
+      "participantDetails": "Participation details",
+      "claimReviews": "Claim review",
+      "claimWorkspace": "Claim",
       "userSettings": "User settings",
-      "claimReview": "Review claim",
-      "hostedProject": "Hosted Project",
+      "claimReview": "Claim review",
+      "hostedProject": "Gostovani projekt",
       "partnerProject": "Partner Project"
     }
   }

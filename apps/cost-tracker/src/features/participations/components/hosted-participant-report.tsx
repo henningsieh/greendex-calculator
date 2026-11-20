@@ -16,10 +16,6 @@ import type { Outputs } from "@/lib/orpc/router";
 type ParticipantReport = Outputs["participations"]["listHostedReport"];
 type PartnerOrganizationGroup = ParticipantReport["organizations"][number];
 
-function pluralize(count: number, singular: string) {
-  return `${count} ${singular}${count === 1 ? "" : "s"}`;
-}
-
 /**
  * Read-only Hosting Participant view of this Project's Participants, grouped by the
  * Partner Organization each represents (ADR-0016). It offers expanding and
@@ -94,7 +90,7 @@ function PartnerOrganizationParticipants({
             data-country={group.country}
           >{`${t("country")} ${group.country}`}</Badge>
           <Badge data-participant-count={group.participantCount}>
-            {pluralize(group.participantCount, "Participant")}
+            {t("participationCount", { count: group.participantCount })}
           </Badge>
           <Badge
             variant="secondary"

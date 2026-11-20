@@ -201,7 +201,7 @@ describe("Proof Document upload outcomes", () => {
     mocks.scope.mockResolvedValue({ partnerId: "other", hostId: "partner" });
     const expected = {
       code: "FORBIDDEN",
-      message: "Only the Partner Organization may manage Proof Documents.",
+      message: "Only the Partner may manage Proof Documents.",
       data: { reason: "PARTNER_DOCUMENTS_REQUIRED" },
     };
     await expect(

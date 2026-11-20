@@ -82,19 +82,18 @@ export const situationCatalog = {
     code: "FORBIDDEN",
     reason: "PARTNER_COORDINATION_REQUIRED",
     message:
-      "You need Partner Organization staff access or an assignment to this Project Partnership.",
+      "You need staff access in the Partner or an assignment to this Project Partnership.",
   },
   partnerEntryRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_ENTRY_REQUIRED",
     message:
-      "Only the Partner Organization of this Project Partnership may issue participant entry points.",
+      "Only the Partner in this Project Partnership may issue participant entry points.",
   },
   coordinatorSelectionRequired: {
     code: "BAD_REQUEST",
     reason: "ELIGIBLE_COORDINATOR_REQUIRED",
-    message:
-      "Select an Owner, Admin, or Project Coordinator in the Partner Organization.",
+    message: "Select an Owner, Admin, or Project Coordinator from the Partner.",
   },
   invalidProjectCursor: {
     code: "BAD_REQUEST",
@@ -120,12 +119,12 @@ export const situationCatalog = {
   selfPartnership: {
     code: "BAD_REQUEST",
     reason: "SELF_PARTNERSHIP",
-    message: "The Hosting Organization cannot be its own Partner Organization.",
+    message: "The Hosting Organization cannot be its own Partner.",
   },
   partnerOrganizationNotFound: {
     code: "NOT_FOUND",
     reason: "PARTNER_ORGANIZATION_NOT_FOUND",
-    message: "Partner Organization not found.",
+    message: "Partner not found.",
   },
   partnershipAlreadyAssigned: {
     code: "CONFLICT",
@@ -297,8 +296,7 @@ export const situationCatalog = {
   joinedOtherPartner: {
     code: "CONFLICT",
     reason: "JOINED_OTHER_PARTNER",
-    message:
-      "You already joined this Project through another Partner Organization.",
+    message: "You already joined this Project through another Partner.",
   },
   membershipChanged: {
     code: "CONFLICT",
@@ -328,7 +326,7 @@ export const situationCatalog = {
   partnerClaimEditRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_CLAIM_EDIT_REQUIRED",
-    message: "Only the Partner Organization may edit its Claim.",
+    message: "Only the Partner may edit its Claim.",
   },
   payoutSelectionLocked: {
     code: "CONFLICT",
@@ -339,7 +337,7 @@ export const situationCatalog = {
   partnerPayoutSelectionRequired: {
     code: "BAD_REQUEST",
     reason: "PARTNER_PAYOUT_SELECTION_REQUIRED",
-    message: "Select a Payout Account belonging to the Partner Organization.",
+    message: "Select a Payout Account belonging to the Partner.",
   },
   payoutAccountRequired: {
     code: "BAD_REQUEST",
@@ -359,7 +357,7 @@ export const situationCatalog = {
   partnerCostsRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_COSTS_REQUIRED",
-    message: "Only the Partner Organization may manage Claim costs.",
+    message: "Only the Partner may manage Claim costs.",
   },
   allocationParticipationRequired: {
     code: "BAD_REQUEST",
@@ -380,7 +378,7 @@ export const situationCatalog = {
   partnerJourneysRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_JOURNEYS_REQUIRED",
-    message: "Only the Partner Organization may manage Participant Journeys.",
+    message: "Only the Partner may manage Participant Journeys.",
   },
   journeysLocked: {
     code: "CONFLICT",
@@ -411,18 +409,17 @@ export const situationCatalog = {
   partnerOnboardingProgressRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_ONBOARDING_PROGRESS_REQUIRED",
-    message:
-      "Only the Partner Organization may read Participant onboarding progress.",
+    message: "Only the Partner may read Participant onboarding progress.",
   },
   partnerParticipantSearchRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_PARTICIPANT_SEARCH_REQUIRED",
-    message: "Only the Partner Organization may search onboarded Participants.",
+    message: "Only the Partner may search onboarded Participants.",
   },
   partnerParticipationCreateRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_PARTICIPATION_CREATE_REQUIRED",
-    message: "Only the Partner Organization may create its Participation.",
+    message: "Only the Partner may create its Participation.",
   },
   participationCreateLocked: {
     code: "CONFLICT",
@@ -448,7 +445,7 @@ export const situationCatalog = {
   partnerParticipationUpdateRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_PARTICIPATION_UPDATE_REQUIRED",
-    message: "Only the Partner Organization may update its Participation.",
+    message: "Only the Partner may update its Participation.",
   },
   participationUpdateLocked: {
     code: "CONFLICT",
@@ -463,7 +460,7 @@ export const situationCatalog = {
   partnerParticipationRemoveRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_PARTICIPATION_REMOVE_REQUIRED",
-    message: "Only the Partner Organization may remove its Participation.",
+    message: "Only the Partner may remove its Participation.",
   },
   participationRemoveLocked: {
     code: "CONFLICT",
@@ -484,7 +481,7 @@ export const situationCatalog = {
   partnerDuplicateReviewRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_DUPLICATE_REVIEW_REQUIRED",
-    message: "Only the Partner Organization may review duplicate identities.",
+    message: "Only the Partner may review duplicate identities.",
   },
   reviewTaskNotFound: {
     code: "NOT_FOUND",
@@ -514,12 +511,12 @@ export const situationCatalog = {
   partnerClaimPreviewRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_CLAIM_PREVIEW_REQUIRED",
-    message: "Only the Partner Organization may preview its Claim.",
+    message: "Only the Partner may preview its Claim.",
   },
   partnerClaimSubmitRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_CLAIM_SUBMIT_REQUIRED",
-    message: "Only the Partner Organization may submit its Claim.",
+    message: "Only the Partner may submit its Claim.",
   },
   claimRequiredForSubmission: {
     code: "BAD_REQUEST",
@@ -594,7 +591,7 @@ export const situationCatalog = {
   partnerDocumentsRequired: {
     code: "FORBIDDEN",
     reason: "PARTNER_DOCUMENTS_REQUIRED",
-    message: "Only the Partner Organization may manage Proof Documents.",
+    message: "Only the Partner may manage Proof Documents.",
   },
   proofNotFound: {
     code: "NOT_FOUND",

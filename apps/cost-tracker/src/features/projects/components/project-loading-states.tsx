@@ -1,14 +1,15 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import type { ReactNode } from "react";
 
-import { StatCell, StatGrid } from "@/components/brand/stat-grid";
 import {
   CardSkeleton,
   HeaderSkeleton,
   LoadingRegion,
 } from "@/components/loading-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 function ListRowsSkeleton({ count = 3 }: { count?: number }) {
   return (
@@ -52,11 +53,31 @@ export function ProjectListSkeleton() {
   );
 }
 
-/**
- * Skeleton twin of the workspace stats strip. Shared by the route loading
- * state and the workspace itself, so numbers and placeholders occupy the
- * same grid and resolving never shifts the layout.
- */
+/** Shared layout for resolved metrics and their loading placeholders. */
+export function ProjectMetrics({
+  columns,
+  children,
+  ...props
+}: {
+  columns: "two" | "three";
+  children: ReactNode;
+  "aria-busy"?: boolean;
+  "aria-label"?: string;
+  "data-testid"?: string;
+}) {
+  return (
+    <dl
+      className={cn(
+        "grid divide-x rounded-xl border bg-card",
+        columns === "three" ? "grid-cols-3" : "grid-cols-2",
+      )}
+      {...props}
+    >
+      {children}
+    </dl>
+  );
+}
+
 export function StatsSkeletonGrid({
   columns = "three",
   label,
@@ -68,25 +89,35 @@ export function StatsSkeletonGrid({
 }) {
   const slots = columns === "three" ? ["a", "b", "c"] : ["a", "b"];
   return (
-    <StatGrid
-      aria-busy="true"
+    <ProjectMetrics
+      aria-busy={true}
       aria-label={label}
       columns={columns}
       data-testid={testId}
     >
       {slots.map((slot) => (
-        <StatCell key={slot}>
-          <Skeleton
-            className="h-12 w-16 max-w-full"
-            data-testid="loading-skeleton"
-          />
-          <Skeleton
-            className="mt-2 h-4 w-28 max-w-full"
-            data-testid="loading-skeleton"
-          />
-        </StatCell>
+        <div
+          key={slot}
+          className="row-span-3 grid min-w-0 grid-rows-subgrid p-3 sm:px-5"
+        >
+          <dt aria-hidden="true">
+            <Skeleton
+              className="h-5 w-24 max-w-full"
+              data-testid="loading-skeleton"
+            />
+          </dt>
+          <dd aria-hidden="true">
+            <Skeleton className="mt-1 h-8 w-6" data-testid="loading-skeleton" />
+          </dd>
+          <dd aria-hidden="true">
+            <Skeleton
+              className="h-5 w-32 max-w-full"
+              data-testid="loading-skeleton"
+            />
+          </dd>
+        </div>
       ))}
-    </StatGrid>
+    </ProjectMetrics>
   );
 }
 
@@ -94,26 +125,20 @@ export function ProjectWorkspaceSkeleton() {
   const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("workspace")}>
-      <div className="flex flex-col gap-8">
-        <HeaderSkeleton />
-        <StatsSkeletonGrid />
-        <div className="grid items-start gap-4 lg:grid-cols-2">
-          <div className="flex flex-col gap-4">
-            {["a", "b", "c"].map((slot) => (
-              <div className="flex items-center gap-3" key={slot}>
-                <Skeleton
-                  className="size-5 shrink-0"
-                  data-testid="loading-skeleton"
-                />
-                <Skeleton
-                  className="h-5 w-56 max-w-full"
-                  data-testid="loading-skeleton"
-                />
-              </div>
-            ))}
-          </div>
-          <CardSkeleton />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-28" data-testid="loading-skeleton" />
+          <Skeleton
+            className="h-9 w-96 max-w-full"
+            data-testid="loading-skeleton"
+          />
         </div>
+        <div className="flex flex-wrap gap-x-8 gap-y-3">
+          <Skeleton className="h-9 w-40" data-testid="loading-skeleton" />
+          <Skeleton className="h-9 w-24" data-testid="loading-skeleton" />
+        </div>
+        <StatsSkeletonGrid />
+        <CardSkeleton rows={1} />
       </div>
     </LoadingRegion>
   );

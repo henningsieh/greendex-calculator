@@ -183,9 +183,10 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 ### Buttons
 
 - **Character:** decisive stamps in the incumbent code, migrating toward a soft guiding voice: sentence case for new controls, uppercase micro-labels where they already exist.
-- **Shape:** 14px radius (`rounded-xl`), heights 28 / 36 / 40 / 44px across xs / sm / default / lg, icon-only squares to match.
+- **Shape:** 14px radius (`rounded-xl`) at standard sizes. Compact 28px text buttons use `rounded-lg` so they don't read as pills. Heights are 28 / 36 / 40 / 44px across xs / sm / default / lg, with icon-only squares to match.
 - **Primary:** Erasmus Blue ground, white text, deepens on hover; amber-on-brown in dark vibes.
 - **Secondary / Outline / Ghost:** tonal fills and hairline borders; ghost is text-only until hover.
+- **Outline buttons:** the shared `outline` variant uses a half-pixel border, with a softened brand color in dark themes so the line stays quiet even on displays that round it to one pixel.
 - **Destructive:** solid signal-red block for the one dangerous act; `outline-destructive` (hairline + red text) for repeated row actions so lists never compete with the primary act.
 - **Link:** not a button shape at all — prose-colored, always underlined in Seal Gold, sentence case, wrapping; the only button allowed to hold a sentence.
 - **Hover / Focus:** gentle tonal shifts; focus always visible via ring plus border (`focus-visible:ring-2`), 3–4px offset outlines on links. Pressed buttons settle 1px (`translate-y-px`).
@@ -227,7 +228,17 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 - **Cards:** each row becomes a bordered card; the name leads as a title row, remaining cells read as label/value pairs from `data-label`.
 - **Footer:** result count ("Showing X of Y") plus pager; the empty state offers a `Clear filters` recovery.
 
+### Project Workspace
+
+- Use the shared `ProtectedPageHeader`. Direct sidebar destinations use the sidebar group as their eyebrow (**Workspace** or **Administration**); nested pages use their scope, such as **Hosted Project**, **Partner Project**, or **Partnership**. Breadcrumbs complement the eyebrow; they do not replace it. Archived status remains visible in the detail header.
+- Schedule and location lead into a compact, divided metric strip with sentence-case labels and tabular values. The **Participations** link sits beside the Project facts for both relationships and wraps below them on narrow screens.
+- Links name the destination; buttons describe the action. Hosted Partnership rows name the Partner separately from the **Participations** and **Claim review** links. The Partner view groups Hosting identity, assignment dates, and the **Claim** link.
+
 ## Do's and Don'ts
+
+### Implementation source of truth
+
+The running Cost Tracker UI and its shared `src/components/ui/` primitives take precedence over examples in this document. Compose those shadcn primitives and their existing variants first; use Tailwind utilities for responsive layout, spacing, and typography, and semantic theme classes backed by `src/app/globals.css`. Do not add feature stylesheets, handwritten selectors, or inline style objects for page polish. Reserve custom CSS for shared theme or primitive behavior that Tailwind composition cannot express, and keep that exception in the design system rather than in a route.
 
 ### Do:
 

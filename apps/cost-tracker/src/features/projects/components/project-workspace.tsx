@@ -8,35 +8,17 @@ import {
   CalendarDaysIcon,
   MapPinIcon,
   Users2Icon,
-  UsersIcon,
 } from "lucide-react";
 import { Suspense, useSyncExternalStore } from "react";
 
-import {
-  partnershipClaimPath,
-  partnershipClaimReviewPath,
-  partnershipParticipantsPath,
-} from "@/app/paths";
-import {
-  StatCell,
-  StatDetail,
-  StatGrid,
-  StatLabel,
-  StatNumber,
-} from "@/components/brand/stat-grid";
+import { partnershipClaimPath, partnershipClaimReviewPath } from "@/app/paths";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -55,7 +37,10 @@ import {
 } from "@/features/partnerships/components/partnership-actions";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { ProjectLifecycleActions } from "@/features/projects/components/project-lifecycle-actions";
-import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
+import {
+  ProjectMetrics,
+  StatsSkeletonGrid,
+} from "@/features/projects/components/project-loading-states";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
 import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -99,6 +84,32 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   );
 }
 
+function ProjectMetric({
+  label,
+  value,
+  detail,
+  testId,
+}: {
+  label: string;
+  value: number | string;
+  detail: string;
+  testId: string;
+}) {
+  return (
+    <div
+      className="row-span-3 grid min-w-0 grid-rows-subgrid p-3 wrap-anywhere sm:px-5"
+      data-testid={testId}
+      data-value={value}
+    >
+      <dt className="text-sm font-medium">{label}</dt>
+      <dd className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+        {value}
+      </dd>
+      <dd className="text-sm text-muted-foreground">{detail}</dd>
+    </div>
+  );
+}
+
 /**
  * Assigned Partners card (hosted view). Owns the partnership dialogs in its
  * header toolbar — secondary outline openers next to the count badge — so
@@ -118,28 +129,21 @@ function AssignedPartnersCard({
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
   return (
-    <Card data-testid="assigned-partner-organizations">
-      <CardHeader>
-        <div>
-          <CardTitle as="h2">{t("assignedPartners")}</CardTitle>
-        </div>
-        <CardAction>
-          {archived ? (
-            <Badge variant="status-destructive-solid">{t("archived")}</Badge>
-          ) : showDialogs ? (
-            <Suspense fallback={<ProjectOptionsLoading />}>
-              <PartnershipActions projectId={projectId} tone="secondary" />
-            </Suspense>
-          ) : null}
-        </CardAction>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="flex items-center justify-start gap-2">
+    <Card size="sm" data-testid="assigned-partner-organizations">
+      <CardHeader className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <CardTitle as="h2">{t("partnerships")}</CardTitle>
           <Badge variant="outline">
-            <EntityIcon entity="partner" className="size-3" />
             {t("partnersCount", { count: partners.length })}
           </Badge>
         </div>
+        {!archived && showDialogs ? (
+          <Suspense fallback={<ProjectOptionsLoading />}>
+            <PartnershipActions projectId={projectId} tone="secondary" />
+          </Suspense>
+        ) : null}
+      </CardHeader>
+      <CardContent>
         {partners.length === 0 ? (
           <Empty data-testid="assigned-partnerships-empty" variant="outlined">
             <EmptyMedia variant="icon">
@@ -147,7 +151,6 @@ function AssignedPartnersCard({
                 aria-hidden="true"
                 className="size-7 text-muted-foreground"
               />
-              {/* <EntityIcon entity="partner" /> */}
             </EmptyMedia>
             <EmptyHeader>
               <EmptyDescription>
@@ -164,63 +167,61 @@ function AssignedPartnersCard({
             </EmptyHeader>
           </Empty>
         ) : (
-          <div
-            className={showDialogs ? "border-t border-border/60 pt-5" : undefined}
-          >
-            <ul className="divide-y divide-border">
-              {partners.map((partner) => (
-                <li
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4 first:pt-0 last:pb-0"
-                  data-organization-id={partner.organizationId}
-                  data-partnership-id={partner.id}
-                  key={partner.id}
-                >
-                  <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
-                    <OrgAvatar name={partner.organizationName} />
-                    <div className="min-w-0 space-y-0.5">
-                      {/* The Partnership detail route is deliberately
-                        header-only this release, so the row links to that
-                        Partner's Participants instead — the actionable
-                        destination for this Partnership. */}
-                      <Link
-                        className="block font-medium wrap-break-word underline-offset-4 hover:underline hover:decoration-brand hover:decoration-2"
-                        href={partnershipParticipantsPath(partner.id)}
-                      >
-                        {partner.organizationName}
-                      </Link>
-                      <p className="text-sm text-muted-foreground">
-                        {t("assigned")}{" "}
-                        {dateFormat.format(partner.assignedAt, "date.medium")}
-                      </p>
-                    </div>
+          <ul className="divide-y divide-border border-t">
+            {partners.map((partner) => (
+              <li
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4 last:pb-0"
+                data-organization-id={partner.organizationId}
+                data-partnership-id={partner.id}
+                key={partner.id}
+              >
+                <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+                  <OrgAvatar name={partner.organizationName} />
+                  <div className="min-w-0 space-y-0.5">
+                    <p
+                      className="font-medium wrap-anywhere"
+                      id={`project-partner-${partner.id}`}
+                    >
+                      {partner.organizationName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("assigned")}{" "}
+                      {dateFormat.format(partner.assignedAt, "date.medium")}
+                    </p>
                   </div>
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <ClaimReadiness status={partner.claimStatus} />
-                    {/* The review page hangs under this Hosted Project, so
+                </div>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <ClaimReadiness status={partner.claimStatus} />
+                  <ParticipantsLink
+                    partnershipId={partner.id}
+                    describedBy={`project-partner-${partner.id}`}
+                    testId={`partnership-participations-${partner.id}`}
+                  />
+                  {/* The review page hangs under this Hosted Project, so
                       the row is its way in: the global queue also lists
                       every submitted Claim, this links one Partnership.
                       No reviewable Claim means no link at all — the badge
                       already carries the state, so an inert duplicate would
                       only pretend at navigation. */}
-                    {isClaimReviewable(partner.claimStatus) ? (
-                      <Link
-                        className={buttonVariants({
-                          variant: "link",
-                          size: "sm",
-                        })}
-                        href={partnershipClaimReviewPath(partner.id)}
-                        data-testid={`review-claim-${partner.id}`}
-                      >
-                        <EntityIcon entity="claim" className="size-3.5" />
-                        {t("claimReview")}
-                        <ArrowUpRightIcon aria-hidden="true" />
-                      </Link>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  {isClaimReviewable(partner.claimStatus) ? (
+                    <Link
+                      className={buttonVariants({
+                        variant: "link",
+                        size: "sm",
+                      })}
+                      href={partnershipClaimReviewPath(partner.id)}
+                      aria-describedby={`project-partner-${partner.id}`}
+                      data-testid={`review-claim-${partner.id}`}
+                    >
+                      <EntityIcon entity="claim" className="size-3.5" />
+                      {t("claimReview")}
+                      <ArrowUpRightIcon aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>
@@ -245,57 +246,48 @@ function PartnerProjectCard({
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
         <CardTitle as="h2">{t("partnership")}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div
-          className="flex items-center gap-3"
-          data-organization-id={hostingId}
-          data-testid="hosting-organization"
-        >
-          <EntityIcon
-            entity="organization"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
-          <p className="text-sm">
-            <span className="text-muted-foreground">
-              {t("hostingOrganization")}{" "}
-            </span>
-            <span className="font-medium">{hostingName}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="w-5 shrink-0" aria-hidden="true" />
-          <p className="text-sm">
-            <span className="text-muted-foreground">{t("claimReadiness")} </span>
-            <ClaimReadiness status={partnership.claimStatus} />
-          </p>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {t("assignedLabel")}{" "}
-          {dateFormat.format(partnership.assignedAt, "date.medium")}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {t("assignmentUpdated")}{" "}
-          {dateFormat.format(partnership.updatedAt, "date.medium")}
-        </p>
-        {/* Both entries navigate to related workspaces: typographic
-            links with arrows, never outline buttons that read as actions. */}
-        <div className="flex flex-wrap gap-x-2 gap-y-1 pt-1">
-          <Link
-            className={buttonVariants({
-              variant: "link",
-              size: "sm",
-            })}
-            href={partnershipParticipantsPath(partnership.id)}
-            data-testid="coordinate-participants"
+      <CardContent className="flex flex-col gap-4">
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          <div
+            className="min-w-0"
+            data-organization-id={hostingId}
+            data-testid="hosting-organization"
           >
-            <UsersIcon aria-hidden="true" />
-            {t("projectParticipations")}
-            <ArrowUpRightIcon aria-hidden="true" />
-          </Link>
+            <dt className="text-xs text-muted-foreground">
+              {t("hostingOrganization")}
+            </dt>
+            <dd className="mt-1 font-medium wrap-anywhere">{hostingName}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">
+              {t("claimReadiness")}
+            </dt>
+            <dd className="mt-1">
+              <ClaimReadiness status={partnership.claimStatus} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">
+              {t("assignedLabel")}
+            </dt>
+            <dd className="mt-1 tabular-nums">
+              {dateFormat.format(partnership.assignedAt, "date.medium")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">
+              {t("assignmentUpdated")}
+            </dt>
+            <dd className="mt-1 tabular-nums">
+              {dateFormat.format(partnership.updatedAt, "date.medium")}
+            </dd>
+          </div>
+        </dl>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3">
           <Link
             className={buttonVariants({
               variant: "link",
@@ -358,143 +350,121 @@ export function ProjectWorkspace({
 
   return (
     <div
-      className="space-y-8"
+      className="flex min-w-0 flex-col gap-6"
       data-hydrated={isHydrated ? "true" : undefined}
       data-archived={project.archived}
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
     >
-      <header className="space-y-4">
-        {/* Lifecycle owns its buttons, dialogs and feedback: the header
-            only hands the component over into its action slot. */}
-        <ProtectedPageHeader
-          eyebrow={
-            project.relationship === "hosted"
-              ? t("hostedProject")
-              : t("partnerProject")
-          }
-          title={project.name}
-          rightButton={<ProjectLifecycleActions projectId={project.id} />}
-        />
-        {/* Hosted archived state lives as a destructive badge in the
-            AssignedPartnersCard action slot; the header keeps it only for
-            partner views, which have no such card. */}
-        {project.archived && !isHosted ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{t("archived")}</Badge>
+      <ProtectedPageHeader
+        eyebrow={isHosted ? t("hostedProject") : t("partnerProject")}
+        title={project.name}
+        rightButton={
+          <div className="flex flex-wrap items-center gap-3">
+            {project.archived && (
+              <Badge variant="secondary" data-testid="project-archived-status">
+                {t("archived")}
+              </Badge>
+            )}
+            <ProjectLifecycleActions projectId={project.id} />
           </div>
-        ) : null}
-      </header>
+        }
+      />
+      <section
+        data-testid="project-facts"
+        aria-label={t("details")}
+        className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3"
+      >
+        <dl className="flex min-w-0 flex-1 basis-full flex-wrap gap-x-8 gap-y-3 sm:basis-0">
+          <div className="relative min-w-0 pl-6">
+            <dt className="text-xs text-muted-foreground">
+              <CalendarDaysIcon
+                aria-hidden="true"
+                className="absolute top-0 left-0 size-4 text-muted-foreground"
+              />
+              {t("schedule")}
+            </dt>
+            <dd className="text-sm font-medium tabular-nums">
+              {dateFormat.range(project.startDate, project.endDate, "date.long")}
+            </dd>
+          </div>
+          <div className="relative min-w-0 pl-6">
+            <dt className="text-xs text-muted-foreground">
+              <MapPinIcon
+                aria-hidden="true"
+                className="absolute top-0 left-0 size-4 text-muted-foreground"
+              />
+              {t("location")}
+            </dt>
+            <dd className="flex items-center gap-2 text-sm font-medium">
+              <CountryFlag code={project.country} />
+              <span className="wrap-anywhere">
+                {[project.location, project.country].filter(Boolean).join(", ")}
+              </span>
+            </dd>
+          </div>
+        </dl>
+        {project.relationship === "hosted" ? (
+          <ParticipantsLink
+            projectId={project.id}
+            className="max-w-full whitespace-normal"
+          />
+        ) : (
+          <ParticipantsLink
+            partnershipId={project.partnership.id}
+            className="max-w-full whitespace-normal"
+          />
+        )}
+      </section>
 
       {statsReady ? (
-        <StatGrid
+        <ProjectMetrics
+          columns={isHosted ? "three" : "two"}
           aria-label={t("details")}
-          columns={project.relationship === "hosted" ? "three" : "two"}
         >
-          {project.relationship === "hosted" ? (
+          {project.relationship === "hosted" && (
             <>
-              <StatCell
-                hero
-                data-testid="stat-open-claims"
-                data-value={openClaims}
-              >
-                <StatNumber>{openClaims}</StatNumber>
-                <StatLabel>{t("claimsInReview")}</StatLabel>
-                <StatDetail>{t("claimsInReviewDetail")}</StatDetail>
-              </StatCell>
-              <StatCell data-testid="stat-partners">
-                <StatNumber>{project.partnerOrganizations.length}</StatNumber>
-                <StatLabel>{t("statPartners")}</StatLabel>
-                <StatDetail>{t("statPartnersDetail")}</StatDetail>
-              </StatCell>
-              <StatCell data-testid="stat-participants">
-                <StatNumber>{project.participantCount}</StatNumber>
-                <StatLabel>{t("statParticipants")}</StatLabel>
-                <StatDetail>{t("statParticipantsDetail")}</StatDetail>
-              </StatCell>
-            </>
-          ) : (
-            <>
-              <StatCell hero data-testid="stat-participants">
-                <StatNumber>{project.participantCount}</StatNumber>
-                <StatLabel>{t("statParticipants")}</StatLabel>
-                <StatDetail>{t("statParticipantsDetail")}</StatDetail>
-              </StatCell>
-              <StatCell data-testid="stat-days-left">
-                <StatNumber>{daysLeft >= 0 ? daysLeft : "–"}</StatNumber>
-                <StatLabel>
-                  {daysLeft >= 0
-                    ? t("daysLeft", { count: daysLeft })
-                    : t("ended")}
-                </StatLabel>
-                <StatDetail>
-                  {t("daysUntil", {
-                    date: dateFormat.format(project.endDate, "date.medium"),
-                  })}
-                </StatDetail>
-              </StatCell>
+              <ProjectMetric
+                label={t("claimsInReview")}
+                value={openClaims}
+                detail={t("claimsInReviewDetail")}
+                testId="stat-open-claims"
+              />
+              <ProjectMetric
+                label={t("statPartners")}
+                value={project.partnerOrganizations.length}
+                detail={t("statPartnersDetail")}
+                testId="stat-partners"
+              />
             </>
           )}
-        </StatGrid>
+          <ProjectMetric
+            label={t("statParticipants")}
+            value={project.participantCount}
+            detail={t("statParticipantsDetail")}
+            testId="stat-participants"
+          />
+          {!isHosted && (
+            <ProjectMetric
+              label={
+                daysLeft >= 0 ? t("daysLeft", { count: daysLeft }) : t("ended")
+              }
+              value={daysLeft >= 0 ? daysLeft : "–"}
+              detail={t("daysUntil", {
+                date: dateFormat.format(project.endDate, "date.medium"),
+              })}
+              testId="stat-days-left"
+            />
+          )}
+        </ProjectMetrics>
       ) : (
         <StatsSkeletonGrid
-          columns={project.relationship === "hosted" ? "three" : "two"}
+          columns={isHosted ? "three" : "two"}
           label={t("details")}
           testId="stats-loading"
         />
       )}
-
-      <section
-        aria-label={t("details")}
-        className="flex items-start justify-between gap-6"
-      >
-        {/* Facts stack on phones and share one row from sm; the Participants
-            entry always sits at the trailing edge, never inside the column. */}
-        <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-x-8">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-              <CalendarDaysIcon
-                aria-hidden="true"
-                className="size-5 text-muted-foreground"
-              />
-            </span>
-            <div className="min-w-0 space-y-0.5">
-              <p className="text-xs text-muted-foreground">{t("schedule")}</p>
-              <p className="text-sm font-medium">
-                {dateFormat.range(
-                  project.startDate,
-                  project.endDate,
-                  "date.long",
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-              <MapPinIcon
-                aria-hidden="true"
-                className="size-5 text-muted-foreground"
-              />
-            </span>
-            <div className="min-w-0 space-y-0.5">
-              <p className="text-xs text-muted-foreground">{t("location")}</p>
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <CountryFlag code={project.country} />
-                <span className="truncate">
-                  {[project.location, project.country].filter(Boolean).join(", ")}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-        {project.relationship === "hosted" && (
-          <div className="flex shrink-0 items-center">
-            {/* Navigation, not an action: typographic link with an arrow. */}
-            <ParticipantsLink density="default" projectId={project.id} />
-          </div>
-        )}
-      </section>
 
       {project.relationship === "hosted" ? (
         <AssignedPartnersCard

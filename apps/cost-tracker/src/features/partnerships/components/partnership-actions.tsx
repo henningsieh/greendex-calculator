@@ -35,7 +35,7 @@ export function PartnershipActions({
   projectId?: string;
   /** Preselects the Partner Organization (and locks it) for assignment. */
   organizationId?: string;
-  /** Secondary card contexts render the menu trigger small and outline. */
+  /** Secondary card contexts use the compact outline trigger. */
   tone?: "primary" | "secondary";
 } = {}) {
   const t = useTranslations("partnerships");
@@ -60,7 +60,7 @@ export function PartnershipActions({
           render={
             <Button
               data-testid="partnership-actions-menu"
-              size={small ? "sm" : "default"}
+              size={small ? "xs" : "default"}
               type="button"
               variant={small ? "outline" : "default"}
             />

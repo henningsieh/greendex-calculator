@@ -1,7 +1,7 @@
 {
   "projects": {
     "page": {
-      "eyebrow": "Project workspace",
+      "eyebrow": "Delovni prostor",
       "title": "Projects",
       "description": "Review Projects hosted by or assigned to your active Organization."
     },
@@ -21,7 +21,11 @@
     "list": {
       "label": "Project list",
       "archiveFilter": "Stanje arhiviranja",
-      "archive": { "active": "Aktiven", "archived": "Arhiviran", "all": "Vsi" },
+      "archive": {
+        "active": "Aktiven",
+        "archived": "Arhiviran",
+        "all": "Vsi"
+      },
       "settlementFilter": "Poravnava",
       "settlement": {
         "all": "Vsi",
@@ -40,7 +44,7 @@
       "startDate": "Datum začetka",
       "endDate": "Datum konca",
       "schedule": "Schedule",
-      "viewParticipants": "View Participants",
+      "viewParticipants": "Participations",
       "name": "Project name",
       "searchPlaceholder": "Search at least 3 characters",
       "sort": "Sort",
@@ -52,16 +56,16 @@
       "filters": "Filtri",
       "activeAfter": "Active on or after",
       "activeBefore": "Active on or before",
-      "partnerOrganizations": "Partner organizations",
-      "selectPartners": "Select organizations",
-      "partnerFilterHelp": "Show projects linked to at least one selected organization.",
+      "partnerOrganizations": "Partnerji",
+      "selectPartners": "Select Partners",
+      "partnerFilterHelp": "Projects with any selected Partner.",
       "refresh": "Refresh",
-      "columns": "Columns",
+      "columns": "Choose columns",
       "resetColumns": "Reset columns",
       "sortOrder": "Sort order",
       "sortDescription": "Rules apply from top to bottom. Later rules order Projects with matching values above. At least one rule stays active.",
       "toggleSortDirection": "Reverse sorting for {field}",
-      "dateRange": "Filter by partners and project dates",
+      "dateRange": "Filters by Partner and date",
       "sortHeaderActive": "Sort by {field}, {direction}, priority {priority}",
       "sortHeaderInactive": "Sort by {field}, not sorted",
       "ascending": "Ascending",
@@ -80,14 +84,14 @@
       "clearFilters": "Počisti filtre",
       "project": "Project",
       "location": "Location",
-      "participants": "Participants",
+      "participants": "Participations",
       "refreshing": "Osveževanje projektov…",
       "updatedAt": "Posodobljeno ob {time} UTC",
       "metrics": {
         "projects": "Projekti",
         "projectsTotal": "Projekti (skupaj {count})",
-        "partners": "Partnerske organizacije",
-        "partnersTotal": "Partnerske organizacije (skupaj {count})"
+        "partners": "Partnerji",
+        "partnersTotal": "Partnerji (skupaj {count})"
       }
     },
     "loading": {
@@ -112,8 +116,8 @@
       "archiveReadOnly": "Ta projekt je arhiviran in samo za branje, dokler ga pooblaščeno osebje ponovno ne odpre.",
       "completed": "Completed",
       "by": "by",
-      "assignedPartners": "Assigned Partner Organizations",
-      "noPartners": "No Partner Organizations are assigned.",
+      "partnerships": "Partnerships",
+      "noPartners": "No Partners are assigned.",
       "noPartnersActionIntro": "You can",
       "assigned": "Assigned",
       "partnership": "Project Partnership",
@@ -121,8 +125,8 @@
       "hostingOrganization": "Hosting Organization:",
       "assignedLabel": "Assigned:",
       "assignmentUpdated": "Assignment updated:",
-      "openClaim": "Open claim workspace",
-      "hostedProject": "Hosted Project",
+      "openClaim": "Claim",
+      "hostedProject": "Gostovani projekt",
       "partnerProject": "Partner Project",
       "noClaim": "Ni zahtevka",
       "completing": "Zaključevanje…",
@@ -138,16 +142,16 @@
         "rejected": "Rejected",
         "paid": "Paid"
       },
-      "projectParticipations": "Project Participations",
-      "statPartners": "Partners",
-      "statParticipants": "Participants",
+      "projectParticipations": "Participations",
+      "statPartners": "Partnerji",
+      "statParticipants": "Participations",
       "daysLeft": "{count, plural, one {# day left} other {# days left}}",
       "ended": "Ended",
       "claimsInReview": "Claims in review",
       "schedule": "Schedule",
       "location": "Location",
       "statPartnersDetail": "assigned organizations",
-      "statParticipantsDetail": "have joined so far",
+      "statParticipantsDetail": "recorded so far",
       "claimsInReviewDetail": "need a decision",
       "daysUntil": "until {date}",
       "claimReview": "Claim review",

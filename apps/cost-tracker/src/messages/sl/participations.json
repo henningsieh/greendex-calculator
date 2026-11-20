@@ -1,8 +1,8 @@
 {
   "participations": {
     "report": {
-      "label": "Hosting Participant view",
-      "description": "Totals count the Project Participations that exist, each in the Partner Organization that represents it. Agreement status is separate from membership.",
+      "label": "Participations",
+      "description": "Participations by represented Organization.",
       "agreementVersion": "Agreement version",
       "agreementUnpublished": "is not published, so no Participant counts as completed.",
       "empty": "No Project Participations have joined this Project yet.",
@@ -10,17 +10,18 @@
       "completed": "completed",
       "pending": "pending",
       "countryHeader": "Country",
-      "hideParticipants": "Skrij udeležence ({count})",
-      "showParticipants": "Prikaži udeležence ({count})",
+      "participationCount": "{count, plural, one {# udeležba} two {# udeležbi} few {# udeležbe} other {# udeležb}}",
+      "hideParticipants": "Skrij udeležbe ({count})",
+      "showParticipants": "Prikaži udeležbe ({count})",
       "agreementCompleted": "Sporazum sprejet",
       "agreementPending": "Sporazum še ni sprejet",
       "noEmail": "E-poštni naslov ni zabeležen",
       "notSet": "Ni nastavljeno"
     },
     "loading": {
-      "projectParticipations": "Loading Project Participations",
-      "details": "Loading Participant details",
-      "report": "Loading the Participants report"
+      "projectParticipations": "Loading Participations",
+      "details": "Loading Participation details",
+      "report": "Loading Participations"
     },
     "review": {
       "registeredUser": "Registered User:",
@@ -71,12 +72,12 @@
       "closed": "Zaprto"
     },
     "joined": {
-      "title": "Joined Participants",
+      "title": "Joined Participations",
       "empty": "No Participants have joined this Partnership yet.",
       "joined": "Joined",
       "country": "Country",
-      "detailsFor": "Participant details for",
-      "count": "Udeleženci v projektu {project}: {count}",
+      "detailsFor": "Participation details",
+      "count": "Udeležbe v projektu {project}: {count}",
       "removeFor": "Odstrani udeležbo v projektu za {name}"
     },
     "page": {
@@ -111,7 +112,7 @@
       "participation": "Project Participation",
       "country": "Country",
       "correctCountry": "Correct country",
-      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner may correct it.",
       "noEmail": "E-poštni naslov ni zabeležen",
       "cannotCorrect": "Te udeležbe v projektu ne morete popraviti.",
       "eyebrow": "Participations",
@@ -119,15 +120,16 @@
       "projects": "Projects"
     },
     "app": {
-      "eyebrow": "Participations",
+      "eyebrow": "Partnership",
       "backToProjects": "Back to Projects",
-      "reportTitle": "Participants report",
-      "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",
-      "projectParticipations": "Project Participations",
-      "coordinateDescription": "Coordinate Participants for this Project Partnership.",
-      "participantDetails": "Participant details",
+      "reportTitle": "Participations",
+      "reportDescription": "Project-wide Participations by Organization.",
+      "projectParticipations": "Participations",
+      "coordinateDescription": "Participations for this Partnership.",
+      "participantDetails": "Participation details",
       "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct.",
-      "projects": "Projects"
+      "projects": "Projects",
+      "hostedEyebrow": "Gostovani projekt"
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,7 +184,7 @@
       }
     },
     "link": {
-      "label": "View Participants"
+      "label": "Participations"
     }
   }
 }

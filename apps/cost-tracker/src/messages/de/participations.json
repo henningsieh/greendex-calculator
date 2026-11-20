@@ -1,8 +1,8 @@
 {
   "participations": {
     "report": {
-      "label": "Hosting-Teilnehmendenansicht",
-      "description": "Die Summen zählen die vorhandenen Project Participations, jeweils in der Partnerorganisation, die sie vertritt. Der Agreement-Status ist unabhängig von der Mitgliedschaft.",
+      "label": "Teilnahmen",
+      "description": "Teilnahmen nach vertretener Organisation.",
       "agreementVersion": "Agreement-Version",
       "agreementUnpublished": "ist nicht veröffentlicht, daher zählt keine teilnehmende Person als abgeschlossen.",
       "empty": "Noch keine Project Participations sind diesem Projekt beigetreten.",
@@ -10,17 +10,18 @@
       "completed": "abgeschlossen",
       "pending": "ausstehend",
       "countryHeader": "Land",
-      "hideParticipants": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} ausblenden",
-      "showParticipants": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} anzeigen",
+      "participationCount": "{count, plural, one {# Teilnahme} other {# Teilnahmen}}",
+      "hideParticipants": "{count, plural, one {# Teilnahme} other {# Teilnahmen}} ausblenden",
+      "showParticipants": "{count, plural, one {# Teilnahme} other {# Teilnahmen}} anzeigen",
       "agreementCompleted": "Vereinbarung angenommen",
       "agreementPending": "Vereinbarung ausstehend",
       "noEmail": "Keine E-Mail-Adresse erfasst",
       "notSet": "Nicht angegeben"
     },
     "loading": {
-      "projectParticipations": "Project Participations werden geladen",
-      "details": "Teilnehmendendetails werden geladen",
-      "report": "Teilnehmendenbericht wird geladen"
+      "projectParticipations": "Teilnahmen werden geladen",
+      "details": "Teilnahmedetails werden geladen",
+      "report": "Teilnahmen werden geladen"
     },
     "review": {
       "registeredUser": "Registrierte Person:",
@@ -71,12 +72,12 @@
       "closed": "Geschlossen"
     },
     "joined": {
-      "title": "Beigetretene Teilnehmende",
+      "title": "Beigetretene Teilnahmen",
       "empty": "Noch keine Teilnehmenden sind dieser Partnerschaft beigetreten.",
       "joined": "Beigetreten",
       "country": "Land",
-      "detailsFor": "Teilnehmendendetails für",
-      "count": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} in {project}",
+      "detailsFor": "Teilnahmedetails",
+      "count": "{count, plural, one {# Teilnahme} other {# Teilnahmen}} in {project}",
       "removeFor": "Projektteilnahme von {name} entfernen"
     },
     "page": {
@@ -111,7 +112,7 @@
       "participation": "Project Participation",
       "country": "Land",
       "correctCountry": "Land korrigieren",
-      "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur die Partnerorganisation darf es korrigieren.",
+      "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur der Partner darf es korrigieren.",
       "noEmail": "Keine E-Mail-Adresse erfasst",
       "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren.",
       "eyebrow": "Teilnahmen",
@@ -119,15 +120,16 @@
       "projects": "Projekte"
     },
     "app": {
-      "eyebrow": "Teilnahmen",
+      "eyebrow": "Partnerschaft",
       "backToProjects": "Zurück zu Projekten",
-      "reportTitle": "Teilnehmendenbericht",
-      "reportDescription": "Lies, wie das Onboarding in diesem Projekt voranschreitet, gruppiert nach Partnerorganisation.",
-      "projectParticipations": "Project Participations",
-      "coordinateDescription": "Koordiniere Teilnehmende für diese Projektpartnerschaft.",
-      "participantDetails": "Teilnehmendendetails",
+      "reportTitle": "Teilnahmen",
+      "reportDescription": "Projektweite Teilnahmen nach Organisation.",
+      "projectParticipations": "Teilnahmen",
+      "coordinateDescription": "Teilnahmen für diese Partnerschaft.",
+      "participantDetails": "Teilnahmedetails",
       "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst.",
-      "projects": "Projekte"
+      "projects": "Projekte",
+      "hostedEyebrow": "Gehostetes Projekt"
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,7 +184,7 @@
       }
     },
     "link": {
-      "label": "Teilnehmende ansehen"
+      "label": "Teilnahmen"
     }
   }
 }

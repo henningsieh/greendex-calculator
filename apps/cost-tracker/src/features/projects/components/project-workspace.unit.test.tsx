@@ -116,6 +116,9 @@ describe("Project workspace", () => {
     renderWorkspace();
 
     expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1 }).previousElementSibling,
+    ).toHaveClass("type-ember-eyebrow");
     expect(screen.getByTestId("project-workspace")).toHaveAttribute(
       "data-project-id",
       "project-1",
@@ -138,9 +141,16 @@ describe("Project workspace", () => {
     // at navigation to a page that has nothing to review.
     expect(screen.queryByTestId("review-claim-partnership-1")).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
-    expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
-      "/en-GB/projects/project-1/participants",
-    );
+    expect(
+      within(screen.getByTestId("project-facts")).getByTestId(
+        "hosted-participants",
+      ),
+    ).toHaveAttribute("href", "/en-GB/projects/project-1/participants");
+    expect(
+      within(partnerships[0]!).getByTestId(
+        "partnership-participations-partnership-1",
+      ),
+    ).toHaveAttribute("href", "/en-GB/partnerships/partnership-1/participants");
     expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
   });
 
@@ -216,6 +226,10 @@ describe("Project workspace", () => {
     expect(
       await screen.findByTestId("assigned-partnerships-empty"),
     ).toBeInTheDocument();
+    const header = screen.getByRole("heading", { level: 1 }).closest("header");
+    expect(header).toContainElement(
+      screen.getByTestId("project-archived-status"),
+    );
     expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
     expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
   });
@@ -548,7 +562,9 @@ describe("Project workspace", () => {
       screen.queryByTestId("assigned-partner-organizations"),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("coordinate-participants").getAttribute("href"),
+      within(screen.getByTestId("project-facts"))
+        .getByTestId("coordinate-participants")
+        .getAttribute("href"),
     ).toBe("/en-GB/partnerships/partnership-1/participants");
     expect(screen.getByTestId("open-claim-workspace").getAttribute("href")).toBe(
       "/en-GB/partnerships/partnership-1/claim",

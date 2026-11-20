@@ -27,11 +27,11 @@
       "empty": "No submitted Claims available for review."
     },
     "page": {
-      "eyebrow": "Partner Claim",
-      "title": "Claim workspace"
+      "eyebrow": "Partnership",
+      "title": "Claim"
     },
     "review": {
-      "eyebrow": "Claim review",
+      "eyebrow": "Partnership",
       "sectionLabel": "Claim review",
       "bandTitle": "Claim review",
       "historyLabel": "Claim history",
@@ -56,7 +56,7 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review",
+      "hostingTitle": "Claim review",
       "status": {
         "approved": "Goedgekeurd · onbetaald",
         "paid": "Betaald",
@@ -70,9 +70,10 @@
       "confirmAction": "Bevestig {action} voor deze declaratie.",
       "unavailable": "Niet beschikbaar",
       "equalShare": "Gelijk aandeel (berekend bij indiening)",
-      "title": "Review claim",
+      "title": "Claim review",
       "contextLoading": "Loading context",
-      "contextUnavailable": "Claim context unavailable"
+      "contextUnavailable": "Claim context unavailable",
+      "queueEyebrow": "Werkruimte"
     },
     "submission": {
       "title": "Submission",

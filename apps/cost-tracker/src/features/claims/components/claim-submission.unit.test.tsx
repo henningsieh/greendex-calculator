@@ -20,7 +20,7 @@ it.each([
   [
     "de",
     german,
-    "Wähle einen Payout Account der Partnerorganisation aus.",
+    "Wähle einen Payout Account des Partners aus.",
     "Verknüpfe einen zu diesem Claim gehörenden Nachweis.",
   ],
 ] as const)(
@@ -109,9 +109,7 @@ it.each(["Reworded diagnostic.", "private server failure"])(
         />
       </NextIntlClientProvider>,
     );
-    expect(markup).toContain(
-      "Wähle einen Payout Account der Partnerorganisation aus.",
-    );
+    expect(markup).toContain("Wähle einen Payout Account des Partners aus.");
     expect(markup).toContain('href="#claim-payout"');
     expect(markup).not.toContain(message);
   },

@@ -458,8 +458,50 @@ export function ResolvedProjectListResults({
       data-project-count={whole.projectCount}
       data-filtered-project-count={filtered.projectCount}
     >
-      <div className="flex flex-col items-end justify-end gap-1 text-xs text-muted-foreground">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 @4xl/content:flex-row @4xl/content:items-center @4xl/content:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <ol
+            className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
+            aria-label={t("sortOrder")}
+          >
+            {sorting.map((criterion, index) => (
+              <li className="inline-flex items-center" key={criterion.id}>
+                {index + 1}. {sortLabels[criterion.id]}{" "}
+                {criterion.desc ? "↓" : "↑"}
+                <span className="sr-only">
+                  {criterion.desc ? t("descending") : t("ascending")}
+                </span>
+                <Button
+                  aria-label={t("removeSort", {
+                    field: sortLabels[criterion.id] ?? criterion.id,
+                  })}
+                  className="text-muted-foreground"
+                  data-testid={`sort-summary-remove-${criterion.id}`}
+                  disabled={sorting.length === 1}
+                  onClick={() =>
+                    table.setSorting(sorting.filter((_, i) => i !== index))
+                  }
+                  size="icon-xs"
+                  type="button"
+                  variant="ghost"
+                >
+                  <XIcon aria-hidden="true" />
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <p
+            className="hidden text-xs text-muted-foreground @lg/content:block"
+            aria-live="polite"
+          >
+            {isFetching
+              ? t("refreshing")
+              : t("updatedAt", {
+                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
+                })}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Popover>
             <PopoverTrigger
               disabled={!isHydrated}
@@ -688,53 +730,11 @@ export function ResolvedProjectListResults({
           >
             <RefreshCwIcon
               aria-hidden="true"
-              className={isFetching ? "animate-spin" : undefined}
+              className={isFetching ? "motion-safe:animate-spin" : undefined}
             />
             <span className="hidden @lg/content:inline">{t("refresh")}</span>
           </Button>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-x-3 gap-y-1">
-        <p
-          className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
-          aria-label={t("sortOrder")}
-        >
-          {sorting.map((criterion, index) => (
-            <span className="inline-flex items-center" key={criterion.id}>
-              {index + 1}. {sortLabels[criterion.id]} {criterion.desc ? "↓" : "↑"}
-              <span className="sr-only">
-                {criterion.desc ? t("descending") : t("ascending")}
-              </span>
-              <Button
-                aria-label={t("removeSort", {
-                  field: sortLabels[criterion.id] ?? criterion.id,
-                })}
-                className="text-muted-foreground"
-                data-testid={`sort-summary-remove-${criterion.id}`}
-                disabled={sorting.length === 1}
-                onClick={() =>
-                  table.setSorting(sorting.filter((_, i) => i !== index))
-                }
-                size="icon-xs"
-                type="button"
-                variant="ghost"
-              >
-                <XIcon aria-hidden="true" />
-              </Button>
-            </span>
-          ))}
-        </p>
-
-        <p className="hidden flex-nowrap justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground @lg/content:inline">
-          <span aria-live="polite">
-            {isFetching
-              ? t("refreshing")
-              : t("updatedAt", {
-                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
-                })}
-          </span>
-        </p>
       </div>
 
       {/* Desktop: dense table. */}

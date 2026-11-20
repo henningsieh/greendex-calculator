@@ -90,8 +90,8 @@ export function ProjectListFilters({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 @4xl/content:grid-cols-4">
-        <div className="flex min-w-0 flex-col gap-2">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 @4xl/content:grid-cols-5">
+        <div className="flex min-w-0 flex-col gap-2 @4xl/content:col-span-2">
           <Label htmlFor="project-search">{t("name")}</Label>
           <div className="relative">
             <SearchIcon

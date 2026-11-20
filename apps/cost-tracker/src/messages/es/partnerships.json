@@ -1,7 +1,7 @@
 {
   "partnerships": {
     "loading": {
-      "partnerOrganizations": "Loading Partner Organizations",
+      "partnerOrganizations": "Cargando socios",
       "projectPartnerships": "Loading Project Partnerships"
     },
     "projectOptions": {
@@ -9,10 +9,10 @@
     },
     "manager": {
       "assignExisting": "Assign existing organization",
-      "hostedProject": "Hosted Project",
-      "partnerOrganization": "Partner Organization",
+      "hostedProject": "Proyecto alojado",
+      "partnerOrganization": "Socio",
       "current": "Partnerships by project",
-      "none": "No partner organizations are assigned yet. Invite a partner or assign an existing organization to get started.",
+      "none": "No partners are assigned yet. Invite a partner or assign an existing organization to get started.",
       "assigning": "Asignando…",
       "assign": "Asignar",
       "cancel": "Cancel",
@@ -27,16 +27,16 @@
       "removed": "Project partnership removed."
     },
     "setup": {
-      "title": "Partner Organization Setup Link",
+      "title": "Partner Setup Link",
       "description": "Share this recipient-bound link privately. It does not grant Hosting Organization access.",
-      "hostedProject": "Hosted Project",
+      "hostedProject": "Proyecto alojado",
       "recipientEmail": "Recipient email",
       "existingLinks": "Pending invitations",
       "existingLinksHint": "A link works for one email address and expires after 7 days. Only a freshly created link can be copied — secrets are never stored.",
-      "loading": "Loading Partner Organization Setup Links…",
-      "loadError": "Unable to load Partner Organization Setup Links",
+      "loading": "Loading Partner Setup Links…",
+      "loadError": "Unable to load Partner Setup Links",
       "retry": "Retry",
-      "empty": "No invitations yet. Invite a partner organization to start collaborating.",
+      "empty": "No invitations yet. Invite a partner to start collaborating.",
       "status": "Status",
       "expires": "Expires",
       "action": "Action",
@@ -55,10 +55,10 @@
       "created": "Project Partnership created",
       "selectOrganization": "Select your Organization before opening its Project.",
       "useOrganization": "Use this Organization",
-      "openPartnerProject": "Open Partner Project",
+      "openPartnerProject": "Partner Project",
       "signIn": "Sign in to continue",
       "checking": "Checking setup link…",
-      "partnerSetup": "Partner Organization setup",
+      "partnerSetup": "Partner setup",
       "continueEmail": "Continue with the email address this setup link was sent to. This connects your Organization to the Project.",
       "retained": "Organization retained",
       "retainedDescription": "Your Organization is ready. Continue to connect it to the Project. No new Organization is created.",
@@ -87,9 +87,9 @@
     },
     "partnerOrganizations": {
       "page": {
-        "eyebrow": "Project network",
-        "title": "Partner Organizations",
-        "description": "Invite a new partner with a setup link, or assign an organization you already work with. Each partnership connects one hosted project with one partner organization."
+        "eyebrow": "Área de trabajo",
+        "title": "Socios",
+        "description": "Invite a new partner with a setup link, or assign an organization you already work with. Each partnership connects one hosted project with one partner."
       },
       "guide": {
         "title": "How partnering works",
@@ -102,7 +102,7 @@
         "dialogTrigger": "How it works"
       },
       "tabs": {
-        "label": "Partner Organizations sections",
+        "label": "Partner sections",
         "partnerships": "Partnerships",
         "invitations": "Pending invitations"
       }

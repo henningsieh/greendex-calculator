@@ -16,7 +16,7 @@ export default function ProtectedPageHeader({
     <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="max-w-3xl min-w-0">
         <p className="type-ember-eyebrow">{eyebrow}</p>
-        <h1 className="mt-2 text-4xl">{title}</h1>
+        <h1 className="mt-2 text-4xl wrap-anywhere">{title}</h1>
         {description ? (
           <p className="mt-4 text-lg/8 text-muted-foreground">{description}</p>
         ) : null}

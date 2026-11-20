@@ -50,7 +50,7 @@ export function CreateProjectDialog() {
   return (
     <Dialog.Root onOpenChange={setOpen} open={open}>
       <Dialog.Trigger data-testid="new-project" render={<Button type="button" />}>
-        {t("title")}
+        {t("submit")}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" />

@@ -27,11 +27,11 @@
       "empty": "No submitted Claims available for review."
     },
     "page": {
-      "eyebrow": "Partner Claim",
-      "title": "Claim workspace"
+      "eyebrow": "Partnership",
+      "title": "Claim"
     },
     "review": {
-      "eyebrow": "Claim review",
+      "eyebrow": "Partnership",
       "sectionLabel": "Claim review",
       "bandTitle": "Claim review",
       "historyLabel": "Claim history",
@@ -56,7 +56,7 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review",
+      "hostingTitle": "Claim review",
       "status": {
         "approved": "Approvata · non pagata",
         "paid": "Pagata",
@@ -70,9 +70,10 @@
       "confirmAction": "Conferma {action} per questa richiesta.",
       "unavailable": "Non disponibile",
       "equalShare": "Quota uguale (calcolata all’invio)",
-      "title": "Review claim",
+      "title": "Claim review",
       "contextLoading": "Loading context",
-      "contextUnavailable": "Claim context unavailable"
+      "contextUnavailable": "Claim context unavailable",
+      "queueEyebrow": "Area di lavoro"
     },
     "submission": {
       "title": "Submission",
