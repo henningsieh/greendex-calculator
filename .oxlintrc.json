@@ -353,7 +353,8 @@
       ],
       "rules": {
         "greendex-domain/validation-schema-location": "error",
-        "greendex-domain/no-handcrafted-component-type": "error"
+        "greendex-domain/no-handcrafted-component-type": "error",
+        "greendex-domain/exported-type-location": "error"
       }
     },
     {

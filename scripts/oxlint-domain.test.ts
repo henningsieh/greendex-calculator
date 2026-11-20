@@ -5,6 +5,7 @@ import { byCode, lines, lint } from "./oxlint-fixture";
 const location = "greendex-domain(validation-schema-location)";
 const identifier = "greendex-domain(schema-derived-identifier)";
 const input = "greendex-domain(procedure-input-schema)";
+const exportedType = "greendex-domain(exported-type-location)";
 
 const componentFile = "components/example-form.tsx";
 const schemaFile = "validation-schemas.ts";
@@ -28,6 +29,10 @@ const warnEverywhere = {
         "apps/*/src/features/**/procedures/**/*.ts",
       ],
       rules: { "greendex-domain/procedure-input-schema": "warn" },
+    },
+    {
+      files: ["apps/*/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
+      rules: { "greendex-domain/exported-type-location": "warn" },
     },
   ],
 };
@@ -300,5 +305,48 @@ describe("greendex-domain/procedure-input-schema", () => {
       procedureFile,
     );
     expect(byCode(result.diagnostics, input)).toEqual([]);
+  });
+});
+
+describe("greendex-domain/exported-type-location", () => {
+  it("reports an exported type alias in an implementation module", () => {
+    const result = run(
+      [
+        "export type ProjectListQueryState = { page: number };",
+        "export const value = 1;",
+      ],
+      "features/projects/components/project-list-filtering.ts",
+    );
+    expect(lines(result.diagnostics, exportedType)).toEqual([1]);
+  });
+
+  it("reports an exported interface in an implementation module", () => {
+    const result = run(
+      ["export interface AssignedPartner { id: string }"],
+      "features/projects/components/project-workspace.tsx",
+    );
+    expect(lines(result.diagnostics, exportedType)).toEqual([1]);
+  });
+
+  it("accepts exported types in the feature types and schema modules", () => {
+    for (const file of [
+      "features/projects/types.ts",
+      "features/projects/validation-schemas.ts",
+      "components/global.d.ts",
+    ]) {
+      const result = run(["export type Alias = { id: string };"], file);
+      expect(byCode(result.diagnostics, exportedType)).toEqual([]);
+    }
+  });
+
+  it("accepts local, non-exported types", () => {
+    const result = run(
+      [
+        "type Local = { id: string };",
+        "export const value: Local = { id: 'a' };",
+      ],
+      "features/projects/components/example.ts",
+    );
+    expect(byCode(result.diagnostics, exportedType)).toEqual([]);
   });
 });

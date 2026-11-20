@@ -58,6 +58,11 @@ const schemaBuilders = new Set([
 
 const zodModules = new Set(["zod", "zod/mini", "zod/v4"]);
 
+/** Modules allowed to export types: a feature's `types.ts`, its
+ * `validation-schemas.ts`, and ambient declaration files. */
+const typeModulePattern =
+  /(^|\/)(types|validation-schemas)\.ts$|(^|\/)[^/]+\.d\.ts$/;
+
 /** `id`, `projectId`, `completedByUserId` — but not `valid` or `grid`. */
 const identifierKey = /^(?:id|[a-z][A-Za-z0-9]*Id)$/u;
 
@@ -308,6 +313,37 @@ export default {
             if (!argument || argument.type === "SpreadElement") return;
             if (!builderInChain(context, argument)) return;
             context.report({ node: argument, messageId: "inline" });
+          },
+        };
+      },
+    },
+    /**
+     * Types have exactly one home per feature: `types.ts` (or the schema
+     * module). Anywhere else an exported type alias or interface is a second
+     * source of truth for the same shape, which is what this rule forbids.
+     */
+    "exported-type-location": {
+      meta: {
+        type: "problem",
+        messages: {
+          local:
+            "Export this type from the feature's types module (`types.ts`) or its `validation-schemas.ts` and import it here; implementation modules must not export their own types.",
+        },
+      },
+      create(context) {
+        const filename = context.filename ?? context.getFilename?.() ?? "";
+        if (typeModulePattern.test(filename)) return {};
+        return {
+          ExportNamedDeclaration(node) {
+            const declaration = node.declaration;
+            if (!declaration) return;
+            if (
+              declaration.type !== "TSTypeAliasDeclaration" &&
+              declaration.type !== "TSInterfaceDeclaration"
+            ) {
+              return;
+            }
+            context.report({ node: declaration, messageId: "local" });
           },
         };
       },
