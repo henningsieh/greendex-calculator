@@ -27,7 +27,6 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          isolate: false,
           setupFiles: ["./src/__tests__/setup.node.ts"],
           include: ["src/**/*.{test,spec}.ts", "scripts/**/*.test.ts"],
           exclude: ["src/__tests__/e2e/**", "src/lib/orpc/orpc.browser.test.ts"],
@@ -37,9 +36,6 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
-          // Component tests share a process and reset the module registry in
-          // setup.dom.ts after every file. This is the measured large win.
-          isolate: false,
           setupFiles: ["./src/__tests__/setup.dom.ts"],
           include: [
             "src/**/*.{test,spec}.tsx",

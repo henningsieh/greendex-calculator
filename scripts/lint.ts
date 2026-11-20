@@ -6,16 +6,14 @@ type Check = {
   args: string[];
 };
 
-// These checks read the same sources and do not write to each other's files.
-// Running them together keeps the lint gate near the slowest check instead of
-// summing every phase. `turbo run lint` itself uses three workspace workers:
-// measured faster than serial workspace linting on a four-core host.
+const workspaceLint: Check = {
+  name: "workspace-lint",
+  command: "pnpm",
+  args: ["exec", "turbo", "run", "lint", "--concurrency=3"],
+};
+
+// These checks can read the final sources concurrently after workspace autofixes.
 const checks: Check[] = [
-  {
-    name: "workspace-lint",
-    command: "pnpm",
-    args: ["exec", "turbo", "run", "lint", "--concurrency=3"],
-  },
   { name: "tailwind", command: "pnpm", args: ["run", "check:tailwind"] },
   {
     name: "schema-derivation",
@@ -81,7 +79,8 @@ function run(check: Check): Promise<{ name: string; code: number }> {
 }
 
 async function main(): Promise<void> {
-  const results = await Promise.all(checks.map(run));
+  const workspaceResult = await run(workspaceLint);
+  const results = [workspaceResult, ...(await Promise.all(checks.map(run)))];
   const failures = results.filter((result) => result.code !== 0);
   if (failures.length) {
     process.stderr.write(

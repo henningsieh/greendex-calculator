@@ -8,6 +8,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Direct runs can include suites sharing the seed database.
+    fileParallelism: false,
     globals: true,
     experimental: {
       diagnostics: {
@@ -20,14 +22,12 @@ export default defineConfig({
     testTimeout: 20_000,
     hookTimeout: 20_000,
     // Pure logic tests run in Node, where the environment is cheap. Component
-    // tests stay on jsdom. Integration and E2E still pass `--isolate` and
-    // `--no-file-parallelism` explicitly, so their shared fixtures stay serial.
+    // tests stay on jsdom. Only the shared unit runner opts into worker reuse.
     projects: [
       {
         test: {
           name: "node",
           environment: "node",
-          isolate: false,
           include: ["src/**/*.{test,spec}.{ts,js}", "test/**/*.test.{ts,js}"],
           exclude: [
             ".next",
@@ -49,7 +49,6 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
-          isolate: false,
           include: [
             "src/**/*.{test,spec}.{tsx,jsx}",
             "test/**/*.test.{tsx,jsx}",

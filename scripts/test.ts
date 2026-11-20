@@ -33,7 +33,7 @@ function candidateLine(): string {
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
 const modes = ["unit", "integration", "e2e"] as const;
-// Unit files are server-free and isolated per file. A small oversubscription
+// Unit files are server-free. A small oversubscription
 // hides JSDOM/import waits that leave CPU idle with exactly one worker per
 // core; measured 42 s at four workers versus 37 s at five on a four-core host.
 // Integration and E2E stay serial because they share the development database
@@ -118,6 +118,9 @@ async function vitest(
   environment: Record<string, string | undefined> = process.env,
 ): Promise<void> {
   if (!files.length) throw new TestRunError("Required test selection is empty.");
+  const reuseUnitWorkers = integrationApps.some(
+    (app) => directory === `apps/${app}`,
+  );
   return command(
     directory,
     [
@@ -128,7 +131,10 @@ async function vitest(
       "--retry=0",
       ...(integration
         ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
-        : ["--pool=threads"]),
+        : [
+            "--pool=threads",
+            ...(reuseUnitWorkers ? ["--no-isolate", "--file-parallelism"] : []),
+          ]),
       ...files,
     ],
     { ...environment, NODE_ENV: "test" },
