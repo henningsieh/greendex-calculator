@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
+import { useQueryStates } from "nuqs";
 import { Suspense, useEffect, useRef, useSyncExternalStore } from "react";
 
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
@@ -14,9 +14,12 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
+import type { ProjectListQueryState } from "@/features/projects/components/project-list-filtering";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
-import { ProjectListMetrics } from "@/features/projects/components/project-list-results";
-import { ResolvedProjectListResults } from "@/features/projects/components/project-list-results";
+import {
+  ProjectListMetrics,
+  ResolvedProjectListResults,
+} from "@/features/projects/components/project-list-results";
 import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectScopeTabs } from "@/features/projects/components/project-scope-tabs";
 import { getProjectAvailableScopesQueryOptions } from "@/features/projects/list-query-options";
@@ -29,7 +32,10 @@ import {
 } from "@/features/projects/list-query-options";
 import type { ProjectVisibility } from "@/lib/ui-preferences/definitions";
 
-type VisibilityPreference = { accountKey: string; visibility: ProjectVisibility };
+interface VisibilityPreference {
+  accountKey: string;
+  visibility: ProjectVisibility;
+}
 
 export function ProjectList({
   hasStaffMembership,
@@ -72,8 +78,6 @@ export function ProjectList({
     </>
   );
 }
-
-type ProjectListQueryState = UseQueryStatesReturn<typeof projectListParsers>;
 
 function AvailableProjectList({
   availableScopes,

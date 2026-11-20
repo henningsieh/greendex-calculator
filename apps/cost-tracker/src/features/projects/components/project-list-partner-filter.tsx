@@ -46,7 +46,10 @@ export function ProjectListPartnerFilter({
       className="flex min-w-0 flex-col gap-2"
       data-testid="project-partner-filter"
     >
-      <Label htmlFor="project-partner-filter-trigger">
+      <Label
+        htmlFor="project-partner-filter-trigger"
+        id="project-partner-filter-label"
+      >
         {t("partnerOrganizations")}
       </Label>
       <DropdownMenu>
@@ -56,6 +59,7 @@ export function ProjectListPartnerFilter({
             <button
               id="project-partner-filter-trigger"
               type="button"
+              aria-labelledby="project-partner-filter-label"
               data-testid="project-partner-filter-menu"
               className="flex h-10 w-full min-w-0 items-center justify-between gap-1.5 rounded-xl border border-input bg-input/30 px-3 py-2 text-base font-normal whitespace-nowrap transition-[color,box-shadow,background-color] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
             />

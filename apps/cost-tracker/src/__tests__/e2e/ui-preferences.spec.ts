@@ -308,7 +308,9 @@ test.describe("UI preferences", () => {
         "cookie",
       );
       Object.defineProperty(document, "cookie", {
-        get: descriptor?.get,
+        // Call the original getter with the document as `this`; a bare
+        // method reference would lose its receiver.
+        get: () => descriptor?.get?.call(document),
         set() {
           throw new Error("unavailable");
         },

@@ -82,7 +82,7 @@ function PartnerOrganizationParticipants({
         <CardTitle>
           <span className="flex items-center gap-2">
             <EntityIcon
-              entity="partnerOrganization"
+              entity="partner"
               className="size-5 text-muted-foreground"
             />
             {group.name}

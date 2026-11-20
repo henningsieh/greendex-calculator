@@ -22,14 +22,14 @@ import {
 import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { Link, usePathname } from "@/lib/i18n/routing";
 
-type SidebarNavItem = {
+interface SidebarNavItem {
   href: AppRoute;
   label: string;
   testId: string;
   icon: ReactNode;
-};
+}
 
-type AppSidebarProps = {
+interface AppSidebarProps {
   userName: string;
   userEmail: string;
   showOrganization: boolean;
@@ -37,7 +37,7 @@ type AppSidebarProps = {
   showOrganizationSwitcher: boolean;
   staffOrganizations: { id: string; name: string }[];
   activeOrganizationId?: string;
-};
+}
 
 function isItemActive(pathname: string, href: AppRoute) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -116,7 +116,7 @@ export function AppSidebar({
             href: "/partner-organizations",
             label: t("nav.partnerOrganizations"),
             testId: "sidebar-nav-partner-organizations",
-            icon: <EntityIcon entity="partnerOrganization" />,
+            icon: <EntityIcon entity="partner" />,
           } satisfies SidebarNavItem,
         ]
       : []),

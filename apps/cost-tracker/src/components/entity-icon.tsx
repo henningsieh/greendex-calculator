@@ -5,7 +5,9 @@ import {
   ClipboardCheckIcon,
   FolderKanbanIcon,
   HotelIcon,
+  User2Icon,
   UserRoundCogIcon,
+  Users2Icon,
 } from "lucide-react";
 
 /* Central entity → icon mapping. An Organization, Project, Partner
@@ -16,11 +18,13 @@ export const ENTITY_ICONS = {
   account: UserRoundCogIcon,
   project: FolderKanbanIcon,
   organization: BuildingComplexIcon,
-  partnerOrganization: HotelIcon,
+  partner: HotelIcon,
+  participant: User2Icon,
+  participants: Users2Icon,
   claim: ClipboardCheckIcon,
 } as const;
 
-export type EntityKind = keyof typeof ENTITY_ICONS;
+type EntityKind = keyof typeof ENTITY_ICONS;
 
 export function EntityIcon({
   entity,
