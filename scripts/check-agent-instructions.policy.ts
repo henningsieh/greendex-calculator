@@ -321,7 +321,7 @@ export const designSystemDeferredScopes = [
   "apps/calculator/src/**",
   "apps/documentation/src/**",
 ];
-/** Workspace packages that must implement their own `lint:design-system` script; the root script fans out to them. */
+/** Workspace packages that implement `lint:check`; the root script fans out to them. */
 export const designSystemLintWorkspaces = [
   "@greendex/calculator",
   "@greendex/cost-tracker",

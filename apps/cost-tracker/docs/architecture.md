@@ -30,6 +30,9 @@ Runtime route and view modules consume oRPC interfaces. Feature procedure module
 
 ## Validation and types
 
+`pnpm --filter @greendex/cost-tracker run lint:check` checks all source lint rules,
+including UI design-system and domain/type ownership rules, without fixing files.
+
 Persisted form schemas start from the owning Drizzle table with `drizzle-zod`, then narrow and refine that schema for the user-editable payload. Infer types from schemas or Drizzle instead of duplicating persistence shapes by hand. Keep schemas usable by both server and client modules unless they intentionally depend on a server-only integration.
 
 ## Project read architecture

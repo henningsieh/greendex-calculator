@@ -22,6 +22,26 @@ import {
 } from "./check-agent-instructions.policy";
 import { validateMarkdownLinks } from "./check-agent-instructions.utils";
 
+describe("check-only lint entrypoint", () => {
+  it("uses one name across apps without forwarding aliases", async () => {
+    for (const app of ["calculator", "cost-tracker", "documentation"]) {
+      const manifest = JSON.parse(
+        await readFile(
+          new URL(`../apps/${app}/package.json`, import.meta.url),
+          "utf8",
+        ),
+      );
+      expect(manifest.scripts["lint:check"]).toBe("oxlint src");
+      const checkEntrypoints = Object.entries(manifest.scripts).filter(
+        ([, command]) =>
+          command === "oxlint src" ||
+          (typeof command === "string" && command.includes("run lint:check")),
+      );
+      expect(checkEntrypoints.map(([name]) => name)).toEqual(["lint:check"]);
+    }
+  });
+});
+
 describe("oRPC documentation major", () => {
   it("keeps architecture SSR guidance on v2 and rejects old-major URLs", async () => {
     const guidance = await readFile(
