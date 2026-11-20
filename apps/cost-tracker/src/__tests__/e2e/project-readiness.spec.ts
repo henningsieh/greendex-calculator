@@ -267,7 +267,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await expect(page.locator(`a[href$="${mainURL}"]`)).toBeVisible();
+    await expect(
+      page.locator(`a[href$="${mainURL}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await expect(page.locator(`a[href$="/projects/${ids.other}"]`)).toHaveCount(
       0,
     );

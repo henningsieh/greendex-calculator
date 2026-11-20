@@ -189,7 +189,10 @@ async function denied(page: Page) {
 async function partnerPage(page: Page) {
   await page.goto("/projects");
   await page.getByTestId("project-scope-partner").click();
-  await page.locator(`a[href$="/projects/${projectId}"]`).click();
+  await page
+    .locator(`a[href$="/projects/${projectId}"]`)
+    .filter({ visible: true })
+    .click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
     timeout: 90_000,
   });

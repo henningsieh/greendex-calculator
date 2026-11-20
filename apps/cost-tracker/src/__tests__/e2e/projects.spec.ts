@@ -31,7 +31,7 @@ test.describe("Cost Tracker Project production path", () => {
     await fixture.teardown();
   });
 
-  test("sorts tied Projects at priorities two to four and fits the viewport", async ({
+  test("sorts tied Projects and keeps them usable across viewport sizes", async ({
     page,
   }) => {
     const [project] = await db
@@ -92,7 +92,8 @@ test.describe("Cost Tracker Project production path", () => {
       }
       const visibleIds = () =>
         page
-          .locator("tbody tr[data-project-id]")
+          .locator("[data-project-id]")
+          .filter({ visible: true })
           .evaluateAll((elements) =>
             elements.map((element) => element.getAttribute("data-project-id")),
           );
@@ -134,27 +135,28 @@ test.describe("Cost Tracker Project production path", () => {
       await expect(page.getByTestId("project-sort-reset")).toBeEnabled();
       await page.keyboard.press("Escape");
 
+      const sortedListURL = page.url();
       for (const width of [1440, 1024, 768, 390]) {
         await page.setViewportSize({ width, height: 900 });
         await expect(page.getByTestId("project-columns-menu")).toBeVisible();
-        const geometry = await page.locator("table").evaluate((table) => {
-          const container = table.parentElement!;
-          const name = table.querySelector("tbody a")!;
-          return {
-            viewport: innerWidth,
-            document: document.documentElement.scrollWidth,
-            table: table.getBoundingClientRect().right,
-            containerWidth: container.clientWidth,
-            scrollWidth: container.scrollWidth,
-            truncated: name.scrollWidth > name.clientWidth,
-            overflow: getComputedStyle(name).textOverflow,
-          };
-        });
-        expect(geometry.document).toBeLessThanOrEqual(width);
-        expect(geometry.table).toBeLessThanOrEqual(width);
-        expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.containerWidth);
-        expect(geometry.truncated).toBe(true);
-        expect(geometry.overflow).toBe("ellipsis");
+        await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth - innerWidth,
+            ),
+          )
+          .toBeLessThanOrEqual(1);
+        await page
+          .locator(`a[href$="/projects/${rows[1]!.id}"]`)
+          .filter({ visible: true })
+          .click();
+        await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+          "data-project-id",
+          rows[1]!.id,
+        );
+        await page.goto(sortedListURL);
+        await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
       }
     } finally {
       await db.delete(projectsTable).where(
@@ -247,7 +249,9 @@ test.describe("Cost Tracker Project production path", () => {
     await rpcResponse;
     await expect(page).toHaveURL(/search=Cost\+Tracker\+E2E/);
     await expect(
-      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     // Red if nuqs no longer writes list state to the URL or bypasses /api/rpc.
     expect(rpcRequests.length).toBeGreaterThan(0);
@@ -261,12 +265,17 @@ test.describe("Cost Tracker Project production path", () => {
       "Cost Tracker E2E",
     );
     await expect(
-      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     // Red if reloading loses the URL-backed state or its matching Project data.
     expect(listURL(page.url())).toBe(filteredListURL);
 
-    await page.locator(`a[href$="/projects/${fixture.projectId}"]`).click();
+    await page
+      .locator(`a[href$="/projects/${fixture.projectId}"]`)
+      .filter({ visible: true })
+      .click();
     await expect(page.getByTestId("project-workspace")).toHaveAttribute(
       "data-project-id",
       fixture.projectId,
@@ -292,7 +301,9 @@ test.describe("Cost Tracker Project production path", () => {
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
     await expect(
-      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
   });
 
@@ -392,7 +403,9 @@ test.describe("Cost Tracker Project production path", () => {
       )
       .toEqual([fixture.partnerOrganizationId, otherPartnerId].sort());
     await expect(
-      page.getByTestId(`project-link-${fixture.projectId}`),
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await page.reload();
     await expect(page.getByTestId("project-list")).toHaveAttribute(

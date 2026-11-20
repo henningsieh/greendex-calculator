@@ -156,42 +156,50 @@ test.describe("UI preferences", () => {
     await signIn(page, first.email);
     await page.goto(`/projects?scope=hosted&search=${archivedProjectId}`);
     await expect(
-      page.getByTestId(`project-link-${archivedProjectId}`),
+      page.locator(`a[href$="/projects/${archivedProjectId}"]`),
     ).toHaveCount(0);
     await page.getByTestId("project-archive-filter").click();
     await page.getByTestId("project-archive-archived").click();
     await expect(
-      page.getByTestId(`project-link-${archivedProjectId}`),
+      page
+        .locator(`a[href$="/projects/${archivedProjectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await expect(page).toHaveURL(/archive=archived/);
     await page.reload();
     await expect(
-      page.getByTestId(`project-link-${archivedProjectId}`),
+      page
+        .locator(`a[href$="/projects/${archivedProjectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     const archivedURL = page.url();
     const directPage = await context.newPage();
     await directPage.goto(archivedURL);
     await expect(
-      directPage.getByTestId(`project-link-${archivedProjectId}`),
+      directPage
+        .locator(`a[href$="/projects/${archivedProjectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await directPage.close();
     await page.getByTestId("project-settlement-filter").click();
     await page.getByTestId("project-settlement-ready").click();
     await expect(
-      page.getByTestId(`project-link-${archivedProjectId}`),
+      page.locator(`a[href$="/projects/${archivedProjectId}"]`),
     ).toHaveCount(0);
     await page.goto(
       `/projects?scope=hosted&search=${encodeURIComponent(activeProjectName)}`,
     );
     await expect(
-      page.getByTestId(`project-link-${activeProjectId}`),
+      page
+        .locator(`a[href$="/projects/${activeProjectId}"]`)
+        .filter({ visible: true }),
     ).toBeVisible();
     await page.goto(
       `/projects?scope=hosted&archive=archived&search=${encodeURIComponent(activeProjectName)}`,
     );
-    await expect(page.getByTestId(`project-link-${activeProjectId}`)).toHaveCount(
-      0,
-    );
+    await expect(
+      page.locator(`a[href$="/projects/${activeProjectId}"]`),
+    ).toHaveCount(0);
   });
 
   test("restores separate account columns, Sidebar and column reset", async ({
