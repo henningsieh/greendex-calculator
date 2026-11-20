@@ -33,15 +33,17 @@ function candidateLine(): string {
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
 const modes = ["unit", "integration", "e2e"] as const;
-// Unit files are server-free and isolated per file, so worker count can track
-// the available cores. Integration and E2E stay serial because they share the
-// development database and fixtures. An explicit value keeps shard sizing
-// under the operator's control on larger runners.
+// Unit files are server-free and isolated per file. A small oversubscription
+// hides JSDOM/import waits that leave CPU idle with exactly one worker per
+// core; measured 42 s at four workers versus 37 s at five on a four-core host.
+// Integration and E2E stay serial because they share the development database
+// and fixtures. An explicit value keeps shard sizing under the operator's
+// control on larger runners.
 const configuredWorkers = Number(process.env.GREENDEX_TEST_WORKERS);
 const unitWorkers =
   Number.isInteger(configuredWorkers) && configuredWorkers > 0
     ? Math.min(8, configuredWorkers)
-    : Math.max(1, Math.min(8, availableParallelism()));
+    : Math.max(1, Math.min(8, Math.ceil(availableParallelism() * 1.25)));
 const filter = process.argv[3];
 const appScope =
   filter === "--app"
