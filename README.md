@@ -372,8 +372,10 @@ page, and a public participation page loads for an existing Project instead of
 returning 404.
 
 Run the repository-wide commands from the repository root. They use `scripts/test.ts`.
-`test:unit` runs the package/app selection with two Vitest workers and includes
-repository policy/tooling and Documentation tests. `test:integration` runs the
+`test:unit` runs the package/app selection with a core-derived Vitest worker
+count (one per core plus small oversubscription, capped at eight; override with
+`GREENDEX_TEST_WORKERS`) and includes repository policy/tooling and Documentation
+tests. `test:integration` runs the
 complementary database/procedure tests, connection and HTTP checks, full real-mail
 journeys, and development Garage checks serially. `test:e2e` runs both ordinary
 Playwright suites and the merge suite with one worker and zero retries.

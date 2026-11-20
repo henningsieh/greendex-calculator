@@ -302,7 +302,18 @@ const verificationPolicyClauses = [
   ],
   [
     "server-free units",
-    ["Keep pure unit/component checks server-free", "two workers"],
+    [
+      "Keep pure unit/component checks server-free",
+      "core-derived worker count",
+      "`GREENDEX_TEST_WORKERS`",
+    ],
+  ],
+  [
+    "unit worker reuse",
+    [
+      "resets timers, globals, mocks and the module registry after every file",
+      "file-order shuffle",
+    ],
   ],
   [
     "existing runtime",
