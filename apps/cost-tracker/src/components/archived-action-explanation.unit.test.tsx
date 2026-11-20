@@ -17,7 +17,9 @@ describe("Archived action explanation", () => {
         await screen.findByTestId("archive-explanation-content"),
       ).toBeVisible();
       await user.click(trigger);
-      expect(screen.getByTestId("archive-explanation-content")).toBeVisible();
+      expect(
+        await screen.findByTestId("archive-explanation-content"),
+      ).toBeVisible();
       await user.keyboard("{Escape}");
       await waitFor(() =>
         expect(
