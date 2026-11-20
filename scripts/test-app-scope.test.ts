@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect, it } from "vitest";
 
-it.each([
+it.concurrent.each([
   ["unit", 0],
   ["unit", 1],
   ["integration", 0],
@@ -71,6 +71,7 @@ it.each([
             PATH: `${resolve(root, "bin")}:${process.env.PATH}`,
             DATABASE_URL: "postgres://localhost/greendex_development",
             NEXT_PUBLIC_BASE_URL: "http://localhost:3002",
+            GREENDEX_TEST_WORKERS: "2",
             FIXTURE_EXIT: String(exit),
           },
           encoding: "utf8",
@@ -102,8 +103,8 @@ it.each([
                 "--no-color",
                 "--retry=0",
                 ...(suite === "integration"
-                  ? ["--no-file-parallelism", "--isolate"]
-                  : []),
+                  ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
+                  : ["--pool=threads"]),
                 suite === "integration"
                   ? "src/service.integration.test.ts"
                   : "src/pure.test.ts",
