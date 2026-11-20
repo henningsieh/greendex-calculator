@@ -213,6 +213,10 @@ const ProjectPartnershipSummarySchema = z.object({
   updatedAt: ProjectPartnershipColumns.shape.updatedAt,
 });
 
+export type ProjectPartnershipSummary = z.infer<
+  typeof ProjectPartnershipSummarySchema
+>;
+
 export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("hosted"),

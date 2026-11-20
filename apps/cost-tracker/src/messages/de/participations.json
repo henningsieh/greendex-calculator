@@ -180,6 +180,9 @@
         "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
         "execute": "Projektteilnahme entfernen"
       }
+    },
+    "link": {
+      "label": "Teilnehmende ansehen"
     }
   }
 }

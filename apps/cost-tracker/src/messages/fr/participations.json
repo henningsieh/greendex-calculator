@@ -180,6 +180,9 @@
         "description": "Supprimer la Participation au Projet de {participant} ? Cette suppression est irréversible.",
         "execute": "Supprimer la Participation au Projet"
       }
+    },
+    "link": {
+      "label": "View Participants"
     }
   }
 }
