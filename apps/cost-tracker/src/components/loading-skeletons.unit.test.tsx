@@ -33,9 +33,9 @@ describe("Cost Tracker Project loading states", () => {
   it.each([
     ["Projects", <ProjectsSkeleton key="projects" />, "Loading Projects"],
     [
-      "Partner Organizations",
+      "Partners",
       <PartnerOrganizationsSkeleton key="partner-organizations" />,
-      "Loading Partner Organizations",
+      "Loading Partners",
     ],
   ])("renders an accessible %s skeleton", (_name, skeleton, accessibleName) => {
     render(skeleton);
@@ -54,17 +54,17 @@ const workspaceLoadingStates = [
     LocalizedClaimReviewQueueLoading,
   ],
   [
-    "Loading Project Participations",
+    "Loading Participations",
     PartnershipParticipantsSkeleton,
     LocalizedPartnershipParticipantsLoading,
   ],
   [
-    "Loading Participant details",
+    "Loading Participation details",
     ParticipantDetailsSkeleton,
     LocalizedParticipantDetailsLoading,
   ],
   [
-    "Loading the Participants report",
+    "Loading Participations",
     HostedParticipantsSkeleton,
     LocalizedHostedParticipantsLoading,
   ],

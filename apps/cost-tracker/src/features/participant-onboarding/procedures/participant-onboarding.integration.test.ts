@@ -1090,8 +1090,7 @@ describe("Participant onboarding procedures", () => {
         }),
       ).rejects.toMatchObject({
         code: "CONFLICT",
-        message:
-          "You already joined this Project through another Partner Organization.",
+        message: "You already joined this Project through another Partner.",
       });
     } finally {
       activeOrganizationId = partner;

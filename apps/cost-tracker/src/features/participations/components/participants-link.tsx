@@ -2,15 +2,16 @@ import { cn } from "cn";
 import { ArrowUpRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { projectParticipantsPath } from "@/app/paths";
+import {
+  partnershipParticipantsPath,
+  projectParticipantsPath,
+} from "@/app/paths";
 import { EntityIcon } from "@/components/entity-icon";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/routing";
 
 /**
- * Navigation, not an action: the Hosting Participant view behind a typographic
- * link with an arrow. The owning feature supplies its own label, so callers
- * never pass translated text and the wording cannot drift between surfaces.
+ * Both Project and Partnership views use the same destination label.
  *
  * `density` replaces the Button size axis on purpose: the `link` variant pins
  * `h-auto min-h-9`, which clamps every smaller size to the same 36px. Density
@@ -25,14 +26,21 @@ export function ParticipantsLink({
   className,
   density = "default",
   projectId,
-  testId = "hosted-participants",
+  partnershipId,
+  describedBy,
+  testId = projectId === undefined
+    ? "coordinate-participants"
+    : "hosted-participants",
 }: {
   className?: string;
   density?: keyof typeof densityVariants;
-  projectId: string;
+  describedBy?: string;
   /** Stable hook for the calling surface; defaults to the workspace link. */
   testId?: string;
-}) {
+} & (
+  | { projectId: string; partnershipId?: never }
+  | { partnershipId: string; projectId?: never }
+)) {
   const t = useTranslations("participations.link");
 
   return (
@@ -44,7 +52,12 @@ export function ParticipantsLink({
         className,
       )}
       data-testid={testId}
-      href={projectParticipantsPath(projectId)}
+      aria-describedby={describedBy}
+      href={
+        projectId === undefined
+          ? partnershipParticipantsPath(partnershipId)
+          : projectParticipantsPath(projectId)
+      }
     >
       <EntityIcon
         aria-hidden="true"

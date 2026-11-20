@@ -157,49 +157,49 @@ const routes = [
   {
     path: "/[locale]/partnerships/[partnershipId]/claim",
     Page: LocalizedClaimPage,
-    heading: "Claim workspace",
+    heading: "Claim",
     label: "Loading Claim workspace",
     content: "Resolved Claim workspace",
   },
   {
     path: "/[locale]/claims/review",
     Page: LocalizedClaimReviewQueuePage,
-    heading: "Hosting Claim review",
+    heading: "Claim review",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/claim/review",
     Page: LocalizedClaimReviewPage,
-    heading: "Review claim",
+    heading: "Claim review",
     label: "Loading Claim review",
     content: "Resolved Claim review",
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants",
     Page: LocalizedPartnershipParticipantsPage,
-    heading: "Project Participations",
-    label: "Loading Project Participations",
+    heading: "Participations",
+    label: "Loading Participations",
     content: "Resolved Participations",
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants/[participationId]",
     Page: LocalizedParticipantDetailsPage,
-    heading: "Participant details",
-    label: "Loading Participant details",
+    heading: "Participation details",
+    label: "Loading Participation details",
     content: "Resolved Participant details",
   },
   {
     path: "/[locale]/projects/[id]/participants",
     Page: LocalizedHostedParticipantsPage,
-    heading: "Participants report",
-    label: "Loading the Participants report",
+    heading: "Participations",
+    label: "Loading Participations",
     content: "Resolved Hosted report",
   },
   {
     path: "/[locale]/partner-organizations",
     Page: LocalizedPartnerOrganizationsPage,
-    heading: "Partner Organizations",
+    heading: "Partners",
     label: "Loading Project Partnerships",
     content: "Resolved Partnerships",
   },
@@ -479,7 +479,7 @@ it("starts both optional selection queries before either resolves and streams th
   try {
     await shell;
     await started;
-    expect(html).toContain("Partner Organizations");
+    expect(html).toContain("Partners");
     expect(html).not.toContain("Resolved selection options");
     expect(mocks.query.mock.calls.map(([options]) => options.queryKey)).toEqual(
       expect.arrayContaining([["hosted-options"], ["organization-options"]]),
@@ -594,11 +594,11 @@ it.each(
 );
 
 it.each([
-  ["Claim workspace", LocalizedClaimPageMetadata],
-  ["Review claim", LocalizedClaimReviewPageMetadata],
-  ["Project Participations", LocalizedPartnershipParticipantsPageMetadata],
-  ["Participant details", LocalizedParticipantDetailsPageMetadata],
-  ["Participants report", LocalizedHostedParticipantsPageMetadata],
+  ["Claim", LocalizedClaimPageMetadata],
+  ["Claim review", LocalizedClaimReviewPageMetadata],
+  ["Participations", LocalizedPartnershipParticipantsPageMetadata],
+  ["Participation details", LocalizedParticipantDetailsPageMetadata],
+  ["Participations", LocalizedHostedParticipantsPageMetadata],
 ])("preserves %s metadata", (title, localized) => {
   expect(localized).toEqual({ title });
 });

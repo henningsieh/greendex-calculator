@@ -120,7 +120,7 @@ describe("shared localized error presentation", () => {
     [
       "payoutAccountRequired",
       "Select a Partner Payout Account.",
-      "Wähle einen Payout Account der Partnerorganisation aus.",
+      "Wähle einen Payout Account des Partners aus.",
     ],
     [
       "entryRequired",
@@ -238,7 +238,7 @@ describe("shared localized error presentation", () => {
       ]),
     ]);
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-      'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account der Partnerorganisation aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
+      'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
     );
   });
 
@@ -306,7 +306,7 @@ describe("shared localized error presentation", () => {
         message,
       };
       expect(present(<ErrorDetail issue={issue} />, "de")).toBe(
-        "Wähle einen Payout Account der Partnerorganisation aus.",
+        "Wähle einen Payout Account des Partners aus.",
       );
       expect(
         present(<ErrorDetail issue={issue} />, "de", { apiErrors: {} }),
@@ -315,7 +315,7 @@ describe("shared localized error presentation", () => {
         data: { reason: "CLAIM_SUBMISSION_INCOMPLETE", issues: [issue] },
       });
       expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-        'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account der Partnerorganisation aus.</li></ul>',
+        'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li></ul>',
       );
     },
   );
@@ -405,7 +405,7 @@ describe("shared localized error presentation", () => {
         />,
         "de",
       ),
-    ).toBe("Wähle einen Payout Account der Partnerorganisation aus.");
+    ).toBe("Wähle einen Payout Account des Partners aus.");
     expect(
       present(
         <ErrorPresentation

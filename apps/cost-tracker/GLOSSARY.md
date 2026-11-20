@@ -14,11 +14,13 @@ _Avoid_: Host Organization, Host
 
 **Partner Organization**:
 An Organization assigned to one Project through a Project Partnership. The same Organization may be the Hosting Organization of another Project.
-_Avoid_: Partner (when referring to the Organization)
+_UI label_: Partner (plural: Partners). Use Partner Organization when the full domain name is needed in technical documentation. A Partner is not a Partnership.
 
 **Project Participation**:
 The record that one User takes part in one Project, belonging to the Project rather than to a Partner Organization.
 _Avoid_: Partner's participants, Membership, Invitee
+
+_UI label_: Participation (plural: Participations) when coordinators work with Project Participation records. Participant still means the person, including when they register, accept the Participant Agreement, or enter their journey.
 
 **Participant Agreement**:
 The app-wide, versioned EU–Erasmus agreement in Cost Tracker, accepted by a User rather than by a Project Participation.

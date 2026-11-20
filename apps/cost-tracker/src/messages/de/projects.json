@@ -1,7 +1,7 @@
 {
   "projects": {
     "page": {
-      "eyebrow": "Projektarbeitsbereich",
+      "eyebrow": "Arbeitsbereich",
       "title": "Projekte",
       "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
     },
@@ -21,7 +21,11 @@
     "list": {
       "label": "Projektliste",
       "archiveFilter": "Archivstatus",
-      "archive": { "active": "Aktiv", "archived": "Archiviert", "all": "Alle" },
+      "archive": {
+        "active": "Aktiv",
+        "archived": "Archiviert",
+        "all": "Alle"
+      },
       "settlementFilter": "Abrechnung",
       "settlement": {
         "all": "Alle",
@@ -40,7 +44,7 @@
       "startDate": "Startdatum",
       "endDate": "Enddatum",
       "schedule": "Zeitplan",
-      "viewParticipants": "Teilnehmende ansehen",
+      "viewParticipants": "Teilnahmen",
       "name": "Projektname",
       "searchPlaceholder": "Mindestens 3 Zeichen suchen",
       "sort": "Sortieren",
@@ -52,16 +56,16 @@
       "filters": "Filter",
       "activeAfter": "Aktiv am oder nach",
       "activeBefore": "Aktiv am oder vor",
-      "partnerOrganizations": "Partnerorganisationen",
-      "selectPartners": "Organisationen auswählen",
-      "partnerFilterHelp": "Projekte mit mindestens einer der ausgewählten Organisationen anzeigen.",
+      "partnerOrganizations": "Partner",
+      "selectPartners": "Partner auswählen",
+      "partnerFilterHelp": "Projekte mit mindestens einem ausgewählten Partner.",
       "refresh": "Aktualisieren",
-      "columns": "Spalten",
+      "columns": "Spalten auswählen",
       "resetColumns": "Spalten zurücksetzen",
       "sortOrder": "Sortierreihenfolge",
       "sortDescription": "Regeln gelten von oben nach unten. Weitere Regeln sortieren Projekte mit gleichen Werten in den vorherigen Regeln. Mindestens eine Regel bleibt aktiv.",
       "toggleSortDirection": "Sortierrichtung für {field} umkehren",
-      "dateRange": "Nach Partnern und Projektzeitraum filtern",
+      "dateRange": "Filter nach Partner und Zeitraum",
       "sortHeaderActive": "Nach {field} sortieren, {direction}, Priorität {priority}",
       "sortHeaderInactive": "Nach {field} sortieren, nicht sortiert",
       "ascending": "Aufsteigend",
@@ -80,14 +84,14 @@
       "clearFilters": "Filter zurücksetzen",
       "project": "Projekt",
       "location": "Ort",
-      "participants": "Teilnehmende",
+      "participants": "Teilnahmen",
       "refreshing": "Projekte werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",
       "metrics": {
         "projects": "Projekte",
         "projectsTotal": "Projekte ({count} insgesamt)",
-        "partners": "Partnerorganisationen",
-        "partnersTotal": "Partnerorganisationen ({count} insgesamt)"
+        "partners": "Partner",
+        "partnersTotal": "Partner ({count} insgesamt)"
       }
     },
     "loading": {
@@ -113,7 +117,7 @@
       "completed": "Abgeschlossen",
       "by": "von",
       "partnerships": "Partnerschaften",
-      "noPartners": "Es sind keine Partnerorganisationen zugewiesen.",
+      "noPartners": "Es sind keine Partner zugewiesen.",
       "noPartnersActionIntro": "Sie können einen",
       "assigned": "Zugewiesen",
       "partnership": "Projektpartnerschaft",
@@ -121,7 +125,7 @@
       "hostingOrganization": "Hosting-Organisation:",
       "assignedLabel": "Zugewiesen:",
       "assignmentUpdated": "Zuweisung aktualisiert:",
-      "openClaim": "Claim-Arbeitsbereich öffnen",
+      "openClaim": "Claim",
       "hostedProject": "Gehostetes Projekt",
       "partnerProject": "Partnerprojekt",
       "noClaim": "Kein Erstattungsantrag",
@@ -138,16 +142,16 @@
         "rejected": "Abgelehnt",
         "paid": "Ausgezahlt"
       },
-      "projectParticipations": "Project Participations",
+      "projectParticipations": "Teilnahmen",
       "statPartners": "Partner",
-      "statParticipants": "Teilnehmende",
+      "statParticipants": "Teilnahmen",
       "daysLeft": "{count, plural, one {# Tag übrig} other {# Tage übrig}}",
       "ended": "Beendet",
       "claimsInReview": "Claims in Prüfung",
       "schedule": "Zeitraum",
       "location": "Ort",
       "statPartnersDetail": "zugeordnete Organisationen",
-      "statParticipantsDetail": "bisher dabei",
+      "statParticipantsDetail": "bisher erfasst",
       "claimsInReviewDetail": "warten auf Entscheidung",
       "daysUntil": "bis {date}",
       "claimReview": "Claim-Prüfung",

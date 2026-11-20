@@ -1,8 +1,8 @@
 {
   "participations": {
     "report": {
-      "label": "Hosting Participant view",
-      "description": "Totals count the Project Participations that exist, each in the Partner Organization that represents it. Agreement status is separate from membership.",
+      "label": "Participations",
+      "description": "Participations by represented Organization.",
       "agreementVersion": "Agreement version",
       "agreementUnpublished": "is not published, so no Participant counts as completed.",
       "empty": "No Project Participations have joined this Project yet.",
@@ -10,17 +10,18 @@
       "completed": "completed",
       "pending": "pending",
       "countryHeader": "Country",
-      "hideParticipants": "Nascondi {count, plural, one {# partecipante} other {# partecipanti}}",
-      "showParticipants": "Mostra {count, plural, one {# partecipante} other {# partecipanti}}",
+      "participationCount": "{count, plural, one {# partecipazione} other {# partecipazioni}}",
+      "hideParticipants": "Nascondi {count, plural, one {# partecipazione} other {# partecipazioni}}",
+      "showParticipants": "Mostra {count, plural, one {# partecipazione} other {# partecipazioni}}",
       "agreementCompleted": "Accordo accettato",
       "agreementPending": "Accordo in attesa",
       "noEmail": "Nessuna email registrata",
       "notSet": "Non impostato"
     },
     "loading": {
-      "projectParticipations": "Loading Project Participations",
-      "details": "Loading Participant details",
-      "report": "Loading the Participants report"
+      "projectParticipations": "Loading Participations",
+      "details": "Loading Participation details",
+      "report": "Loading Participations"
     },
     "review": {
       "registeredUser": "Registered User:",
@@ -71,12 +72,12 @@
       "closed": "Chiuso"
     },
     "joined": {
-      "title": "Joined Participants",
+      "title": "Joined Participations",
       "empty": "No Participants have joined this Partnership yet.",
       "joined": "Joined",
       "country": "Country",
-      "detailsFor": "Participant details for",
-      "count": "{count, plural, one {# partecipante} other {# partecipanti}} in {project}",
+      "detailsFor": "Participation details",
+      "count": "{count, plural, one {# partecipazione} other {# partecipazioni}} in {project}",
       "removeFor": "Rimuovi la partecipazione al progetto di {name}"
     },
     "page": {
@@ -111,7 +112,7 @@
       "participation": "Project Participation",
       "country": "Country",
       "correctCountry": "Correct country",
-      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner may correct it.",
       "noEmail": "Nessuna email registrata",
       "cannotCorrect": "Non puoi correggere questa partecipazione al progetto.",
       "eyebrow": "Participations",
@@ -119,15 +120,16 @@
       "projects": "Projects"
     },
     "app": {
-      "eyebrow": "Participations",
+      "eyebrow": "Partnership",
       "backToProjects": "Back to Projects",
-      "reportTitle": "Participants report",
-      "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",
-      "projectParticipations": "Project Participations",
-      "coordinateDescription": "Coordinate Participants for this Project Partnership.",
-      "participantDetails": "Participant details",
+      "reportTitle": "Participations",
+      "reportDescription": "Project-wide Participations by Organization.",
+      "projectParticipations": "Participations",
+      "coordinateDescription": "Participations for this Partnership.",
+      "participantDetails": "Participation details",
       "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct.",
-      "projects": "Projects"
+      "projects": "Projects",
+      "hostedEyebrow": "Hosted Project"
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,7 +184,7 @@
       }
     },
     "link": {
-      "label": "View Participants"
+      "label": "Participations"
     }
   }
 }

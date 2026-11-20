@@ -8,15 +8,10 @@ import {
   CalendarDaysIcon,
   MapPinIcon,
   Users2Icon,
-  UsersIcon,
 } from "lucide-react";
 import { Suspense, useSyncExternalStore } from "react";
 
-import {
-  partnershipClaimPath,
-  partnershipClaimReviewPath,
-  partnershipParticipantsPath,
-} from "@/app/paths";
+import { partnershipClaimPath, partnershipClaimReviewPath } from "@/app/paths";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
@@ -183,16 +178,12 @@ function AssignedPartnersCard({
                 <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
                   <OrgAvatar name={partner.organizationName} />
                   <div className="min-w-0 space-y-0.5">
-                    {/* The Partnership detail route is deliberately
-                        header-only this release, so the row links to that
-                        Partner's Participants instead — the actionable
-                        destination for this Partnership. */}
-                    <Link
-                      className="block font-medium wrap-anywhere link-prose"
-                      href={partnershipParticipantsPath(partner.id)}
+                    <p
+                      className="font-medium wrap-anywhere"
+                      id={`project-partner-${partner.id}`}
                     >
                       {partner.organizationName}
-                    </Link>
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {t("assigned")}{" "}
                       {dateFormat.format(partner.assignedAt, "date.medium")}
@@ -201,6 +192,11 @@ function AssignedPartnersCard({
                 </div>
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <ClaimReadiness status={partner.claimStatus} />
+                  <ParticipantsLink
+                    partnershipId={partner.id}
+                    describedBy={`project-partner-${partner.id}`}
+                    testId={`partnership-participations-${partner.id}`}
+                  />
                   {/* The review page hangs under this Hosted Project, so
                       the row is its way in: the global queue also lists
                       every submitted Claim, this links one Partnership.
@@ -214,6 +210,7 @@ function AssignedPartnersCard({
                         size: "sm",
                       })}
                       href={partnershipClaimReviewPath(partner.id)}
+                      aria-describedby={`project-partner-${partner.id}`}
                       data-testid={`review-claim-${partner.id}`}
                     >
                       <EntityIcon entity="claim" className="size-3.5" />
@@ -290,21 +287,7 @@ function PartnerProjectCard({
             </dd>
           </div>
         </dl>
-        {/* Both entries navigate to related workspaces: typographic
-            links with arrows, never outline buttons that read as actions. */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3">
-          <Link
-            className={buttonVariants({
-              variant: "link",
-              size: "sm",
-            })}
-            href={partnershipParticipantsPath(partnership.id)}
-            data-testid="coordinate-participants"
-          >
-            <UsersIcon aria-hidden="true" />
-            {t("projectParticipations")}
-            <ArrowUpRightIcon aria-hidden="true" />
-          </Link>
           <Link
             className={buttonVariants({
               variant: "link",
@@ -389,6 +372,7 @@ export function ProjectWorkspace({
         }
       />
       <section
+        data-testid="project-facts"
         aria-label={t("details")}
         className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3"
       >
@@ -421,9 +405,14 @@ export function ProjectWorkspace({
             </dd>
           </div>
         </dl>
-        {isHosted && (
+        {project.relationship === "hosted" ? (
           <ParticipantsLink
             projectId={project.id}
+            className="max-w-full whitespace-normal"
+          />
+        ) : (
+          <ParticipantsLink
+            partnershipId={project.partnership.id}
             className="max-w-full whitespace-normal"
           />
         )}

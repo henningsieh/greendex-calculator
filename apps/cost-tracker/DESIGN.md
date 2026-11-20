@@ -230,9 +230,9 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 
 ### Project Workspace
 
-- Use the shared `ProtectedPageHeader` on the register and detail pages. Keep its orientation eyebrow above the page title: **Project workspace** on the register and **Hosted Project** or **Partner Project** on the detail page. Breadcrumbs complement the eyebrow; they do not replace it. Archived status remains visible in the detail header.
-- Schedule and location lead into a compact, divided metric strip with sentence-case labels and tabular values. The Hosted Participants link sits with the Project facts and wraps below them on narrow screens.
-- The partnership section contains the relevant work: Hosted rows pair each Partner with Claim status and available review links; the Partner view groups Hosting identity, assignment dates, and links to its own workspaces.
+- Use the shared `ProtectedPageHeader`. Direct sidebar destinations use the sidebar group as their eyebrow (**Workspace** or **Administration**); nested pages use their scope, such as **Hosted Project**, **Partner Project**, or **Partnership**. Breadcrumbs complement the eyebrow; they do not replace it. Archived status remains visible in the detail header.
+- Schedule and location lead into a compact, divided metric strip with sentence-case labels and tabular values. The **Participations** link sits beside the Project facts for both relationships and wraps below them on narrow screens.
+- Links name the destination; buttons describe the action. Hosted Partnership rows name the Partner separately from the **Participations** and **Claim review** links. The Partner view groups Hosting identity, assignment dates, and the **Claim** link.
 
 ## Do's and Don'ts
 

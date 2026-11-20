@@ -14,10 +14,10 @@
     "nav": {
       "primaryLabel": "Hauptnavigation",
       "projects": "Projekte",
-      "partnerOrganizations": "Partnerorganisationen",
+      "partnerOrganizations": "Partner",
       "organization": "Organisation",
       "workspace": "Arbeitsbereich",
-      "manage": "Verwalten",
+      "manage": "Verwaltung",
       "claimReview": "Claim-Prüfung"
     },
     "account": {
@@ -106,7 +106,7 @@
         },
         "partners": {
           "title": "Partner bleiben abgestimmt",
-          "description": "Hosting- und Partnerorganisationen sehen einen projektspezifischen Datensatz."
+          "description": "Gastgebende Organisationen und Partner sehen einen projektspezifischen Datensatz."
         }
       },
       "cta": {
@@ -255,12 +255,12 @@
     "crumbs": {
       "projectDetails": "Projektdetails",
       "partnership": "Partnerschaft",
-      "participants": "Teilnehmer",
-      "participantDetails": "Teilnehmerdetails",
-      "claimReviews": "Claim-Prüfungen",
-      "claimWorkspace": "Claim-Arbeitsbereich",
+      "participants": "Teilnahmen",
+      "participantDetails": "Teilnahmedetails",
+      "claimReviews": "Claim-Prüfung",
+      "claimWorkspace": "Claim",
       "userSettings": "Benutzereinstellungen",
-      "claimReview": "Claim prüfen",
+      "claimReview": "Claim-Prüfung",
       "hostedProject": "Gehostetes Projekt",
       "partnerProject": "Partnerprojekt"
     }

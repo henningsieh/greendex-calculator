@@ -19,7 +19,7 @@ export default async function HostedParticipantsPage({
   return (
     <div className="space-y-8">
       <ProtectedPageHeader
-        eyebrow={t("eyebrow")}
+        eyebrow={t("hostedEyebrow")}
         title={t("reportTitle")}
         description={t("reportDescription")}
       />

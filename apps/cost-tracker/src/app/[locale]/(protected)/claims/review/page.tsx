@@ -4,4 +4,4 @@ import ClaimReviewQueuePage from "@/features/claims/components/claim-review-queu
 
 export default ClaimReviewQueuePage;
 
-export const metadata: Metadata = { title: "Submitted Claims" };
+export const metadata: Metadata = { title: "Claim review" };

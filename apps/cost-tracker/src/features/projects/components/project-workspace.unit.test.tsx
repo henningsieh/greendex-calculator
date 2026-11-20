@@ -141,9 +141,16 @@ describe("Project workspace", () => {
     // at navigation to a page that has nothing to review.
     expect(screen.queryByTestId("review-claim-partnership-1")).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
-    expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
-      "/en-GB/projects/project-1/participants",
-    );
+    expect(
+      within(screen.getByTestId("project-facts")).getByTestId(
+        "hosted-participants",
+      ),
+    ).toHaveAttribute("href", "/en-GB/projects/project-1/participants");
+    expect(
+      within(partnerships[0]!).getByTestId(
+        "partnership-participations-partnership-1",
+      ),
+    ).toHaveAttribute("href", "/en-GB/partnerships/partnership-1/participants");
     expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
   });
 
@@ -555,7 +562,9 @@ describe("Project workspace", () => {
       screen.queryByTestId("assigned-partner-organizations"),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("coordinate-participants").getAttribute("href"),
+      within(screen.getByTestId("project-facts"))
+        .getByTestId("coordinate-participants")
+        .getAttribute("href"),
     ).toBe("/en-GB/partnerships/partnership-1/participants");
     expect(screen.getByTestId("open-claim-workspace").getAttribute("href")).toBe(
       "/en-GB/partnerships/partnership-1/claim",

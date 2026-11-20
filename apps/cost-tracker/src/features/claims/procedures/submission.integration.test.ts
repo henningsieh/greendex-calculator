@@ -1478,7 +1478,7 @@ describe("Host Claim review", () => {
           ? {
               code: "FORBIDDEN",
               message:
-                "You need Partner Organization staff access or an assignment to this Project Partnership.",
+                "You need staff access in the Partner or an assignment to this Project Partnership.",
               data: { reason: "PARTNER_COORDINATION_REQUIRED" },
             }
           : {

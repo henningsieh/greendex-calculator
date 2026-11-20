@@ -49,13 +49,13 @@ export function useParticipantEntryAccess(
 
 const ENTRY_DENIAL_COPY = {
   MISSING_ACTIVE_ORGANIZATION:
-    "Select an active Partner Organization before issuing participant entry points.",
+    "Select the Partner as your active Organization before issuing participant entry points.",
   MISSING_MEMBERSHIP:
-    "You need Membership in this Partner Organization to issue participant entry points.",
+    "You need Membership with this Partner to issue participant entry points.",
   HOSTING_SIDE:
-    "Only the Partner Organization of this Project Partnership issues participant entry points.",
+    "Only the Partner in this Project Partnership may issue participant entry points.",
   UNRELATED_ORGANIZATION:
-    "Only the Partner Organization of this Project Partnership issues participant entry points.",
+    "Only the Partner in this Project Partnership may issue participant entry points.",
   PERMISSION_MISSING:
     "Your Organization role cannot bring participants into this Project.",
   ASSIGNMENT_MISSING:

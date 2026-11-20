@@ -69,7 +69,9 @@ export function JoinedParticipants({
                 key={participant.id}
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <strong>{participant.displayName}</strong>
+                  <strong id={`participation-name-${participant.id}`}>
+                    {participant.displayName}
+                  </strong>
                   <Badge variant="secondary" data-participation-state="joined">
                     {t("joined.joined")}
                   </Badge>
@@ -87,11 +89,12 @@ export function JoinedParticipants({
                 </p>
                 {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
                 <Link
-                  className={buttonVariants({ variant: "outline" })}
+                  className={buttonVariants({ variant: "link" })}
+                  aria-describedby={`participation-name-${participant.id}`}
                   href={participationPath(partnershipId, participant.id)}
                   data-testid={`participant-details-${participant.id}`}
                 >
-                  {t("joined.detailsFor")} {participant.displayName}
+                  {t("joined.detailsFor")}
                 </Link>
                 {entryAccess.permitted && (
                   <Button
