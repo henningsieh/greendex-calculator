@@ -825,7 +825,7 @@ export function ResolvedProjectListResults({
               >
                 <div className="text-sm font-medium">
                   <Link
-                    className="block link-prose"
+                    className="block wrap-anywhere link-prose"
                     data-testid={`project-link-${row.original.id}-card`}
                     href={projectPath(row.original.id)}
                   >

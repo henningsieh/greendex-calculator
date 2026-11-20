@@ -43,7 +43,7 @@ test.describe("Cost Tracker Project production path", () => {
     const rows = Array.from({ length: 8 }, (_, index) => ({
       id: randomUUID(),
       organizationId: project.organizationId,
-      name: `${prefix} ${index % 2 ? "B" : "A"} ${"long project name ".repeat(12)}`,
+      name: `${prefix} ${index % 2 ? "B" : "A"} ${"W".repeat(100)}`,
       startDate: new Date(Date.UTC(2026, 0, 1 + Math.floor(index / 4))),
       endDate: new Date(Date.UTC(2026, 1, 1 + (Math.floor(index / 2) % 2))),
       location: "Berlin",
