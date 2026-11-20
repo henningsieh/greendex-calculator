@@ -28,6 +28,7 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
+          isolate: process.env.GREENDEX_VITEST_REUSE_WORKERS !== "1",
           include: ["src/**/*.{test,spec}.{ts,js}", "test/**/*.test.{ts,js}"],
           exclude: [
             ".next",
@@ -49,6 +50,7 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
+          isolate: process.env.GREENDEX_VITEST_REUSE_WORKERS !== "1",
           include: [
             "src/**/*.{test,spec}.{tsx,jsx}",
             "test/**/*.test.{tsx,jsx}",

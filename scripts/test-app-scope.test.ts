@@ -82,7 +82,7 @@ it.concurrent.each([
       }
       await writeFile(
         resolve(root, "bin/pnpm"),
-        "#!/usr/bin/env node\nconsole.log(JSON.stringify({args:process.argv.slice(2),cwd:process.cwd()}));process.exit(Number(process.env.FIXTURE_EXIT));\n",
+        "#!/usr/bin/env node\nconsole.log(JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),reuse:process.env.GREENDEX_VITEST_REUSE_WORKERS}));process.exit(Number(process.env.FIXTURE_EXIT));\n",
         { mode: 0o755 },
       );
       await writeFile(
@@ -108,6 +108,7 @@ it.concurrent.each([
             DATABASE_URL: "postgres://localhost/greendex_development",
             NEXT_PUBLIC_BASE_URL: "http://localhost:3002",
             GREENDEX_TEST_WORKERS: "2",
+            GREENDEX_VITEST_REUSE_WORKERS: "0",
             FIXTURE_EXIT: String(exit),
           },
           timeout: 15_000,
@@ -121,6 +122,7 @@ it.concurrent.each([
       expect(invocation).toBeDefined();
       expect(JSON.parse(invocation!)).toEqual({
         cwd: resolve(root, "apps/cost-tracker"),
+        reuse: suite === "unit" ? "1" : "0",
         args:
           suite === "e2e"
             ? [
@@ -139,7 +141,7 @@ it.concurrent.each([
                 "--retry=0",
                 ...(suite === "integration"
                   ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
-                  : ["--pool=threads", "--no-isolate", "--file-parallelism"]),
+                  : ["--pool=threads", "--file-parallelism"]),
                 suite === "integration"
                   ? "src/service.integration.test.ts"
                   : "src/pure.test.ts",

@@ -27,6 +27,7 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
+          isolate: process.env.GREENDEX_VITEST_REUSE_WORKERS !== "1",
           setupFiles: ["./src/__tests__/setup.node.ts"],
           include: ["src/**/*.{test,spec}.ts", "scripts/**/*.test.ts"],
           exclude: ["src/__tests__/e2e/**", "src/lib/orpc/orpc.browser.test.ts"],
@@ -36,6 +37,8 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
+          // Some component tests mutate browser state outside Vitest stubs.
+          isolate: true,
           setupFiles: ["./src/__tests__/setup.dom.ts"],
           include: [
             "src/**/*.{test,spec}.tsx",

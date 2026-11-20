@@ -118,9 +118,8 @@ async function vitest(
   environment: Record<string, string | undefined> = process.env,
 ): Promise<void> {
   if (!files.length) throw new TestRunError("Required test selection is empty.");
-  const reuseUnitWorkers = integrationApps.some(
-    (app) => directory === `apps/${app}`,
-  );
+  const appUnit =
+    !integration && integrationApps.some((app) => directory === `apps/${app}`);
   return command(
     directory,
     [
@@ -131,13 +130,14 @@ async function vitest(
       "--retry=0",
       ...(integration
         ? ["--no-file-parallelism", "--isolate", "--pool=forks"]
-        : [
-            "--pool=threads",
-            ...(reuseUnitWorkers ? ["--no-isolate", "--file-parallelism"] : []),
-          ]),
+        : ["--pool=threads", ...(appUnit ? ["--file-parallelism"] : [])]),
       ...files,
     ],
-    { ...environment, NODE_ENV: "test" },
+    {
+      ...environment,
+      NODE_ENV: "test",
+      GREENDEX_VITEST_REUSE_WORKERS: appUnit ? "1" : "0",
+    },
   );
 }
 
