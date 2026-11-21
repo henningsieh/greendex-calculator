@@ -3,12 +3,14 @@ import { resolve } from "node:path";
 
 import {
   createTailwindCanonicalizer,
+  tailwindStylesheetPaths,
   walkTailwindSources,
   type TailwindCanonicalizer,
 } from "./tailwind-canonical";
 import { ROOT } from "./tailwind-config.mjs";
 
 const TRANSIENT_FS_ERRORS = new Set(["ENOENT", "ENOTDIR", "EACCES", "EPERM"]);
+const RETRY_DELAY = 200;
 
 function isTransientFsError(error: unknown): boolean {
   return (
@@ -19,8 +21,12 @@ function isTransientFsError(error: unknown): boolean {
   );
 }
 
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
+}
+
 async function main() {
-  let canonicalizer: TailwindCanonicalizer = await createTailwindCanonicalizer();
+  let canonicalizer: TailwindCanonicalizer | null = null;
   const known = new Map<string, string>();
   const pending = new Map<string, NodeJS.Timeout>();
   const busy = new Set<string>();
@@ -35,10 +41,42 @@ async function main() {
     }
   }
 
+  function snapshotStylesheets(): Map<string, string | null> {
+    return new Map(
+      tailwindStylesheetPaths(ROOT).map((file) => [file, signature(file)]),
+    );
+  }
+
+  function stable(
+    before: Map<string, string | null>,
+    after: Map<string, string | null>,
+  ): boolean {
+    return (
+      before.size === after.size &&
+      [...before].every(([file, value]) => after.get(file) === value)
+    );
+  }
+
   function trackStylesheets(instance: TailwindCanonicalizer): void {
     stylesheetSignatures = new Map(
       instance.stylesheetDependencies.map((file) => [file, signature(file)]),
     );
+  }
+
+  async function loadCanonicalizer(
+    retry: boolean,
+  ): Promise<TailwindCanonicalizer | null> {
+    do {
+      const before = snapshotStylesheets();
+      try {
+        const next = await createTailwindCanonicalizer();
+        if (stable(before, snapshotStylesheets())) return next;
+      } catch (error) {
+        console.error("Tailwind canonicalizer load failed:", error);
+      }
+      if (!retry) return null;
+      await sleep(RETRY_DELAY);
+    } while (true);
   }
 
   function discoverSources(): string[] {
@@ -50,7 +88,10 @@ async function main() {
     }
   }
 
-  trackStylesheets(canonicalizer);
+  const initial = await loadCanonicalizer(true);
+  if (!initial) throw new Error("Unable to load Tailwind canonicalizer");
+  canonicalizer = initial;
+  trackStylesheets(initial);
   for (const file of discoverSources()) {
     const current = signature(resolve(ROOT, file));
     if (current) known.set(file, current);
@@ -71,32 +112,17 @@ async function main() {
       });
   }, 100);
 
-  async function reloadCanonicalizer(): Promise<boolean> {
-    const before = new Map(
-      canonicalizer.stylesheetDependencies.map((file) => [file, signature(file)]),
-    );
-    try {
-      const next = await createTailwindCanonicalizer();
-      const after = new Map(
-        next.stylesheetDependencies.map((file) => [file, signature(file)]),
-      );
-      for (const [file, value] of before) {
-        if (after.get(file) !== value) return false;
-      }
-      canonicalizer = next;
-      trackStylesheets(next);
-      return true;
-    } catch (error) {
-      console.error("Tailwind canonicalizer reload failed;", error);
-      return false;
-    }
-  }
-
   async function poll(): Promise<void> {
-    const stylesheetChanged = canonicalizer.stylesheetDependencies.some(
+    const active = canonicalizer!;
+    const stylesheetChanged = active.stylesheetDependencies.some(
       (file) => signature(file) !== stylesheetSignatures.get(file),
     );
-    if (stylesheetChanged && !(await reloadCanonicalizer())) return;
+    if (stylesheetChanged) {
+      const reloaded = await loadCanonicalizer(false);
+      if (!reloaded) return;
+      canonicalizer = reloaded;
+      trackStylesheets(reloaded);
+    }
 
     for (const file of discoverSources()) {
       const absolute = resolve(ROOT, file);
@@ -115,9 +141,12 @@ async function main() {
           if (busy.has(file)) return;
           busy.add(file);
           try {
-            await canonicalizer.canonicalizeFiles([file], { root: ROOT });
+            await canonicalizer!.canonicalizeFiles([file], { root: ROOT });
             const after = signature(absolute);
             if (after) known.set(file, after);
+          } catch (error) {
+            console.error(`Tailwind canonicalization failed for ${file}:`, error);
+            known.delete(file);
           } finally {
             busy.delete(file);
           }

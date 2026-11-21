@@ -5,6 +5,15 @@ import { dirname, extname, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
+  parseSync,
+  Visitor,
+  type CallExpression,
+  type Expression,
+  type JSXExpression,
+  type StringLiteral,
+} from "oxc-parser";
+
+import {
   isTailwindSourcePath,
   ROOT,
   TAILWIND_REM,
@@ -18,166 +27,12 @@ type DesignSystem = {
   ) => string[];
 };
 
-// Complete JSX attribute names avoid `data-class`; `cn(...)` expressions are
-// scanned separately so nested conditional class literals are included too.
-const CLASS_ATTRIBUTE = /(?<![\w:-])(className|class)\s*=\s*(?:"([^"]*)"|\{)/g;
-const CN_CALL = /\bcn\s*\(/g;
-const STRING_LITERAL = /"([^"]*)"|'([^']*)'/g;
-
 type Replacement = { start: number; end: number; value: string };
+
+const CLASS_FUNCTIONS = new Set(["cn", "clsx", "cva", "twMerge", "twJoin"]);
 
 function toPosix(file: string): string {
   return file.split(sep).join("/");
-}
-
-function findClosing(
-  text: string,
-  start: number,
-  open: string,
-  close: string,
-): number | null {
-  let depth = 0;
-  let quote: string | null = null;
-
-  for (let index = start; index < text.length; index += 1) {
-    const character = text[index]!;
-    if (quote) {
-      if (character === "\\") index += 1;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    else if (character === close) {
-      depth -= 1;
-      if (depth === 0) return index;
-    }
-  }
-  return null;
-}
-
-function canonicalizeClassList(
-  value: string,
-  designSystem: DesignSystem,
-): string {
-  const leading = value.match(/^\s*/)?.[0] ?? "";
-  const trailing = value.match(/\s*$/)?.[0] ?? "";
-  const classes = value.trim().split(/\s+/).filter(Boolean);
-  if (!classes.length) return value;
-  return (
-    leading +
-    designSystem
-      .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
-      .join(" ") +
-    trailing
-  );
-}
-
-function isClassLiteralPosition(
-  text: string,
-  from: number,
-  to: number,
-  regionStart: number,
-): boolean {
-  const before = text.slice(Math.max(regionStart, to - 80), to).trimEnd();
-  const after = text.slice(from, Math.min(text.length, from + 80)).trimStart();
-  const comparison = /(?:===|!==|==|!=|<=|>=|<|>)$/;
-  if (comparison.test(before) || /^(?:===|!==|==|!=|<=|>=|<|>)/.test(after)) {
-    return false;
-  }
-  const call = before.match(/(?:^|[^\w$])([A-Za-z_$][\w$]*)\s*\($/);
-  return !call || call[1] === "cn";
-}
-
-function collectStringReplacements(
-  text: string,
-  from: number,
-  to: number,
-  designSystem: DesignSystem,
-  replacements: Map<number, Replacement>,
-): void {
-  STRING_LITERAL.lastIndex = from;
-  let match: RegExpExecArray | null;
-  while ((match = STRING_LITERAL.exec(text)) !== null && match.index < to) {
-    const end = match.index + match[0].length;
-    if (end > to) break;
-    const value = match[1] ?? match[2] ?? "";
-    if (!isClassLiteralPosition(text, match.index + 1, match.index, from)) {
-      continue;
-    }
-    const canonical = canonicalizeClassList(value, designSystem);
-    if (canonical !== value) {
-      replacements.set(match.index + 1, {
-        start: match.index + 1,
-        end: end - 1,
-        value: canonical,
-      });
-    }
-    STRING_LITERAL.lastIndex = end;
-  }
-}
-
-export function canonicalizeSource(
-  text: string,
-  designSystem: DesignSystem,
-): string {
-  const replacements = new Map<number, Replacement>();
-
-  for (const match of text.matchAll(CLASS_ATTRIBUTE)) {
-    const quoted = match[2];
-    if (quoted !== undefined) {
-      const quoteIndex = match[0].indexOf('"', match[0].indexOf("="));
-      const start = match.index + quoteIndex + 1;
-      const canonical = canonicalizeClassList(quoted, designSystem);
-      if (canonical !== quoted) {
-        replacements.set(start, {
-          start,
-          end: start + quoted.length,
-          value: canonical,
-        });
-      }
-      continue;
-    }
-    const open = match.index + match[0].length - 1;
-    const close = findClosing(text, open, "{", "}");
-    if (close !== null) {
-      collectStringReplacements(
-        text,
-        open + 1,
-        close,
-        designSystem,
-        replacements,
-      );
-    }
-  }
-
-  for (const match of text.matchAll(CN_CALL)) {
-    const open = match.index + match[0].length - 1;
-    const close = findClosing(text, open, "(", ")");
-    if (close !== null) {
-      collectStringReplacements(
-        text,
-        open + 1,
-        close,
-        designSystem,
-        replacements,
-      );
-    }
-  }
-
-  let next = text;
-  for (const replacement of [...replacements.values()].sort(
-    (left, right) => right.start - left.start,
-  )) {
-    next =
-      next.slice(0, replacement.start) +
-      replacement.value +
-      next.slice(replacement.end);
-  }
-  return next;
 }
 
 function gitFiles(root: string, ...args: string[]): string[] {
@@ -212,6 +67,13 @@ function tailwindRoots(): string[] {
   ];
 }
 
+/** Theme entrypoints whose compiled design systems drive canonicalization. */
+export function tailwindStylesheetPaths(root = ROOT): string[] {
+  return tailwindRoots()
+    .map((appRoot) => resolve(root, appRoot, "src/app/globals.css"))
+    .filter((stylesheet) => existsSync(stylesheet));
+}
+
 /** All production Tailwind sources, used by the save watcher. */
 export function walkTailwindSources(root = ROOT): string[] {
   const files: string[] = [];
@@ -232,6 +94,129 @@ export function walkTailwindSources(root = ROOT): string[] {
     .map((file) => toPosix(relative(root, file)))
     .filter(isTailwindSourcePath)
     .filter((file) => existsSync(resolve(root, file)));
+}
+
+function canonicalizeClassList(
+  value: string,
+  designSystem: DesignSystem,
+): string {
+  const leading = value.match(/^\s*/)?.[0] ?? "";
+  const trailing = value.match(/\s*$/)?.[0] ?? "";
+  const classes = value.trim().split(/\s+/).filter(Boolean);
+  if (!classes.length) return value;
+  return (
+    leading +
+    designSystem
+      .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
+      .join(" ") +
+    trailing
+  );
+}
+
+function isClassCall(node: CallExpression): boolean {
+  return (
+    node.callee.type === "Identifier" && CLASS_FUNCTIONS.has(node.callee.name)
+  );
+}
+
+function isExpression(
+  node: JSXExpression | null | undefined,
+): node is Expression {
+  return !!node && node.type !== "JSXEmptyExpression";
+}
+
+/** Rewrites only AST positions whose string literals produce class names. */
+export function canonicalizeSource(
+  text: string,
+  designSystem: DesignSystem,
+): string {
+  const parsed = parseSync("canonicalize.tsx", text, {
+    lang: "tsx",
+    sourceType: "module",
+  });
+  const replacements = new Map<number, Replacement>();
+
+  function addLiteral(node: StringLiteral): void {
+    const start = node.start + 1;
+    const end = node.end - 1;
+    const value = node.value;
+    const canonical = canonicalizeClassList(value, designSystem);
+    if (canonical !== value)
+      replacements.set(start, { start, end, value: canonical });
+  }
+
+  function collect(node: Expression | JSXExpression | null | undefined): void {
+    if (!isExpression(node)) return;
+
+    if (node.type === "Literal" && typeof node.value === "string") {
+      addLiteral(node);
+      return;
+    }
+    if (
+      node.type === "ParenthesizedExpression" ||
+      node.type === "TSAsExpression" ||
+      node.type === "TSSatisfiesExpression" ||
+      node.type === "TSNonNullExpression"
+    ) {
+      collect(node.expression);
+      return;
+    }
+    if (node.type === "ConditionalExpression") {
+      collect(node.consequent);
+      collect(node.alternate);
+      return;
+    }
+    if (node.type === "LogicalExpression") {
+      if (node.operator === "&&" || node.operator === "||") collect(node.right);
+      return;
+    }
+    if (node.type === "BinaryExpression" && node.operator === "+") {
+      if (node.left.type === "Literal" && typeof node.left.value === "string") {
+        addLiteral(node.left);
+      }
+      if (node.right.type === "Literal" && typeof node.right.value === "string") {
+        addLiteral(node.right);
+      }
+      return;
+    }
+    if (node.type === "CallExpression" && isClassCall(node)) {
+      for (const argument of node.arguments) {
+        if (argument.type !== "SpreadElement") collect(argument);
+      }
+    }
+  }
+
+  const visitor = new Visitor({
+    JSXAttribute(node) {
+      const name = node.name.type === "JSXIdentifier" ? node.name.name : null;
+      if (name !== "class" && name !== "className") return;
+      const value = node.value;
+      if (!value) return;
+      if (value.type === "Literal" && typeof value.value === "string") {
+        addLiteral(value);
+      } else if (value.type === "JSXExpressionContainer") {
+        collect(value.expression);
+      }
+    },
+    CallExpression(node) {
+      if (!isClassCall(node)) return;
+      for (const argument of node.arguments) {
+        if (argument.type !== "SpreadElement") collect(argument);
+      }
+    },
+  });
+  visitor.visit(parsed.program);
+
+  let next = text;
+  for (const replacement of [...replacements.values()].sort(
+    (left, right) => right.start - left.start,
+  )) {
+    next =
+      next.slice(0, replacement.start) +
+      replacement.value +
+      next.slice(replacement.end);
+  }
+  return next;
 }
 
 export type TailwindCanonicalizer = {
@@ -285,13 +270,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
     return designSystems.get(appRoot)!;
   }
 
-  // Load each app's design system before consumers announce readiness, so the
-  // first editor save does not pay the compiler startup cost. The paths are
-  // exposed so the watcher can rebuild when a theme changes.
-  const stylesheetDependencies = tailwindRoots()
-    .map((appRoot) => resolve(ROOT, appRoot, "src/app/globals.css"))
-    .filter((stylesheet) => existsSync(stylesheet));
-
+  const stylesheetDependencies = tailwindStylesheetPaths(ROOT);
   for (const stylesheet of stylesheetDependencies) {
     const appRoot = toPosix(relative(ROOT, stylesheet)).split("/src/")[0]!;
     designSystems.set(
