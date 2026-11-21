@@ -68,6 +68,12 @@ function tailwindRoots(): string[] {
   ];
 }
 
+function tailwindStylesheetEntrypoints(root = ROOT): string[] {
+  return tailwindRoots()
+    .map((appRoot) => resolve(root, appRoot, "src/app/globals.css"))
+    .filter((stylesheet) => existsSync(stylesheet));
+}
+
 /** Theme entrypoints and their relative CSS imports that affect the design system. */
 export function tailwindStylesheetPaths(root = ROOT): string[] {
   const seen = new Set<string>();
@@ -85,9 +91,8 @@ export function tailwindStylesheetPaths(root = ROOT): string[] {
     }
   }
 
-  for (const appRoot of tailwindRoots()) {
-    collect(resolve(root, appRoot, "src/app/globals.css"));
-  }
+  for (const stylesheet of tailwindStylesheetEntrypoints(root))
+    collect(stylesheet);
   return [...seen];
 }
 
@@ -320,7 +325,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
   }
 
   const stylesheetDependencies = tailwindStylesheetPaths(ROOT);
-  for (const stylesheet of stylesheetDependencies) {
+  for (const stylesheet of tailwindStylesheetEntrypoints(ROOT)) {
     const appRoot = toPosix(relative(ROOT, stylesheet)).split("/src/")[0]!;
     designSystems.set(
       cacheKey(ROOT, appRoot),
