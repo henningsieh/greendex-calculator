@@ -33,6 +33,8 @@ it("canonicalizes only string literals that produce class names", () => {
     )}
   >
     <span className={"flex " + extra} />
+    <span className={"w-[16px]" + "0"} />
+    <span className={"w-[16px] " + extra} />
     <span className={classes["w-[64px]"]} />
     <span className={cn(resolveClass(theme, "w-[16px]"))} />
     <span className={cn("w-[64px]", active ? "rounded-[2px]" : "p-[16px]")} />
@@ -58,6 +60,8 @@ it("canonicalizes only string literals that produce class names", () => {
     )}
   >
     <span className={"flex " + extra} />
+    <span className={"w-[16px]" + "0"} />
+    <span className={"w-4 " + extra} />
     <span className={classes["w-[64px]"]} />
     <span className={cn(resolveClass(theme, "w-[16px]"))} />
     <span className={cn("w-16", active ? "rounded-xs" : "p-4")} />

@@ -30,6 +30,7 @@ type DesignSystem = {
 type Replacement = { start: number; end: number; value: string };
 
 const CLASS_FUNCTIONS = new Set(["cn", "clsx", "cva", "twMerge", "twJoin"]);
+const CSS_IMPORT = /@(?:import|use)\s+(?:url\()?["']([^"']+)["']\)?/g;
 
 function toPosix(file: string): string {
   return file.split(sep).join("/");
@@ -67,11 +68,27 @@ function tailwindRoots(): string[] {
   ];
 }
 
-/** Theme entrypoints whose compiled design systems drive canonicalization. */
+/** Theme entrypoints and their relative CSS imports that affect the design system. */
 export function tailwindStylesheetPaths(root = ROOT): string[] {
-  return tailwindRoots()
-    .map((appRoot) => resolve(root, appRoot, "src/app/globals.css"))
-    .filter((stylesheet) => existsSync(stylesheet));
+  const seen = new Set<string>();
+
+  function collect(stylesheet: string): void {
+    if (seen.has(stylesheet) || !existsSync(stylesheet)) return;
+    seen.add(stylesheet);
+
+    const css = readFileSync(stylesheet, "utf8");
+    for (const match of css.matchAll(CSS_IMPORT)) {
+      const specifier = match[1]!;
+      if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
+      const imported = resolve(dirname(stylesheet), specifier);
+      collect(imported.endsWith(".css") ? imported : `${imported}.css`);
+    }
+  }
+
+  for (const appRoot of tailwindRoots()) {
+    collect(resolve(root, appRoot, "src/app/globals.css"));
+  }
+  return [...seen];
 }
 
 /** All production Tailwind sources, used by the save watcher. */
@@ -191,10 +208,18 @@ export function canonicalizeSource(
       return;
     }
     if (node.type === "BinaryExpression" && node.operator === "+") {
-      if (node.left.type === "Literal" && typeof node.left.value === "string") {
+      if (
+        node.left.type === "Literal" &&
+        typeof node.left.value === "string" &&
+        /\s$/.test(node.left.value)
+      ) {
         addLiteral(node.left);
       }
-      if (node.right.type === "Literal" && typeof node.right.value === "string") {
+      if (
+        node.right.type === "Literal" &&
+        typeof node.right.value === "string" &&
+        /^\s/.test(node.right.value)
+      ) {
         addLiteral(node.right);
       }
       return;

@@ -58,7 +58,14 @@ function stageIfChanged(file, before) {
   git("update-index", "--cacheinfo", `${mode},${hash.toString().trim()},${file}`);
 }
 
-const format = paths.filter(
+function isRegularIndexFile(file) {
+  const mode = git("ls-files", "-s", "--", file).toString().slice(0, 6);
+  return mode === "100644" || mode === "100755";
+}
+
+const stagedFiles = paths.filter(isRegularIndexFile);
+
+const format = stagedFiles.filter(
   (file) =>
     /\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$/.test(
       file,
@@ -74,7 +81,7 @@ for (const file of format) {
   stageIfChanged(file, before);
 }
 
-const lint = paths.filter((file) =>
+const lint = stagedFiles.filter((file) =>
   /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/.test(file),
 );
 
