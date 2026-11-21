@@ -18,11 +18,141 @@ type DesignSystem = {
   ) => string[];
 };
 
-const CLASS_ATTRIBUTE =
-  /\b(className|class|cn)\s*=\s*"([^"]+)"|\bcn\("([^"]+)"\)/g;
+// Complete JSX attribute names avoid `data-class`; `cn(...)` expressions are
+// scanned separately so nested conditional class literals are included too.
+const CLASS_ATTRIBUTE = /(?<![\w:-])(className|class)\s*=\s*(?:"([^"]*)"|\{)/g;
+const CN_CALL = /\bcn\s*\(/g;
+const STRING_LITERAL = /"([^"]*)"|'([^']*)'/g;
+
+type Replacement = { start: number; end: number; value: string };
 
 function toPosix(file: string): string {
   return file.split(sep).join("/");
+}
+
+function findClosing(
+  text: string,
+  start: number,
+  open: string,
+  close: string,
+): number | null {
+  let depth = 0;
+  let quote: string | null = null;
+
+  for (let index = start; index < text.length; index += 1) {
+    const character = text[index]!;
+    if (quote) {
+      if (character === "\\") index += 1;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      continue;
+    }
+    if (character === open) depth += 1;
+    else if (character === close) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return null;
+}
+
+function canonicalizeClassList(
+  value: string,
+  designSystem: DesignSystem,
+): string {
+  const classes = value.split(/\s+/).filter(Boolean);
+  if (!classes.length) return value;
+  return designSystem
+    .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
+    .join(" ");
+}
+
+function collectStringReplacements(
+  text: string,
+  from: number,
+  to: number,
+  designSystem: DesignSystem,
+  replacements: Map<number, Replacement>,
+): void {
+  STRING_LITERAL.lastIndex = from;
+  let match: RegExpExecArray | null;
+  while ((match = STRING_LITERAL.exec(text)) !== null && match.index < to) {
+    const end = match.index + match[0].length;
+    if (end > to) break;
+    const value = match[1] ?? match[2] ?? "";
+    const canonical = canonicalizeClassList(value, designSystem);
+    if (canonical !== value) {
+      replacements.set(match.index + 1, {
+        start: match.index + 1,
+        end: end - 1,
+        value: canonical,
+      });
+    }
+    STRING_LITERAL.lastIndex = end;
+  }
+}
+
+export function canonicalizeSource(
+  text: string,
+  designSystem: DesignSystem,
+): string {
+  const replacements = new Map<number, Replacement>();
+
+  for (const match of text.matchAll(CLASS_ATTRIBUTE)) {
+    const quoted = match[2];
+    if (quoted !== undefined) {
+      const quoteIndex = match[0].indexOf('"', match[0].indexOf("="));
+      const start = match.index + quoteIndex + 1;
+      const canonical = canonicalizeClassList(quoted, designSystem);
+      if (canonical !== quoted) {
+        replacements.set(start, {
+          start,
+          end: start + quoted.length,
+          value: canonical,
+        });
+      }
+      continue;
+    }
+    const open = match.index + match[0].length - 1;
+    const close = findClosing(text, open, "{", "}");
+    if (close !== null) {
+      collectStringReplacements(
+        text,
+        open + 1,
+        close,
+        designSystem,
+        replacements,
+      );
+    }
+  }
+
+  for (const match of text.matchAll(CN_CALL)) {
+    const open = match.index + match[0].length - 1;
+    const close = findClosing(text, open, "(", ")");
+    if (close !== null) {
+      collectStringReplacements(
+        text,
+        open + 1,
+        close,
+        designSystem,
+        replacements,
+      );
+    }
+  }
+
+  let next = text;
+  for (const replacement of [...replacements.values()].sort(
+    (left, right) => right.start - left.start,
+  )) {
+    next =
+      next.slice(0, replacement.start) +
+      replacement.value +
+      next.slice(replacement.end);
+  }
+  return next;
 }
 
 function gitFiles(root: string, ...args: string[]): string[] {
@@ -80,6 +210,7 @@ export function walkTailwindSources(root = ROOT): string[] {
 }
 
 export type TailwindCanonicalizer = {
+  stylesheetDependencies: string[];
   canonicalizeFiles: (
     files: string[],
     options?: { root?: string; log?: boolean },
@@ -130,10 +261,14 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
   }
 
   // Load each app's design system before consumers announce readiness, so the
-  // first editor save does not pay the compiler startup cost.
-  for (const appRoot of tailwindRoots()) {
-    const stylesheet = resolve(ROOT, appRoot, "src/app/globals.css");
-    if (!existsSync(stylesheet)) continue;
+  // first editor save does not pay the compiler startup cost. The paths are
+  // exposed so the watcher can rebuild when a theme changes.
+  const stylesheetDependencies = tailwindRoots()
+    .map((appRoot) => resolve(ROOT, appRoot, "src/app/globals.css"))
+    .filter((stylesheet) => existsSync(stylesheet));
+
+  for (const stylesheet of stylesheetDependencies) {
+    const appRoot = toPosix(relative(ROOT, stylesheet)).split("/src/")[0]!;
     designSystems.set(
       appRoot,
       await __unstable__loadDesignSystem(readFileSync(stylesheet, "utf8"), {
@@ -155,22 +290,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
       if (!existsSync(target)) continue;
 
       const text = readFileSync(target, "utf8");
-      const next = text.replace(
-        CLASS_ATTRIBUTE,
-        (
-          match,
-          _attribute: string,
-          jsx: string | undefined,
-          call: string | undefined,
-        ) => {
-          const classes = (jsx ?? call ?? "").split(/\s+/).filter(Boolean);
-          if (!classes.length) return match;
-          const canonical = designSystem.canonicalizeCandidates(classes, {
-            rem: TAILWIND_REM,
-          });
-          return match.replace(jsx ?? call!, canonical.join(" "));
-        },
-      );
+      const next = canonicalizeSource(text, designSystem);
       if (next === text) continue;
       writeFileSync(target, next);
       changed += 1;
@@ -180,6 +300,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
   }
 
   return {
+    stylesheetDependencies,
     canonicalizeFiles,
     canonicalizeChangedFiles: (options) =>
       canonicalizeFiles(changedTailwindSources(options?.root ?? ROOT), options),

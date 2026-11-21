@@ -19,6 +19,7 @@
     "canonicalize-tailwind.ts",
     "oxlint-tailwind-scope.test.ts",
     "tailwind-canonical.ts",
+    "tailwind-canonical.test.ts",
     "tailwind-lint.ts",
     "tailwind-setup.test.ts",
     "watch-tailwind-canonical.ts",

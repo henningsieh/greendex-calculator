@@ -69,7 +69,7 @@ it("keeps save-time Tailwind fixes in the watcher, not VS Code code actions", ()
 
   expect(settings).toContain('"source.fixAll.oxc": "always"');
   expect(settings).toContain('"source.fixAll.tailwindcss": "always"');
-  expect(settings).toContain('"tailwindCSS.codeActions": false');
+  expect(settings).toContain('"tailwindCSS.codeActions": true');
   expect(settings).toContain('"tailwindCSS.validate": true');
   expect(extensions).not.toContain("tailwind-canonical-fixer");
 });
