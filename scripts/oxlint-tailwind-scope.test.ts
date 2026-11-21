@@ -46,9 +46,21 @@ it("limits Tailwind rules to production UI sources in all owning contexts", () =
       "no-duplicate-classes",
       "enforce-canonical-classes",
       "no-deprecated-classes",
+      "no-unnecessary-whitespace",
     ]) {
-      expect(tailwindScope.rules[`better-tailwindcss/${rule}`]).toBe("error");
+      const setting = tailwindScope.rules[`better-tailwindcss/${rule}`];
+      expect(Array.isArray(setting) ? setting[0] : setting).toBe("error");
     }
+    // Tailwind's canonicalizeCandidates returns its input unchanged without
+    // `rem`, so a missing rootFontSize silently disables every canonical fix.
+    const canonical =
+      tailwindScope.rules["better-tailwindcss/enforce-canonical-classes"];
+    expect(canonical[1]?.rootFontSize).toBe(16);
+    // Collapse (`mt-2 mb-2` -> `my-2`) removes classes and leaves whitespace
+    // behind, so the autofix needs two passes to reach a fixed point. Collapse
+    // is not an editor diagnostic, but it must stay on: turning it off would
+    // silently stop the gate merging classes at all.
+    expect(canonical[1]?.collapse).toBe(true);
     // Only the duplicate rule stays active: the canonical rule resolves the
     // whole design system per file and would make this scope test dominate the
     // unit suite.

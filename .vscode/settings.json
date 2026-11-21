@@ -6,11 +6,15 @@
 
   // ============================================================================
   // EDITOR — FORMAT ON SAVE / CODE ACTIONS
+  // ----------------------------------------------------------------------------
+  // Tailwind class canonicalisation is not an editor code action: the Oxlint
+  // Tailwind rules build a design system, so they run in `pnpm run
+  // check:tailwind` and the pre-commit hook instead of on every save.
   // ============================================================================
   "editor.formatOnPaste": false,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.oxc": "explicit"
+    "source.fixAll.oxc": "always"
   },
 
   // ============================================================================

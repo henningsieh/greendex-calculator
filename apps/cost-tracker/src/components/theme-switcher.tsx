@@ -43,7 +43,7 @@ export function ThemeSwitcher() {
           <Button
             aria-label={t("ariaLabel", { theme: current?.label ?? t("system") })}
             size="sm"
-            variant="outline"
+            variant="ghost"
           />
         }
       >

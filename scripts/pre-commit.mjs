@@ -42,40 +42,74 @@ function run(binary, args) {
   return result.status;
 }
 
-const format = paths.filter(
+function stageIfChanged(file, before) {
+  const entry = git("ls-files", "-s", "--", file).toString();
+  const mode = entry.slice(0, 6);
+  if (mode !== "100644" && mode !== "100755") return;
+  const after = readFileSync(path.join(snapshot, file));
+  if (before.equals(after)) return;
+  const hash = execFileSync(
+    "git",
+    ["hash-object", "-w", "--stdin", "--path", file],
+    { cwd: root, input: after },
+  );
+  git("update-index", "--cacheinfo", `${mode},${hash.toString().trim()},${file}`);
+}
+
+function isRegularIndexFile(file) {
+  const mode = git("ls-files", "-s", "--", file).toString().slice(0, 6);
+  return mode === "100644" || mode === "100755";
+}
+
+const stagedFiles = paths.filter(isRegularIndexFile);
+
+const format = stagedFiles.filter(
   (file) =>
     /\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$/.test(
       file,
     ) && !/^(docs|\.specify|specs)\//.test(file),
 );
 for (const file of format) {
-  const entry = git("ls-files", "-s", "--", file).toString();
-  const mode = entry.slice(0, 6);
-  if (mode !== "100644" && mode !== "100755") continue;
   const target = path.join(snapshot, file);
   const before = readFileSync(target);
   if (
     run("oxfmt", ["--write", "--no-error-on-unmatched-pattern", "--", file]) !== 0
   )
     process.exit(1);
-  const after = readFileSync(target);
-  if (!before.equals(after)) {
-    const hash = execFileSync(
-      "git",
-      ["hash-object", "-w", "--stdin", "--path", file],
-      { cwd: root, input: after },
-    );
-    git(
-      "update-index",
-      "--cacheinfo",
-      `${mode},${hash.toString().trim()},${file}`,
-    );
-  }
+  stageIfChanged(file, before);
 }
 
-const lint = paths.filter((file) =>
+const lint = stagedFiles.filter((file) =>
   /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/.test(file),
 );
+
+const tailwindCandidates = stagedFiles.filter((file) =>
+  /\.(jsx|tsx)$/.test(file),
+);
+if (tailwindCandidates.length) {
+  const before = new Map(
+    tailwindCandidates.map((file) => [
+      file,
+      readFileSync(path.join(snapshot, file)),
+    ]),
+  );
+  // Two passes: collapsing `mt-2 mb-2` into `my-2` removes classes and leaves
+  // the whitespace that no-unnecessary-whitespace normalises on the next pass.
+  for (let pass = 0; pass < 2; pass += 1) {
+    if (
+      run("oxlint", [
+        "--config",
+        "oxlint.tailwind.json",
+        "--fix",
+        "--",
+        ...tailwindCandidates,
+      ]) !== 0
+    )
+      process.exit(1);
+  }
+  for (const file of tailwindCandidates) stageIfChanged(file, before.get(file));
+}
+
 if (lint.length) {
   const result = spawnSync(
     path.join(root, "node_modules/.bin/oxlint"),
