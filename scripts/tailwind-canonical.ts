@@ -96,6 +96,16 @@ export function walkTailwindSources(root = ROOT): string[] {
     .filter((file) => existsSync(resolve(root, file)));
 }
 
+function serializeString(value: string, raw: string | null): string {
+  const quote = raw?.startsWith('"') ? '"' : "'";
+  const escaped = value
+    .replace(/\\/g, "\\\\")
+    .replaceAll(quote, `\\${quote}`)
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
+  return `${quote}${escaped}${quote}`;
+}
+
 function canonicalizeClassList(
   value: string,
   designSystem: DesignSystem,
@@ -137,12 +147,14 @@ export function canonicalizeSource(
   const replacements = new Map<number, Replacement>();
 
   function addLiteral(node: StringLiteral): void {
-    const start = node.start + 1;
-    const end = node.end - 1;
     const value = node.value;
     const canonical = canonicalizeClassList(value, designSystem);
-    if (canonical !== value)
-      replacements.set(start, { start, end, value: canonical });
+    if (canonical === value) return;
+    replacements.set(node.start, {
+      start: node.start,
+      end: node.end,
+      value: serializeString(canonical, node.raw),
+    });
   }
 
   function collect(node: Expression | JSXExpression | null | undefined): void {
@@ -251,30 +263,34 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
   };
 
   const designSystems = new Map<string, DesignSystem>();
+  function cacheKey(root: string, appRoot: string): string {
+    return `${resolve(root)}\u0000${appRoot}`;
+  }
 
   async function designSystemFor(file: string, root: string) {
     const relativePath = toPosix(relative(root, resolve(root, file)));
     const marker = relativePath.indexOf("/src/");
     if (marker === -1) return null;
     const appRoot = relativePath.slice(0, marker);
-    if (!designSystems.has(appRoot)) {
+    const key = cacheKey(root, appRoot);
+    if (!designSystems.has(key)) {
       const stylesheet = resolve(root, appRoot, "src/app/globals.css");
       if (!existsSync(stylesheet)) return null;
       designSystems.set(
-        appRoot,
+        key,
         await __unstable__loadDesignSystem(readFileSync(stylesheet, "utf8"), {
           base: dirname(stylesheet),
         }),
       );
     }
-    return designSystems.get(appRoot)!;
+    return designSystems.get(key)!;
   }
 
   const stylesheetDependencies = tailwindStylesheetPaths(ROOT);
   for (const stylesheet of stylesheetDependencies) {
     const appRoot = toPosix(relative(ROOT, stylesheet)).split("/src/")[0]!;
     designSystems.set(
-      appRoot,
+      cacheKey(ROOT, appRoot),
       await __unstable__loadDesignSystem(readFileSync(stylesheet, "utf8"), {
         base: dirname(stylesheet),
       }),

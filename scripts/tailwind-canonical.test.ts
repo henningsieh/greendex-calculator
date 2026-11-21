@@ -65,3 +65,11 @@ it("canonicalizes only string literals that produce class names", () => {
 );
 `);
 });
+
+it("preserves JavaScript string escaping in rewritten literals", () => {
+  const source = String.raw`export const view = () => <div className={cn('before:content-[\'x\'] w-[16px]')} />;`;
+
+  expect(canonicalizeSource(source, designSystem)).toBe(
+    String.raw`export const view = () => <div className={cn('before:content-[\'x\'] w-4')} />;`,
+  );
+});
