@@ -18,6 +18,7 @@
     "PARTNER_ENTRY_REQUIRED": "Solo il partner di questo partenariato di progetto può emettere inviti o link di registrazione per i partecipanti.",
     "ELIGIBLE_COORDINATOR_REQUIRED": "Seleziona un proprietario, un amministratore o un coordinatore di progetto del partner.",
     "INVALID_PROJECT_CURSOR": "Il cursore di paginazione del progetto non è valido per questi filtri.",
+    "INVALID_CLAIM_QUEUE_CURSOR": "The Claim queue page cursor is invalid for these filters.",
     "PROJECT_READ_REQUIRED": "Il ruolo nell'organizzazione attiva non consente di consultare questo progetto.",
     "HOSTING_STAFF_REQUIRED": "Devi avere accesso come proprietario, amministratore o coordinatore di progetto dell'organizzazione ospitante.",
     "HOSTING_SIDE_REQUIRED": "Solo l'organizzazione ospitante può assegnare questo progetto.",

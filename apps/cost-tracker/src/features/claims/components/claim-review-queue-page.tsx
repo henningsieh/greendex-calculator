@@ -6,7 +6,11 @@ import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
-import { orpcQuery } from "@/lib/orpc/orpc";
+import {
+  getClaimQueueQueryOptions,
+  loadClaimQueueSearchParams,
+  normalizeClaimQueueState,
+} from "@/features/claims/queue-query-options";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
@@ -14,29 +18,23 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-async function ClaimReviewQueueSection() {
+interface ClaimReviewQueuePageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+async function ClaimReviewQueueSection({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const client = getQueryClient();
-  const partnerships = await client
-    .query(
-      orpcQuery.projectPartnerships.list.queryOptions({
-        meta: { costTrackerORPC: true },
-      }),
-    )
+  const urlState = await loadClaimQueueSearchParams(
+    searchParams ?? Promise.resolve({}),
+  );
+  await client
+    .query(getClaimQueueQueryOptions(normalizeClaimQueueState(urlState)))
     .catch(swallowPrefetchError);
-  if (partnerships) {
-    await Promise.all(
-      partnerships.map((item) =>
-        client
-          .query(
-            orpcQuery.claims.getDraft.queryOptions({
-              input: { partnershipId: item.id },
-              meta: { costTrackerORPC: true },
-            }),
-          )
-          .catch(swallowPrefetchError),
-      ),
-    );
-  }
+
   return (
     <HydrateClient client={client}>
       <ProjectDataErrorBoundary resource="submitted Claims">
@@ -46,19 +44,25 @@ async function ClaimReviewQueueSection() {
   );
 }
 
-export default async function ClaimReviewQueuePage() {
+export default async function ClaimReviewQueuePage(
+  { searchParams }: ClaimReviewQueuePageProps = {
+    searchParams: Promise.resolve({}),
+  },
+) {
   await connection();
   if (!(await hasOrganizationMembership())) return null;
-  const t = await getTranslations("claims.review");
+
+  const t = await getTranslations("claims.queue");
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0">
       <ProtectedPageHeader
-        eyebrow={t("queueEyebrow")}
-        title={t("hostingTitle")}
+        description={t("description")}
+        eyebrow={t("eyebrow")}
+        title={t("title")}
       />
       <Suspense fallback={<ClaimReviewQueueSkeleton />}>
-        <ClaimReviewQueueSection />
+        <ClaimReviewQueueSection searchParams={searchParams} />
       </Suspense>
     </div>
   );

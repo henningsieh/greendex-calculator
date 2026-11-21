@@ -23,8 +23,61 @@
       "allocationEqual": "Gleichmäßig"
     },
     "queue": {
-      "title": "Eingereichte Claims zur Prüfung",
-      "empty": "Keine eingereichten Claims zur Prüfung verfügbar."
+      "eyebrow": "Arbeitsbereich",
+      "title": "Prüfungen",
+      "description": "Von Partnerorganisationen eingereichte Claims, die auf die Prüfung durch die Hosting-Organisation warten.",
+      "sectionTitle": "Eingereichte Claims",
+      "label": "Claims zur Prüfung",
+      "searchLabel": "Projekt oder Partnerorganisation",
+      "searchPlaceholder": "Nach Projekt oder Partner suchen…",
+      "partnerFilter": "Partnerorganisation",
+      "allPartners": "Alle Partner",
+      "sortLabel": "Sortieren",
+      "sort": {
+        "submittedAsc": "Längste Wartezeit",
+        "submittedDesc": "Zuletzt eingereicht",
+        "projectAsc": "Projekt A–Z",
+        "projectDesc": "Projekt Z–A",
+        "partnerAsc": "Partner A–Z",
+        "partnerDesc": "Partner Z–A"
+      },
+      "sortDirection": {
+        "asc": "Aufsteigend",
+        "desc": "Absteigend"
+      },
+      "sortHeaderActive": "Nach {field}, {direction} sortieren",
+      "sortHeaderInactive": "Nach {field} sortieren",
+      "pageSize": "Claims pro Seite",
+      "filters": "Filter",
+      "refresh": "Aktualisieren",
+      "refreshing": "Claims werden aktualisiert…",
+      "updatedAt": "Aktualisiert um {time} UTC",
+      "metrics": {
+        "claims": "Zur Prüfung",
+        "claimsTotal": "Zur Prüfung ({count} insgesamt)",
+        "projects": "Projekte",
+        "partners": "Partnerorganisationen"
+      },
+      "columns": {
+        "project": "Projekt",
+        "partner": "Partnerorganisation",
+        "status": "Status",
+        "submitted": "Eingereicht",
+        "payable": "Auszahlung",
+        "action": "Aktion"
+      },
+      "status": {
+        "submitted": "Zur Prüfung"
+      },
+      "reviewClaim": "Claim prüfen",
+      "showingCount": "{shown} von {total, plural, one {# Claim} other {# Claims}} werden angezeigt",
+      "emptyTitle": "Keine eingereichten Claims zur Prüfung",
+      "emptyDescription": "Wenn ein Partner einen Claim einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
+      "clearFilters": "Filter zurücksetzen",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite",
+      "unavailable": "Nicht verfügbar",
+      "currencyEur": "EUR"
     },
     "page": {
       "eyebrow": "Partnerschaft",

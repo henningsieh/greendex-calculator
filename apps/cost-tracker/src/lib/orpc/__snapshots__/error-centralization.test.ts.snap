@@ -182,6 +182,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "INTERNAL_FAILURE",
     "status": 500,
   },
+  "invalidClaimQueueCursor": {
+    "code": "BAD_REQUEST",
+    "message": "The Claim queue page cursor is invalid for these filters.",
+    "reason": "INVALID_CLAIM_QUEUE_CURSOR",
+    "status": 400,
+  },
   "invalidCredentials": {
     "code": "UNAUTHORIZED",
     "message": "Incorrect email or password.",

@@ -59,6 +59,7 @@ vi.mock("@/lib/orpc/orpc", () => {
           "listPayoutAccounts",
           "getReviewDetails",
           "reviewerAccess",
+          "listReviewQueue",
         ].map((name) => [name, { queryOptions }]),
       ),
       participations: {
@@ -132,7 +133,7 @@ vi.mock("@/features/partnerships/components/setup-link", () => ({
   SetupLinkList: () => <p>Setup link list</p>,
 }));
 
-import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";
+import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/page";
 import LocalizedPartnerOrganizationsPage from "@/app/[locale]/(protected)/partner-organizations/page";
 import LocalizedClaimPage, {
   metadata as LocalizedClaimPageMetadata,
@@ -162,9 +163,9 @@ const routes = [
     content: "Resolved Claim workspace",
   },
   {
-    path: "/[locale]/claims/review",
+    path: "/[locale]/claims",
     Page: LocalizedClaimReviewQueuePage,
-    heading: "Claim review",
+    heading: "Reviews",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
   },

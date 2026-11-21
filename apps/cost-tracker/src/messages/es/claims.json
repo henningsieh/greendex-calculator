@@ -23,8 +23,61 @@
       "allocationEqual": "A partes iguales"
     },
     "queue": {
-      "title": "Submitted Claims awaiting review",
-      "empty": "No submitted Claims available for review."
+      "eyebrow": "Workspace",
+      "title": "Reviews",
+      "description": "Claims submitted by Partner Organizations and awaiting Hosting review.",
+      "sectionTitle": "Submitted Claims",
+      "label": "Claims awaiting review",
+      "searchLabel": "Project or Partner Organization",
+      "searchPlaceholder": "Search by Project or Partner…",
+      "partnerFilter": "Partner Organization",
+      "allPartners": "All Partners",
+      "sortLabel": "Sort",
+      "sort": {
+        "submittedAsc": "Waiting longest",
+        "submittedDesc": "Recently submitted",
+        "projectAsc": "Project A–Z",
+        "projectDesc": "Project Z–A",
+        "partnerAsc": "Partner A–Z",
+        "partnerDesc": "Partner Z–A"
+      },
+      "sortDirection": {
+        "asc": "Ascending",
+        "desc": "Descending"
+      },
+      "sortHeaderActive": "Sort {field}, {direction}",
+      "sortHeaderInactive": "Sort {field}",
+      "pageSize": "Claims per page",
+      "filters": "Filters",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing Claims…",
+      "updatedAt": "Updated {time} UTC",
+      "metrics": {
+        "claims": "Awaiting review",
+        "claimsTotal": "Awaiting review ({count} total)",
+        "projects": "Projects",
+        "partners": "Partner Organizations"
+      },
+      "columns": {
+        "project": "Project",
+        "partner": "Partner Organization",
+        "status": "Status",
+        "submitted": "Submitted",
+        "payable": "Payable",
+        "action": "Action"
+      },
+      "status": {
+        "submitted": "Awaiting review"
+      },
+      "reviewClaim": "Review Claim",
+      "showingCount": "Showing {shown} of {total, plural, one {# Claim} other {# Claims}}",
+      "emptyTitle": "No submitted Claims awaiting review",
+      "emptyDescription": "When a Partner submits a Claim, it appears here for Hosting review.",
+      "clearFilters": "Clear filters",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "unavailable": "Unavailable",
+      "currencyEur": "EUR"
     },
     "page": {
       "eyebrow": "Partnership",

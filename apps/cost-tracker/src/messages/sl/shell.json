@@ -18,7 +18,7 @@
       "organization": "Organization",
       "workspace": "Delovni prostor",
       "manage": "Administration",
-      "claimReview": "Claim review"
+      "claimReview": "Pregledi"
     },
     "account": {
       "openMenu": "Open account menu for {name}",

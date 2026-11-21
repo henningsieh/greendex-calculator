@@ -137,7 +137,7 @@ describe("Cost Tracker anonymous gate", () => {
     "/partnerships/seed-partnership/claim",
     "/organization",
     "/partner-organizations",
-    "/claims/review",
+    "/claims",
     "/user-settings",
   ])("redirects an anonymous %s to the sign-in", (path) => {
     const response = proxy(request(path));

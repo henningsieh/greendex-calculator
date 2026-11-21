@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Situation catalog grows with the product's refusal vocabulary. */
 import { z } from "zod";
 
 import { ClaimStatusSchema } from "@/features/claims/validation-schemas";
@@ -99,6 +100,11 @@ export const situationCatalog = {
     code: "BAD_REQUEST",
     reason: "INVALID_PROJECT_CURSOR",
     message: "The Project page cursor is invalid for these filters.",
+  },
+  invalidClaimQueueCursor: {
+    code: "BAD_REQUEST",
+    reason: "INVALID_CLAIM_QUEUE_CURSOR",
+    message: "The Claim queue page cursor is invalid for these filters.",
   },
   projectReadRequired: {
     code: "FORBIDDEN",

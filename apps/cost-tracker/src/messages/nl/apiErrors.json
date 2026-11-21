@@ -18,6 +18,7 @@
     "PARTNER_ENTRY_REQUIRED": "Alleen de partner van dit projectpartnerschap mag uitnodigingen of registratielinks voor deelnemers uitgeven.",
     "ELIGIBLE_COORDINATOR_REQUIRED": "Selecteer een eigenaar, beheerder of projectcoördinator van de partner.",
     "INVALID_PROJECT_CURSOR": "De paginacursor voor het project is ongeldig voor deze filters.",
+    "INVALID_CLAIM_QUEUE_CURSOR": "The Claim queue page cursor is invalid for these filters.",
     "PROJECT_READ_REQUIRED": "De rol in de actieve organisatie geeft geen toestemming om dit project te bekijken.",
     "HOSTING_STAFF_REQUIRED": "Je hebt toegang als eigenaar, beheerder of projectcoördinator van de organiserende organisatie nodig.",
     "HOSTING_SIDE_REQUIRED": "Alleen de organiserende organisatie kan dit project toewijzen.",

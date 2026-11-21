@@ -18,7 +18,7 @@
       "organization": "Organisation",
       "workspace": "Arbeitsbereich",
       "manage": "Verwaltung",
-      "claimReview": "Claim-Prüfung"
+      "claimReview": "Prüfungen"
     },
     "account": {
       "openMenu": "Kontomenü für {name} öffnen",
