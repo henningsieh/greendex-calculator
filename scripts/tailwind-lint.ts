@@ -9,10 +9,14 @@ import {
 } from "node:fs";
 import { resolve } from "node:path";
 
-const root = resolve(import.meta.dirname, "..");
-const cacheFile = resolve(root, ".turbo/tailwind-lint.hash");
+import { createTailwindCanonicalizer } from "./tailwind-canonical";
+import {
+  ROOT as root,
+  TAILWIND_CONFIG_FILE,
+  tailwindOxlintArgs,
+} from "./tailwind-config.mjs";
 
-const targets = ["apps", "packages"];
+const cacheFile = resolve(root, ".turbo/tailwind-lint.hash");
 const git = (...args: string[]) =>
   execFileSync("git", args, {
     cwd: root,
@@ -24,7 +28,7 @@ function inputDigest(): string | undefined {
   try {
     const exclude = git("rev-parse", "--git-path", "info/exclude").trim();
     // Oxlint respects local Git ignore rules, but not the global excludes file.
-    // Include tracked files too so edits to ignore rules and configs are hashed.
+    // Include tracked files and the shared Tailwind setup so edits invalidate it.
     const discovered = git(
       "ls-files",
       "-z",
@@ -35,7 +39,8 @@ function inputDigest(): string | undefined {
         ? [`--exclude-from=${exclude}`]
         : []),
       "--",
-      ...targets,
+      "apps",
+      "packages",
     )
       .split("\0")
       .filter(Boolean);
@@ -44,9 +49,12 @@ function inputDigest(): string | undefined {
       ".gitignore",
       ".eslintignore",
       exclude,
-      "oxlint.tailwind.json",
+      TAILWIND_CONFIG_FILE,
       "package.json",
+      "scripts/tailwind-config.mjs",
+      "scripts/tailwind-canonical.ts",
       "scripts/tailwind-lint.ts",
+      "scripts/watch-tailwind-canonical.ts",
       "pnpm-lock.yaml",
     ]);
     const hash = createHash("sha256");
@@ -59,29 +67,43 @@ function inputDigest(): string | undefined {
     }
     return hash.digest("hex");
   } catch {
-    // Discovery unavailable or files changed while hashing: run Oxlint uncached.
+    // Discovery unavailable or files changed while hashing: run uncached.
     return undefined;
   }
 }
 
-const digest = inputDigest();
-if (
-  digest &&
-  existsSync(cacheFile) &&
-  readFileSync(cacheFile, "utf8").trim() === digest
-) {
-  console.log("Tailwind lint cache hit — inputs unchanged since the last pass.");
-  process.exit(0);
+async function main() {
+  const fix = process.argv.includes("--fix");
+  const digest = inputDigest();
+  if (
+    !fix &&
+    digest &&
+    existsSync(cacheFile) &&
+    readFileSync(cacheFile, "utf8").trim() === digest
+  ) {
+    console.log(
+      "Tailwind lint cache hit — inputs unchanged since the last pass.",
+    );
+    return;
+  }
+
+  if (fix) {
+    const canonicalizer = await createTailwindCanonicalizer();
+    const changed = await canonicalizer.canonicalizeChangedFiles({ root });
+    console.log(`Tailwind canonicalizer updated ${changed} file(s).`);
+  }
+
+  const result = spawnSync(
+    "pnpm",
+    ["exec", "oxlint", ...tailwindOxlintArgs({ fix })],
+    { cwd: root, stdio: "inherit" },
+  );
+  if (result.status !== 0) process.exit(result.status ?? 1);
+
+  if (digest && inputDigest() === digest) {
+    mkdirSync(resolve(root, ".turbo"), { recursive: true });
+    writeFileSync(cacheFile, `${digest}\n`);
+  }
 }
 
-const result = spawnSync(
-  "pnpm",
-  ["exec", "oxlint", "-c", "oxlint.tailwind.json", ...targets],
-  { cwd: root, stdio: "inherit" },
-);
-if (result.status !== 0) process.exit(result.status ?? 1);
-
-if (digest && inputDigest() === digest) {
-  mkdirSync(resolve(root, ".turbo"), { recursive: true });
-  writeFileSync(cacheFile, `${digest}\n`);
-}
+void main();

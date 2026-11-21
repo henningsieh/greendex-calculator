@@ -6,11 +6,16 @@
 
   // ============================================================================
   // EDITOR — FORMAT ON SAVE / CODE ACTIONS
+  // ----------------------------------------------------------------------------
+  // OXC and Tailwind IntelliSense code actions can run on save. Tailwind 0.16
+  // has no canonical `fixAll` action, so `source.fixAll.tailwindcss` is a no-op;
+  // canonical rewrites come from the local watcher.
   // ============================================================================
   "editor.formatOnPaste": false,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.oxc": "explicit"
+    "source.fixAll.oxc": "always",
+    "source.fixAll.tailwindcss": "always"
   },
 
   // ============================================================================

@@ -2,6 +2,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, symlinkSync } from "node:fs";
 import path from "node:path";
 
+import { isTailwindSourcePath, tailwindOxlintArgs } from "./tailwind-config.mjs";
+
 const [root, snapshot] = process.argv.slice(2);
 const git = (...args) => execFileSync("git", args, { cwd: root });
 const paths = git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR")
@@ -42,6 +44,20 @@ function run(binary, args) {
   return result.status;
 }
 
+function stageIfChanged(file, before) {
+  const entry = git("ls-files", "-s", "--", file).toString();
+  const mode = entry.slice(0, 6);
+  if (mode !== "100644" && mode !== "100755") return;
+  const after = readFileSync(path.join(snapshot, file));
+  if (before.equals(after)) return;
+  const hash = execFileSync(
+    "git",
+    ["hash-object", "-w", "--stdin", "--path", file],
+    { cwd: root, input: after },
+  );
+  git("update-index", "--cacheinfo", `${mode},${hash.toString().trim()},${file}`);
+}
+
 const format = paths.filter(
   (file) =>
     /\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$/.test(
@@ -49,33 +65,35 @@ const format = paths.filter(
     ) && !/^(docs|\.specify|specs)\//.test(file),
 );
 for (const file of format) {
-  const entry = git("ls-files", "-s", "--", file).toString();
-  const mode = entry.slice(0, 6);
-  if (mode !== "100644" && mode !== "100755") continue;
   const target = path.join(snapshot, file);
   const before = readFileSync(target);
   if (
     run("oxfmt", ["--write", "--no-error-on-unmatched-pattern", "--", file]) !== 0
   )
     process.exit(1);
-  const after = readFileSync(target);
-  if (!before.equals(after)) {
-    const hash = execFileSync(
-      "git",
-      ["hash-object", "-w", "--stdin", "--path", file],
-      { cwd: root, input: after },
-    );
-    git(
-      "update-index",
-      "--cacheinfo",
-      `${mode},${hash.toString().trim()},${file}`,
-    );
-  }
+  stageIfChanged(file, before);
 }
 
 const lint = paths.filter((file) =>
   /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/.test(file),
 );
+
+const tailwindPaths = lint.filter(isTailwindSourcePath);
+if (tailwindPaths.length) {
+  const before = new Map(
+    tailwindPaths.map((file) => [file, readFileSync(path.join(snapshot, file))]),
+  );
+  if (run("tsx", ["scripts/canonicalize-tailwind.ts", ...tailwindPaths]) !== 0)
+    process.exit(1);
+  for (const file of tailwindPaths) stageIfChanged(file, before.get(file));
+
+  if (
+    run("oxlint", tailwindOxlintArgs({ fix: true, files: tailwindPaths })) !== 0
+  )
+    process.exit(1);
+  for (const file of tailwindPaths) stageIfChanged(file, before.get(file));
+}
+
 if (lint.length) {
   const result = spawnSync(
     path.join(root, "node_modules/.bin/oxlint"),
