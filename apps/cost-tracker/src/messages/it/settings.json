@@ -1,33 +1,33 @@
 {
   "settings": {
     "page": {
-      "eyebrow": "Settings",
-      "title": "Account settings",
-      "description": "Choose how Cost Tracker looks and keep your account details current."
+      "eyebrow": "Impostazioni",
+      "title": "Impostazioni account",
+      "description": "Scegli l’aspetto di Cost Tracker e mantieni aggiornati i dati del tuo account."
     },
     "tabs": {
-      "sections": "User settings sections",
-      "account": "Account details",
-      "accountDescription": "Keep the identity shown to other Project members accurate.",
-      "appearance": "Appearance",
-      "appearanceDescription": "Your choice is saved in this browser."
+      "sections": "Sezioni delle impostazioni utente",
+      "account": "Dati dell’account",
+      "accountDescription": "Mantieni accurata l’identità mostrata agli altri membri del progetto.",
+      "appearance": "Aspetto",
+      "appearanceDescription": "La tua scelta viene salvata in questo browser."
     },
     "name": {
-      "label": "Name",
-      "description": "This name appears in the navigation and across shared Project work.",
-      "emailLabel": "Email address",
-      "emailDescription": "Email changes are not available in Cost Tracker yet.",
-      "save": "Save name",
-      "saving": "Saving name",
-      "success": "Your name has been updated."
+      "label": "Nome",
+      "description": "Questo nome appare nella navigazione e nel lavoro condiviso sui progetti.",
+      "emailLabel": "Indirizzo email",
+      "emailDescription": "Al momento non è possibile modificare l’indirizzo email in Cost Tracker.",
+      "save": "Salva nome",
+      "saving": "Salvataggio del nome",
+      "success": "Il tuo nome è stato aggiornato."
     },
     "theme": {
-      "title": "Color theme",
-      "description": "All four themes side by side — Erasmus light and three Erasmus dark vibes.",
-      "ariaLabel": "Color theme",
-      "use": "Use {theme}",
-      "shortcutTitle": "Switch from anywhere",
-      "shortcutDescription": "Press {key} anywhere in Cost Tracker to switch between light and dark. The shortcut stays inactive while you are typing."
+      "title": "Tema colore",
+      "description": "Tutti e quattro i temi affiancati: Erasmus chiaro e tre varianti scure Erasmus.",
+      "ariaLabel": "Tema colore",
+      "use": "Usa {theme}",
+      "shortcutTitle": "Cambia da qualsiasi punto",
+      "shortcutDescription": "Premi {key} in qualsiasi punto di Cost Tracker per passare dal tema chiaro a quello scuro. La scorciatoia resta inattiva mentre scrivi."
     }
   }
 }

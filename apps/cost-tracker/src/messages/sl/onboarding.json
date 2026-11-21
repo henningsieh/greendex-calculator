@@ -99,21 +99,21 @@
       "signOut": "Odjava ni uspela"
     },
     "layout": {
-      "tagline": "Turn scattered travel costs into one trusted Project record.",
-      "benefitTotals": "Keep exact EUR totals intact",
-      "benefitDocuments": "Connect every entry to its Proof Documents",
-      "benefitAllocations": "Allocate shared tickets without guesswork",
-      "footer": "Greendex · Cost tracking for shared journeys"
+      "tagline": "Raztresene potne stroške spremenite v en zanesljiv zapis projekta.",
+      "benefitTotals": "Ohranite natančne skupne zneske v EUR",
+      "benefitDocuments": "Vsako postavko povežite z njenimi dokazili",
+      "benefitAllocations": "Skupne vozovnice razporedite brez ugibanja",
+      "footer": "Greendex · spremljanje stroškov skupnih poti"
     },
     "createOrganization": {
-      "eyebrow": "Your Organization",
-      "heading": "A home for your Projects",
-      "description": "Your personal login is ready. Now add your Organization to host Erasmus Projects. You'll become its Owner. You can create your first Project next, whenever you're ready.",
-      "nameLabel": "Organization name",
-      "countryLabel": "Organization country",
-      "countryPlaceholder": "Select an EU country",
-      "submit": "Create Organization",
-      "invitationHint": "Expecting an invitation? Open the link in your invitation email to join the right Organization instead."
+      "eyebrow": "Vaša organizacija",
+      "heading": "Dom za vaše projekte",
+      "description": "Vaš osebni račun je pripravljen. Zdaj dodajte svojo organizacijo, ki bo gostila projekte Erasmus. Postali boste njen lastnik. Prvi projekt lahko ustvarite kadar koli boste pripravljeni.",
+      "nameLabel": "Ime organizacije",
+      "countryLabel": "Država organizacije",
+      "countryPlaceholder": "Izberite državo EU",
+      "submit": "Ustvari organizacijo",
+      "invitationHint": "Pričakujete povabilo? Namesto tega odprite povezavo v e-poštnem sporočilu s povabilom, da se pridružite pravi organizaciji."
     }
   }
 }

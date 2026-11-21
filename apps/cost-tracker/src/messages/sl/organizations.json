@@ -1,10 +1,10 @@
 {
   "organizations": {
     "roles": {
-      "owner": "Owner",
-      "admin": "Admin",
-      "coordinator": "Project Coordinator",
-      "participant": "Participant"
+      "owner": "Lastnik",
+      "admin": "Skrbnik",
+      "coordinator": "Koordinator projekta",
+      "participant": "Udeleženec"
     },
     "confirmations": {
       "cancel": "Prekliči",
@@ -17,58 +17,58 @@
       }
     },
     "page": {
-      "eyebrow": "Administration",
-      "title": "Organization",
-      "description": "Manage staff members and pending invitations for the active Organization."
+      "eyebrow": "Administracija",
+      "title": "Organizacija",
+      "description": "Upravljajte zaposlene in čakajoča povabila za aktivno organizacijo."
     },
     "loading": {
-      "label": "Loading Organization",
-      "staff": "Loading Organization staff"
+      "label": "Nalaganje organizacije",
+      "staff": "Nalaganje osebja organizacije"
     },
     "team": {
-      "membersTitle": "Members",
-      "membersDescription": "Everyone with an Organization staff role. Combined roles such as Participant stay visible and keep their own access.",
-      "noMembers": "No members yet.",
-      "inviteTitle": "Invite staff",
-      "inviteDescription": "Owners can invite owners and admins. Admins can invite admins. Project Coordinator access stays assignment-based and is never granted here.",
-      "unavailable": "Organization staff is unavailable",
-      "invitationSent": "Invitation sent to {email}.",
-      "invitationCancelled": "Invitation cancelled.",
-      "sendInvitation": "Send invitation",
-      "sending": "Sending…",
-      "pendingTitle": "Pending invitations",
-      "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
-      "noPending": "No pending invitations.",
-      "noRole": "No role",
-      "cancel": "Cancel",
+      "membersTitle": "Člani",
+      "membersDescription": "Vsi z vlogo osebja organizacije. Združene vloge, kot je Udeleženec, ostanejo vidne in ohranjajo svoj dostop.",
+      "noMembers": "Še ni članov.",
+      "inviteTitle": "Povabi osebje",
+      "inviteDescription": "Lastniki lahko povabijo lastnike in skrbnike. Skrbniki lahko povabijo skrbnike. Dostop koordinatorja projekta ostane vezan na dodelitev in se tukaj nikoli ne dodeli.",
+      "unavailable": "Osebje organizacije ni na voljo",
+      "invitationSent": "Povabilo poslano na {email}.",
+      "invitationCancelled": "Povabilo je preklicano.",
+      "sendInvitation": "Pošlji povabilo",
+      "sending": "Pošiljanje…",
+      "pendingTitle": "Čakajoča povabila",
+      "pendingDescription": "Preklicite povabilo, da ga umaknete, preden je sprejeto.",
+      "noPending": "Ni čakajočih povabil.",
+      "noRole": "Brez vloge",
+      "cancel": "Prekliči",
       "columns": {
-        "name": "Name",
-        "email": "Email",
-        "emailAddress": "Email address",
-        "role": "Role",
-        "roles": "Roles",
-        "actions": "Actions",
-        "members": "Members",
-        "use": "Use",
-        "saving": "Saving…",
-        "send": "Send",
-        "loadingOrganization": "Loading Organization",
-        "loadingOrganizationStaff": "Loading Organization staff"
+        "name": "Ime",
+        "email": "E-pošta",
+        "emailAddress": "E-poštni naslov",
+        "role": "Vloga",
+        "roles": "Vloge",
+        "actions": "Dejanja",
+        "members": "Člani",
+        "use": "Uporabi",
+        "saving": "Shranjevanje…",
+        "send": "Pošlji",
+        "loadingOrganization": "Nalaganje organizacije",
+        "loadingOrganizationStaff": "Nalaganje osebja organizacije"
       }
     },
     "settings": {
-      "title": "{organization} settings",
-      "country": "Organization country",
-      "saved": "Organization country saved.",
-      "saveError": "Could not save Organization country",
-      "save": "Save Organization country",
-      "saving": "Saving…"
+      "title": "Nastavitve: {organization}",
+      "country": "Država organizacije",
+      "saved": "Država organizacije je shranjena.",
+      "saveError": "Državo organizacije ni mogoče shraniti",
+      "save": "Shrani državo organizacije",
+      "saving": "Shranjevanje…"
     },
     "switcher": {
-      "acting": "Acting Organization",
-      "select": "Select Organization",
-      "aria": "Acting Organization: {organization}. Switch Organization",
-      "failed": "Could not switch Organization. Try again."
+      "acting": "Aktivna organizacija",
+      "select": "Izberite organizacijo",
+      "aria": "Aktivna organizacija: {organization}. Preklopi organizacijo",
+      "failed": "Organizacije ni mogoče preklopiti. Poskusite znova."
     }
   }
 }

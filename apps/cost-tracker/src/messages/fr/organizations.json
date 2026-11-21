@@ -1,9 +1,9 @@
 {
   "organizations": {
     "roles": {
-      "owner": "Owner",
-      "admin": "Admin",
-      "coordinator": "Project Coordinator",
+      "owner": "Propriétaire",
+      "admin": "Gestionnaire",
+      "coordinator": "Coordinateur de projet",
       "participant": "Participant"
     },
     "confirmations": {
@@ -11,64 +11,64 @@
       "close": "Fermer",
       "pending": "Traitement…",
       "cancelInvitation": {
-        "title": "Annuler l’invitation à l’Organisation ?",
-        "description": "Annuler l’invitation à l’Organisation pour {email} ? Elle ne pourra plus être acceptée.",
+        "title": "Annuler l’invitation à l’organisation ?",
+        "description": "Annuler l’invitation à l’organisation pour {email} ? Elle ne pourra plus être acceptée.",
         "execute": "Annuler l’invitation"
       }
     },
     "page": {
       "eyebrow": "Administration",
-      "title": "Organization",
-      "description": "Manage staff members and pending invitations for the active Organization."
+      "title": "Organisation",
+      "description": "Gérez les membres du personnel et les invitations en attente de l’organisation active."
     },
     "loading": {
-      "label": "Loading Organization",
-      "staff": "Loading Organization staff"
+      "label": "Chargement de l’organisation",
+      "staff": "Chargement du personnel de l’organisation"
     },
     "team": {
-      "membersTitle": "Members",
-      "membersDescription": "Everyone with an Organization staff role. Combined roles such as Participant stay visible and keep their own access.",
-      "noMembers": "No members yet.",
-      "inviteTitle": "Invite staff",
-      "inviteDescription": "Owners can invite owners and admins. Admins can invite admins. Project Coordinator access stays assignment-based and is never granted here.",
-      "unavailable": "Organization staff is unavailable",
-      "invitationSent": "Invitation sent to {email}.",
-      "invitationCancelled": "Invitation cancelled.",
-      "sendInvitation": "Send invitation",
-      "sending": "Sending…",
-      "pendingTitle": "Pending invitations",
-      "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
-      "noPending": "No pending invitations.",
-      "noRole": "No role",
-      "cancel": "Cancel",
+      "membersTitle": "Membres",
+      "membersDescription": "Toutes les personnes ayant un rôle de personnel dans l’organisation. Les rôles combinés, comme Participant, restent visibles et conservent leur propre accès.",
+      "noMembers": "Aucun membre pour le moment.",
+      "inviteTitle": "Inviter du personnel",
+      "inviteDescription": "Les propriétaires peuvent inviter des propriétaires et des gestionnaires. Les gestionnaires peuvent inviter des gestionnaires. L’accès au rôle de coordinateur de projet reste lié aux affectations et n’est jamais accordé ici.",
+      "unavailable": "Le personnel de l’organisation est indisponible",
+      "invitationSent": "Invitation envoyée à {email}.",
+      "invitationCancelled": "Invitation annulée.",
+      "sendInvitation": "Envoyer l’invitation",
+      "sending": "Envoi…",
+      "pendingTitle": "Invitations en attente",
+      "pendingDescription": "Annulez une invitation pour la révoquer avant son acceptation.",
+      "noPending": "Aucune invitation en attente.",
+      "noRole": "Aucun rôle",
+      "cancel": "Annuler",
       "columns": {
-        "name": "Name",
-        "email": "Email",
-        "emailAddress": "Email address",
-        "role": "Role",
-        "roles": "Roles",
+        "name": "Nom",
+        "email": "E-mail",
+        "emailAddress": "Adresse e-mail",
+        "role": "Rôle",
+        "roles": "Rôles",
         "actions": "Actions",
-        "members": "Members",
-        "use": "Use",
-        "saving": "Saving…",
-        "send": "Send",
-        "loadingOrganization": "Loading Organization",
-        "loadingOrganizationStaff": "Loading Organization staff"
+        "members": "Membres",
+        "use": "Utiliser",
+        "saving": "Enregistrement…",
+        "send": "Envoyer",
+        "loadingOrganization": "Chargement de l’organisation",
+        "loadingOrganizationStaff": "Chargement du personnel de l’organisation"
       }
     },
     "settings": {
-      "title": "{organization} settings",
-      "country": "Organization country",
-      "saved": "Organization country saved.",
-      "saveError": "Could not save Organization country",
-      "save": "Save Organization country",
-      "saving": "Saving…"
+      "title": "Paramètres de {organization}",
+      "country": "Pays de l’organisation",
+      "saved": "Pays de l’organisation enregistré.",
+      "saveError": "Impossible d’enregistrer le pays de l’organisation",
+      "save": "Enregistrer le pays de l’organisation",
+      "saving": "Enregistrement…"
     },
     "switcher": {
-      "acting": "Acting Organization",
-      "select": "Select Organization",
-      "aria": "Acting Organization: {organization}. Switch Organization",
-      "failed": "Could not switch Organization. Try again."
+      "acting": "Organisation active",
+      "select": "Sélectionner une organisation",
+      "aria": "Organisation active : {organization}. Changer d’organisation",
+      "failed": "Impossible de changer d’organisation. Réessayez."
     }
   }
 }
