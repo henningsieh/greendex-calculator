@@ -44,4 +44,5 @@ _Avoid_: Member, User (when referring to participation in a Project)
 
 **Participant Journey**:
 One Participant's real journey to or from a Project, belonging to their Project Participation and shared by Calculator and Cost Tracker. It describes a personal route rather than a cost or Proof Document.
+_UI label (de)_: Reise (plural: Reisen).
 _Avoid_: Ticket, Travel Cost Entry, Partner Organization distance

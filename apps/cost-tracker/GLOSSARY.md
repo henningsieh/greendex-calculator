@@ -18,6 +18,7 @@ _UI label_: Partner (plural: Partners). Use Partner Organization when the full d
 
 **Project Participation**:
 The record that one User takes part in one Project, belonging to the Project rather than to a Partner Organization.
+_UI label (de)_: Teilnahme (plural: Teilnahmen); the domain term is Projektteilnahme (plural: Projektteilnahmen).
 _Avoid_: Partner's participants, Membership, Invitee
 
 _UI label_: Participation (plural: Participations) when coordinators work with Project Participation records. Participant still means the person, including when they register, accept the Participant Agreement, or enter their journey.
@@ -69,10 +70,12 @@ _Avoid_: Project completion, Cost Submission Window
 
 **Payout Account**:
 A reusable bank account owned by one Partner Organization and selected by a Project Partnership for its Claim.
+_UI label (de)_: Auszahlungskonto (plural: Auszahlungskonten).
 _Avoid_: Claim bank details
 
 **Proof Document**:
 An uploaded receipt, invoice, or ticket supporting one or more Travel Cost Entries in the same Claim.
+_UI label (de)_: Beleg (plural: Belege).
 _Avoid_: Travel Cost Entry, Ticket (as a generic Cost Tracker entity)
 
 **Ticket**:
@@ -81,10 +84,12 @@ _Avoid_: Travel Cost Entry, Cost Allocation, generic Proof Document
 
 **Travel Cost Entry**:
 The exact EUR cost recorded for one configured transport choice, potentially covering several Project Participations.
+_UI label (de)_: Reisekostenposition (plural: Reisekostenpositionen).
 _Avoid_: Ticket (when referring to the cost record), Participant Journey
 
 **Cost Allocation**:
 The association between one Travel Cost Entry and one covered Project Participation.
+_UI label (de)_: Kostenzuordnung (plural: Kostenzuordnungen).
 _Avoid_: Beneficiary, Claimant
 
 **Coordination** (internal, not a domain entity):
