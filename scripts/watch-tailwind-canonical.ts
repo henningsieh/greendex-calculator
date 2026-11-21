@@ -66,7 +66,7 @@ async function main() {
   async function loadCanonicalizer(
     retry: boolean,
   ): Promise<TailwindCanonicalizer | null> {
-    do {
+    for (;;) {
       const before = snapshotStylesheets();
       try {
         const next = await createTailwindCanonicalizer();
@@ -76,7 +76,7 @@ async function main() {
       }
       if (!retry) return null;
       await sleep(RETRY_DELAY);
-    } while (true);
+    }
   }
 
   function discoverSources(): string[] {
