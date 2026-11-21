@@ -139,9 +139,9 @@ export default function DesignSystemPage() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-16 px-12 py-16 max-sm:px-[18px]">
+    <div className="mx-auto flex w-full max-w-295 flex-col gap-16 px-12 py-16 max-sm:px-4.5">
       <header className="relative flex flex-col gap-6 overflow-hidden">
-        <Aura className="absolute -top-24 left-1/2 h-72 w-[720px] -translate-x-1/2" />
+        <Aura className="absolute -top-24 left-1/2 h-72 w-180 -translate-x-1/2" />
         <div className="flex items-center gap-3">
           <StarWreath size={34} />
           <div className="flex flex-col">

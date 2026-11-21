@@ -2,8 +2,6 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, symlinkSync } from "node:fs";
 import path from "node:path";
 
-import { isTailwindSourcePath, tailwindOxlintArgs } from "./tailwind-config.mjs";
-
 const [root, snapshot] = process.argv.slice(2);
 const git = (...args) => execFileSync("git", args, { cwd: root });
 const paths = git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR")
@@ -85,20 +83,31 @@ const lint = stagedFiles.filter((file) =>
   /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/.test(file),
 );
 
-const tailwindPaths = lint.filter(isTailwindSourcePath);
-if (tailwindPaths.length) {
+const tailwindCandidates = stagedFiles.filter((file) =>
+  /\.(jsx|tsx)$/.test(file),
+);
+if (tailwindCandidates.length) {
   const before = new Map(
-    tailwindPaths.map((file) => [file, readFileSync(path.join(snapshot, file))]),
+    tailwindCandidates.map((file) => [
+      file,
+      readFileSync(path.join(snapshot, file)),
+    ]),
   );
-  if (run("tsx", ["scripts/canonicalize-tailwind.ts", ...tailwindPaths]) !== 0)
-    process.exit(1);
-  for (const file of tailwindPaths) stageIfChanged(file, before.get(file));
-
-  if (
-    run("oxlint", tailwindOxlintArgs({ fix: true, files: tailwindPaths })) !== 0
-  )
-    process.exit(1);
-  for (const file of tailwindPaths) stageIfChanged(file, before.get(file));
+  // Two passes: collapsing `mt-2 mb-2` into `my-2` removes classes and leaves
+  // the whitespace that no-unnecessary-whitespace normalises on the next pass.
+  for (let pass = 0; pass < 2; pass += 1) {
+    if (
+      run("oxlint", [
+        "--config",
+        "oxlint.tailwind.json",
+        "--fix",
+        "--",
+        ...tailwindCandidates,
+      ]) !== 0
+    )
+      process.exit(1);
+  }
+  for (const file of tailwindCandidates) stageIfChanged(file, before.get(file));
 }
 
 if (lint.length) {
