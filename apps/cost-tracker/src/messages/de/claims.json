@@ -4,9 +4,9 @@
       "eyebrow": "GreenDex Cost Tracker · Erasmus Edition"
     },
     "loading": {
-      "workspace": "Claim-Arbeitsbereich wird geladen",
-      "review": "Claim-Prüfung wird geladen",
-      "submitted": "Eingereichte Claims werden geladen"
+      "workspace": "Erstattungsantrag-Arbeitsbereich wird geladen",
+      "review": "Antragsprüfung wird geladen",
+      "submitted": "Eingereichte Erstattungsanträge werden geladen"
     },
     "document": {
       "accountHolder": "Kontoinhaber",
@@ -24,10 +24,10 @@
     },
     "queue": {
       "eyebrow": "Arbeitsbereich",
-      "title": "Prüfungen",
-      "description": "Von Partnerorganisationen eingereichte Claims, die auf die Prüfung durch die Hosting-Organisation warten.",
-      "sectionTitle": "Eingereichte Claims",
-      "label": "Claims zur Prüfung",
+      "title": "Erstattungsanträge",
+      "description": "Von Partnerorganisationen eingereichte Erstattungsanträge, die auf die Prüfung durch die Hosting-Organisation warten.",
+      "sectionTitle": "Eingereichte Erstattungsanträge",
+      "label": "Erstattungsanträge zur Prüfung",
       "searchLabel": "Projekt oder Partnerorganisation",
       "searchPlaceholder": "Nach Projekt oder Partner suchen…",
       "partnerFilter": "Partnerorganisation",
@@ -47,10 +47,10 @@
       },
       "sortHeaderActive": "Nach {field}, {direction} sortieren",
       "sortHeaderInactive": "Nach {field} sortieren",
-      "pageSize": "Claims pro Seite",
+      "pageSize": "Erstattungsanträge pro Seite",
       "filters": "Filter",
       "refresh": "Aktualisieren",
-      "refreshing": "Claims werden aktualisiert…",
+      "refreshing": "Erstattungsanträge werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",
       "metrics": {
         "claims": "Zur Prüfung",
@@ -69,10 +69,10 @@
       "status": {
         "submitted": "Zur Prüfung"
       },
-      "reviewClaim": "Claim prüfen",
-      "showingCount": "{shown} von {total, plural, one {# Claim} other {# Claims}} werden angezeigt",
-      "emptyTitle": "Keine eingereichten Claims zur Prüfung",
-      "emptyDescription": "Wenn ein Partner einen Claim einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
+      "reviewClaim": "Erstattungsantrag prüfen",
+      "showingCount": "{shown} von {total, plural, one {# Erstattungsantrag} other {# Erstattungsanträge}} werden angezeigt",
+      "emptyTitle": "Keine eingereichten Erstattungsanträge zur Prüfung",
+      "emptyDescription": "Wenn ein Partner einen Erstattungsantrag einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
       "clearFilters": "Filter zurücksetzen",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",
@@ -81,14 +81,14 @@
     },
     "page": {
       "eyebrow": "Partnerschaft",
-      "title": "Claim"
+      "title": "Erstattungsantrag"
     },
     "review": {
       "eyebrow": "Partnerschaft",
-      "sectionLabel": "Claim-Prüfung",
-      "bandTitle": "Claim-Prüfung",
-      "historyLabel": "Claim-Verlauf",
-      "historyTitle": "Claim-Verlauf",
+      "sectionLabel": "Antragsprüfung",
+      "bandTitle": "Antragsprüfung",
+      "historyLabel": "Antragsverlauf",
+      "historyTitle": "Antragsverlauf",
       "historyEmpty": "Noch keine Prüfereignisse.",
       "actor": "Akteur:",
       "calculatedPayable": "Berechnete Auszahlung:",
@@ -98,7 +98,7 @@
       "decisionLabel": "Prüfentscheidung",
       "confirm": "Bestätigen",
       "cancel": "Abbrechen",
-      "detailsTitle": "Details des eingereichten Claims",
+      "detailsTitle": "Details des eingereichten Erstattungsantrags",
       "noPayoutAccount": "Kein Payout Account",
       "costsAndDocuments": "Travel Cost Entries und Proof Documents",
       "noCosts": "Keine Kosten erfasst.",
@@ -108,8 +108,8 @@
       "journeysTitle": "Participant Journeys",
       "noJourneys": "Keine Journeys erfasst.",
       "km": "km",
-      "noClaim": "Für diese Projektpartnerschaft wurde kein Claim erstellt.",
-      "hostingTitle": "Claim-Prüfung",
+      "noClaim": "Für diese Projektpartnerschaft wurde kein Erstattungsantrag erstellt.",
+      "hostingTitle": "Antragsprüfung",
       "status": {
         "approved": "Genehmigt · unbezahlt",
         "paid": "Bezahlt",
@@ -123,9 +123,9 @@
       "confirmAction": "{action} für diesen Erstattungsantrag bestätigen.",
       "unavailable": "Nicht verfügbar",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
-      "title": "Claim-Prüfung",
+      "title": "Antragsprüfung",
       "contextLoading": "Kontext wird geladen",
-      "contextUnavailable": "Claim-Kontext nicht verfügbar",
+      "contextUnavailable": "Antragskontext nicht verfügbar",
       "queueEyebrow": "Arbeitsbereich"
     },
     "submission": {
@@ -138,18 +138,18 @@
       "calculatedPayable": "Berechnete Auszahlung:",
       "currencyEur": "EUR",
       "notEditable": "(vom Server berechnet; nicht bearbeitbar)",
-      "submit": "Claim einreichen",
-      "confirmDescription": "Einreichung bestätigen: Die Einreichung sperrt den Claim und den ausgewählten Payout Account für Partner-Bearbeitung, bis die Hosting-Seite eine Korrektur anfordert.",
+      "submit": "Erstattungsantrag einreichen",
+      "confirmDescription": "Einreichung bestätigen: Die Einreichung sperrt den Erstattungsantrag und den ausgewählten Payout Account für Partner-Bearbeitung, bis die Hosting-Seite eine Korrektur anfordert.",
       "confirm": "Einreichung bestätigen",
       "cancel": "Abbrechen",
       "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist"
     },
     "workspace": {
-      "label": "Claim-Arbeitsbereich",
-      "bandTitle": "Claim-Arbeitsbereich",
+      "label": "Erstattungsantrag-Arbeitsbereich",
+      "bandTitle": "Erstattungsantrag-Arbeitsbereich",
       "submissionLabel": "Einreichung",
-      "locked": "Dieser Claim ist für Partner-Bearbeitung gesperrt. Nur eine Korrekturanforderung der Hosting-Seite kann ihn wieder öffnen.",
-      "noDraft": "Wähle einen Payout Account und erstelle einen Claim, um Kosten oder Proof Documents hinzuzufügen. Journeys können separat vorbereitet werden.",
+      "locked": "Dieser Erstattungsantrag ist für Partner-Bearbeitung gesperrt. Nur eine Korrekturanforderung der Hosting-Seite kann ihn wieder öffnen.",
+      "noDraft": "Wähle einen Payout Account und erstelle einen Erstattungsantrag, um Kosten oder Proof Documents hinzuzufügen. Journeys können separat vorbereitet werden.",
       "status": {
         "in_preparation": "In Vorbereitung",
         "submitted": "Eingereicht",
@@ -199,7 +199,7 @@
       },
       "proof": {
         "title": "Proof Documents",
-        "empty": "Keine Proof Documents in diesem Claim.",
+        "empty": "Keine Proof Documents in diesem Erstattungsantrag.",
         "bytes": "Bytes",
         "uploadLabel": "Proof Document hochladen (PDF, JPEG, PNG; bis zu 10 MB)",
         "upload": "Dokument hochladen",
@@ -208,7 +208,7 @@
         "currencyEur": "EUR",
         "linked": "Verknüpft:",
         "linkLabel": "Proof Document mit diesen Kosten verknüpfen",
-        "selectDocument": "Claim-Dokument auswählen"
+        "selectDocument": "Dokument zum Erstattungsantrag auswählen"
       },
       "payout": {
         "selected": "Ausgewählter Payout Account:",
@@ -221,18 +221,18 @@
         "accountHolder": "Kontoinhaber",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "createClaim": "Claim erstellen"
+        "createClaim": "Erstattungsantrag erstellen"
       },
       "notice": {
         "correctionRequested": "Korrektur angefordert:",
-        "correctionBody": "Korrigiere die Claim-Daten und Proof Documents und reiche den Claim dann erneut zur Hosting-Prüfung ein.",
+        "correctionBody": "Korrigiere die Daten des Erstattungsantrags und die Proof Documents und reiche den Erstattungsantrag dann erneut zur Hosting-Prüfung ein.",
         "rejected": "Abgelehnt:",
-        "rejectedBody": "Dieser Claim ist gesperrt und unbezahlt. Nur Hosting-Mitarbeitende können ihn wieder öffnen; das Wiederöffnen entsperrt keine Partner-Bearbeitung.",
+        "rejectedBody": "Dieser Erstattungsantrag ist gesperrt und unbezahlt. Nur Hosting-Mitarbeitende können ihn wieder öffnen; das Wiederöffnen entsperrt keine Partner-Bearbeitung.",
         "approved": "Genehmigt · unbezahlt. Die vollständige Überweisung wurde nicht erfasst.",
         "paid": "Bezahlt. Die vollständige Überweisung wurde getrennt von der Genehmigung erfasst."
       },
       "draft": {
-        "title": "Claim-Entwurf"
+        "title": "Antragsentwurf"
       },
       "copy": {
         "participant": "Teilnehmende Person",

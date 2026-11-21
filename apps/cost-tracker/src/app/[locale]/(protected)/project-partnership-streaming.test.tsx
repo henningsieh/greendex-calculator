@@ -165,7 +165,7 @@ const routes = [
   {
     path: "/[locale]/claims",
     Page: LocalizedClaimReviewQueuePage,
-    heading: "Reviews",
+    heading: "Claims",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
   },

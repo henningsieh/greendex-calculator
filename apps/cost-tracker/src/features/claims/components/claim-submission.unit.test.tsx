@@ -21,7 +21,7 @@ it.each([
     "de",
     german,
     "Wähle einen Payout Account des Partners aus.",
-    "Verknüpfe einen zu diesem Claim gehörenden Nachweis.",
+    "Verknüpfe einen zu diesem Erstattungsantrag gehörenden Nachweis.",
   ],
 ] as const)(
   "renders actionable preview gaps in %s",

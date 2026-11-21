@@ -185,7 +185,7 @@ describe("shared localized error presentation", () => {
     [
       "proofDocumentRequired",
       "Link a Proof Document belonging to this Claim.",
-      "Verknüpfe einen zu diesem Claim gehörenden Nachweis.",
+      "Verknüpfe einen zu diesem Erstattungsantrag gehörenden Nachweis.",
     ],
     [
       "fundingRulesRequired",
@@ -238,7 +238,7 @@ describe("shared localized error presentation", () => {
       ]),
     ]);
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-      'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
+      'Die Checkliste zur Einreichung des Erstattungsantrags ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
     );
   });
 
@@ -248,7 +248,7 @@ describe("shared localized error presentation", () => {
       { name: "Nord", status: null },
     ]);
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-      'Das Projekt kann noch nicht abgeschlossen werden. Prüfe die folgenden Projektpartnerschaften.<ul class="block"><li class="block">&lt;Gruppe Süd&gt; (Eingereicht)</li><li class="block">Nord (Kein Claim)</li></ul>',
+      'Das Projekt kann noch nicht abgeschlossen werden. Prüfe die folgenden Projektpartnerschaften.<ul class="block"><li class="block">&lt;Gruppe Süd&gt; (Eingereicht)</li><li class="block">Nord (Kein Erstattungsantrag)</li></ul>',
     );
   });
 
@@ -315,7 +315,7 @@ describe("shared localized error presentation", () => {
         data: { reason: "CLAIM_SUBMISSION_INCOMPLETE", issues: [issue] },
       });
       expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-        'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li></ul>',
+        'Die Checkliste zur Einreichung des Erstattungsantrags ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li></ul>',
       );
     },
   );

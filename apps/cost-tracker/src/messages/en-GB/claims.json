@@ -24,8 +24,8 @@
     },
     "queue": {
       "eyebrow": "Workspace",
-      "title": "Reviews",
-      "description": "Claims submitted by Partner Organizations and awaiting Hosting review.",
+      "title": "Claims",
+      "description": "Funding Requests submitted by Partners and awaiting Hosting review.",
       "sectionTitle": "Submitted Claims",
       "label": "Claims awaiting review",
       "searchLabel": "Project or Partner Organization",
