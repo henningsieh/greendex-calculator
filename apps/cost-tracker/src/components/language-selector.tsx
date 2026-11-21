@@ -69,7 +69,7 @@ export function LanguageSelector() {
         >
           <CurrentFlag
             aria-hidden="true"
-            className="size-4 rounded-[2px] ring-1 ring-foreground/15"
+            className="size-4 rounded-xs ring-1 ring-foreground/15"
             data-icon="inline-start"
           />
           <ChevronDownIcon aria-hidden="true" />
@@ -96,7 +96,7 @@ export function LanguageSelector() {
                 >
                   <Flag
                     aria-hidden="true"
-                    className="h-3.5 w-5 shrink-0 rounded-[2px] ring-1 ring-foreground/15"
+                    className="h-3.5 w-5 shrink-0 rounded-xs ring-1 ring-foreground/15"
                   />
                   <span className="flex min-w-0 flex-col items-start leading-tight">
                     <span className="truncate">{language.nativeName}</span>
