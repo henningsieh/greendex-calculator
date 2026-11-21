@@ -62,23 +62,41 @@ async function main() {
   setInterval(() => {
     if (polling) return;
     polling = true;
-    void poll().finally(() => {
-      polling = false;
-    });
+    void poll()
+      .catch((error: unknown) => {
+        console.error("Tailwind canonical watcher poll failed:", error);
+      })
+      .finally(() => {
+        polling = false;
+      });
   }, 100);
+
+  async function reloadCanonicalizer(): Promise<boolean> {
+    const before = new Map(
+      canonicalizer.stylesheetDependencies.map((file) => [file, signature(file)]),
+    );
+    try {
+      const next = await createTailwindCanonicalizer();
+      const after = new Map(
+        next.stylesheetDependencies.map((file) => [file, signature(file)]),
+      );
+      for (const [file, value] of before) {
+        if (after.get(file) !== value) return false;
+      }
+      canonicalizer = next;
+      trackStylesheets(next);
+      return true;
+    } catch (error) {
+      console.error("Tailwind canonicalizer reload failed;", error);
+      return false;
+    }
+  }
 
   async function poll(): Promise<void> {
     const stylesheetChanged = canonicalizer.stylesheetDependencies.some(
       (file) => signature(file) !== stylesheetSignatures.get(file),
     );
-    if (stylesheetChanged) {
-      try {
-        canonicalizer = await createTailwindCanonicalizer();
-        trackStylesheets(canonicalizer);
-      } catch (error) {
-        if (!isTransientFsError(error)) throw error;
-      }
-    }
+    if (stylesheetChanged && !(await reloadCanonicalizer())) return;
 
     for (const file of discoverSources()) {
       const absolute = resolve(ROOT, file);

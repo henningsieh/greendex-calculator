@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { extname, relative, resolve, sep } from "node:path";
+import { dirname, extname, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -63,11 +63,33 @@ function canonicalizeClassList(
   value: string,
   designSystem: DesignSystem,
 ): string {
-  const classes = value.split(/\s+/).filter(Boolean);
+  const leading = value.match(/^\s*/)?.[0] ?? "";
+  const trailing = value.match(/\s*$/)?.[0] ?? "";
+  const classes = value.trim().split(/\s+/).filter(Boolean);
   if (!classes.length) return value;
-  return designSystem
-    .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
-    .join(" ");
+  return (
+    leading +
+    designSystem
+      .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
+      .join(" ") +
+    trailing
+  );
+}
+
+function isClassLiteralPosition(
+  text: string,
+  from: number,
+  to: number,
+  regionStart: number,
+): boolean {
+  const before = text.slice(Math.max(regionStart, to - 80), to).trimEnd();
+  const after = text.slice(from, Math.min(text.length, from + 80)).trimStart();
+  const comparison = /(?:===|!==|==|!=|<=|>=|<|>)$/;
+  if (comparison.test(before) || /^(?:===|!==|==|!=|<=|>=|<|>)/.test(after)) {
+    return false;
+  }
+  const call = before.match(/(?:^|[^\w$])([A-Za-z_$][\w$]*)\s*\($/);
+  return !call || call[1] === "cn";
 }
 
 function collectStringReplacements(
@@ -83,6 +105,9 @@ function collectStringReplacements(
     const end = match.index + match[0].length;
     if (end > to) break;
     const value = match[1] ?? match[2] ?? "";
+    if (!isClassLiteralPosition(text, match.index + 1, match.index, from)) {
+      continue;
+    }
     const canonical = canonicalizeClassList(value, designSystem);
     if (canonical !== value) {
       replacements.set(match.index + 1, {
@@ -253,7 +278,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
       designSystems.set(
         appRoot,
         await __unstable__loadDesignSystem(readFileSync(stylesheet, "utf8"), {
-          base: resolve(root, appRoot),
+          base: dirname(stylesheet),
         }),
       );
     }
@@ -272,7 +297,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
     designSystems.set(
       appRoot,
       await __unstable__loadDesignSystem(readFileSync(stylesheet, "utf8"), {
-        base: resolve(ROOT, appRoot),
+        base: dirname(stylesheet),
       }),
     );
   }
