@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import type { AppHref } from "@/app/routes";
 import { AccountMenu } from "@/components/account-menu";
+import { LanguageSelector } from "@/components/language-selector";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import type { UserSummary } from "@/features/authentication/types";
@@ -30,6 +31,7 @@ export function AppNavigation({
         {account ? (
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
+            <LanguageSelector />
             <div className="lg:hidden">
               <AccountMenu compact email={account.email} name={account.name} />
             </div>
@@ -43,6 +45,7 @@ export function AppNavigation({
             className="flex items-center gap-2 sm:gap-3"
           >
             <ThemeSwitcher />
+            <LanguageSelector />
             {actions}
           </nav>
         )}

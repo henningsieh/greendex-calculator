@@ -59,7 +59,7 @@ export default async function LandingPage() {
           actions={
             <>
               <Link
-                className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
                 href="/login"
               >
                 {t("common.signIn")}

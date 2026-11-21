@@ -32,6 +32,12 @@
       "ariaLabel": "Color theme: {theme}. Switch theme",
       "system": "system"
     },
+    "languageSwitcher": {
+      "label": "Langue",
+      "description": "Choisissez votre langue d’affichage",
+      "ariaLabel": "Langue : {language}. Changer de langue",
+      "changing": "Changement de langue…"
+    },
     "combobox": {
       "defaultSearchBy": "name or ID",
       "select": "Select {label}",
