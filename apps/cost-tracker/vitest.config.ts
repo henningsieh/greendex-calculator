@@ -16,12 +16,37 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "jsdom",
     // Transform next-intl's extensionless Next.js imports for Node-based proxy tests.
     server: { deps: { inline: ["next-intl"] } },
     globalSetup: ["./src/__tests__/global-setup.ts"],
-    setupFiles: ["./src/__tests__/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}", "scripts/**/*.test.ts"],
-    exclude: ["src/__tests__/e2e/**"],
+    // Pure logic tests run in Node, where the environment is cheap. Component
+    // tests stay on jsdom. The browser transport test is the one `.ts` file
+    // that needs a DOM, so it belongs to the jsdom project explicitly.
+    projects: [
+      {
+        test: {
+          name: "node",
+          environment: "node",
+          isolate: process.env.GREENDEX_VITEST_REUSE_WORKERS !== "1",
+          setupFiles: ["./src/__tests__/setup.node.ts"],
+          include: ["src/**/*.{test,spec}.ts", "scripts/**/*.test.ts"],
+          exclude: ["src/__tests__/e2e/**", "src/lib/orpc/orpc.browser.test.ts"],
+        },
+      },
+      {
+        test: {
+          name: "dom",
+          environment: "jsdom",
+          // Some component tests mutate browser state outside Vitest stubs.
+          isolate: true,
+          setupFiles: ["./src/__tests__/setup.dom.ts"],
+          include: [
+            "src/**/*.{test,spec}.tsx",
+            "src/lib/orpc/orpc.browser.test.ts",
+          ],
+          exclude: ["src/__tests__/e2e/**"],
+        },
+      },
+    ],
   },
 });

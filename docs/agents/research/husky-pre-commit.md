@@ -17,3 +17,9 @@ working tree, including partially staged files. Lint examines staged code; the
 instruction guard and, when applicable, the copy guard examine the staged
 snapshot. Unstaged and untracked files do not participate. Run the repository-wide
 `pnpm run format` and `pnpm run lint` separately before committing.
+
+`scripts/pre-commit.test.ts` gives every scenario its own `git clone --shared`
+and temporary directory. Each hook invocation creates a fresh `mktemp` staged
+snapshot, so the real hooks can run concurrently without sharing an index or
+working tree. A timeout kills the hook process group so `pnpm`/Vitest children
+cannot survive a failed fixture.

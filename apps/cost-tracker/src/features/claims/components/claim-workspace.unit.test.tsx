@@ -331,7 +331,7 @@ describe("Claim workspace", () => {
     mount();
     expect(await screen.findByTestId("claim-payout-select")).toBeDisabled();
     const trigger = screen.getByTestId("archive-explanation-trigger");
-    await userEvent.click(trigger);
+    await userEvent.setup({ skipHover: true }).click(trigger);
     expect(
       await screen.findByTestId("archive-explanation-content"),
     ).toBeVisible();

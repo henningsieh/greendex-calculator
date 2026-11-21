@@ -27,8 +27,10 @@ test("loading the login page never focuses the heading", async ({ page }) => {
   await page.context().clearCookies();
   await page.goto("/login", { waitUntil: "load" });
   await expect(page.getByTestId("email")).toBeVisible();
-  // Grace window for hydration work that starts after network idle.
-  await page.waitForTimeout(5_000);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveAttribute(
+    "data-focus-ready",
+    "true",
+  );
 
   const observed = await page.evaluate(() => ({
     focusLog: (window as unknown as { __focusLog: string[] }).__focusLog,
