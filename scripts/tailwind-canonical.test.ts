@@ -73,3 +73,17 @@ it("preserves JavaScript string escaping in rewritten literals", () => {
     String.raw`export const view = () => <div className={cn('before:content-[\'x\'] w-4')} />;`,
   );
 });
+
+it("preserves JSX attribute source characters without JavaScript escapes", () => {
+  const source = `export const view = () => (
+  <div className="before:content-['hello\\_world']
+    w-[16px]" />
+);
+`;
+
+  expect(canonicalizeSource(source, designSystem))
+    .toBe(`export const view = () => (
+  <div className="before:content-['hello\\_world'] w-4" />
+);
+`);
+});

@@ -106,6 +106,11 @@ function serializeString(value: string, raw: string | null): string {
   return `${quote}${escaped}${quote}`;
 }
 
+function serializeJsxString(value: string, raw: string | null): string {
+  const quote = raw?.startsWith('"') ? '"' : "'";
+  return `${quote}${value}${quote}`;
+}
+
 function canonicalizeClassList(
   value: string,
   designSystem: DesignSystem,
@@ -146,14 +151,17 @@ export function canonicalizeSource(
   });
   const replacements = new Map<number, Replacement>();
 
-  function addLiteral(node: StringLiteral): void {
+  function addLiteral(
+    node: StringLiteral,
+    serialize: (value: string, raw: string | null) => string = serializeString,
+  ): void {
     const value = node.value;
     const canonical = canonicalizeClassList(value, designSystem);
     if (canonical === value) return;
     replacements.set(node.start, {
       start: node.start,
       end: node.end,
-      value: serializeString(canonical, node.raw),
+      value: serialize(canonical, node.raw),
     });
   }
 
@@ -205,7 +213,7 @@ export function canonicalizeSource(
       const value = node.value;
       if (!value) return;
       if (value.type === "Literal" && typeof value.value === "string") {
-        addLiteral(value);
+        addLiteral(value, serializeJsxString);
       } else if (value.type === "JSXExpressionContainer") {
         collect(value.expression);
       }
@@ -312,6 +320,7 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
       const text = readFileSync(target, "utf8");
       const next = canonicalizeSource(text, designSystem);
       if (next === text) continue;
+      if (readFileSync(target, "utf8") !== text) continue;
       writeFileSync(target, next);
       changed += 1;
       if (log) console.log(`Canonicalized Tailwind classes in ${file}`);

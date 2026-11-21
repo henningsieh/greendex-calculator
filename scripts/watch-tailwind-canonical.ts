@@ -137,8 +137,18 @@ async function main() {
           pending.delete(file);
           if (busy.has(file)) return;
           busy.add(file);
-          const processed = signature(absolute);
           try {
+            if (!stable(snapshotStylesheets(), stylesheetSignatures)) {
+              const reloaded = await loadCanonicalizer(false);
+              if (!reloaded) {
+                known.delete(file);
+                return;
+              }
+              canonicalizer = reloaded.instance;
+              stylesheetSignatures = reloaded.signatures;
+            }
+
+            const processed = signature(absolute);
             const changed = await canonicalizer.canonicalizeFiles([file], {
               root: ROOT,
             });

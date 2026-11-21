@@ -10,6 +10,10 @@ export const routing = defineRouting({
 
   // Add locale prefix to all routes (e.g., /en/about, /de/about)
   localePrefix: "always",
+
+  // The URL is the only persisted language state. Without this, next-intl's
+  // locale-aware navigation writes NEXT_LOCALE when the selector calls replace.
+  localeCookie: false,
 });
 
 // Lightweight wrappers around Next.js navigation APIs
