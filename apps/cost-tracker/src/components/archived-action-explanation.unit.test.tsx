@@ -1,6 +1,6 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages } from "@/__tests__/render-with-messages";
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
@@ -9,23 +9,26 @@ describe("Archived action explanation", () => {
   it.each(["link", "icon"] as const)(
     "keeps the %s explanation open when clicking after hover",
     async (variant) => {
-      const user = userEvent.setup();
-      renderWithMessages(<ArchivedActionExplanation variant={variant} />);
-      const trigger = screen.getByTestId("archive-explanation-trigger");
-      await user.hover(trigger);
-      expect(
-        await screen.findByTestId("archive-explanation-content"),
-      ).toBeVisible();
-      await user.click(trigger);
-      expect(
-        await screen.findByTestId("archive-explanation-content"),
-      ).toBeVisible();
-      await user.keyboard("{Escape}");
-      await waitFor(() =>
+      // Keep the click within Base UI's hover grace period even on a busy host.
+      vi.useFakeTimers();
+      try {
+        const { unmount } = renderWithMessages(
+          <ArchivedActionExplanation variant={variant} />,
+        );
+        const trigger = screen.getByTestId("archive-explanation-trigger");
+        fireEvent.mouseEnter(trigger);
+        expect(trigger).toHaveAttribute("aria-expanded", "true");
+        fireEvent.click(trigger);
+        expect(trigger).toHaveAttribute("aria-expanded", "true");
+        fireEvent.keyDown(trigger, { key: "Escape" });
+        await act(() => vi.runOnlyPendingTimersAsync());
         expect(
           screen.queryByTestId("archive-explanation-content"),
-        ).not.toBeInTheDocument(),
-      );
+        ).not.toBeInTheDocument();
+        unmount();
+      } finally {
+        vi.useRealTimers();
+      }
     },
   );
 
