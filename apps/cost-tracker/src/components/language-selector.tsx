@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "@greendex/i18n/client";
 import { CheckIcon, ChevronDownIcon, GlobeIcon } from "lucide-react";
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,21 @@ export function LanguageSelector() {
   const [isPending, startTransition] = useTransition();
   const current = languages.find((language) => language.code === locale);
   const CurrentFlag = current?.Flag ?? GlobeIcon;
+  const languageNames = useMemo(
+    () => new Intl.DisplayNames([locale], { type: "language" }),
+    [locale],
+  );
+  const regionNames = useMemo(
+    () => new Intl.DisplayNames([locale], { type: "region" }),
+    [locale],
+  );
+
+  function secondaryLabel(language: (typeof languages)[number]) {
+    const languageName = languageNames.of(language.code) ?? language.label;
+    const regionName =
+      regionNames.of(language.countryCode) ?? language.displayRegion;
+    return `${languageName} · ${regionName}`;
+  }
 
   function changeLanguage(code: LanguageCode) {
     if (code === locale || isPending) return;
@@ -101,7 +116,7 @@ export function LanguageSelector() {
                   <span className="flex min-w-0 flex-col items-start leading-tight">
                     <span className="truncate">{language.nativeName}</span>
                     <span className="truncate text-xs font-normal tracking-normal text-muted-foreground normal-case">
-                      {language.label} · {language.displayRegion}
+                      {secondaryLabel(language)}
                     </span>
                   </span>
                   {active && <CheckIcon aria-hidden="true" className="ml-auto" />}

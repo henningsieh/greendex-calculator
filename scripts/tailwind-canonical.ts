@@ -143,8 +143,13 @@ function canonicalizeClassList(
   if (!classes.length) return value;
   return (
     leading +
-    designSystem
-      .canonicalizeCandidates(classes, { rem: TAILWIND_REM })
+    classes
+      .map(
+        (value) =>
+          designSystem.canonicalizeCandidates([value], {
+            rem: TAILWIND_REM,
+          })[0] ?? value,
+      )
       .join(" ") +
     trailing
   );
@@ -209,7 +214,11 @@ export function canonicalizeSource(
       return;
     }
     if (node.type === "LogicalExpression") {
-      if (node.operator === "&&" || node.operator === "||") collect(node.right);
+      if (node.operator === "&&") collect(node.right);
+      else if (node.operator === "||" || node.operator === "??") {
+        collect(node.left);
+        collect(node.right);
+      }
       return;
     }
     if (node.type === "BinaryExpression" && node.operator === "+") {
@@ -347,11 +356,17 @@ export async function createTailwindCanonicalizer(): Promise<TailwindCanonicaliz
       const target = resolve(root, file);
       if (!existsSync(target)) continue;
 
-      const text = readFileSync(target, "utf8");
-      const next = canonicalizeSource(text, designSystem);
-      if (next === text) continue;
-      if (readFileSync(target, "utf8") !== text) continue;
-      writeFileSync(target, next);
+      let wrote = false;
+      for (let attempt = 0; attempt < 3 && !wrote; attempt += 1) {
+        const text = readFileSync(target, "utf8");
+        const next = canonicalizeSource(text, designSystem);
+        if (next === text) break;
+        // A newer save won: retry against its contents instead of overwriting it.
+        if (readFileSync(target, "utf8") !== text) continue;
+        writeFileSync(target, next);
+        wrote = true;
+      }
+      if (!wrote) continue;
       changed += 1;
       if (log) console.log(`Canonicalized Tailwind classes in ${file}`);
     }

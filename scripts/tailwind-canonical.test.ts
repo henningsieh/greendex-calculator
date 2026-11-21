@@ -1,6 +1,13 @@
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { expect, it } from "vitest";
 
-import { canonicalizeSource } from "./tailwind-canonical";
+import {
+  canonicalizeSource,
+  createTailwindCanonicalizer,
+} from "./tailwind-canonical";
+import { ROOT } from "./tailwind-config.mjs";
 
 const canonicalClasses: Record<string, string> = {
   "rounded-[2px]": "rounded-xs",
@@ -77,6 +84,42 @@ it("preserves JavaScript string escaping in rewritten literals", () => {
     String.raw`export const view = () => <div className={cn('before:content-[\'x\'] w-4')} />;`,
   );
 });
+
+it("canonicalizes both result-producing operands of fallback expressions", () => {
+  const source = `export const view = (active: boolean, extra?: string) => (
+  <div>
+    <span className={(active && "w-[16px]") || "block"} />
+    <span className={extra ?? "w-[16px]"} />
+  </div>
+);
+`;
+
+  expect(canonicalizeSource(source, designSystem))
+    .toBe(`export const view = (active: boolean, extra?: string) => (
+  <div>
+    <span className={(active && "w-4") || "block"} />
+    <span className={extra ?? "w-4"} />
+  </div>
+);
+`);
+});
+
+it("preserves repeated candidates with the real design system", async () => {
+  const probe = "apps/cost-tracker/src/__tailwind_duplicate_candidates_probe.tsx";
+  const target = resolve(ROOT, probe);
+  writeFileSync(
+    target,
+    `export const view = () => <div className="w-4 w-8 w-4" />;\n`,
+  );
+
+  try {
+    const canonicalizer = await createTailwindCanonicalizer();
+    await canonicalizer.canonicalizeFiles([probe], { root: ROOT, log: false });
+    expect(readFileSync(target, "utf8")).toContain('className="w-4 w-8 w-4"');
+  } finally {
+    if (existsSync(target)) rmSync(target);
+  }
+}, 20_000);
 
 it("preserves JSX attribute source characters without JavaScript escapes", () => {
   const source = `export const view = () => (
