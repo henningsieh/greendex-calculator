@@ -235,7 +235,7 @@
         "title": "Antragsentwurf"
       },
       "copy": {
-        "participant": "Teilnehmende Person",
+        "participant": "Teilnehmende",
         "eurAmount": "{amount} EUR",
         "computed": "(berechnet)",
         "document": "Dokument",
