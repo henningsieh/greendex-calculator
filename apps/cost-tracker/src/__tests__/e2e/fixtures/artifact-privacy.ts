@@ -12,27 +12,6 @@ import {
 
 export { expect } from "@playwright/test";
 
-/**
- * Wait for React to take over a server-rendered node instead of guessing with
- * a fixed delay. React stamps hydrated DOM nodes with an internal
- * `__reactProps$…` key; the extra task boundary lets passive effects run.
- */
-export async function waitForReactHydration(
-  page: Page,
-  selector = "body",
-): Promise<void> {
-  await page.waitForFunction((target) => {
-    const node = document.querySelector(target);
-    return (
-      node !== null &&
-      Object.keys(node).some((key) => key.startsWith("__reactProps$"))
-    );
-  }, selector);
-  await page.evaluate(
-    () => new Promise<void>((resolve) => setTimeout(resolve, 0)),
-  );
-}
-
 // The deep guard is dormant for MVP. See #338 (E2E artifact privacy follow-up).
 const require = createRequire(import.meta.url);
 

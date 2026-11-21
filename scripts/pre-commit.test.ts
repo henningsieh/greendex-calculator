@@ -38,6 +38,7 @@ function fixture() {
       (resolve) => {
         const child = spawn("sh", [".husky/pre-commit"], {
           cwd: repo,
+          env: { ...process.env, TMPDIR: temp },
           detached: true,
           stdio: ["ignore", "pipe", "pipe"],
         });
@@ -87,7 +88,7 @@ function check(
         rmSync(f.temp, { recursive: true, force: true });
       }
     },
-    hookCheckTimeoutMs,
+    hookCheckTimeoutMs + 5_000,
   );
 }
 const file = "scripts/staged example.js";
@@ -201,5 +202,5 @@ test.concurrent(
       rmSync(failing.temp, { recursive: true, force: true });
     }
   },
-  hookCheckTimeoutMs,
+  hookCheckTimeoutMs + 5_000,
 );

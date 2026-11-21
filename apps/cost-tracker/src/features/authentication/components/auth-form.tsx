@@ -54,9 +54,12 @@ export function AuthForm({
   // page load painted the global focus ring around it (#390 follow-up).
   const announcedReceipt = useRef(receipt);
   useEffect(() => {
-    if (announcedReceipt.current === receipt) return;
-    announcedReceipt.current = receipt;
-    heading.current?.focus();
+    const currentHeading = heading.current;
+    if (announcedReceipt.current !== receipt) {
+      announcedReceipt.current = receipt;
+      currentHeading?.focus();
+    }
+    if (currentHeading) currentHeading.dataset.focusReady = "true";
   }, [receipt]);
   const clearReceipt = useCallback(() => {
     setReceipt(undefined);
