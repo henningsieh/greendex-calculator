@@ -29,16 +29,16 @@ The system blocks submission until all of these are true:
 6. Every Participant Journey has origin, destination, trip type, and the manually entered Erasmus Distance-Calculator distance.
 7. All relationship, exact-money, and funding-rule validations pass.
 
-The Project's immutable copied rates and rules are created in the same transaction as its first saved Participant Journey. The payable amount is derived; the Partner-side Project Coordinator never enters it manually.
+The Project's immutable copied rates and rules are created in the same transaction as its first saved Participant Journey. The estimated reimbursement is derived; the Partner-side Project Coordinator never enters it manually. It is stored on the Claim at submission and becomes the approved amount on approval; only a Claim in preparation has no amount.
 
 ## Review and decision
 
 Hosting staff review the submitted Claim as one funding request. A fixable problem produces a Claim-level correction request with a required reason. The Partner-side Project Coordinator corrects its own data and resubmits.
 
-When correct, Hosting staff approve the derived payable amount:
+When correct, Hosting staff approve the derived estimated reimbursement:
 
 ```text
-payable amount = lower of
+estimated reimbursement = lower of
 - approved allocated costs; and
 - covered Participants' combined funding entitlements
 ```

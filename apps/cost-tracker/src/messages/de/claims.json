@@ -134,7 +134,6 @@
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
       "confirmApproval": "Genehmige den Erstattungsantrag über den angezeigten Betrag. Damit überweist oder erfasst du noch keine Zahlung.",
       "confirmPaymentCorrection": "Der Erstattungsantrag bleibt genehmigt und gilt wieder als unbezahlt. Die Überweisung wird dadurch nicht rückgängig gemacht.",
-      "unavailable": "Nicht verfügbar",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
       "title": "Antragsprüfung",
       "contextLoading": "Kontext wird geladen",

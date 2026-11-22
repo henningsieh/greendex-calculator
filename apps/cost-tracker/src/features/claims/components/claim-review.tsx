@@ -112,10 +112,10 @@ export function ClaimHistory({ events }: { events: History }) {
 
 function ClaimDecisionSummary({
   status,
-  approvedAmountEur,
+  reimbursementAmountEur,
 }: {
   status: Claim["status"];
-  approvedAmountEur: string | null;
+  reimbursementAmountEur: string | null;
 }) {
   const t = useTranslations("claims.review");
   const amountLabel = reimbursementLabel(status);
@@ -135,18 +135,18 @@ function ClaimDecisionSummary({
                   ? t("status.submitted")
                   : t("status.in_preparation")}
       </p>
-      {amountLabel && approvedAmountEur && (
+      {amountLabel && reimbursementAmountEur && (
         <p
           data-message={amountLabel}
           data-testid={
             amountLabel === "approvedAmount"
-              ? "approved-payable"
-              : "estimated-payable"
+              ? "approved-reimbursement"
+              : "estimated-reimbursement"
           }
         >
           {t(amountLabel)}{" "}
           <span className="block font-mono tabular-nums">
-            {approvedAmountEur} {t("currencyEur")}
+            {reimbursementAmountEur} {t("currencyEur")}
           </span>
         </p>
       )}
@@ -157,14 +157,14 @@ function ClaimDecisionSummary({
 export function ClaimDecisionPanel({
   partnershipId,
   status,
-  approvedAmountEur,
+  reimbursementAmountEur,
   canReview,
   archived = false,
   onDecision,
 }: {
   partnershipId: string;
   status: Claim["status"];
-  approvedAmountEur: string | null;
+  reimbursementAmountEur: string | null;
   canReview: boolean;
   archived?: boolean;
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
@@ -184,7 +184,7 @@ export function ClaimDecisionPanel({
     confirmDisabled,
   } = usePaymentController({
     partnershipId,
-    approvedAmountEur,
+    reimbursementAmountEur,
     canReview,
     archived,
     onDecision,
@@ -198,7 +198,7 @@ export function ClaimDecisionPanel({
       <CardContent className="space-y-4">
         <ClaimDecisionSummary
           status={status}
-          approvedAmountEur={approvedAmountEur}
+          reimbursementAmountEur={reimbursementAmountEur}
         />
         {canReview &&
           !confirming &&
@@ -233,7 +233,7 @@ export function ClaimDecisionPanel({
           <Alert>
             <AlertDescription ref={focusConfirmation} tabIndex={-1}>
               {confirming === "markPaid"
-                ? t("confirmTransfer", { amount: approvedAmountEur ?? "" })
+                ? t("confirmTransfer", { amount: reimbursementAmountEur ?? "" })
                 : confirming === "reopen"
                   ? t("confirmReopen")
                   : confirming === "approve"
@@ -344,10 +344,10 @@ export function ClaimReviewDetails({
             {t(amountLabel)}{" "}
             <span
               className="font-mono tabular-nums"
-              data-testid="review-approved-payable"
-              data-amount-eur={details.approvedAmountEur}
+              data-testid="review-approved-reimbursement"
+              data-amount-eur={details.reimbursementAmountEur}
             >
-              {details.approvedAmountEur ?? t("unavailable")} {t("currencyEur")}
+              {details.reimbursementAmountEur} {t("currencyEur")}
             </span>
           </p>
         )}
@@ -525,7 +525,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
                 <ClaimDecisionPanel
                   partnershipId={partnershipId}
                   status={claim.status}
-                  approvedAmountEur={claim.approvedAmountEur}
+                  reimbursementAmountEur={claim.reimbursementAmountEur}
                   canReview={mayReview && reviewer.canReview}
                   archived={reviewer.projectArchived}
                   onDecision={decide}

@@ -69,7 +69,7 @@ const claim = (status: string) => ({
   id: "claim",
   partnershipId: "own",
   status,
-  approvedAmountEur: status === "in_preparation" ? null : "100.00",
+  reimbursementAmountEur: status === "in_preparation" ? null : "100.00",
 });
 beforeEach(() => {
   vi.clearAllMocks();

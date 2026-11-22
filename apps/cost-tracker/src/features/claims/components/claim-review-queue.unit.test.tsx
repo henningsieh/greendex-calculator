@@ -18,7 +18,7 @@ const fixtures = vi.hoisted(() => {
         organizationName: "Partner A",
         status: "submitted" as const,
         submittedAt: new Date("2026-11-01T00:00:00.000Z"),
-        payableAmountEur: "1200.00",
+        reimbursementAmountEur: "1200.00",
       },
     ],
     metrics: {

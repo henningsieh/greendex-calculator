@@ -214,13 +214,13 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       {
         partnershipId: ids.mainA,
         status: "rejected",
-        approvedAmountEur: "100.00",
+        reimbursementAmountEur: "100.00",
       },
       { partnershipId: ids.otherB, status: "in_preparation" },
       {
         partnershipId: ids.settledA,
         status: "rejected",
-        approvedAmountEur: "100.00",
+        reimbursementAmountEur: "100.00",
       },
     ]);
     expect(await ownedCounts()).toEqual([2, 4, 5, 5, 3]);

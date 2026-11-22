@@ -38,7 +38,7 @@ export function euros(cents: bigint): string {
 }
 
 /** Each covered Participant is classified by their own approved allocated plane entries. */
-export function derivePayable(
+export function deriveReimbursement(
   entries: Entry[],
   journeys: Journey[],
   bands: Band[],

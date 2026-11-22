@@ -567,7 +567,7 @@ export function ClaimReviewQueue() {
                         {dateFormat.format(row.submittedAt, "date.medium")}
                       </TableCell>
                       <TableCell className="px-2 text-right text-xs whitespace-nowrap tabular-nums">
-                        {`${row.payableAmountEur} ${t("currencyEur")}`}
+                        {`${row.reimbursementAmountEur} ${t("currencyEur")}`}
                       </TableCell>
                       <TableCell className="px-2 text-right text-xs">
                         <ClaimReviewLink
@@ -618,7 +618,7 @@ export function ClaimReviewQueue() {
                     {t("columns.estimatedReimbursement")}
                   </dt>
                   <dd className="text-right text-xs whitespace-nowrap tabular-nums">
-                    {`${row.payableAmountEur} ${t("currencyEur")}`}
+                    {`${row.reimbursementAmountEur} ${t("currencyEur")}`}
                   </dd>
                 </dl>
                 <div className="mt-2 border-t pt-2 text-right">

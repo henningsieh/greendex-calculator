@@ -134,7 +134,6 @@
       "confirmReopen": "La riapertura riporta la richiesta alla verifica dell’organizzazione ospitante e mantiene bloccata la modifica da parte del partner. Se servono modifiche, richiedi separatamente una correzione.",
       "confirmApproval": "Approva la richiesta per l’importo indicato. Questa azione non invia denaro e non registra alcun pagamento.",
       "confirmPaymentCorrection": "La richiesta resta approvata e risulta di nuovo non pagata. Questa azione non annulla il bonifico.",
-      "unavailable": "Non disponibile",
       "equalShare": "Quota uguale (calcolata all’invio)",
       "title": "Verifica della richiesta di rimborso",
       "contextLoading": "Caricamento del contesto",

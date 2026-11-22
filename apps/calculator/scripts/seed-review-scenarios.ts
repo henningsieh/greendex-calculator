@@ -209,7 +209,7 @@ export async function ensureReviewScenarios(
     {
       partnershipId: registration.partnershipId,
       status: "submitted",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     },
   ]);
   await ensureSeedEntryTokens(db, [

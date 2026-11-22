@@ -1162,7 +1162,7 @@ describe("Participant onboarding procedures", () => {
       .where(eq(claimsTable.partnershipId, "yrrjw45ya3ehy4t3nobhe59b"));
     expect(registrationClaim?.status).toBe("submitted");
     // A submitted Claim always carries its estimated reimbursement.
-    expect(registrationClaim?.approvedAmountEur).not.toBeNull();
+    expect(registrationClaim?.reimbursementAmountEur).not.toBeNull();
     await expect(
       client.participantOnboarding.setRegistrationLinkOpen({
         id: link.id,

@@ -556,10 +556,10 @@ describe("Claim submission", () => {
     ).toHaveLength(1);
   });
 
-  it("re-derives the payable from the frozen band after a Partner journey correction and resubmission", async () => {
+  it("re-derives the reimbursement from the frozen band after a Partner journey correction and resubmission", async () => {
     await prepare();
     const first = await submit();
-    expect(first.approvedAmountEur).toBe("726.00");
+    expect(first.reimbursementAmountEur).toBe("726.00");
     const correctionInput = {
       partnershipId: own,
       projectParticipantId: robin,
@@ -602,7 +602,7 @@ describe("Claim submission", () => {
     expect(second).toMatchObject({
       id: first.id,
       status: "submitted",
-      approvedAmountEur: "844.00",
+      reimbursementAmountEur: "844.00",
     });
     await expect(client.journeys.update(correctionInput)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -686,7 +686,7 @@ describe("Claim submission", () => {
         }),
       ]),
     );
-    expect(preview.calculatedPayableEur).toBeNull();
+    expect(preview.calculatedReimbursementEur).toBeNull();
     expect(await db.select().from(claims).where(eq(claims.id, claimId))).toEqual(
       before,
     );
@@ -710,25 +710,27 @@ describe("Claim submission", () => {
     expect(preview?.items.find((item) => item.key === "journeys")?.passed).toBe(
       false,
     );
-    expect(preview?.calculatedPayableEur).toBeNull();
+    expect(preview?.calculatedReimbursementEur).toBeNull();
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
   }, 15_000);
 
-  it("previews the same calculated payable as submission without writing", async () => {
+  it("previews the same calculated reimbursement as submission without writing", async () => {
     await prepare();
     const before = await db.select().from(claims).where(eq(claims.id, claimId));
     const preview = await client.claims.previewSubmission({ partnershipId: own });
     if (!preview) throw new Error("Expected editable Claim preview");
     expect(preview.items).toHaveLength(7);
     expect(preview.items.every((item) => item.passed)).toBe(true);
-    expect(preview.calculatedPayableEur).toBe("726.00");
+    expect(preview.calculatedReimbursementEur).toBe("726.00");
     expect(await db.select().from(claims).where(eq(claims.id, claimId))).toEqual(
       before,
     );
     expect(
       await db.select().from(history).where(eq(history.claimId, claimId)),
     ).toEqual([]);
-    expect((await submit()).approvedAmountEur).toBe(preview.calculatedPayableEur);
+    expect((await submit()).reimbursementAmountEur).toBe(
+      preview.calculatedReimbursementEur,
+    );
   });
 
   it("itemizes missing checklist items and never partially submits", async () => {
@@ -756,7 +758,7 @@ describe("Claim submission", () => {
     ).toEqual([]);
   });
 
-  it("derives a capped payable from snapshot and locks all Partner writes with a history event", async () => {
+  it("derives a capped reimbursement from snapshot and locks all Partner writes with a history event", async () => {
     await prepare();
     const profiles =
       PARTICIPANT_TRANSPORT_EMISSION_PROFILES as unknown as string[];
@@ -770,7 +772,7 @@ describe("Claim submission", () => {
     try {
       expect(await submit()).toMatchObject({
         status: "submitted",
-        approvedAmountEur: "726.00",
+        reimbursementAmountEur: "726.00",
       });
     } finally {
       profiles.splice(index, 0, "train");
@@ -787,7 +789,7 @@ describe("Claim submission", () => {
     ]);
     expect(await submit()).toMatchObject({
       status: "submitted",
-      approvedAmountEur: "726.00",
+      reimbursementAmountEur: "726.00",
     });
     await expect(
       client.claims.selectPayoutAccount({
@@ -922,7 +924,7 @@ describe("Claim submission", () => {
 
   it("pays exact costs below cap and reopens all Partner edits on correction requested", async () => {
     await prepare("100.01");
-    expect(await submit()).toMatchObject({ approvedAmountEur: "101.01" });
+    expect(await submit()).toMatchObject({ reimbursementAmountEur: "101.01" });
     useScenario("correction");
     await prepare("100.01");
     expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject({
@@ -946,7 +948,7 @@ describe("Claim submission", () => {
     });
     expect(await submit()).toMatchObject({
       status: "submitted",
-      approvedAmountEur: "102.01",
+      reimbursementAmountEur: "102.01",
     });
     expect((await events()).map((event) => event.eventType)).toEqual([
       "submitted",
@@ -1002,14 +1004,14 @@ async function submittedClaim() {
 }
 
 describe("Claim lock abuse", () => {
-  it("rejects nulling a submitted Claim's saved payable amount at the database", async () => {
+  it("rejects nulling a submitted Claim's saved reimbursement amount at the database", async () => {
     await submittedClaim();
     // The check constraint owns this invariant now: the corrupt state never
     // lands, so the retry path keeps its guard only as defense in depth.
     await expect(
       db
         .update(claims)
-        .set({ approvedAmountEur: null })
+        .set({ reimbursementAmountEur: null })
         .where(eq(claims.id, claimId)),
     ).rejects.toThrow();
     const before = await events();
@@ -1031,7 +1033,7 @@ describe("Claim lock abuse", () => {
           if (status === "paid")
             await client.claims.markPaid({
               partnershipId: own,
-              amountEur: approved.approvedAmountEur!,
+              amountEur: approved.reimbursementAmountEur!,
             });
         }
         activeOrg = partner;
@@ -1123,7 +1125,7 @@ describe("Host Claim review", () => {
     await submit();
     activeOrg = host;
     const details = await client.claims.getReviewDetails({ partnershipId: own });
-    expect(details.approvedAmountEur).toBe("726.00");
+    expect(details.reimbursementAmountEur).toBe("726.00");
     expect(details.payoutAccount).toMatchObject({ iban: expect.any(String) });
     expect(details.entries).toEqual(
       expect.arrayContaining([
@@ -1314,7 +1316,7 @@ describe("Host Claim review", () => {
     });
   });
 
-  it("cannot approve incomplete or unsubmitted Claims, confirms submitted payable and permanently locks Partner editing", async () => {
+  it("cannot approve incomplete or unsubmitted Claims, confirms submitted reimbursement and permanently locks Partner editing", async () => {
     await asHost();
     await expect(review("approve")).rejects.toMatchObject({
       code: "CONFLICT",
@@ -1331,7 +1333,7 @@ describe("Host Claim review", () => {
     await expect(
       db
         .update(claims)
-        .set({ status: "submitted", approvedAmountEur: null })
+        .set({ status: "submitted", reimbursementAmountEur: null })
         .where(eq(claims.id, claimId)),
     ).rejects.toThrow();
     // The Claim is still in_preparation, so approval still refuses as not-submitted.
@@ -1343,7 +1345,7 @@ describe("Host Claim review", () => {
     await asHost();
     expect(await review("approve")).toMatchObject({
       status: "approved",
-      approvedAmountEur: submitted.approvedAmountEur,
+      reimbursementAmountEur: submitted.reimbursementAmountEur,
     });
     await expect(review("requestCorrection")).rejects.toMatchObject({
       code: "CONFLICT",
@@ -1519,15 +1521,15 @@ const events = () =>
 async function approvedClaim() {
   await submittedClaim();
   const approved = await review("approve");
-  return approved.approvedAmountEur!;
+  return approved.reimbursementAmountEur!;
 }
 
 describe("Claim payment recording", () => {
   it("concurrent confirmed payment retries record one paid event", async () => {
-    const payable = await approvedClaim();
+    const reimbursement = await approvedClaim();
     const [first, retry] = await Promise.all([
-      markPaid(payable),
-      markPaid(payable),
+      markPaid(reimbursement),
+      markPaid(reimbursement),
     ]);
     expect(retry).toEqual(first);
     expect(
@@ -1536,9 +1538,9 @@ describe("Claim payment recording", () => {
   });
 
   it("correction against a concurrent payment attempt cannot unlock or partially pay", async () => {
-    const payable = await approvedClaim();
+    const reimbursement = await approvedClaim();
     const [payment, correction] = await Promise.allSettled([
-      markPaid(payable),
+      markPaid(reimbursement),
       review("requestCorrection", "Change payout"),
     ]);
     expect(payment.status).toBe("fulfilled");
@@ -1608,8 +1610,8 @@ describe("Claim payment recording", () => {
   }, 15_000);
 
   it("rejects partial, excessive and invalid transfer amounts without changing an approved Claim", async () => {
-    const payable = await approvedClaim();
-    expect(payable).toBe("101.01");
+    const reimbursement = await approvedClaim();
+    expect(reimbursement).toBe("101.01");
     const before = await events();
     for (const amount of ["101.00", "101.02", "101.001", "0.00"]) {
       await expect(markPaid(amount)).rejects.toMatchObject({
@@ -1623,7 +1625,7 @@ describe("Claim payment recording", () => {
   });
 
   it("records one full confirmed transfer once, keeps approval separate, and locks payout selection", async () => {
-    const payable = await approvedClaim();
+    const reimbursement = await approvedClaim();
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
     ).toBe("approved");
@@ -1635,11 +1637,11 @@ describe("Claim payment recording", () => {
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     await asHost();
-    expect(await markPaid(payable)).toMatchObject({
+    expect(await markPaid(reimbursement)).toMatchObject({
       status: "paid",
-      approvedAmountEur: payable,
+      reimbursementAmountEur: reimbursement,
     });
-    expect(await markPaid(payable)).toMatchObject({ status: "paid" });
+    expect(await markPaid(reimbursement)).toMatchObject({ status: "paid" });
     await expect(markPaid("1.00")).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
       (await events()).map(({ eventType, actorUserId, occurredAt }) => ({
@@ -1667,8 +1669,8 @@ describe("Claim payment recording", () => {
   }, 15_000);
 
   it("concurrent paid-flag correction retries retain one correction event", async () => {
-    const payable = await approvedClaim();
-    await markPaid(payable);
+    const reimbursement = await approvedClaim();
+    await markPaid(reimbursement);
     const [first, retry] = await Promise.all([
       correctPayment("Transfer never sent"),
       correctPayment("Transfer never sent"),
@@ -1680,11 +1682,11 @@ describe("Claim payment recording", () => {
   });
 
   it("corrects only a paid flag with a required reason, retaining both history events", async () => {
-    const payable = await approvedClaim();
+    const reimbursement = await approvedClaim();
     await expect(correctPayment("Premature mark")).rejects.toMatchObject({
       code: "CONFLICT",
     });
-    await markPaid(payable);
+    await markPaid(reimbursement);
     const before = await events();
     await expect(correctPayment()).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(correctPayment("  ")).rejects.toMatchObject({
@@ -1693,7 +1695,7 @@ describe("Claim payment recording", () => {
     expect(await events()).toEqual(before);
     expect(await correctPayment("  Transfer never sent  ")).toMatchObject({
       status: "approved",
-      approvedAmountEur: payable,
+      reimbursementAmountEur: reimbursement,
     });
     await expect(correctPayment("Again")).rejects.toMatchObject({
       code: "CONFLICT",
@@ -1723,18 +1725,20 @@ describe("Claim payment recording", () => {
   }, 15_000);
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
-    const payable = await approvedClaim();
+    const reimbursement = await approvedClaim();
     for (const userId of [
       SEED_IDS.user.submissionUser2,
       SEED_IDS.user.submissionUser4,
       SEED_IDS.user.submissionUser6,
     ] as const) {
       await asHost(userId);
-      await markPaid(payable);
+      await markPaid(reimbursement);
       await correctPayment("Incorrect flag");
     }
     await asHost(SEED_IDS.user.submissionUser9);
-    await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(markPaid(reimbursement)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
     useScenario("paid");
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -1742,7 +1746,7 @@ describe("Claim payment recording", () => {
     for (const org of [partner, other]) {
       activeOrg = org;
       activeActor = actor;
-      await expect(markPaid(payable)).rejects.toMatchObject(
+      await expect(markPaid(reimbursement)).rejects.toMatchObject(
         org === other
           ? {
               code: "NOT_FOUND",
@@ -1894,27 +1898,27 @@ describe("Claim competing writes", () => {
     await prepare("100.00");
     await submit();
     const [saved] = await db
-      .select({ approvedAmountEur: claims.approvedAmountEur })
+      .select({ reimbursementAmountEur: claims.reimbursementAmountEur })
       .from(claims)
       .where(eq(claims.id, claimId));
-    const payable = saved.approvedAmountEur!;
+    const reimbursement = saved.reimbursementAmountEur!;
     await asHost();
     const [approval, payment] = await Promise.allSettled([
       review("approve"),
-      markPaid(payable),
+      markPaid(reimbursement),
     ]);
     // Approval only commits from submitted, which payment cannot change, so
     // approval always succeeds while payment either waits for it or refuses.
     expect(approval).toMatchObject({
       status: "fulfilled",
-      value: { status: "approved", approvedAmountEur: payable },
+      value: { status: "approved", reimbursementAmountEur: reimbursement },
     });
     const [claim] = await db.select().from(claims).where(eq(claims.id, claimId));
     const types = (await events()).map((event) => event.eventType);
     if (payment.status === "fulfilled") {
       expect(payment.value).toMatchObject({
         status: "paid",
-        approvedAmountEur: payable,
+        reimbursementAmountEur: reimbursement,
       });
       expect(claim.status).toBe("paid");
       // Approval and payment land in the same instant, so only the set
@@ -1933,7 +1937,7 @@ describe("Claim competing writes", () => {
       expect(types).toEqual(["submitted", "approved"]);
     }
     // No partial transfer is ever recorded: the amount always equals approval.
-    expect(claim.approvedAmountEur).toBe(payable);
+    expect(claim.reimbursementAmountEur).toBe(reimbursement);
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
   }, 15_000);
 });

@@ -314,7 +314,7 @@ describe("Partner Organization setup links", () => {
       await db.insert(claims).values({
         partnershipId,
         status,
-        approvedAmountEur: status === "in_preparation" ? null : "100.00",
+        reimbursementAmountEur: status === "in_preparation" ? null : "100.00",
       });
       if (settled) {
         await expect(lifecycle.archiveProject({ projectId })).resolves.toEqual({
@@ -442,9 +442,11 @@ describe("Partner Organization setup links", () => {
       secret: link.secret,
       organizationId: partnerId,
     });
-    await db
-      .insert(claims)
-      .values({ partnershipId, status: "paid", approvedAmountEur: "100.00" });
+    await db.insert(claims).values({
+      partnershipId,
+      status: "paid",
+      reimbursementAmountEur: "100.00",
+    });
     const [archive, correction] = await Promise.allSettled([
       lifecycle.archiveProject({ projectId }),
       client.claims.correctPayment({
@@ -486,7 +488,7 @@ describe("Partner Organization setup links", () => {
       );
       await db
         .insert(claims)
-        .values({ partnershipId, status, approvedAmountEur: "100.00" });
+        .values({ partnershipId, status, reimbursementAmountEur: "100.00" });
       await lifecycle.archiveProject({ projectId });
       const change =
         status === "paid"
@@ -514,7 +516,7 @@ describe("Partner Organization setup links", () => {
     await db.insert(claims).values({
       partnershipId,
       status: "rejected",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     });
     await lifecycle.archiveProject({ projectId });
     expect(await client.projects.get({ projectId })).toMatchObject({
@@ -554,7 +556,7 @@ describe("Partner Organization setup links", () => {
     await db.insert(claims).values({
       partnershipId,
       status: "rejected",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     });
     asUser();
     await lifecycle.archiveProject({ projectId });

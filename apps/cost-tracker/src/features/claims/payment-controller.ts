@@ -18,13 +18,13 @@ import type { ClaimDecisionInput } from "@/features/claims/types";
 
 export function usePaymentController({
   partnershipId,
-  approvedAmountEur,
+  reimbursementAmountEur,
   canReview,
   archived,
   onDecision,
 }: {
   partnershipId: string;
-  approvedAmountEur: string | null;
+  reimbursementAmountEur: string | null;
   canReview: boolean;
   archived: boolean;
   onDecision: (
@@ -75,7 +75,7 @@ export function usePaymentController({
     return {
       type: "submit",
       permitted: canReview && !archived,
-      hasAmount: Boolean(approvedAmountEur),
+      hasAmount: Boolean(reimbursementAmountEur),
       hasReason: Boolean(value),
     };
   }
@@ -114,7 +114,9 @@ export function usePaymentController({
       await onDecision(intent, {
         partnershipId,
         ...(needsReason ? { reason: value } : {}),
-        ...(intent === "markPaid" ? { amountEur: approvedAmountEur ?? "" } : {}),
+        ...(intent === "markPaid"
+          ? { amountEur: reimbursementAmountEur ?? "" }
+          : {}),
       });
       if (payment) transition({ type: "success" });
       else setReviewIntent(null);

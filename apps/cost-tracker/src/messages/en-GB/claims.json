@@ -134,7 +134,6 @@
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
       "confirmApproval": "Approve the claim for the amount shown. This doesn’t send money or record a payment.",
       "confirmPaymentCorrection": "This makes the claim approved but unpaid again. It doesn’t reverse the bank transfer.",
-      "unavailable": "Unavailable",
       "equalShare": "Equal share (computed on submission)",
       "title": "Claim review",
       "contextLoading": "Loading context",

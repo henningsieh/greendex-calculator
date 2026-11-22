@@ -52,7 +52,7 @@ A review work item scoped to one Project Partnership concerning duplicate identi
 _Avoid_: Claim review, inline notice (as storage)
 
 **Claim**:
-One Partner Organization's request for reimbursement of its travel costs within one Project Partnership. It groups Travel Cost Entries, Proof Documents, Cost Allocations, and a Payout Account, and moves through submission, review, approval or rejection, and payment. Each Project Partnership has at most one Claim, so a Project may have several Claims.
+One Partner Organization's request for reimbursement of its travel costs within one Project Partnership. It groups Travel Cost Entries, Proof Documents, Cost Allocations, and a Payout Account, and moves through submission, review, approval or rejection, and payment. The Claim carries one EUR amount: the estimated reimbursement while awaiting review, the approved amount once approved. Only a Claim in preparation has no amount. Each Project Partnership has at most one Claim, so a Project may have several Claims.
 _UI label (de)_: Erstattungsantrag (plural: Erstattungsanträge). Navigation uses the short form Anträge.
 _Avoid_: funding request (generic: the Project's own grant application is one too), Cost Submission, Antrag (unqualified, collides with the Erasmus+ payment request), Forderung (an accounting receivable, not a request that can be rejected), Claim Participant, Claimant
 

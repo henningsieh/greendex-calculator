@@ -642,8 +642,13 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
               <Alert data-testid="claim-locked">
                 <AlertDescription>
                   {t("locked")}
-                  {draft.approvedAmountEur && (
-                    <> {t("copy.payable", { amount: draft.approvedAmountEur })}</>
+                  {draft.reimbursementAmountEur && (
+                    <>
+                      {" "}
+                      {t("copy.payable", {
+                        amount: draft.reimbursementAmountEur,
+                      })}
+                    </>
                   )}
                 </AlertDescription>
               </Alert>

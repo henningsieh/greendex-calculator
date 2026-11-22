@@ -665,7 +665,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await db.insert(claimsTable).values({
       partnershipId: ids.otherPartnership,
       status: "submitted",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     });
     try {
       await p

@@ -35,7 +35,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-query")>()),
   useQueryClient: () => ({}),
   useSuspenseQueries: () => [
-    { data: { status: "submitted", approvedAmountEur: "726.00" } },
+    { data: { status: "submitted", reimbursementAmountEur: "726.00" } },
     { data: [] },
     { data: { canReview: access.canReview } },
     {
@@ -43,7 +43,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
         entries: [],
         journeys: [],
         payoutAccount: null,
-        approvedAmountEur: "726.00",
+        reimbursementAmountEur: "726.00",
       },
     },
   ],
@@ -79,7 +79,7 @@ const base = {
   partnershipId: "partner",
   canReview: true,
   status: "submitted" as const,
-  approvedAmountEur: "726.00",
+  reimbursementAmountEur: "726.00",
   onDecision: vi.fn().mockResolvedValue(undefined),
 };
 
@@ -201,7 +201,7 @@ describe("Claim decisions", () => {
         details={{
           projectName: "Workshop",
           organizationName: "Partner Organization",
-          approvedAmountEur: "726.00",
+          reimbursementAmountEur: "726.00",
           payoutAccount: { accountHolder: "Partner", iban: "DE123", bic: null },
           entries: [
             {
@@ -259,7 +259,7 @@ describe("Claim decisions", () => {
     const journey = screen.getByTestId("review-journey-person");
     expect(journey).toHaveAttribute("data-trip-type", "one-way");
     expect(journey).toHaveAttribute("data-distance-km", "850.00");
-    expect(screen.getByTestId("review-approved-payable")).toHaveAttribute(
+    expect(screen.getByTestId("review-approved-reimbursement")).toHaveAttribute(
       "data-amount-eur",
       "726.00",
     );
@@ -352,11 +352,11 @@ describe("Claim decisions", () => {
   it("confirms approval without offering payment until approved", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
-    expect(screen.getByTestId("estimated-payable")).toHaveAttribute(
+    expect(screen.getByTestId("estimated-reimbursement")).toHaveAttribute(
       "data-message",
       "estimatedReimbursement",
     );
-    expect(screen.queryByTestId("approved-payable")).toBeNull();
+    expect(screen.queryByTestId("approved-reimbursement")).toBeNull();
     expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
     await userEvent.click(screen.getByTestId("claim-decision-approve"));
     expect(onDecision).not.toHaveBeenCalled();
@@ -384,8 +384,8 @@ describe("Claim decisions", () => {
     "does not present a retained amount as current for a %s claim",
     (status) => {
       render(<ClaimDecisionPanel {...base} status={status} />);
-      expect(screen.queryByTestId("estimated-payable")).toBeNull();
-      expect(screen.queryByTestId("approved-payable")).toBeNull();
+      expect(screen.queryByTestId("estimated-reimbursement")).toBeNull();
+      expect(screen.queryByTestId("approved-reimbursement")).toBeNull();
     },
   );
 
@@ -394,11 +394,11 @@ describe("Claim decisions", () => {
     const { rerender } = render(
       <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
     );
-    expect(screen.getByTestId("approved-payable")).toHaveAttribute(
+    expect(screen.getByTestId("approved-reimbursement")).toHaveAttribute(
       "data-message",
       "approvedAmount",
     );
-    expect(screen.queryByTestId("estimated-payable")).toBeNull();
+    expect(screen.queryByTestId("estimated-reimbursement")).toBeNull();
     expect(document.querySelector("[data-review-status]")).toHaveAttribute(
       "data-review-status",
       "approved",
@@ -445,7 +445,7 @@ describe("Claim decisions", () => {
         <ClaimDecisionPanel
           {...base}
           status="rejected"
-          approvedAmountEur="726.00"
+          reimbursementAmountEur="726.00"
           onDecision={onDecision}
         />
       </>,
@@ -475,7 +475,7 @@ describe("Claim decisions", () => {
       <ClaimDecisionPanel
         {...base}
         status="submitted"
-        approvedAmountEur="726.00"
+        reimbursementAmountEur="726.00"
         onDecision={onDecision}
       />,
     );

@@ -300,7 +300,7 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
           id: stateId,
           partnershipId,
           status,
-          approvedAmountEur: status === "in_preparation" ? null : "100.00",
+          reimbursementAmountEur: status === "in_preparation" ? null : "100.00",
         },
       ] satisfies (typeof claims.$inferInsert)[];
       await ensureSeedClaims(db, rows);
@@ -529,7 +529,7 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
         id: claimId,
         partnershipId,
         status: "submitted",
-        approvedAmountEur: "100.00",
+        reimbursementAmountEur: "100.00",
       },
     ] satisfies (typeof claims.$inferInsert)[];
     await ensureSeedClaims(db, rows);
@@ -1466,7 +1466,7 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
             id: journeyParts.claim,
             partnershipId: own,
             status: name,
-            approvedAmountEur: name === "in_preparation" ? null : "100.00",
+            reimbursementAmountEur: name === "in_preparation" ? null : "100.00",
           },
         ] satisfies (typeof claims.$inferInsert)[];
         await ensureSeedClaimsByPartnership(db, rows);
@@ -1947,7 +1947,7 @@ async function ensureProjectReadinessScenarios(
             id: claimId,
             partnershipId,
             status,
-            approvedAmountEur: status === "in_preparation" ? null : "100.00",
+            reimbursementAmountEur: status === "in_preparation" ? null : "100.00",
           })
           .onConflictDoNothing();
     }
@@ -1962,7 +1962,7 @@ async function ensureProjectReadinessScenarios(
             id: readinessScenario.otherClaim!,
             partnershipId: otherPartnershipId,
             status: "rejected",
-            approvedAmountEur: "100.00",
+            reimbursementAmountEur: "100.00",
           })
           .onConflictDoNothing();
     }
@@ -2967,7 +2967,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
               id: participationScenario.claim!,
               partnershipId: own,
               status: claimStatuses[name],
-              approvedAmountEur: "100.00",
+              reimbursementAmountEur: "100.00",
             },
           ] satisfies (typeof claims.$inferInsert)[];
           await ensureSeedClaimsByPartnership(db, rows);
@@ -3569,7 +3569,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
           id: claimId,
           partnershipId: own,
           status: name === "correction" ? "correction_requested" : name,
-          approvedAmountEur:
+          reimbursementAmountEur:
             name === "in_preparation"
               ? null
               : name === "correction"
