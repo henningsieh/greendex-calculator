@@ -169,7 +169,7 @@
         "tripTypeFor": "Vrsta poti za {name}",
         "oneWay": "Enosmerna",
         "roundTrip": "Povratna",
-        "distanceFor": "Razdalja Erasmus kalkulatorja (km) za {name}",
+        "distanceFor": "Razdalja Erasmus+ (km) za {name}",
         "saveCorrection": "Shrani popravek",
         "title": "Poti udeležencev",
         "empty": "Poti še niso shranjene.",
@@ -181,7 +181,8 @@
         "origin": "Začetek",
         "destination": "Cilj",
         "tripType": "Vrsta poti",
-        "distance": "Razdalja Erasmus kalkulatorja (km)",
+        "distance": "Razdalja Erasmus+ (km)",
+        "distanceHelp": "Vnesite razdaljo v eno smer iz kalkulatorja razdalj Erasmus+. Pri povratni poti je ne podvojite.",
         "save": "Shrani pot"
       },
       "cost": {

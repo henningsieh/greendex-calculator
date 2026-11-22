@@ -169,7 +169,7 @@
         "tripTypeFor": "Reiseart für {name}",
         "oneWay": "Einfach",
         "roundTrip": "Hin und zurück",
-        "distanceFor": "Erasmus-Distanzrechner-Distanz (km) für {name}",
+        "distanceFor": "Erasmus+-Entfernung (km) für {name}",
         "saveCorrection": "Korrektur speichern",
         "title": "Reisen der Teilnehmenden",
         "empty": "Noch keine Reisen gespeichert.",
@@ -181,7 +181,8 @@
         "origin": "Abfahrt",
         "destination": "Ziel",
         "tripType": "Reiseart",
-        "distance": "Erasmus-Distanzrechner-Distanz (km)",
+        "distance": "Erasmus+-Entfernung (km)",
+        "distanceHelp": "Gib die einfache Entfernung aus dem Erasmus+-Entfernungsrechner ein. Verdopple sie auch bei einer Hin- und Rückreise nicht.",
         "save": "Reise speichern"
       },
       "cost": {

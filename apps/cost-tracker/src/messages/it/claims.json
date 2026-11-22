@@ -169,7 +169,7 @@
         "tripTypeFor": "Tipo di tragitto per {name}",
         "oneWay": "Solo andata",
         "roundTrip": "Andata e ritorno",
-        "distanceFor": "Distanza del calcolatore Erasmus (km) per {name}",
+        "distanceFor": "Distanza Erasmus+ (km) per {name}",
         "saveCorrection": "Salva correzione",
         "title": "Viaggi dei partecipanti",
         "empty": "Nessun viaggio ancora salvato.",
@@ -181,7 +181,8 @@
         "origin": "Partenza",
         "destination": "Destinazione",
         "tripType": "Tipo di tragitto",
-        "distance": "Distanza del calcolatore Erasmus (km)",
+        "distance": "Distanza Erasmus+ (km)",
+        "distanceHelp": "Inserisci la distanza di sola andata indicata dal calcolatore delle distanze Erasmus+. Non raddoppiarla per un viaggio di andata e ritorno.",
         "save": "Salva viaggio"
       },
       "cost": {

@@ -169,7 +169,7 @@
         "tripTypeFor": "Reistype voor {name}",
         "oneWay": "Enkele reis",
         "roundTrip": "Retour",
-        "distanceFor": "Erasmus-afstandscalculator-afstand (km) voor {name}",
+        "distanceFor": "Erasmus+-afstand (km) voor {name}",
         "saveCorrection": "Correctie opslaan",
         "title": "Deelnemersreizen",
         "empty": "Nog geen reizen opgeslagen.",
@@ -181,7 +181,8 @@
         "origin": "Vertrekplaats",
         "destination": "Bestemming",
         "tripType": "Reistype",
-        "distance": "Erasmus-afstandscalculator-afstand (km)",
+        "distance": "Erasmus+-afstand (km)",
+        "distanceHelp": "Vul de enkele reisafstand uit de Erasmus+-afstandscalculator in. Verdubbel die niet voor een retourreis.",
         "save": "Reis opslaan"
       },
       "cost": {

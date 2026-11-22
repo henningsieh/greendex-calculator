@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   Field,
+  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldError as FormFieldError,
@@ -32,14 +33,13 @@ function JourneyCorrection({
   journey,
   name,
   refresh,
-  t,
 }: {
-  t: ReturnType<typeof useTranslations<"claims.workspace">>;
   partnershipId: string;
   journey: Outputs["journeys"]["list"][number];
   name: string;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const [editing, setEditing] = useState(false);
   const [serverError, setServerError] = useState<unknown>(null);
   const defaults = {
@@ -197,9 +197,14 @@ function JourneyCorrection({
                 {...register("erasmusDistanceKm")}
                 aria-invalid={!!errors.erasmusDistanceKm}
                 aria-describedby={
-                  errors.erasmusDistanceKm ? `${id}-distance-error` : undefined
+                  errors.erasmusDistanceKm
+                    ? `${id}-distance-error ${id}-distance-help`
+                    : `${id}-distance-help`
                 }
               />
+              <FieldDescription id={`${id}-distance-help`}>
+                {t("journey.distanceHelp")}
+              </FieldDescription>
               {errors.erasmusDistanceKm && (
                 <FormFieldError id={`${id}-distance-error`}>
                   <FieldErrorMessage message={errors.erasmusDistanceKm.message} />
@@ -345,7 +350,6 @@ export function JourneyEditor({
                       )?.displayName ?? "Participant"
                     }
                     refresh={refresh}
-                    t={t}
                   />
                 ) : (
                   <>
@@ -497,10 +501,13 @@ export function JourneyEditor({
                   aria-invalid={!!errors.erasmusDistanceKm}
                   aria-describedby={
                     errors.erasmusDistanceKm
-                      ? "journey-distance-error"
-                      : undefined
+                      ? "journey-distance-error journey-distance-help"
+                      : "journey-distance-help"
                   }
                 />
+                <FieldDescription id="journey-distance-help">
+                  {t("journey.distanceHelp")}
+                </FieldDescription>
                 {errors.erasmusDistanceKm && (
                   <FormFieldError id="journey-distance-error">
                     <FieldErrorMessage

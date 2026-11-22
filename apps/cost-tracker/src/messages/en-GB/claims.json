@@ -169,7 +169,7 @@
         "tripTypeFor": "Trip type for {name}",
         "oneWay": "One-way",
         "roundTrip": "Round-trip",
-        "distanceFor": "Erasmus Distance-Calculator distance (km) for {name}",
+        "distanceFor": "Erasmus+ distance (km) for {name}",
         "saveCorrection": "Save correction",
         "title": "Participant Journeys",
         "empty": "No journeys saved yet.",
@@ -181,7 +181,8 @@
         "origin": "Origin",
         "destination": "Destination",
         "tripType": "Trip type",
-        "distance": "Erasmus Distance-Calculator distance (km)",
+        "distance": "Erasmus+ distance (km)",
+        "distanceHelp": "Enter the one-way distance from the Erasmus+ distance calculator. Don’t double it for a return trip.",
         "save": "Save journey"
       },
       "cost": {
