@@ -114,6 +114,7 @@ describe("projects procedures", () => {
             id: randomUUID(),
             partnershipId: link.id,
             status: "paid" as const,
+            approvedAmountEur: "100.00",
           })),
       );
       const order = [...rows]

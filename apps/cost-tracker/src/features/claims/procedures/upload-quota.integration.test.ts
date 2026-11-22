@@ -357,7 +357,7 @@ describe("Proof upload Organization daily consumption", () => {
     try {
       await db
         .update(claims)
-        .set({ status: "submitted" })
+        .set({ status: "submitted", approvedAmountEur: "100.00" })
         .where(eq(claims.id, claimIds[0]));
     } finally {
       storage.resolve();
