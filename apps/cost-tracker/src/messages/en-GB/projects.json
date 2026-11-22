@@ -100,6 +100,7 @@
       "workspace": "Loading Project workspace"
     },
     "workspace": {
+      "active": "Active",
       "archived": "Archived",
       "archive": "Archive project",
       "archiving": "Archiving…",
@@ -154,7 +155,6 @@
       "statParticipantsDetail": "recorded so far",
       "claimsInReviewDetail": "need a decision",
       "daysUntil": "until {date}",
-      "claimReview": "Claim review",
       "participants": "Participants"
     }
   }

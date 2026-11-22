@@ -206,7 +206,11 @@ export async function ensureReviewScenarios(
     },
   ]);
   await ensureSeedClaimsByPartnership(db, [
-    { partnershipId: registration.partnershipId, status: "submitted" },
+    {
+      partnershipId: registration.partnershipId,
+      status: "submitted",
+      reimbursementAmountEur: "100.00",
+    },
   ]);
   await ensureSeedEntryTokens(db, [
     {

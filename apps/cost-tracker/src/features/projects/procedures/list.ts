@@ -28,6 +28,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
+import { settledClaimStatuses } from "@/features/claims/claim-lifecycle";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import {
   decodeProjectListCursor,
@@ -72,7 +73,7 @@ function getProjectBlockers() {
                   claimsTable.partnershipId,
                   projectPartnerOrganizationsTable.id,
                 ),
-                inArray(claimsTable.status, ["paid", "rejected"]),
+                inArray(claimsTable.status, settledClaimStatuses),
               ),
             ),
         ),

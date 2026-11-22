@@ -100,6 +100,7 @@
       "workspace": "Projectwerkruimte laden"
     },
     "workspace": {
+      "active": "Actief",
       "archived": "Gearchiveerd",
       "archive": "Project archiveren",
       "archiving": "Archiveren…",
@@ -154,7 +155,6 @@
       "statParticipantsDetail": "tot nu toe vastgelegd",
       "claimsInReviewDetail": "wachten op een besluit",
       "daysUntil": "tot {date}",
-      "claimReview": "Beoordeling van declaratie",
       "participants": "Deelnemers"
     }
   }

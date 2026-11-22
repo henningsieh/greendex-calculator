@@ -63,13 +63,12 @@
         "partner": "Partner Organization",
         "status": "Status",
         "submitted": "Submitted",
-        "payable": "Payable",
-        "action": "Action"
+        "estimatedReimbursement": "Estimated reimbursement",
+        "claimReview": "Claim review"
       },
       "status": {
         "submitted": "Awaiting review"
       },
-      "reviewClaim": "Review Claim",
       "showingCount": "Showing {shown} of {total, plural, one {# Claim} other {# Claims}}",
       "emptyTitle": "No submitted Claims awaiting review",
       "emptyDescription": "When a Partner submits a Claim, it appears here for Hosting review.",
@@ -78,7 +77,6 @@
       "clearFilters": "Clear filters",
       "previousPage": "Previous page",
       "nextPage": "Next page",
-      "unavailable": "Unavailable",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
       "confirmApproval": "Approve the claim for the amount shown. This doesn’t send money or record a payment.",
       "confirmPaymentCorrection": "This makes the claim approved but unpaid again. It doesn’t reverse the bank transfer.",
-      "unavailable": "Unavailable",
       "equalShare": "Equal share (computed on submission)",
       "title": "Claim review",
       "contextLoading": "Loading context",
@@ -160,6 +157,7 @@
       "unavailable": "Not available until the checklist passes"
     },
     "workspace": {
+      "noClaim": "No Claim",
       "label": "Claim workspace",
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",
@@ -269,6 +267,9 @@
         "noClaim": "No Claim has been created. Opening this workspace saves nothing.",
         "payable": "Calculated payable: {amount} EUR (computed by the server)."
       }
+    },
+    "link": {
+      "claimReview": "Claim review"
     }
   }
 }

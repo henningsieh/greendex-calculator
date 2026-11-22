@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { APIError } from "better-auth/api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -40,12 +39,17 @@ describe("Cost Tracker RPC authentication transport", () => {
     "maps projects/get non-members to 403 instead of 500 on HTTP",
     { timeout: 30_000 },
     async () => {
+      // Build the vendor error from the same post-reset module graph the route
+      // imports. A pre-reset instance can be a second copy of the class, where
+      // the adapter's `instanceof APIError` guard fails and the refusal would
+      // surface as 500 instead of 403.
+      const { APIError: RouteAPIError } = await import("better-auth/api");
       mocks.getSession.mockResolvedValue({
         session: { id: "session-id", activeOrganizationId: "organization-id" },
         user: { id: "user-id" },
       });
       mocks.hasPermission.mockRejectedValue(
-        new APIError("UNAUTHORIZED", {
+        new RouteAPIError("UNAUTHORIZED", {
           code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION",
         }),
       );

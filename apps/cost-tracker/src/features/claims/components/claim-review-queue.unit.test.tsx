@@ -18,7 +18,7 @@ const fixtures = vi.hoisted(() => {
         organizationName: "Partner A",
         status: "submitted" as const,
         submittedAt: new Date("2026-11-01T00:00:00.000Z"),
-        payableAmountEur: "1200.00",
+        reimbursementAmountEur: "1200.00",
       },
     ],
     metrics: {
@@ -80,6 +80,24 @@ describe("Host submitted Claim queue", () => {
       "href",
       "/en-GB/partnerships/one/claim/review",
     );
+  });
+
+  it("keeps the card review link in its own footer below the data list", async () => {
+    fixtures.query.mockReset().mockResolvedValue(fixtures.data);
+    renderQueue();
+
+    // The destination column carries the review link's own name (claims.json
+    // keys it under `columns.claimReview`), not the generic "Action" slot.
+    expect(
+      await screen.findByTestId("claim-column-header-claimReview"),
+    ).toBeVisible();
+    const cardLink = await screen.findByTestId("review-claim-one-card");
+    expect(cardLink.getAttribute("href")).toBe(
+      "/en-GB/partnerships/one/claim/review",
+    );
+    // Navigation leaves the facts list: the footer separates it from details.
+    expect(cardLink.closest("dl")).toBeNull();
+    expect(cardLink.parentElement).toHaveClass("border-t");
   });
 
   it("renders one empty state when no Claim awaits review", async () => {

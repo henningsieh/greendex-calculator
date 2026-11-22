@@ -66,19 +66,19 @@ describe("review predicate outcomes", () => {
   it.each([
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
-      { id: "claim", status: "in_preparation", approvedAmountEur: null },
+      { id: "claim", status: "in_preparation", reimbursementAmountEur: null },
       "CONFLICT",
       409,
       "CLAIM_SUBMITTED_REQUIRED",
     ],
     [
-      { id: "claim", status: "submitted", approvedAmountEur: null },
+      { id: "claim", status: "submitted", reimbursementAmountEur: null },
       "INTERNAL_SERVER_ERROR",
       500,
       "INTERNAL_FAILURE",
     ],
     [
-      { id: "claim", status: "approved", approvedAmountEur: null },
+      { id: "claim", status: "approved", reimbursementAmountEur: null },
       "INTERNAL_SERVER_ERROR",
       500,
       "INTERNAL_FAILURE",
@@ -96,7 +96,11 @@ describe("review predicate outcomes", () => {
   );
   it("names the rejected prerequisite for reopen", async () => {
     mocks.lock.mockResolvedValue({
-      claim: { id: "claim", status: "in_preparation", approvedAmountEur: null },
+      claim: {
+        id: "claim",
+        status: "in_preparation",
+        reimbursementAmountEur: null,
+      },
     });
     await expect(client.reopen({ partnershipId: "own" })).rejects.toMatchObject({
       code: "CONFLICT",

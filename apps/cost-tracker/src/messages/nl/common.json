@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Geef een reden van maximaal 2.000 tekens op.",
       "confirm": "Bevestigen",
       "cancel": "Annuleren",
       "close": "Sluiten"

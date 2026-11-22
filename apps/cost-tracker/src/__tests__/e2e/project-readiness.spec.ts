@@ -211,9 +211,17 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     ]);
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
-      { partnershipId: ids.mainA, status: "rejected" },
+      {
+        partnershipId: ids.mainA,
+        status: "rejected",
+        reimbursementAmountEur: "100.00",
+      },
       { partnershipId: ids.otherB, status: "in_preparation" },
-      { partnershipId: ids.settledA, status: "rejected" },
+      {
+        partnershipId: ids.settledA,
+        status: "rejected",
+        reimbursementAmountEur: "100.00",
+      },
     ]);
     expect(await ownedCounts()).toEqual([2, 4, 5, 5, 3]);
   });
@@ -260,6 +268,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
     await expect(page.getByTestId("archive-project")).toHaveCount(0);
+    await expect(
+      page.getByTestId("project-workspace-settlement"),
+    ).toHaveAttribute("data-settlement", "open");
 
     // E owns another Project with the same Partner Organization B. Its editable
     // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
@@ -534,7 +545,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     const reviewPage = await hostContext!.newPage();
     await reviewPage.goto(`/partnerships/${ids.settledA}/claim/review`);
     const review = reviewPage.getByTestId("claim-review");
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     await review.getByTestId("claim-decision-reopen").click();
     const confirm = review.getByTestId("claim-decision-confirm-reopen");
     await expect(confirm).toBeEnabled();
@@ -548,7 +559,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(confirm).toBeVisible();
     await confirm.click();
     await expect(review.getByRole("alert")).toBeVisible();
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     const [claim] = await db
       .select({ status: claimsTable.status })
       .from(claimsTable)

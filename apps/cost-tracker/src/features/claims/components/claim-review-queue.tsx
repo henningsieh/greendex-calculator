@@ -9,7 +9,6 @@ import {
   ArrowDownIcon,
   ArrowUpDownIcon,
   ArrowUpIcon,
-  ArrowUpRightIcon,
   ChevronDownIcon,
   ClipboardCheckIcon,
   RefreshCwIcon,
@@ -19,8 +18,7 @@ import {
 import { useQueryStates } from "nuqs";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import { partnershipClaimReviewPath, projectPath } from "@/app/paths";
-import { Badge } from "@/components/ui/badge";
+import { projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -48,6 +46,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
+import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
+import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import {
   claimQueueParsers,
   getClaimQueueQueryOptions,
@@ -484,10 +484,10 @@ export function ClaimReviewQueue() {
         <>
           <div className="hidden @4xl/content:block">
             <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-              <Table aria-label={t("label")}>
+              <Table aria-label={t("label")} className="table-fixed">
                 <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead className="w-auto whitespace-nowrap">
+                    <TableHead className="w-[18%] whitespace-nowrap">
                       <SortHeader
                         currentSort={state.sort}
                         disabled={!isHydrated}
@@ -497,7 +497,7 @@ export function ClaimReviewQueue() {
                         testId="sort-claim-project"
                       />
                     </TableHead>
-                    <TableHead className="w-[23%] px-2 whitespace-nowrap">
+                    <TableHead className="w-[20%] px-2 whitespace-nowrap">
                       <SortHeader
                         currentSort={state.sort}
                         disabled={!isHydrated}
@@ -507,10 +507,10 @@ export function ClaimReviewQueue() {
                         testId="sort-claim-partner"
                       />
                     </TableHead>
-                    <TableHead className="w-[12%] px-2 tracking-normal whitespace-nowrap normal-case">
+                    <TableHead className="w-[17%] px-2 tracking-normal whitespace-nowrap normal-case">
                       {t("columns.status")}
                     </TableHead>
-                    <TableHead className="w-[14%] px-2 whitespace-nowrap">
+                    <TableHead className="w-[13%] px-2 whitespace-nowrap">
                       <SortHeader
                         currentSort={state.sort}
                         disabled={!isHydrated}
@@ -520,11 +520,20 @@ export function ClaimReviewQueue() {
                         testId="sort-claim-submitted"
                       />
                     </TableHead>
-                    <TableHead className="w-[12%] px-2 text-right tracking-normal whitespace-nowrap normal-case">
-                      {t("columns.payable")}
+                    {/* The fixed register gives this column less width than its
+                        one-line label needs, so the header wraps instead of
+                        overflowing the column. */}
+                    <TableHead className="w-[14%] px-2 text-right tracking-normal whitespace-normal normal-case">
+                      {t("columns.estimatedReimbursement")}
                     </TableHead>
-                    <TableHead className="w-[14%] px-2 tracking-normal whitespace-nowrap normal-case">
-                      {t("columns.action")}
+                    <TableHead
+                      className="w-[18%] px-2 text-right tracking-normal whitespace-nowrap normal-case"
+                      data-testid="claim-column-header-claimReview"
+                    >
+                      {/* The link's label is the column's meaning, so the
+                          header stays bare on screen; assistive tech still
+                          gets the column name. */}
+                      <span className="sr-only">{t("columns.claimReview")}</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -534,40 +543,36 @@ export function ClaimReviewQueue() {
                       data-claim-row={row.partnershipId}
                       key={row.partnershipId}
                     >
-                      <TableCell className="min-w-0 px-2 text-xs wrap-anywhere">
+                      <TableCell className="min-w-0 px-2 text-xs">
                         <Link
-                          className="font-medium link-prose"
+                          className="block truncate font-medium link-prose"
                           href={projectPath(row.projectId)}
                           title={row.projectName}
                         >
                           {row.projectName}
                         </Link>
                       </TableCell>
-                      <TableCell className="min-w-0 px-2 text-xs wrap-anywhere">
+                      <TableCell
+                        className="min-w-0 truncate px-2 text-xs"
+                        title={row.organizationName}
+                      >
                         {row.organizationName}
                       </TableCell>
                       <TableCell className="px-2 text-xs">
-                        <Badge variant="status-attention">
-                          {t("status.submitted")}
-                        </Badge>
+                        <ClaimStatusBadge status="submitted" />
                       </TableCell>
                       <TableCell className="px-2 text-xs whitespace-nowrap tabular-nums">
                         {dateFormat.format(row.submittedAt, "date.medium")}
                       </TableCell>
                       <TableCell className="px-2 text-right text-xs whitespace-nowrap tabular-nums">
-                        {row.payableAmountEur
-                          ? `${row.payableAmountEur} ${t("currencyEur")}`
-                          : t("unavailable")}
+                        {`${row.reimbursementAmountEur} ${t("currencyEur")}`}
                       </TableCell>
-                      <TableCell className="px-2 text-xs">
-                        <Link
-                          className="inline-flex items-center gap-1 text-sm font-medium link-prose"
-                          data-testid={`review-claim-${row.partnershipId}`}
-                          href={partnershipClaimReviewPath(row.partnershipId)}
-                        >
-                          {t("reviewClaim")}
-                          <ArrowUpRightIcon aria-hidden="true" />
-                        </Link>
+                      <TableCell className="px-2 text-right text-xs">
+                        <ClaimReviewLink
+                          density="compact"
+                          partnershipId={row.partnershipId}
+                          testId={`review-claim-${row.partnershipId}`}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -590,9 +595,7 @@ export function ClaimReviewQueue() {
                   >
                     {row.projectName}
                   </Link>
-                  <Badge variant="status-attention">
-                    {t("status.submitted")}
-                  </Badge>
+                  <ClaimStatusBadge status="submitted" />
                 </div>
                 <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
                   <dt className="text-xs text-muted-foreground">
@@ -608,23 +611,17 @@ export function ClaimReviewQueue() {
                     {dateFormat.format(row.submittedAt, "date.medium")}
                   </dd>
                   <dt className="text-xs text-muted-foreground">
-                    {t("columns.payable")}
+                    {t("columns.estimatedReimbursement")}
                   </dt>
                   <dd className="text-right text-xs whitespace-nowrap tabular-nums">
-                    {row.payableAmountEur
-                      ? `${row.payableAmountEur} ${t("currencyEur")}`
-                      : t("unavailable")}
+                    {`${row.reimbursementAmountEur} ${t("currencyEur")}`}
                   </dd>
                 </dl>
                 <div className="mt-2 border-t pt-2 text-right">
-                  <Link
-                    className="inline-flex items-center gap-1 text-sm font-medium link-prose"
-                    data-testid={`review-claim-${row.partnershipId}-card`}
-                    href={partnershipClaimReviewPath(row.partnershipId)}
-                  >
-                    {t("reviewClaim")}
-                    <ArrowUpRightIcon aria-hidden="true" />
-                  </Link>
+                  <ClaimReviewLink
+                    partnershipId={row.partnershipId}
+                    testId={`review-claim-${row.partnershipId}-card`}
+                  />
                 </div>
               </article>
             ))}

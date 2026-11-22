@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   decimalUnits,
   TOTAL_ALLOCATION_PERCENTAGE_UNITS,
-} from "@/features/claims/payable";
+} from "@/features/claims/reimbursement";
 import { TravelCostEntryIdSchema } from "@/features/claims/validation-schemas";
 import { ProjectParticipationIdSchema } from "@/features/participations/validation-schemas";
 import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";

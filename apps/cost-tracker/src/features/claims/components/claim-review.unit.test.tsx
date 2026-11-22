@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,11 +9,14 @@ import {
   ClaimHistory,
   ClaimReviewDetails,
 } from "@/features/claims/components/claim-review";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
 const access = vi.hoisted(() => ({
   role: "coordinator",
   canReview: true,
 }));
+const toastAdd = vi.hoisted(() => vi.fn());
+vi.mock("@/components/ui/toast", () => ({ toast: { add: toastAdd } }));
 vi.mock("@/lib/auth-client", async (importOriginal) => {
   const { authClient } =
     await importOriginal<typeof import("@/lib/auth-client")>();
@@ -32,7 +35,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-query")>()),
   useQueryClient: () => ({}),
   useSuspenseQueries: () => [
-    { data: { status: "submitted", approvedAmountEur: "726.00" } },
+    { data: { status: "submitted", reimbursementAmountEur: "726.00" } },
     { data: [] },
     { data: { canReview: access.canReview } },
     {
@@ -40,12 +43,13 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
         entries: [],
         journeys: [],
         payoutAccount: null,
-        approvedAmountEur: "726.00",
+        reimbursementAmountEur: "726.00",
       },
     },
   ],
 }));
 beforeEach(() => {
+  toastAdd.mockClear();
   access.role = "coordinator";
   access.canReview = true;
 });
@@ -75,11 +79,98 @@ const base = {
   partnershipId: "partner",
   canReview: true,
   status: "submitted" as const,
-  approvedAmountEur: "726.00",
+  reimbursementAmountEur: "726.00",
   onDecision: vi.fn().mockResolvedValue(undefined),
 };
 
 describe("Claim decisions", () => {
+  it("cancels payment without a write and restores keyboard focus", async () => {
+    const user = userEvent.setup();
+    const onDecision = vi.fn();
+    render(
+      <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
+    );
+    const action = screen.getByTestId("claim-decision-markPaid");
+    action.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("alert").contains(document.activeElement)).toBe(true);
+    await user.click(screen.getByTestId("claim-decision-cancel"));
+    expect(screen.getByTestId("claim-decision-markPaid")).toHaveFocus();
+    expect(onDecision).not.toHaveBeenCalled();
+  });
+  it("ignores duplicate payment submissions while pending and closes on success", async () => {
+    let finish: () => void = () => {};
+    const onDecision = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
+    );
+    await userEvent.click(screen.getByTestId("claim-decision-markPaid"));
+    const confirm = screen.getByTestId("claim-decision-confirm-markPaid");
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(onDecision).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("claim-decision-cancel")).toBeDisabled();
+    finish();
+    await waitFor(() =>
+      expect(screen.getByTestId("claim-decision-markPaid")).toBeVisible(),
+    );
+    expect(toastAdd).not.toHaveBeenCalled();
+  });
+
+  it.each([new Error("offline"), createSituationErrors().partnershipNotFound()])(
+    "retains the correction reason and shows one toast after a request failure",
+    async (failure) => {
+      const onDecision = vi
+        .fn()
+        .mockRejectedValueOnce(failure)
+        .mockResolvedValueOnce(undefined);
+      render(
+        <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
+      );
+      await userEvent.click(screen.getByTestId("claim-decision-correctPayment"));
+      const reason = screen.getByTestId("claim-decision-reason-correctPayment");
+      await userEvent.type(reason, "Recorded in error");
+      await userEvent.click(
+        screen.getByTestId("claim-decision-confirm-correctPayment"),
+      );
+      await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1));
+      expect(reason).toHaveValue("Recorded in error");
+      expect(reason).not.toHaveAttribute("aria-invalid", "true");
+      await userEvent.click(
+        screen.getByTestId("claim-decision-confirm-correctPayment"),
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("claim-decision-correctPayment")).toBeVisible(),
+      );
+      expect(onDecision).toHaveBeenLastCalledWith("correctPayment", {
+        partnershipId: "partner",
+        reason: "Recorded in error",
+      });
+    },
+  );
+
+  it("puts a refused correction reason at the field without a toast", async () => {
+    const onDecision = vi.fn();
+    render(
+      <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
+    );
+    await userEvent.click(screen.getByTestId("claim-decision-correctPayment"));
+    const reason = screen.getByTestId("claim-decision-reason-correctPayment");
+    const overlong = "x".repeat(2001);
+    fireEvent.change(reason, { target: { value: overlong } });
+    await userEvent.click(
+      screen.getByTestId("claim-decision-confirm-correctPayment"),
+    );
+    expect(reason).toHaveAttribute("aria-invalid", "true");
+    expect(reason).toHaveValue(overlong);
+    expect(onDecision).not.toHaveBeenCalled();
+    expect(toastAdd).not.toHaveBeenCalled();
+  });
   it.each(["coordinator", "owner", "admin"])(
     "offers decisions for an authorized %s through Better Auth permissions",
     (role) => {
@@ -110,7 +201,7 @@ describe("Claim decisions", () => {
         details={{
           projectName: "Workshop",
           organizationName: "Partner Organization",
-          approvedAmountEur: "726.00",
+          reimbursementAmountEur: "726.00",
           payoutAccount: { accountHolder: "Partner", iban: "DE123", bic: null },
           entries: [
             {
@@ -168,7 +259,7 @@ describe("Claim decisions", () => {
     const journey = screen.getByTestId("review-journey-person");
     expect(journey).toHaveAttribute("data-trip-type", "one-way");
     expect(journey).toHaveAttribute("data-distance-km", "850.00");
-    expect(screen.getByTestId("review-approved-payable")).toHaveAttribute(
+    expect(screen.getByTestId("review-approved-reimbursement")).toHaveAttribute(
       "data-amount-eur",
       "726.00",
     );
@@ -261,11 +352,11 @@ describe("Claim decisions", () => {
   it("confirms approval without offering payment until approved", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
-    expect(screen.getByTestId("estimated-payable")).toHaveAttribute(
+    expect(screen.getByTestId("estimated-reimbursement")).toHaveAttribute(
       "data-message",
       "estimatedReimbursement",
     );
-    expect(screen.queryByTestId("approved-payable")).toBeNull();
+    expect(screen.queryByTestId("approved-reimbursement")).toBeNull();
     expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
     await userEvent.click(screen.getByTestId("claim-decision-approve"));
     expect(onDecision).not.toHaveBeenCalled();
@@ -293,8 +384,8 @@ describe("Claim decisions", () => {
     "does not present a retained amount as current for a %s claim",
     (status) => {
       render(<ClaimDecisionPanel {...base} status={status} />);
-      expect(screen.queryByTestId("estimated-payable")).toBeNull();
-      expect(screen.queryByTestId("approved-payable")).toBeNull();
+      expect(screen.queryByTestId("estimated-reimbursement")).toBeNull();
+      expect(screen.queryByTestId("approved-reimbursement")).toBeNull();
     },
   );
 
@@ -303,11 +394,11 @@ describe("Claim decisions", () => {
     const { rerender } = render(
       <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
     );
-    expect(screen.getByTestId("approved-payable")).toHaveAttribute(
+    expect(screen.getByTestId("approved-reimbursement")).toHaveAttribute(
       "data-message",
       "approvedAmount",
     );
-    expect(screen.queryByTestId("estimated-payable")).toBeNull();
+    expect(screen.queryByTestId("estimated-reimbursement")).toBeNull();
     expect(document.querySelector("[data-review-status]")).toHaveAttribute(
       "data-review-status",
       "approved",
@@ -354,7 +445,7 @@ describe("Claim decisions", () => {
         <ClaimDecisionPanel
           {...base}
           status="rejected"
-          approvedAmountEur={null}
+          reimbursementAmountEur="726.00"
           onDecision={onDecision}
         />
       </>,
@@ -384,7 +475,7 @@ describe("Claim decisions", () => {
       <ClaimDecisionPanel
         {...base}
         status="submitted"
-        approvedAmountEur={null}
+        reimbursementAmountEur="726.00"
         onDecision={onDecision}
       />,
     );

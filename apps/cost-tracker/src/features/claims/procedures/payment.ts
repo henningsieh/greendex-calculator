@@ -9,12 +9,12 @@ import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
-  canCorrectPaidFlag,
   canRecordPayment,
+  evaluateClaimTransition,
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
-import { decimalUnits } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { decimalUnits } from "@/features/claims/reimbursement";
 import { ClaimInputSchema } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -23,7 +23,7 @@ import { authorized } from "@/lib/orpc/middleware";
 const result = z.object({
   id: z.string(),
   status: z.enum(["approved", "paid"]),
-  approvedAmountEur: z.string(),
+  reimbursementAmountEur: z.string(),
 });
 
 /** Call only after the bank confirms one full transfer; a failed transfer is not a Claim event. */
@@ -65,26 +65,33 @@ export const markPaid = authorized
       // below keeps the one-full-transfer invariant (ADR-0009).
       if (!canRecordPayment(claim.status))
         throw createSituationErrors(errors).claimApprovalRequired();
-      if (claim.approvedAmountEur === null) {
+      if (claim.reimbursementAmountEur === null) {
         console.error("Approved/paid Claim lacks an approved amount");
         throw createSituationErrors(errors).internalFailure();
       }
-      if (
-        decimalUnits(input.amountEur, 2) !==
-          decimalUnits(claim.approvedAmountEur, 2) ||
-        decimalUnits(input.amountEur, 2) <= BigInt(0)
-      )
-        throw createSituationErrors(errors).fullTransferRequired();
+      const amount = decimalUnits(input.amountEur, 2);
+      const fullPayment =
+        amount > 0n && amount === decimalUnits(claim.reimbursementAmountEur, 2);
       // Repeating the same confirmed transfer does not create another payment or history entry.
-      if (claim.status === "paid")
+      if (claim.status === "paid") {
+        if (!fullPayment)
+          throw createSituationErrors(errors).fullTransferRequired();
         return {
           id: claim.id,
           status: "paid" as const,
-          approvedAmountEur: claim.approvedAmountEur,
+          reimbursementAmountEur: claim.reimbursementAmountEur,
         };
+      }
+      const decision = evaluateClaimTransition(claim.status, "markPaid", {
+        fullPayment,
+      });
+      if (decision.kind === "refused")
+        throw decision.reason === "fullPayment"
+          ? createSituationErrors(errors).fullTransferRequired()
+          : createSituationErrors(errors).claimApprovalRequired();
       await tx
         .update(claims)
-        .set({ status: "paid" })
+        .set({ status: decision.state })
         .where(eq(claims.id, claim.id));
       await tx.insert(history).values({
         claimId: claim.id,
@@ -93,8 +100,8 @@ export const markPaid = authorized
       });
       return {
         id: claim.id,
-        status: "paid" as const,
-        approvedAmountEur: claim.approvedAmountEur,
+        status: decision.state,
+        reimbursementAmountEur: claim.reimbursementAmountEur,
       };
     });
   });
@@ -129,7 +136,7 @@ export const correctPayment = authorized
         errors,
         "project",
       );
-      if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
+      if (claim?.status === "approved" && claim.reimbursementAmountEur !== null) {
         const [latest] = await tx
           .select({ eventType: history.eventType, reason: history.reason })
           .from(history)
@@ -143,19 +150,22 @@ export const correctPayment = authorized
           return {
             id: claim.id,
             status: "approved" as const,
-            approvedAmountEur: claim.approvedAmountEur,
+            reimbursementAmountEur: claim.reimbursementAmountEur,
           };
       }
       if (!claim) throw createSituationErrors(errors).claimNotFound();
-      if (!canCorrectPaidFlag(claim.status))
+      const decision = evaluateClaimTransition(claim.status, "correctPayment", {
+        reason: Boolean(input.reason),
+      });
+      if (decision.kind === "refused")
         throw createSituationErrors(errors).claimPaidRequired();
-      if (claim.approvedAmountEur === null) {
+      if (claim.reimbursementAmountEur === null) {
         console.error("Paid Claim lacks an approved amount");
         throw createSituationErrors(errors).internalFailure();
       }
       await tx
         .update(claims)
-        .set({ status: "approved" })
+        .set({ status: decision.state })
         .where(eq(claims.id, claim.id));
       await tx.insert(history).values({
         claimId: claim.id,
@@ -165,8 +175,8 @@ export const correctPayment = authorized
       });
       return {
         id: claim.id,
-        status: "approved" as const,
-        approvedAmountEur: claim.approvedAmountEur,
+        status: decision.state,
+        reimbursementAmountEur: claim.reimbursementAmountEur,
       };
     });
   });

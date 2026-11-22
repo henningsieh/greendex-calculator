@@ -104,7 +104,7 @@ const mocks = vi.hoisted(() => ({
       passed: boolean;
       gaps: SafeFieldIssue[];
     }[];
-    calculatedPayableEur: string | null;
+    calculatedReimbursementEur: string | null;
   },
   submit: vi.fn(),
   saveDraft: vi.fn(),
@@ -184,7 +184,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
                       createSafeFieldIssue("entryRequiredForCheck", ["entries"]),
                     ],
                   })),
-                  calculatedPayableEur: null,
+                  calculatedReimbursementEur: null,
                 }),
         ),
         listPayoutAccounts: query(
@@ -265,7 +265,7 @@ beforeEach(() => {
   mocks.preview = null;
   mocks.submit.mockReset().mockImplementation(async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
-    return { id: "claim", status: "submitted", approvedAmountEur: "726.00" };
+    return { id: "claim", status: "submitted", reimbursementAmountEur: "726.00" };
   });
   mocks.accounts = [
     { id: "account", accountHolder: "Partner", iban: "DE123", bic: null },
@@ -435,7 +435,7 @@ describe("Claim workspace", () => {
         "journeys",
         "fundingRules",
       ].map((key) => ({ key, passed: true, gaps: [] })),
-      calculatedPayableEur: "844.00",
+      calculatedReimbursementEur: "844.00",
     };
     mount();
     await userEvent.click(await screen.findByTestId("correct-journey-person"));
@@ -541,7 +541,7 @@ describe("Claim workspace", () => {
       partnershipId: "own",
       status: "correction_requested",
     };
-    mocks.preview = { items: [], calculatedPayableEur: null };
+    mocks.preview = { items: [], calculatedReimbursementEur: null };
     mocks.history = [
       {
         eventType: "correction_requested",
@@ -1226,7 +1226,7 @@ describe("Claim workspace", () => {
           gaps: [createSafeFieldIssue("entryRequiredForCheck", ["entries"])],
         })),
       ],
-      calculatedPayableEur: null,
+      calculatedReimbursementEur: null,
     };
     mount();
     const checklist = await screen.findByTestId("submission-checklist");
@@ -1293,7 +1293,7 @@ describe("Claim workspace", () => {
         },
         { key: "fundingRules", passed: true, gaps: [] },
       ],
-      calculatedPayableEur: null,
+      calculatedReimbursementEur: null,
     };
     mount();
     expect(
@@ -1323,7 +1323,7 @@ describe("Claim workspace", () => {
         "journeys",
         "fundingRules",
       ].map((key) => ({ key, passed: true, gaps: [] })),
-      calculatedPayableEur: "726.00",
+      calculatedReimbursementEur: "726.00",
     };
     const client = createQueryClient();
     const project = {
@@ -1334,8 +1334,8 @@ describe("Claim workspace", () => {
     };
     expect(await client.query(project)).toBe("in_preparation");
     mount(client);
-    expect(await screen.findByTestId("calculated-payable")).toHaveAttribute(
-      "data-payable",
+    expect(await screen.findByTestId("calculated-reimbursement")).toHaveAttribute(
+      "data-reimbursement",
       "726.00",
     );
     await userEvent.click(screen.getByTestId("claim-submit"));
@@ -1393,7 +1393,7 @@ describe("Claim workspace", () => {
         "journeys",
         "fundingRules",
       ].map((key) => ({ key, passed: true, gaps: [] })),
-      calculatedPayableEur: "726.00",
+      calculatedReimbursementEur: "726.00",
     };
     mocks.submit.mockImplementation(async () => {
       mocks.preview = {
@@ -1412,15 +1412,15 @@ describe("Claim workspace", () => {
               }
             : item,
         ),
-        calculatedPayableEur: null,
+        calculatedReimbursementEur: null,
       };
       throw new ORPCError("BAD_REQUEST", {
         message: "Claim submission checklist is incomplete.",
       });
     });
     mount();
-    expect(await screen.findByTestId("calculated-payable")).toHaveAttribute(
-      "data-payable",
+    expect(await screen.findByTestId("calculated-reimbursement")).toHaveAttribute(
+      "data-reimbursement",
       "726.00",
     );
     await userEvent.click(screen.getByTestId("claim-submit"));

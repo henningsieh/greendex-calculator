@@ -93,7 +93,7 @@ const distance = "850.25";
 
 // The reserved zero routing code is not assigned to a bank; the randomized
 // account digits and computed mod-97 check digits make a syntactically valid
-// disposable DE IBAN, never a real payable account.
+// disposable DE IBAN, never a real payout account.
 function disposableIban() {
   const accountDigits = [...randomBytes(10)]
     .map((byte) => String(byte % 10))
@@ -928,7 +928,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     }
   });
 
-  test("24 verifies checklist and lower-of payable, submits and cannot reopen", async ({
+  test("24 verifies checklist and lower-of reimbursement, submits and cannot reopen", async ({
     browser,
     baseURL,
   }) => {
@@ -957,15 +957,15 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .where(eq(claimsTable.partnershipId, partnershipId));
       const rate =
         entry!.transportProfile === "plane" ? band!.standardEur : band!.greenEur;
-      const expectedPayable = Math.min(100, 3 * rate).toFixed(2);
-      // Text-free: exact payable value as machine state (reword-proof), numeric compare.
+      const expectedReimbursement = Math.min(100, 3 * rate).toFixed(2);
+      // Text-free: exact reimbursement value as machine state (reword-proof), numeric compare.
       expect(
         Number(
           await page
-            .locator('[data-testid="calculated-payable"]')
-            .getAttribute("data-payable"),
+            .locator('[data-testid="calculated-reimbursement"]')
+            .getAttribute("data-reimbursement"),
         ),
-      ).toBe(Number(expectedPayable));
+      ).toBe(Number(expectedReimbursement));
       await page.getByTestId("claim-submit").click();
       // Text-free: confirm dialog ready (enabled confirm proves dialog state).
       await expect(page.getByTestId("claim-submit-confirm")).toBeEnabled();
@@ -986,11 +986,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expectPrivateURL(page, new RegExp(`/projects/${projectId}$`));
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator(`a[href$="${claimURL}"]`)).toBeVisible();
-      // Text-free: readiness card carries the submitted claim state (no copy).
+      // Text-free: the readiness card for this Claim carries the submitted
+      // claim state (no copy). Scope by the Claim link first: the retained
+      // claim-page band also renders the shared status badge.
       await expect(
-        page.locator('[data-slot="card"]').filter({
-          has: page.locator('[data-claim-status="submitted"]'),
-        }),
+        page
+          .locator('[data-slot="card"]')
+          .filter({ has: page.locator(`a[href$="${claimURL}"]`) })
+          .filter({ has: page.locator('[data-claim-status="submitted"]') }),
       ).toBeVisible();
       await page.goForward();
       await expectPrivateURL(page, new RegExp(`${claimURL}$`));
@@ -1021,7 +1024,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .from(claimsTable)
         .where(eq(claimsTable.partnershipId, partnershipId));
       expect(claim!.status).toBe("submitted");
-      expect(claim!.approvedAmountEur).toBe(expectedPayable);
+      expect(claim!.reimbursementAmountEur).toBe(expectedReimbursement);
       const events = await db
         .select()
         .from(claimHistoryTable)

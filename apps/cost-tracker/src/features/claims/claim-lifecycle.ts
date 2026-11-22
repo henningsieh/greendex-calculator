@@ -6,6 +6,77 @@ export type ClaimStatus = (typeof claimStatusEnum.enumValues)[number];
 /** Shared validation and form limit for Claim review/payment correction reasons. */
 export const MAX_CLAIM_REASON_LENGTH = 2_000;
 
+export const claimTransitions = {
+  create: { from: null, to: "in_preparation", guard: "payoutAccount" },
+  submit: { from: "in_preparation", to: "submitted", guard: "submissionReady" },
+  resubmit: {
+    from: "correction_requested",
+    to: "submitted",
+    guard: "submissionReady",
+  },
+  requestCorrection: {
+    from: "submitted",
+    to: "correction_requested",
+    guard: "reason",
+    event: "correction_requested",
+  },
+  approve: { from: "submitted", to: "approved", guard: null, event: "approved" },
+  reject: {
+    from: "submitted",
+    to: "rejected",
+    guard: "reason",
+    event: "rejected",
+  },
+  reopen: { from: "rejected", to: "submitted", guard: null, event: "reopened" },
+  markPaid: { from: "approved", to: "paid", guard: "fullPayment" },
+  correctPayment: { from: "paid", to: "approved", guard: "reason" },
+} as const satisfies Record<
+  string,
+  {
+    from: ClaimStatus | null;
+    to: ClaimStatus;
+    guard: "payoutAccount" | "submissionReady" | "reason" | "fullPayment" | null;
+    event?: string;
+  }
+>;
+
+export type ClaimAction = keyof typeof claimTransitions;
+export type ClaimGuard = Exclude<
+  (typeof claimTransitions)[ClaimAction]["guard"],
+  null
+>;
+
+export function evaluateClaimTransition<Action extends ClaimAction>(
+  state: ClaimStatus | null,
+  action: Action,
+  facts: Partial<Record<ClaimGuard, boolean>>,
+):
+  | { kind: "transition"; state: (typeof claimTransitions)[Action]["to"] }
+  | { kind: "refused"; reason: "invalidState" | ClaimGuard } {
+  const transition = claimTransitions[action];
+  if (transition.from !== state)
+    return { kind: "refused", reason: "invalidState" };
+  if (transition.guard && !facts[transition.guard])
+    return { kind: "refused", reason: transition.guard };
+  return { kind: "transition", state: transition.to };
+}
+
+export function claimSubmissionAction(status: ClaimStatus | null) {
+  if (claimTransitions.submit.from === status) return "submit";
+  if (claimTransitions.resubmit.from === status) return "resubmit";
+  return null;
+}
+
+export function canCreateClaim(
+  status: ClaimStatus | null,
+  payoutAccount: boolean,
+) {
+  return (
+    evaluateClaimTransition(status, "create", { payoutAccount }).kind ===
+    "transition"
+  );
+}
+
 /** States in which a Partner may add and correct Claim data. */
 const partnerEditableStatuses: readonly ClaimStatus[] = [
   "in_preparation",
@@ -42,36 +113,29 @@ export function isPartnerEditLocked(status: ClaimStatus): boolean {
  * every review control from it. Neither side keeps its own status-to-action
  * rule (ADR-0014, ADR-0017).
  */
-const claimReviewTransitions = {
-  requestCorrection: {
-    from: "submitted",
-    to: "correction_requested",
-    event: "correction_requested",
-  },
-  approve: { from: "submitted", to: "approved", event: "approved" },
-  reject: { from: "submitted", to: "rejected", event: "rejected" },
-  reopen: { from: "rejected", to: "submitted", event: "reopened" },
-} as const satisfies Record<
-  string,
-  {
-    from: ClaimStatus;
-    to: ClaimStatus;
-    event: "correction_requested" | "approved" | "rejected" | "reopened";
-  }
->;
-
-export type ClaimReviewDecision = keyof typeof claimReviewTransitions;
+export type ClaimReviewDecision =
+  | "requestCorrection"
+  | "approve"
+  | "reject"
+  | "reopen";
+const claimReviewDecisions: readonly ClaimReviewDecision[] = [
+  "requestCorrection",
+  "approve",
+  "reject",
+  "reopen",
+];
 
 export function claimReviewTransition(decision: ClaimReviewDecision) {
-  return claimReviewTransitions[decision];
+  const { from, to, event } = claimTransitions[decision];
+  return { from, to, event };
 }
 
 /** Review decisions a Claim status permits, in panel order. */
 export function claimReviewActions(
   status: ClaimStatus | null | undefined,
 ): readonly ClaimReviewDecision[] {
-  return (Object.keys(claimReviewTransitions) as ClaimReviewDecision[]).filter(
-    (decision) => claimReviewTransitions[decision].from === status,
+  return claimReviewDecisions.filter(
+    (decision) => claimTransitions[decision].from === status,
   );
 }
 
@@ -81,7 +145,10 @@ export function claimReviewActions(
  * confirmed transfer; amount equality stays enforced at the write.
  */
 export function canRecordPayment(status: ClaimStatus): boolean {
-  return status === "approved" || status === "paid";
+  return (
+    evaluateClaimTransition(status, "markPaid", { fullPayment: true }).kind ===
+      "transition" || status === "paid"
+  );
 }
 
 /**
@@ -89,7 +156,10 @@ export function canRecordPayment(status: ClaimStatus): boolean {
  * a required reason. This corrects the application flag, not a bank transfer.
  */
 export function canCorrectPaidFlag(status: ClaimStatus): boolean {
-  return status === "paid";
+  return (
+    evaluateClaimTransition(status, "correctPayment", { reason: true }).kind ===
+    "transition"
+  );
 }
 
 /** Every decision the review panel may offer, derived from the shared rules. */
@@ -106,8 +176,10 @@ export function claimPanelActions(
   // offers the paid-flag correction instead, never a second payment.
   return [
     ...claimReviewActions(status),
-    ...(status === "approved" ? (["markPaid"] as const) : []),
-    ...(canCorrectPaidFlag(status) ? (["correctPayment"] as const) : []),
+    ...(claimTransitions.markPaid.from === status ? (["markPaid"] as const) : []),
+    ...(claimTransitions.correctPayment.from === status
+      ? (["correctPayment"] as const)
+      : []),
   ];
 }
 
@@ -138,23 +210,16 @@ export function isClaimReviewable(
  * paid or rejected. A correction-requested Claim is still unsettled, as is an
  * approved Claim awaiting payment.
  */
+export const settledClaimStatuses = [
+  "paid",
+  "rejected",
+] as const satisfies readonly ClaimStatus[];
+
 export function isSettledClaimStatus(
   status: ClaimStatus | null | undefined,
 ): boolean {
-  return status === "paid" || status === "rejected";
-}
-
-/**
- * The one Project completion rule. A Project completes only when every
- * Partnership Claim is settled: paid or rejected. Anything else — including a
- * missing Claim — still blocks completion.
- *
- * The workspace gate and the `projects.complete` procedure both evaluate this
- * table; neither side keeps its own settled-status rule (same pattern as
- * `canPartnerEditClaim` shared by screens + procedures).
- */
-export function canCompleteProject(
-  statuses: readonly (ClaimStatus | null | undefined)[],
-): boolean {
-  return statuses.every(isSettledClaimStatus);
+  return (
+    status != null &&
+    (settledClaimStatuses as readonly ClaimStatus[]).includes(status)
+  );
 }

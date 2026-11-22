@@ -133,6 +133,11 @@ describe("Project workspace", () => {
     );
     expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
     expect(screen.queryByTestId("manage-project-partnerships")).toBeNull();
+    expect(screen.getAllByTestId("project-workspace-settlement")).toHaveLength(1);
+    expect(screen.getByTestId("project-workspace-settlement")).toHaveAttribute(
+      "data-settlement",
+      "open",
+    );
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
@@ -228,7 +233,11 @@ describe("Project workspace", () => {
     ).toBeInTheDocument();
     const header = screen.getByRole("heading", { level: 1 }).closest("header");
     expect(header).toContainElement(
-      screen.getByTestId("project-archived-status"),
+      screen.getByTestId("project-workspace-settlement"),
+    );
+    expect(screen.getByTestId("project-workspace-settlement")).toHaveAttribute(
+      "data-settlement",
+      "archived",
     );
     expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
     expect(screen.queryByTestId("invite-partnership-link")).toBeNull();
@@ -339,6 +348,11 @@ describe("Project workspace", () => {
       expect.objectContaining({ type: "success" }),
     );
     expect(screen.queryByTestId("archive-project")).toBeNull();
+    // The trigger unmounts with archive capability, so Base UI's finalFocus
+    // points at a detached node. Focus must land on the workspace instead of
+    // falling back to body, or keyboard users lose their place.
+    expect(document.activeElement).not.toBe(document.body);
+    expect(screen.getByTestId("project-workspace")).toHaveFocus();
   });
 
   it("hides completion for blocked, completed and Partner Projects", async () => {
@@ -443,6 +457,7 @@ describe("Project workspace", () => {
     await user.type(screen.getByRole("textbox"), "Correction");
     await user.click(screen.getByTestId("reopen-project-confirm"));
     await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("textbox")).toHaveValue("Correction");
     expect(screen.getByTestId("reopen-project-confirm")).toBeEnabled();
     await user.click(screen.getByTestId("reopen-project-confirm"));
     expect(mocks.reopen).toHaveBeenCalledTimes(2);
@@ -486,9 +501,9 @@ describe("Project workspace", () => {
       expect.objectContaining({ type: "error" }),
     );
     await waitFor(() => {
-      expect(screen.getByTestId("archive-project")).toBeEnabled();
+      expect(screen.getByTestId("confirm-dialog-execute")).toBeEnabled();
     });
-    expect(screen.getByTestId("archive-project")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeVisible();
   });
 
   it.each(["FORBIDDEN", "NOT_FOUND"] as const)(

@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Gib eine Begründung mit höchstens 2.000 Zeichen ein.",
       "confirm": "Bestätigen",
       "cancel": "Abbrechen",
       "close": "Schließen"

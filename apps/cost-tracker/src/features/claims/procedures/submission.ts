@@ -18,13 +18,21 @@ import { openapi } from "@orpc/openapi";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
+import {
+  canPartnerEditClaim,
+  evaluateClaimTransition,
+  claimSubmissionAction,
+} from "@/features/claims/claim-lifecycle";
+import {
+  claimChecklistKeys as checklistKeys,
+  isClaimChecklistReady,
+} from "@/features/claims/claim-submission-policy";
+import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import {
   decimalUnits,
-  derivePayable,
+  deriveReimbursement,
   TOTAL_ALLOCATION_PERCENTAGE_UNITS,
-} from "@/features/claims/payable";
-import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+} from "@/features/claims/reimbursement";
 import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import {
@@ -47,16 +55,6 @@ const exact = (value: string | null, scale: number) => {
 };
 
 type SubmissionTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-const checklistKeys = [
-  "payoutAccount",
-  "entries",
-  "entryDetails",
-  "proofDocuments",
-  "participations",
-  "journeys",
-  "fundingRules",
-] as const;
 
 function checklistItems(issues: ReturnType<typeof issue>[]) {
   const groups: Record<
@@ -336,9 +334,9 @@ async function evaluateSubmission(
   if (!frozen || !fundingBands.length)
     issues.push(issue(["fundingRules"], "fundingRulesRequired"));
   validateSubmissionEntries(costRows, shares, evidence, frozen, issues);
-  const approvedAmountEur = issues.length
+  const reimbursementAmountEur = issues.length
     ? null
-    : derivePayable(
+    : deriveReimbursement(
         costRows.map((row) => ({
           amountEur: row.amountEur,
           transportProfile: row.transportProfile,
@@ -349,7 +347,7 @@ async function evaluateSubmission(
         validRoutes,
         fundingBands,
       );
-  return { issues, approvedAmountEur };
+  return { issues, reimbursementAmountEur };
 }
 
 export const previewSubmission = authorized
@@ -364,7 +362,7 @@ export const previewSubmission = authorized
             gaps: z.array(ChecklistFieldIssueSchema),
           }),
         ),
-        calculatedPayableEur: z.string().nullable(),
+        calculatedReimbursementEur: z.string().nullable(),
       })
       .nullable(),
   )
@@ -390,7 +388,7 @@ export const previewSubmission = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
       if (claim && !canPartnerEditClaim(claim.status)) return null;
-      const { issues, approvedAmountEur } = await evaluateSubmission(
+      const { issues, reimbursementAmountEur } = await evaluateSubmission(
         tx,
         claim?.id ?? null,
         input.partnershipId,
@@ -398,7 +396,7 @@ export const previewSubmission = authorized
       );
       return {
         items: checklistItems(issues),
-        calculatedPayableEur: approvedAmountEur,
+        calculatedReimbursementEur: reimbursementAmountEur,
       };
     });
   });
@@ -410,7 +408,7 @@ export const submit = authorized
     z.object({
       id: z.string(),
       status: z.literal("submitted"),
-      approvedAmountEur: z.string(),
+      reimbursementAmountEur: z.string(),
     }),
   )
   .meta(
@@ -448,48 +446,52 @@ export const submit = authorized
           .limit(1);
         if (latest && ["submitted", "resubmitted"].includes(latest.eventType)) {
           const [saved] = await tx
-            .select({ approvedAmountEur: claims.approvedAmountEur })
+            .select({ reimbursementAmountEur: claims.reimbursementAmountEur })
             .from(claims)
             .where(eq(claims.id, claim.id))
             .limit(1);
-          if (saved.approvedAmountEur === null) {
-            console.error("Submitted Claim history lacks a saved payable amount");
+          if (saved.reimbursementAmountEur === null) {
+            console.error(
+              "Submitted Claim history lacks a saved estimated reimbursement",
+            );
             throw createSituationErrors(errors).internalFailure();
           }
           return {
             id: claim.id,
             status: "submitted" as const,
-            approvedAmountEur: saved.approvedAmountEur,
+            reimbursementAmountEur: saved.reimbursementAmountEur,
           };
         }
       }
       if (!claim)
         throw createSituationErrors(errors).claimRequiredForSubmission();
-      if (!canPartnerEditClaim(claim.status))
-        throw createSituationErrors(errors).claimNotEditable();
+      const action = claimSubmissionAction(claim.status);
+      if (!action) throw createSituationErrors(errors).claimNotEditable();
 
-      const { issues, approvedAmountEur } = await evaluateSubmission(
+      const { issues, reimbursementAmountEur } = await evaluateSubmission(
         tx,
         claim.id,
         input.partnershipId,
         scope,
       );
-      if (issues.length)
+      const decision = evaluateClaimTransition(claim.status, action, {
+        submissionReady: isClaimChecklistReady(checklistItems(issues)),
+      });
+      if (decision.kind === "refused")
         throw createSituationErrors(errors).submissionIncomplete(issues);
-      if (approvedAmountEur === null) {
-        console.error("Complete Claim checklist has no payable amount");
+      if (reimbursementAmountEur === null) {
+        console.error("Complete Claim checklist has no estimated reimbursement");
         throw createSituationErrors(errors).internalFailure();
       }
       await tx
         .update(claims)
-        .set({ status: "submitted", approvedAmountEur })
+        .set({ status: decision.state, reimbursementAmountEur })
         .where(eq(claims.id, claim.id));
       await tx.insert(history).values({
         claimId: claim.id,
         actorUserId: context.user.id,
-        eventType:
-          claim.status === "correction_requested" ? "resubmitted" : "submitted",
+        eventType: action === "resubmit" ? "resubmitted" : "submitted",
       });
-      return { id: claim.id, status: "submitted" as const, approvedAmountEur };
+      return { id: claim.id, status: decision.state, reimbursementAmountEur };
     });
   });

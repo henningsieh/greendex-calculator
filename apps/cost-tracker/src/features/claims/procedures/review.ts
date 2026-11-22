@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import {
   claimReviewTransition,
+  evaluateClaimTransition,
   type ClaimReviewDecision,
   isClaimReviewable,
   MAX_CLAIM_REASON_LENGTH,
@@ -37,7 +38,7 @@ const reviewInput = ClaimInputSchema.extend({
 const result = z.object({
   id: z.string(),
   status: z.enum(["correction_requested", "approved", "rejected", "submitted"]),
-  approvedAmountEur: z.string().nullable(),
+  reimbursementAmountEur: z.string().nullable(),
 });
 const decisionSummaries: Record<ClaimReviewDecision, string> = {
   requestCorrection: "Request correction on a submitted claim",
@@ -81,7 +82,7 @@ function decision(action: ClaimReviewDecision) {
           action === "approve" &&
           claim &&
           ["submitted", "approved"].includes(claim.status) &&
-          claim.approvedAmountEur === null
+          claim.reimbursementAmountEur === null
         ) {
           console.error("Submitted/approved Claim lacks an approved amount");
           throw createSituationErrors(errors).internalFailure();
@@ -107,11 +108,15 @@ function decision(action: ClaimReviewDecision) {
             return {
               id: claim.id,
               status: nextStatus,
-              approvedAmountEur: claim.approvedAmountEur,
+              reimbursementAmountEur: claim.reimbursementAmountEur,
             };
         }
         if (!claim) throw createSituationErrors(errors).claimNotFound();
-        if (claim.status !== expectedStatus)
+        if (
+          evaluateClaimTransition(claim.status, action, {
+            reason: Boolean(input.reason),
+          }).kind === "refused"
+        )
           throw expectedStatus === "rejected"
             ? createSituationErrors(errors).claimRejectedRequired()
             : createSituationErrors(errors).claimSubmittedRequired();
@@ -130,7 +135,7 @@ function decision(action: ClaimReviewDecision) {
         return {
           id: claim.id,
           status,
-          approvedAmountEur: claim.approvedAmountEur,
+          reimbursementAmountEur: claim.reimbursementAmountEur,
         };
       });
     });
@@ -213,7 +218,7 @@ export const getReviewDetails = authorized
           erasmusDistanceKm: z.string(),
         }),
       ),
-      approvedAmountEur: z.string().nullable(),
+      reimbursementAmountEur: z.string(),
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -231,7 +236,7 @@ export const getReviewDetails = authorized
         organizationName: organization.name,
         id: claims.id,
         status: claims.status,
-        approvedAmountEur: claims.approvedAmountEur,
+        reimbursementAmountEur: claims.reimbursementAmountEur,
       })
       .from(claims)
       .innerJoin(partnerships, eq(partnerships.id, claims.partnershipId))
@@ -242,6 +247,13 @@ export const getReviewDetails = authorized
     if (!claim) throw createSituationErrors(errors).claimNotFound();
     if (!isClaimReviewable(claim.status))
       throw createSituationErrors(errors).claimReviewUnavailable();
+    // The database check owns this invariant: every reviewable status carries
+    // an amount, so a null here means the constraint was bypassed. Fail loud.
+    if (claim.reimbursementAmountEur === null) {
+      console.error("Reviewable Claim lacks a saved estimated reimbursement");
+      throw createSituationErrors(errors).internalFailure();
+    }
+    const reimbursementAmountEur = claim.reimbursementAmountEur;
     const [payout, costRows, journeyRows] = await Promise.all([
       db
         .select({
@@ -329,7 +341,7 @@ export const getReviewDetails = authorized
       projectName: claim.projectName,
       organizationName: claim.organizationName,
       payoutAccount: payout[0] ?? null,
-      approvedAmountEur: claim.approvedAmountEur,
+      reimbursementAmountEur,
       journeys: journeyRows,
       entries: costRows.map((row) => ({
         ...row,

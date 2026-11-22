@@ -29,6 +29,7 @@ it.each([
     const markup = renderToStaticMarkup(
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ClaimSubmission
+          action="submit"
           partnershipId="partnership"
           refresh={async () => undefined}
           preview={{
@@ -65,7 +66,7 @@ it.each([
                 ],
               },
             ],
-            calculatedPayableEur: null,
+            calculatedReimbursementEur: null,
           }}
         />
       </NextIntlClientProvider>,
@@ -98,11 +99,12 @@ it.each(["Reworded diagnostic.", "private server failure"])(
           ],
         },
       ],
-      calculatedPayableEur: null,
+      calculatedReimbursementEur: null,
     };
     const markup = renderToStaticMarkup(
       <NextIntlClientProvider locale="de" messages={german}>
         <ClaimSubmission
+          action="submit"
           partnershipId="partnership"
           refresh={async () => undefined}
           preview={preview}
@@ -147,12 +149,13 @@ it.each([
         gaps: [createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"])],
       },
     ],
-    calculatedPayableEur: null,
+    calculatedReimbursementEur: null,
   };
   Reflect.set(preview.items[0].gaps, 0, gap);
   const markup = renderToStaticMarkup(
     <NextIntlClientProvider locale="de" messages={german}>
       <ClaimSubmission
+        action="submit"
         partnershipId="partnership"
         refresh={async () => undefined}
         preview={preview}

@@ -3,21 +3,16 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-  ArrowUpRightIcon,
-  CalendarDaysIcon,
-  MapPinIcon,
-  Users2Icon,
-} from "lucide-react";
-import { Suspense, useSyncExternalStore } from "react";
+import { CalendarDaysIcon, MapPinIcon, Users2Icon } from "lucide-react";
+import { Suspense, useRef, useSyncExternalStore } from "react";
 
-import { partnershipClaimPath, partnershipClaimReviewPath } from "@/app/paths";
+import { partnershipClaimPath } from "@/app/paths";
+import { ButtonLink } from "@/components/button-link";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -30,6 +25,8 @@ import {
   isClaimAwaitingReview,
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
+import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
+import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   PartnershipActions,
@@ -41,48 +38,13 @@ import {
   ProjectMetrics,
   StatsSkeletonGrid,
 } from "@/features/projects/components/project-loading-states";
+import {
+  ProjectArchiveBadge,
+  ProjectSettlementBadge,
+} from "@/features/projects/components/project-status-badge";
+import { projectSettlement } from "@/features/projects/project-lifecycle";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
-import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
-
-function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
-  const t = useTranslations("projects.workspace");
-  if (!status) {
-    return (
-      <Badge data-claim-status="none" variant="secondary">
-        {t("noClaim")}
-      </Badge>
-    );
-  }
-  const labels: Record<ClaimStatus, string> = {
-    in_preparation: t("claimStatus.in_preparation"),
-    submitted: t("claimStatus.submitted"),
-    correction_requested: t("claimStatus.correctionRequested"),
-    approved: t("claimStatus.approved"),
-    rejected: t("claimStatus.rejected"),
-    paid: t("claimStatus.paid"),
-  };
-  return (
-    <Badge
-      data-claim-status={status}
-      variant={
-        status === "submitted"
-          ? "status-attention"
-          : status === "correction_requested"
-            ? "destructive"
-            : status === "approved"
-              ? "status-success"
-              : status === "rejected"
-                ? "status-destructive-solid"
-                : status === "paid"
-                  ? "status-success-solid"
-                  : "secondary"
-      }
-    >
-      {labels[status]}
-    </Badge>
-  );
-}
 
 function ProjectMetric({
   label,
@@ -191,7 +153,7 @@ function AssignedPartnersCard({
                   </div>
                 </div>
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <ClaimReadiness status={partner.claimStatus} />
+                  <ClaimStatusBadge status={partner.claimStatus} />
                   <ParticipantsLink
                     partnershipId={partner.id}
                     describedBy={`project-partner-${partner.id}`}
@@ -204,19 +166,11 @@ function AssignedPartnersCard({
                       already carries the state, so an inert duplicate would
                       only pretend at navigation. */}
                   {isClaimReviewable(partner.claimStatus) ? (
-                    <Link
-                      className={buttonVariants({
-                        variant: "link",
-                        size: "sm",
-                      })}
-                      href={partnershipClaimReviewPath(partner.id)}
-                      aria-describedby={`project-partner-${partner.id}`}
-                      data-testid={`review-claim-${partner.id}`}
-                    >
-                      <EntityIcon entity="claim" className="size-3.5" />
-                      {t("claimReview")}
-                      <ArrowUpRightIcon aria-hidden="true" />
-                    </Link>
+                    <ClaimReviewLink
+                      describedBy={`project-partner-${partner.id}`}
+                      partnershipId={partner.id}
+                      testId={`review-claim-${partner.id}`}
+                    />
                   ) : null}
                 </span>
               </li>
@@ -267,7 +221,7 @@ function PartnerProjectCard({
               {t("claimReadiness")}
             </dt>
             <dd className="mt-1">
-              <ClaimReadiness status={partnership.claimStatus} />
+              <ClaimStatusBadge status={partnership.claimStatus} />
             </dd>
           </div>
           <div>
@@ -288,18 +242,13 @@ function PartnerProjectCard({
           </div>
         </dl>
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3">
-          <Link
-            className={buttonVariants({
-              variant: "link",
-              size: "sm",
-            })}
+          <ButtonLink
             href={partnershipClaimPath(partnership.id)}
-            data-testid="open-claim-workspace"
+            icon={<EntityIcon className="size-3.5 shrink-0" entity="claim" />}
+            testId="open-claim-workspace"
           >
-            <EntityIcon entity="claim" className="size-3.5" />
             {t("openClaim")}
-            <ArrowUpRightIcon aria-hidden="true" />
-          </Link>
+          </ButtonLink>
         </div>
       </CardContent>
     </Card>
@@ -327,6 +276,9 @@ export function ProjectWorkspace({
       meta: { costTrackerORPC: true },
     }),
   );
+  // Archiving unmounts its own trigger, so this container is the deliberate
+  // focus landing place instead of a detached node or body.
+  const workspace = useRef<HTMLDivElement>(null);
 
   const isHosted = project.relationship === "hosted";
 
@@ -356,18 +308,32 @@ export function ProjectWorkspace({
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
+      ref={workspace}
+      tabIndex={-1}
     >
       <ProtectedPageHeader
         eyebrow={isHosted ? t("hostedProject") : t("partnerProject")}
         title={project.name}
         rightButton={
           <div className="flex flex-wrap items-center gap-3">
-            {project.archived && (
-              <Badge variant="secondary" data-testid="project-archived-status">
-                {t("archived")}
-              </Badge>
+            {project.relationship === "hosted" ? (
+              <ProjectSettlementBadge
+                status={projectSettlement(
+                  project.archived,
+                  project.partnerOrganizations.map(
+                    ({ claimStatus }) => claimStatus,
+                  ),
+                )}
+              />
+            ) : (
+              <ProjectArchiveBadge
+                status={project.archived ? "archived" : "active"}
+              />
             )}
-            <ProjectLifecycleActions projectId={project.id} />
+            <ProjectLifecycleActions
+              focusAfterArchive={workspace}
+              projectId={project.id}
+            />
           </div>
         }
       />

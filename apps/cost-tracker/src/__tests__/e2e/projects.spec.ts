@@ -31,6 +31,43 @@ test.describe("Cost Tracker Project production path", () => {
     await fixture.teardown();
   });
 
+  test("shows the same settlement badge in the Project table, card header and details", async ({
+    page,
+  }) => {
+    const [project] = await db
+      .select({ name: projectsTable.name })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, fixture.projectId));
+    if (!project) throw new Error("Project fixture is missing");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/projects?search=${encodeURIComponent(project.name)}`);
+    const badge = page
+      .locator(`[data-project-id="${fixture.projectId}"] [data-settlement]`)
+      .filter({ visible: true });
+    await expect(badge).toBeVisible();
+    const settlement = await badge.getAttribute("data-settlement");
+    if (!settlement) throw new Error("Project fixture has no settlement status");
+    const variant = await badge.getAttribute("data-variant");
+    if (!variant) throw new Error("Project settlement has no badge variant");
+    await page.setViewportSize({ width: 390, height: 900 });
+    const card = page.locator(`article[data-project-id="${fixture.projectId}"]`);
+    const title = card.getByTestId(`project-link-${fixture.projectId}-card`);
+    const cardBadge = card.getByTestId("project-workspace-settlement");
+    await expect(cardBadge).toBeVisible();
+    await expect(cardBadge).toHaveAttribute("data-settlement", settlement);
+    await expect(cardBadge).toHaveAttribute("data-variant", variant);
+    const titleBox = await title.boundingBox();
+    const badgeBox = await cardBadge.boundingBox();
+    if (!titleBox || !badgeBox) throw new Error("Card header is not visible");
+    expect(badgeBox.x).toBeGreaterThan(titleBox.x);
+    expect(Math.abs(badgeBox.y - titleBox.y)).toBeLessThan(5);
+    await expect(card.locator("dl [data-settlement]")).toHaveCount(0);
+    await page.goto(`/projects/${fixture.projectId}`);
+    const detailBadge = page.getByTestId("project-workspace-settlement");
+    await expect(detailBadge).toHaveAttribute("data-settlement", settlement);
+    await expect(detailBadge).toHaveAttribute("data-variant", variant);
+  });
+
   test("sorts tied Projects and keeps them usable across viewport sizes", async ({
     page,
   }) => {

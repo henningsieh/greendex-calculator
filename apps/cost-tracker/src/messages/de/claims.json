@@ -63,13 +63,12 @@
         "partner": "Partnerorganisation",
         "status": "Status",
         "submitted": "Eingereicht",
-        "payable": "Auszahlung",
-        "action": "Aktion"
+        "estimatedReimbursement": "Voraussichtliche Erstattung",
+        "claimReview": "Antragsprüfung"
       },
       "status": {
         "submitted": "Zur Prüfung"
       },
-      "reviewClaim": "Erstattungsantrag prüfen",
       "showingCount": "{shown} von {total, plural, one {# Erstattungsantrag} other {# Erstattungsanträge}} werden angezeigt",
       "emptyTitle": "Keine eingereichten Erstattungsanträge zur Prüfung",
       "emptyDescription": "Wenn ein Partner einen Erstattungsantrag einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
@@ -78,7 +77,6 @@
       "clearFilters": "Filter zurücksetzen",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",
-      "unavailable": "Nicht verfügbar",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
       "confirmApproval": "Genehmige den Erstattungsantrag über den angezeigten Betrag. Damit überweist oder erfasst du noch keine Zahlung.",
       "confirmPaymentCorrection": "Der Erstattungsantrag bleibt genehmigt und gilt wieder als unbezahlt. Die Überweisung wird dadurch nicht rückgängig gemacht.",
-      "unavailable": "Nicht verfügbar",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
       "title": "Antragsprüfung",
       "contextLoading": "Kontext wird geladen",
@@ -160,6 +157,7 @@
       "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist"
     },
     "workspace": {
+      "noClaim": "Kein Erstattungsantrag",
       "label": "Erstattungsantrag-Arbeitsbereich",
       "bandTitle": "Erstattungsantrag-Arbeitsbereich",
       "submissionLabel": "Einreichung",
@@ -269,6 +267,9 @@
         "noClaim": "Es wurde kein Erstattungsantrag erstellt. Das Öffnen dieses Arbeitsbereichs speichert nichts.",
         "payable": "Berechneter Auszahlungsbetrag: {amount} EUR (vom Server berechnet)."
       }
+    },
+    "link": {
+      "claimReview": "Antragsprüfung"
     }
   }
 }

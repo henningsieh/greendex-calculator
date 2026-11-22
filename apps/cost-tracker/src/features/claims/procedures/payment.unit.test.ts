@@ -62,25 +62,25 @@ describe("payment predicate outcomes", () => {
   it.each([
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
-      { id: "claim", status: "submitted", approvedAmountEur: "10.00" },
+      { id: "claim", status: "submitted", reimbursementAmountEur: "10.00" },
       "CONFLICT",
       409,
       "CLAIM_APPROVAL_REQUIRED",
     ],
     [
-      { id: "claim", status: "approved", approvedAmountEur: null },
+      { id: "claim", status: "approved", reimbursementAmountEur: null },
       "INTERNAL_SERVER_ERROR",
       500,
       "INTERNAL_FAILURE",
     ],
     [
-      { id: "claim", status: "paid", approvedAmountEur: null },
+      { id: "claim", status: "paid", reimbursementAmountEur: null },
       "INTERNAL_SERVER_ERROR",
       500,
       "INTERNAL_FAILURE",
     ],
     [
-      { id: "claim", status: "approved", approvedAmountEur: "20.00" },
+      { id: "claim", status: "approved", reimbursementAmountEur: "20.00" },
       "BAD_REQUEST",
       400,
       "FULL_TRANSFER_REQUIRED",
@@ -99,13 +99,13 @@ describe("payment predicate outcomes", () => {
   it.each([
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
-      { id: "claim", status: "submitted", approvedAmountEur: "10.00" },
+      { id: "claim", status: "submitted", reimbursementAmountEur: "10.00" },
       "CONFLICT",
       409,
       "CLAIM_PAID_REQUIRED",
     ],
     [
-      { id: "claim", status: "paid", approvedAmountEur: null },
+      { id: "claim", status: "paid", reimbursementAmountEur: null },
       "INTERNAL_SERVER_ERROR",
       500,
       "INTERNAL_FAILURE",
@@ -123,11 +123,11 @@ describe("payment predicate outcomes", () => {
   );
   it("keeps exact paid retries idempotent", async () => {
     mocks.lock.mockResolvedValue({
-      claim: { id: "claim", status: "paid", approvedAmountEur: "10.00" },
+      claim: { id: "claim", status: "paid", reimbursementAmountEur: "10.00" },
     });
     expect(
       await client.markPaid({ partnershipId: "own", amountEur: "10.00" }),
-    ).toEqual({ id: "claim", status: "paid", approvedAmountEur: "10.00" });
+    ).toEqual({ id: "claim", status: "paid", reimbursementAmountEur: "10.00" });
     expect(mocks.write).not.toHaveBeenCalled();
   });
 });

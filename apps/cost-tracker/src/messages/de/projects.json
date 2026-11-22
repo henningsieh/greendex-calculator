@@ -100,6 +100,7 @@
       "workspace": "Projektarbeitsbereich wird geladen"
     },
     "workspace": {
+      "active": "Aktiv",
       "archived": "Archiviert",
       "archive": "Projekt archivieren",
       "archiving": "Wird archiviert…",
@@ -154,7 +155,6 @@
       "statParticipantsDetail": "bisher erfasst",
       "claimsInReviewDetail": "warten auf Entscheidung",
       "daysUntil": "bis {date}",
-      "claimReview": "Antragsprüfung",
       "participants": "Teilnehmende"
     }
   }

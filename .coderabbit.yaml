@@ -1,7 +1,19 @@
 reviews:
   request_changes_workflow: true
   path_filters:
+    # Generated Drizzle artefacts: the repository forbids hand-editing these,
+    # so they add review volume without review signal.
     - "!packages/database/src/migrations/meta/*_snapshot.json"
+    - "!packages/database/src/migrations/meta/_journal.json"
     - "!pnpm-lock.yaml"
     - "!packages/i18n/src/locales/**"
     - "!**/*.snap"
+    # Non-English Cost Tracker catalogues are mechanical mirrors of en-GB: the
+    # i18n contract requires identical object shapes in every locale, so each
+    # locale copy repeats the same edit. Reviewing en-GB covers the wording.
+    - "!apps/cost-tracker/src/messages/de/**"
+    - "!apps/cost-tracker/src/messages/es/**"
+    - "!apps/cost-tracker/src/messages/fr/**"
+    - "!apps/cost-tracker/src/messages/it/**"
+    - "!apps/cost-tracker/src/messages/nl/**"
+    - "!apps/cost-tracker/src/messages/sl/**"

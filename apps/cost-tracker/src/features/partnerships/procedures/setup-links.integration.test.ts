@@ -311,7 +311,11 @@ describe("Partner Organization setup links", () => {
       const { partnershipId } = await client.projectPartnerships.consumeSetupLink(
         { id: link.id, secret: link.secret, organizationId: partnerId },
       );
-      await db.insert(claims).values({ partnershipId, status });
+      await db.insert(claims).values({
+        partnershipId,
+        status,
+        reimbursementAmountEur: status === "in_preparation" ? null : "100.00",
+      });
       if (settled) {
         await expect(lifecycle.archiveProject({ projectId })).resolves.toEqual({
           projectId,
@@ -438,9 +442,11 @@ describe("Partner Organization setup links", () => {
       secret: link.secret,
       organizationId: partnerId,
     });
-    await db
-      .insert(claims)
-      .values({ partnershipId, status: "paid", approvedAmountEur: "100.00" });
+    await db.insert(claims).values({
+      partnershipId,
+      status: "paid",
+      reimbursementAmountEur: "100.00",
+    });
     const [archive, correction] = await Promise.allSettled([
       lifecycle.archiveProject({ projectId }),
       client.claims.correctPayment({
@@ -480,7 +486,9 @@ describe("Partner Organization setup links", () => {
           organizationId: partnerId,
         },
       );
-      await db.insert(claims).values({ partnershipId, status });
+      await db
+        .insert(claims)
+        .values({ partnershipId, status, reimbursementAmountEur: "100.00" });
       await lifecycle.archiveProject({ projectId });
       const change =
         status === "paid"
@@ -505,7 +513,11 @@ describe("Partner Organization setup links", () => {
       secret: link.secret,
       organizationId: partnerId,
     });
-    await db.insert(claims).values({ partnershipId, status: "rejected" });
+    await db.insert(claims).values({
+      partnershipId,
+      status: "rejected",
+      reimbursementAmountEur: "100.00",
+    });
     await lifecycle.archiveProject({ projectId });
     expect(await client.projects.get({ projectId })).toMatchObject({
       relationship: "hosted",
@@ -541,7 +553,11 @@ describe("Partner Organization setup links", () => {
       await client.participantOnboarding.createRegistrationLink({
         partnershipId,
       });
-    await db.insert(claims).values({ partnershipId, status: "rejected" });
+    await db.insert(claims).values({
+      partnershipId,
+      status: "rejected",
+      reimbursementAmountEur: "100.00",
+    });
     asUser();
     await lifecycle.archiveProject({ projectId });
     asUser(recipientEmail, partnerId);

@@ -24,7 +24,7 @@ const privateInvariantThrows: Record<string, string[]> = {
   "features/partnerships/procedures/core.ts": [
     'new Error("Project Partnership insert returned no row")',
   ],
-  "features/claims/payable.ts": [
+  "features/claims/reimbursement.ts": [
     'new Error("Invalid exact decimal")',
     'new Error("Unsupported decimal precision")',
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",

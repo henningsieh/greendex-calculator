@@ -177,6 +177,33 @@ describe("Project list", { timeout: 20_000 }, () => {
     ).toBe("/en-GB/projects/project-1/participants");
   });
 
+  it("moves the card Participants destination into its own footer", async () => {
+    renderList();
+
+    const cardLink = await screen.findByTestId(
+      "project-participants-project-1-card",
+      {},
+      { timeout: 10_000 },
+    );
+    expect(cardLink.getAttribute("href")).toBe(
+      "/en-GB/projects/project-1/participants",
+    );
+    // Same shape as the submitted-Claim cards: the footer below a hairline
+    // separates the navigation from the card's data list.
+    expect(cardLink.closest("dl")).toBeNull();
+    expect(cardLink.parentElement).toHaveClass("border-t");
+  });
+
+  it("places the settlement badge next to the card title, not in the details", async () => {
+    renderList();
+    const title = await screen.findByTestId("project-link-project-1-card");
+    const card = title.closest("article");
+    const badge = card?.querySelector("[data-settlement]");
+    expect(badge).toHaveAttribute("data-settlement", "open");
+    expect(badge?.parentElement).toBe(title.parentElement);
+    expect(card?.querySelector("dl [data-settlement]")).toBeNull();
+  });
+
   it("links to the Project without carrying list state", async () => {
     renderList();
 
@@ -202,8 +229,14 @@ describe("Project list", { timeout: 20_000 }, () => {
     });
 
     const advanced = screen.getByTestId("project-advanced-filters");
+    // The Partner filter resolves inside its own Suspense boundary, so it can
+    // arrive after the list itself. Wait for it instead of asserting at once.
     expect(advanced).toContainElement(
-      screen.getByTestId("project-partner-filter-menu"),
+      await screen.findByTestId(
+        "project-partner-filter-menu",
+        {},
+        { timeout: 10_000 },
+      ),
     );
     await userEvent.click(advanced.querySelector("summary")!);
     expect(advanced).toHaveAttribute("open");
@@ -224,7 +257,14 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(screen.getByTestId("project-advanced-filters")).toHaveAttribute(
       "open",
     );
-    expect(screen.getAllByTestId("project-partner-filter-menu")).toHaveLength(1);
+    // Same Suspense boundary as above: await the resolved filter menu.
+    expect(
+      await screen.findAllByTestId(
+        "project-partner-filter-menu",
+        {},
+        { timeout: 10_000 },
+      ),
+    ).toHaveLength(1);
     await userEvent.click(screen.getByTestId("project-partner-filter-menu"));
     expect(
       await screen.findByTestId("project-partner-filter-partner-1"),

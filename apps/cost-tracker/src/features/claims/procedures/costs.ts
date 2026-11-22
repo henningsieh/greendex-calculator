@@ -14,8 +14,8 @@ import { z } from "zod";
 
 import { isPartnerEditLocked } from "@/features/claims/claim-lifecycle";
 import { CostSaveInputSchema } from "@/features/claims/cost-validation";
-import { decimalUnits, euros } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { decimalUnits, euros } from "@/features/claims/reimbursement";
 import {
   ClaimScopeInputSchema,
   ProofDocumentIdSchema,

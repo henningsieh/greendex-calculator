@@ -11,11 +11,14 @@ import { openapi } from "@orpc/openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { canCompleteProject } from "@/features/claims/claim-lifecycle";
 import {
   authorizeCostTrackerProjectLifecycle,
   requireLifecycleDecision,
 } from "@/features/projects/procedures/lifecycle-authorization";
+import {
+  evaluateProjectTransition,
+  projectSettlement,
+} from "@/features/projects/project-lifecycle";
 import {
   ProjectDetailInputSchema,
   ReopenProjectInputSchema,
@@ -73,8 +76,6 @@ export const archiveProject = authorized
         }),
         errors,
       );
-      if (project.archived)
-        throw createSituationErrors(errors).projectAlreadyArchived();
       const rows = await tx
         .select({ name: organization.name, status: claimsTable.status })
         .from(partnerships)
@@ -82,22 +83,36 @@ export const archiveProject = authorized
         .leftJoin(claimsTable, eq(claimsTable.partnershipId, partnerships.id))
         .where(eq(partnerships.projectId, project.id))
         .orderBy(asc(organization.name), asc(organization.id));
-      if (!canCompleteProject(rows.map(({ status }) => status)))
-        throw createSituationErrors(errors).projectArchiveBlocked();
+      const decision = evaluateProjectTransition(
+        project.archived ? "archived" : "active",
+        "archive",
+        {
+          settled:
+            projectSettlement(
+              project.archived,
+              rows.map(({ status }) => status),
+            ) === "ready",
+        },
+      );
+      if (decision.kind === "refused")
+        throw decision.reason === "invalidState"
+          ? createSituationErrors(errors).projectAlreadyArchived()
+          : createSituationErrors(errors).projectArchiveBlocked();
+      const archived = decision.state === "archived";
       await tx
         .update(setupLinks)
         .set({ enabled: false })
         .where(eq(setupLinks.projectId, project.id));
       await tx
         .update(projects)
-        .set({ costTrackerArchived: true })
+        .set({ costTrackerArchived: archived })
         .where(eq(projects.id, project.id));
       await tx.insert(archiveEvents).values({
         projectId: project.id,
         userId: context.user.id,
         action: "archive",
       });
-      return { projectId: project.id, archived: true };
+      return { projectId: project.id, archived };
     });
   });
 
@@ -141,11 +156,19 @@ export const reopenProject = authorized
         }),
         errors,
       );
-      if (!project.archived)
-        throw createSituationErrors(errors).projectNotArchived();
+      const decision = evaluateProjectTransition(
+        project.archived ? "archived" : "active",
+        "reopen",
+        { reason: Boolean(input.reason) },
+      );
+      if (decision.kind === "refused")
+        throw decision.reason === "invalidState"
+          ? createSituationErrors(errors).projectNotArchived()
+          : createSituationErrors(errors).badInput();
+      const archived = decision.state === "archived";
       await tx
         .update(projects)
-        .set({ costTrackerArchived: false })
+        .set({ costTrackerArchived: archived })
         .where(eq(projects.id, project.id));
       await tx.insert(archiveEvents).values({
         projectId: project.id,
@@ -153,6 +176,6 @@ export const reopenProject = authorized
         action: "reopen",
         reason: input.reason,
       });
-      return { projectId: project.id, archived: false };
+      return { projectId: project.id, archived };
     });
   });

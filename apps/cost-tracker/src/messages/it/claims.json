@@ -63,13 +63,12 @@
         "partner": "Organizzazione partner",
         "status": "Stato",
         "submitted": "Inviata",
-        "payable": "Da pagare",
-        "action": "Azione"
+        "estimatedReimbursement": "Rimborso stimato",
+        "claimReview": "Verifica della richiesta di rimborso"
       },
       "status": {
         "submitted": "In attesa di verifica"
       },
-      "reviewClaim": "Verifica richiesta di rimborso",
       "showingCount": "Visualizzate {shown} di {total, plural, one {# richiesta di rimborso} other {# richieste di rimborso}}",
       "emptyTitle": "Nessuna richiesta di rimborso inviata in attesa di verifica",
       "emptyDescription": "Quando un partner invia una richiesta di rimborso, compare qui per la verifica dell’organizzazione ospitante.",
@@ -78,7 +77,6 @@
       "clearFilters": "Rimuovi filtri",
       "previousPage": "Pagina precedente",
       "nextPage": "Pagina successiva",
-      "unavailable": "Non disponibile",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "La riapertura riporta la richiesta alla verifica dell’organizzazione ospitante e mantiene bloccata la modifica da parte del partner. Se servono modifiche, richiedi separatamente una correzione.",
       "confirmApproval": "Approva la richiesta per l’importo indicato. Questa azione non invia denaro e non registra alcun pagamento.",
       "confirmPaymentCorrection": "La richiesta resta approvata e risulta di nuovo non pagata. Questa azione non annulla il bonifico.",
-      "unavailable": "Non disponibile",
       "equalShare": "Quota uguale (calcolata all’invio)",
       "title": "Verifica della richiesta di rimborso",
       "contextLoading": "Caricamento del contesto",
@@ -160,6 +157,7 @@
       "unavailable": "Disponibile solo quando la lista di controllo è superata"
     },
     "workspace": {
+      "noClaim": "Nessuna richiesta di rimborso",
       "label": "Area di lavoro della richiesta di rimborso",
       "bandTitle": "Area di lavoro della richiesta di rimborso",
       "submissionLabel": "Invio",
@@ -269,6 +267,9 @@
         "noClaim": "Nessuna richiesta di rimborso creata. Aprire quest’area di lavoro non salva nulla.",
         "payable": "Importo da pagare calcolato: {amount} EUR (calcolato dal server)."
       }
+    },
+    "link": {
+      "claimReview": "Verifica della richiesta di rimborso"
     }
   }
 }

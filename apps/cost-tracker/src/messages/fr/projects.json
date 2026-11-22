@@ -100,6 +100,7 @@
       "workspace": "Chargement de l’espace de travail du projet"
     },
     "workspace": {
+      "active": "Actif",
       "archived": "Archivé",
       "archive": "Archiver le projet",
       "archiving": "Archivage…",
@@ -154,7 +155,6 @@
       "statParticipantsDetail": "enregistrées jusqu’ici",
       "claimsInReviewDetail": "nécessitent une décision",
       "daysUntil": "jusqu’au {date}",
-      "claimReview": "Vérification de la demande",
       "participants": "Participants"
     }
   }

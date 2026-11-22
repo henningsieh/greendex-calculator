@@ -100,6 +100,7 @@
       "workspace": "Nalaganje delovnega prostora projekta"
     },
     "workspace": {
+      "active": "Aktiven",
       "archived": "Arhivirano",
       "archive": "Arhiviraj projekt",
       "archiving": "Arhiviranje…",
@@ -154,7 +155,6 @@
       "statParticipantsDetail": "doslej zabeleženo",
       "claimsInReviewDetail": "potrebujejo odločitev",
       "daysUntil": "do {date}",
-      "claimReview": "Pregled zahtevka",
       "participants": "Udeleženci"
     }
   }

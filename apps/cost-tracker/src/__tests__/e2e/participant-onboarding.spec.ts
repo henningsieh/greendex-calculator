@@ -662,9 +662,11 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       ),
     ).toBeVisible();
     // API-setup exception: the unrelated Partnership's Claim lock is a refusal precondition.
-    await db
-      .insert(claimsTable)
-      .values({ partnershipId: ids.otherPartnership, status: "submitted" });
+    await db.insert(claimsTable).values({
+      partnershipId: ids.otherPartnership,
+      status: "submitted",
+      reimbursementAmountEur: "100.00",
+    });
     try {
       await p
         .getByTestId(`registration-link-${id}`)

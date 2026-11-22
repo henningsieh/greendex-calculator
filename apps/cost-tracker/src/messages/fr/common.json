@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Saisissez un motif de 2 000 caractères maximum.",
       "confirm": "Confirmer",
       "cancel": "Annuler",
       "close": "Fermer"

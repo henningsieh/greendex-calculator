@@ -61,7 +61,6 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // Unique synthetic PDF bytes are seeded in S3 and deleted with the fixture;
 // Hosting review download is real browser evidence, not a mocked byte response.
 // The test-only payout reference is deliberately NOT an IBAN or bank account.
-// Case 27 is NOT-RUN: no transfer or paid marking is authorized.
 const suffix = randomUUID();
 const ids = {
   host: randomUUID(),
@@ -230,7 +229,7 @@ async function claimState(index: number) {
   const [claim] = await db
     .select({
       status: claims.status,
-      approvedAmountEur: claims.approvedAmountEur,
+      reimbursementAmountEur: claims.reimbursementAmountEur,
     })
     .from(claims)
     .where(eq(claims.id, ids.claims[index]!));
@@ -406,7 +405,7 @@ test.describe.serial("Claim review journey 25–26", () => {
         id,
         partnershipId: ids.partnerships[index]!,
         status: "submitted" as const,
-        approvedAmountEur: "100.00",
+        reimbursementAmountEur: "100.00",
       })),
     );
     await db.insert(entries).values(
@@ -671,8 +670,8 @@ test.describe.serial("Claim review journey 25–26", () => {
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     // Before approval, show the stored calculation as an estimate.
-    await expect(review.getByTestId("estimated-payable")).toBeVisible();
-    await expect(review.getByTestId("approved-payable")).toHaveCount(0);
+    await expect(review.getByTestId("estimated-reimbursement")).toBeVisible();
+    await expect(review.getByTestId("approved-reimbursement")).toHaveCount(0);
     const cost = review
       .getByTestId("claim-cost-table")
       .locator(
@@ -878,9 +877,8 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeVisible();
     expect(await claimState(0)).toEqual({
       status: "approved",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     });
-    // Mark paid is deliberately never clicked: approval is not a bank transfer.
     expect((await events(0)).map((event) => event.eventType)).toEqual([
       "submitted",
       "correction_requested",
@@ -888,6 +886,26 @@ test.describe.serial("Claim review journey 25–26", () => {
       "resubmitted",
       "approved",
     ]);
+
+    const payment = review.getByTestId("claim-decision-markPaid");
+    await payment.focus();
+    await host.keyboard.press("Enter");
+    await review.getByTestId("claim-decision-cancel").click();
+    await expect(payment).toBeFocused();
+    expect((await claimState(0))?.status).toBe("approved");
+    await payment.click();
+    await review.getByTestId("claim-decision-confirm-markPaid").click();
+    await expect(review.locator('[data-review-status="paid"]')).toBeVisible();
+    await expect(review.locator('[data-history-event="paid"]')).toHaveCount(1);
+    await review.getByTestId("claim-decision-correctPayment").click();
+    await review
+      .getByTestId("claim-decision-reason-correctPayment")
+      .fill("Fixture payment was recorded in error");
+    await review.getByTestId("claim-decision-confirm-correctPayment").click();
+    await expect(review.locator('[data-review-status="approved"]')).toBeVisible();
+    await expect(
+      review.locator('[data-history-event="payment_corrected"]'),
+    ).toHaveCount(1);
 
     await host.goto("/claims");
     await expect(
@@ -916,7 +934,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeDisabled();
     await review.locator("#decision-reason").fill(rejectionReason);
     await review.getByTestId("claim-decision-confirm-reject").click();
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     // Text-free: history event recorded with reason (DB proof), rendered entry (UI proof).
     await expect(
       review

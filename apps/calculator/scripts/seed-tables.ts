@@ -216,11 +216,27 @@ export async function ensureSeedPayoutAccounts(
     await db.insert(accounts).values(missing).onConflictDoNothing();
 }
 
+/** Non-preparation seeds must carry an amount; undefined status means the in_preparation default. */
+function assertSeedClaimAmount(
+  row: Pick<typeof claims.$inferInsert, "status" | "reimbursementAmountEur">,
+  label: string,
+): void {
+  if (
+    (row.status ?? "in_preparation") !== "in_preparation" &&
+    row.reimbursementAmountEur == null
+  )
+    throw new Error(
+      `Seed Claim ${label} has status ${row.status} without an amount; non-preparation seeds must carry reimbursementAmountEur.`,
+    );
+}
+
 export async function ensureSeedClaims(
   db: SeedDatabase,
   rows: (typeof claims.$inferInsert)[],
 ): Promise<void> {
   if (!rows.length) return;
+  for (const row of rows)
+    assertSeedClaimAmount(row, `${row.id ?? row.partnershipId}`);
   const existing = await db
     .select()
     .from(claims)
@@ -412,6 +428,8 @@ export async function ensureSeedClaimsByPartnership(
   rows: (typeof claims.$inferInsert)[],
 ): Promise<void> {
   if (!rows.length) return;
+  for (const row of rows)
+    assertSeedClaimAmount(row, `for partnership ${row.partnershipId}`);
   const existing = await db
     .select()
     .from(claims)

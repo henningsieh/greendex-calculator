@@ -1,27 +1,18 @@
-import { cn } from "cn";
-import { ArrowUpRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import type { ComponentProps } from "react";
 
 import {
   partnershipParticipantsPath,
   projectParticipantsPath,
 } from "@/app/paths";
+import { ButtonLink } from "@/components/button-link";
 import { EntityIcon } from "@/components/entity-icon";
-import { buttonVariants } from "@/components/ui/button";
-import { Link } from "@/lib/i18n/routing";
 
 /**
- * Both Project and Partnership views use the same destination label.
- *
- * `density` replaces the Button size axis on purpose: the `link` variant pins
- * `h-auto min-h-9`, which clamps every smaller size to the same 36px. Density
- * resets `min-h-0` after the variant, so the heights actually differ.
+ * Both Project and Partnership views use the same destination label. The
+ * look, density scale, and trailing arrow live in `ButtonLink`; this module
+ * only adds the Participants entity icon and the destination.
  */
-const densityVariants = {
-  compact: "h-6 min-h-0 gap-1 px-1 text-xs",
-  default: "h-8 min-h-0 gap-1.5 px-1.5 text-sm",
-} as const;
-
 export function ParticipantsLink({
   className,
   density = "default",
@@ -33,7 +24,7 @@ export function ParticipantsLink({
     : "hosted-participants",
 }: {
   className?: string;
-  density?: keyof typeof densityVariants;
+  density?: ComponentProps<typeof ButtonLink>["density"];
   describedBy?: string;
   /** Stable hook for the calling surface; defaults to the workspace link. */
   testId?: string;
@@ -44,28 +35,19 @@ export function ParticipantsLink({
   const t = useTranslations("participations.link");
 
   return (
-    <Link
-      className={cn(
-        buttonVariants({ variant: "link" }),
-        "whitespace-nowrap",
-        densityVariants[density],
-        className,
-      )}
-      data-testid={testId}
-      aria-describedby={describedBy}
+    <ButtonLink
+      className={className}
+      density={density}
+      describedBy={describedBy}
       href={
         projectId === undefined
           ? partnershipParticipantsPath(partnershipId)
           : projectParticipantsPath(projectId)
       }
+      icon={<EntityIcon className="size-3.5 shrink-0" entity="participants" />}
+      testId={testId}
     >
-      <EntityIcon
-        aria-hidden="true"
-        className="size-3.5 shrink-0"
-        entity="participants"
-      />
       {t("label")}
-      <ArrowUpRightIcon aria-hidden="true" className="size-3.5 shrink-0" />
-    </Link>
+    </ButtonLink>
   );
 }
