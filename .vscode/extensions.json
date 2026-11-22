@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "bradlc.vscode-tailwindcss",
-    "christian-kohler.npm-intellisense",
     "christian-kohler.path-intellisense",
     "csstools.postcss",
     "ecmel.vscode-html-css",
