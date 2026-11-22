@@ -46,7 +46,7 @@ export const ClaimQueueRowSchema = z.object({
   organizationName: z.string(),
   status: ClaimStatusSchema,
   submittedAt: z.date(),
-  payableAmountEur: z.string().nullable(),
+  payableAmountEur: z.string(),
 });
 
 export type ClaimQueueRow = z.infer<typeof ClaimQueueRowSchema>;

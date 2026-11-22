@@ -221,6 +221,15 @@ export async function ensureSeedClaims(
   rows: (typeof claims.$inferInsert)[],
 ): Promise<void> {
   if (!rows.length) return;
+  for (const row of rows) {
+    if (
+      (row.status ?? "in_preparation") !== "in_preparation" &&
+      row.approvedAmountEur == null
+    )
+      throw new Error(
+        `Seed Claim ${row.id} has status ${row.status} without an amount; non-preparation seeds must carry approvedAmountEur.`,
+      );
+  }
   const existing = await db
     .select()
     .from(claims)
@@ -412,6 +421,15 @@ export async function ensureSeedClaimsByPartnership(
   rows: (typeof claims.$inferInsert)[],
 ): Promise<void> {
   if (!rows.length) return;
+  for (const row of rows) {
+    if (
+      (row.status ?? "in_preparation") !== "in_preparation" &&
+      row.approvedAmountEur == null
+    )
+      throw new Error(
+        `Seed Claim for partnership ${row.partnershipId} has status ${row.status} without an amount; non-preparation seeds must carry approvedAmountEur.`,
+      );
+  }
   const existing = await db
     .select()
     .from(claims)

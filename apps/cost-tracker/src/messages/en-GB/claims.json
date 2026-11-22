@@ -63,7 +63,7 @@
         "partner": "Partner Organization",
         "status": "Status",
         "submitted": "Submitted",
-        "payable": "Payable",
+        "estimatedReimbursement": "Estimated reimbursement",
         "action": "Action"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Clear filters",
       "previousPage": "Previous page",
       "nextPage": "Next page",
-      "unavailable": "Unavailable",
       "currencyEur": "EUR"
     },
     "page": {

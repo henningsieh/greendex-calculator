@@ -296,7 +296,12 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
     {
       const { state: stateId } = claimScenarioIds[stateIndex]!;
       const rows = [
-        { id: stateId, partnershipId, status },
+        {
+          id: stateId,
+          partnershipId,
+          status,
+          approvedAmountEur: status === "in_preparation" ? null : "100.00",
+        },
       ] satisfies (typeof claims.$inferInsert)[];
       await ensureSeedClaims(db, rows);
     }
@@ -520,7 +525,12 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
   }
   {
     const rows = [
-      { id: claimId, partnershipId, status: "submitted" },
+      {
+        id: claimId,
+        partnershipId,
+        status: "submitted",
+        approvedAmountEur: "100.00",
+      },
     ] satisfies (typeof claims.$inferInsert)[];
     await ensureSeedClaims(db, rows);
   }
@@ -1452,7 +1462,12 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
     if (name !== "empty" && name !== "legacy") {
       {
         const rows = [
-          { id: journeyParts.claim, partnershipId: own, status: name },
+          {
+            id: journeyParts.claim,
+            partnershipId: own,
+            status: name,
+            approvedAmountEur: name === "in_preparation" ? null : "100.00",
+          },
         ] satisfies (typeof claims.$inferInsert)[];
         await ensureSeedClaimsByPartnership(db, rows);
       }
@@ -1932,6 +1947,7 @@ async function ensureProjectReadinessScenarios(
             id: claimId,
             partnershipId,
             status,
+            approvedAmountEur: status === "in_preparation" ? null : "100.00",
           })
           .onConflictDoNothing();
     }
@@ -1946,6 +1962,7 @@ async function ensureProjectReadinessScenarios(
             id: readinessScenario.otherClaim!,
             partnershipId: otherPartnershipId,
             status: "rejected",
+            approvedAmountEur: "100.00",
           })
           .onConflictDoNothing();
     }
@@ -2950,6 +2967,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
               id: participationScenario.claim!,
               partnershipId: own,
               status: claimStatuses[name],
+              approvedAmountEur: "100.00",
             },
           ] satisfies (typeof claims.$inferInsert)[];
           await ensureSeedClaimsByPartnership(db, rows);

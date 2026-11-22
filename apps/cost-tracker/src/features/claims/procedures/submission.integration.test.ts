@@ -1002,19 +1002,19 @@ async function submittedClaim() {
 }
 
 describe("Claim lock abuse", () => {
-  it("does not hide a submitted retry's missing saved payable amount as an edit lock", async () => {
+  it("rejects nulling a submitted Claim's saved payable amount at the database", async () => {
     await submittedClaim();
-    // Deliberate missing payable corruption is under test, restored by afterEach.
-    await db
-      .update(claims)
-      .set({ approvedAmountEur: null })
-      .where(eq(claims.id, claimId));
+    // The check constraint owns this invariant now: the corrupt state never
+    // lands, so the retry path keeps its guard only as defense in depth.
+    await expect(
+      db
+        .update(claims)
+        .set({ approvedAmountEur: null })
+        .where(eq(claims.id, claimId)),
+    ).rejects.toThrow();
     const before = await events();
     activeOrg = partner;
-    await expect(submit()).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      data: { reason: "INTERNAL_FAILURE" },
-    });
+    await expect(submit()).resolves.toMatchObject({ status: "submitted" });
     expect(await events()).toEqual(before);
   });
 
@@ -1326,19 +1326,18 @@ describe("Host Claim review", () => {
     await expect(review("approve")).rejects.toMatchObject({
       code: "CONFLICT",
     });
-    // Deliberate saved-payable corruption is under test; restored before the supported submission below.
-    await db
-      .update(claims)
-      .set({ status: "submitted", approvedAmountEur: null })
-      .where(eq(claims.id, claimId));
+    // The check constraint rejects the corrupt state outright: a submitted
+    // Claim without an amount can no longer be forced, even by direct write.
+    await expect(
+      db
+        .update(claims)
+        .set({ status: "submitted", approvedAmountEur: null })
+        .where(eq(claims.id, claimId)),
+    ).rejects.toThrow();
+    // The Claim is still in_preparation, so approval still refuses as not-submitted.
     await expect(review("approve")).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      data: { reason: "INTERNAL_FAILURE" },
+      code: "CONFLICT",
     });
-    await db
-      .update(claims)
-      .set({ status: "in_preparation" })
-      .where(eq(claims.id, claimId));
     activeOrg = partner;
     const submitted = await submit();
     await asHost();

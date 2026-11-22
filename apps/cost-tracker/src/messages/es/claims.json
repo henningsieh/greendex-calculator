@@ -63,7 +63,7 @@
         "partner": "Organización socia",
         "status": "Estado",
         "submitted": "Enviada",
-        "payable": "Pagable",
+        "estimatedReimbursement": "Reembolso estimado",
         "action": "Acción"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Quitar filtros",
       "previousPage": "Página anterior",
       "nextPage": "Página siguiente",
-      "unavailable": "No disponible",
       "currencyEur": "EUR"
     },
     "page": {

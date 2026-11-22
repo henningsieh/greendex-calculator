@@ -63,7 +63,7 @@
         "partner": "Organisation partenaire",
         "status": "Statut",
         "submitted": "Soumise",
-        "payable": "Montant à payer",
+        "estimatedReimbursement": "Remboursement estimé",
         "action": "Action"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Effacer les filtres",
       "previousPage": "Page précédente",
       "nextPage": "Page suivante",
-      "unavailable": "Indisponible",
       "currencyEur": "EUR"
     },
     "page": {

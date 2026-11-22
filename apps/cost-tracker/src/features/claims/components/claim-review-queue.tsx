@@ -521,7 +521,7 @@ export function ClaimReviewQueue() {
                       />
                     </TableHead>
                     <TableHead className="w-[12%] px-2 text-right tracking-normal whitespace-nowrap normal-case">
-                      {t("columns.payable")}
+                      {t("columns.estimatedReimbursement")}
                     </TableHead>
                     <TableHead className="w-[14%] px-2 tracking-normal whitespace-nowrap normal-case">
                       {t("columns.action")}
@@ -555,9 +555,7 @@ export function ClaimReviewQueue() {
                         {dateFormat.format(row.submittedAt, "date.medium")}
                       </TableCell>
                       <TableCell className="px-2 text-right text-xs whitespace-nowrap tabular-nums">
-                        {row.payableAmountEur
-                          ? `${row.payableAmountEur} ${t("currencyEur")}`
-                          : t("unavailable")}
+                        {`${row.payableAmountEur} ${t("currencyEur")}`}
                       </TableCell>
                       <TableCell className="px-2 text-xs">
                         <Link
@@ -608,12 +606,10 @@ export function ClaimReviewQueue() {
                     {dateFormat.format(row.submittedAt, "date.medium")}
                   </dd>
                   <dt className="text-xs text-muted-foreground">
-                    {t("columns.payable")}
+                    {t("columns.estimatedReimbursement")}
                   </dt>
                   <dd className="text-right text-xs whitespace-nowrap tabular-nums">
-                    {row.payableAmountEur
-                      ? `${row.payableAmountEur} ${t("currencyEur")}`
-                      : t("unavailable")}
+                    {`${row.payableAmountEur} ${t("currencyEur")}`}
                   </dd>
                 </dl>
                 <div className="mt-2 border-t pt-2 text-right">

@@ -63,7 +63,7 @@
         "partner": "Partnerorganisatie",
         "status": "Status",
         "submitted": "Ingediend",
-        "payable": "Uit te betalen",
+        "estimatedReimbursement": "Geschatte vergoeding",
         "action": "Actie"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Filters wissen",
       "previousPage": "Vorige pagina",
       "nextPage": "Volgende pagina",
-      "unavailable": "Niet beschikbaar",
       "currencyEur": "EUR"
     },
     "page": {

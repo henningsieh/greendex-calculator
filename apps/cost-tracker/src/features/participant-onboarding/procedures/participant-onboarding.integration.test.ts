@@ -1156,14 +1156,13 @@ describe("Participant onboarding procedures", () => {
     // SEED_SCENARIOS.reviewFixes.submittedRegistration supplies a revoked
     // link on a submitted Claim; only the reopening behavior is under test.
     const link = { id: "ld3ukgstb6tzbgvte5qmr33l" };
-    expect(
-      (
-        await db
-          .select()
-          .from(claimsTable)
-          .where(eq(claimsTable.partnershipId, "yrrjw45ya3ehy4t3nobhe59b"))
-      )[0]?.status,
-    ).toBe("submitted");
+    const [registrationClaim] = await db
+      .select()
+      .from(claimsTable)
+      .where(eq(claimsTable.partnershipId, "yrrjw45ya3ehy4t3nobhe59b"));
+    expect(registrationClaim?.status).toBe("submitted");
+    // A submitted Claim always carries its estimated reimbursement.
+    expect(registrationClaim?.approvedAmountEur).not.toBeNull();
     await expect(
       client.participantOnboarding.setRegistrationLinkOpen({
         id: link.id,

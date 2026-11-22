@@ -671,6 +671,13 @@ export const claimsTable = pgTable(
       "claim_approved_amount_nonnegative",
       sql`${table.approvedAmountEur} is null or ${table.approvedAmountEur} >= 0`,
     ),
+    // approved_amount_eur holds the estimated reimbursement before approval
+    // and the approved amount afterwards. Only in_preparation may lack one;
+    // every submitted/reviewed/decided Claim must carry its estimate.
+    check(
+      "claim_approved_amount_required_unless_preparation",
+      sql`${table.status} = 'in_preparation' or ${table.approvedAmountEur} is not null`,
+    ),
   ],
 );
 

@@ -52,7 +52,7 @@ const allRows = {
       id: "claim",
       partnershipId: "partnership",
       status: "correction_requested",
-      approvedAmountEur: null,
+      approvedAmountEur: "100.00",
     },
   ],
 };

@@ -63,7 +63,7 @@
         "partner": "Partnerska organizacija",
         "status": "Stanje",
         "submitted": "Oddano",
-        "payable": "Izplačljivo",
+        "estimatedReimbursement": "Ocenjeno povračilo",
         "action": "Dejanje"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Počisti filtre",
       "previousPage": "Prejšnja stran",
       "nextPage": "Naslednja stran",
-      "unavailable": "Ni na voljo",
       "currencyEur": "EUR"
     },
     "page": {

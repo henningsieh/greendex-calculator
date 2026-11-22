@@ -63,7 +63,7 @@
         "partner": "Partnerorganisation",
         "status": "Status",
         "submitted": "Eingereicht",
-        "payable": "Auszahlung",
+        "estimatedReimbursement": "Voraussichtliche Erstattung",
         "action": "Aktion"
       },
       "status": {
@@ -78,7 +78,6 @@
       "clearFilters": "Filter zurücksetzen",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",
-      "unavailable": "Nicht verfügbar",
       "currencyEur": "EUR"
     },
     "page": {

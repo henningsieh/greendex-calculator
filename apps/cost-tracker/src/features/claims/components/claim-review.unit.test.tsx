@@ -445,7 +445,7 @@ describe("Claim decisions", () => {
         <ClaimDecisionPanel
           {...base}
           status="rejected"
-          approvedAmountEur={null}
+          approvedAmountEur="726.00"
           onDecision={onDecision}
         />
       </>,
@@ -475,7 +475,7 @@ describe("Claim decisions", () => {
       <ClaimDecisionPanel
         {...base}
         status="submitted"
-        approvedAmountEur={null}
+        approvedAmountEur="726.00"
         onDecision={onDecision}
       />,
     );
