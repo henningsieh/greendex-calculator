@@ -73,6 +73,8 @@
       "showingCount": "Mostrando {shown} de {total, plural, one {# solicitud de reembolso} other {# solicitudes de reembolso}}",
       "emptyTitle": "No hay solicitudes de reembolso enviadas pendientes de revisión",
       "emptyDescription": "Cuando un socio envíe una solicitud de reembolso, aparecerá aquí para su revisión por la organización anfitriona.",
+      "noMatchesTitle": "Ninguna solicitud coincide con los filtros",
+      "noMatchesDescription": "Borra los filtros para ver todas las solicitudes pendientes de revisión.",
       "clearFilters": "Quitar filtros",
       "previousPage": "Página anterior",
       "nextPage": "Página siguiente",

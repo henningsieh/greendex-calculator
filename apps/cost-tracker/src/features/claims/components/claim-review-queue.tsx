@@ -366,16 +366,20 @@ export function ClaimReviewQueue() {
     () => true,
     () => false,
   );
-  const { data, dataUpdatedAt, isFetching, refetch } = useQuery({
-    ...getClaimQueueQueryOptions(state),
-    placeholderData: keepPreviousData,
-    refetchOnMount: "always",
-    staleTime: 0,
-  });
+  const { data, dataUpdatedAt, isFetching, isPlaceholderData, refetch } =
+    useQuery({
+      ...getClaimQueueQueryOptions(state),
+      placeholderData: keepPreviousData,
+      refetchOnMount: "always",
+      staleTime: 0,
+    });
   if (!data) return <ClaimReviewQueueSkeleton />;
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
   const hasActiveFilters = Boolean(state.search || state.partnerOrganizationId);
+  const hasNoMatches =
+    hasActiveFilters && filtered.claimCount === 0 && whole.claimCount > 0;
+  const emptyTitleKey = hasNoMatches ? "noMatchesTitle" : "emptyTitle";
   const claimLabel =
     filtered.claimCount === whole.claimCount
       ? t("metrics.claims")
@@ -394,11 +398,16 @@ export function ClaimReviewQueue() {
         <ClipboardCheckIcon aria-hidden="true" className="size-7" />
       </EmptyMedia>
       <EmptyHeader>
-        <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
-        <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
+        <EmptyTitle data-message={emptyTitleKey}>
+          {hasNoMatches ? t("noMatchesTitle") : t("emptyTitle")}
+        </EmptyTitle>
+        <EmptyDescription>
+          {hasNoMatches ? t("noMatchesDescription") : t("emptyDescription")}
+        </EmptyDescription>
       </EmptyHeader>
       {hasActiveFilters && (
         <Button
+          data-testid="claim-queue-clear-filters"
           onClick={() =>
             void setUrlState({
               cursor: null,
@@ -470,7 +479,7 @@ export function ClaimReviewQueue() {
       </div>
 
       {data.rows.length === 0 ? (
-        emptyState
+        !isPlaceholderData && emptyState
       ) : (
         <>
           <div className="hidden @4xl/content:block">

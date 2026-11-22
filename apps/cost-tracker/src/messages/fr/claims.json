@@ -73,6 +73,8 @@
       "showingCount": "Affichage de {shown} sur {total, plural, one {# demande} other {# demandes}}",
       "emptyTitle": "Aucune demande soumise en attente de vérification",
       "emptyDescription": "Lorsqu’un partenaire soumet une demande, elle apparaît ici pour la vérification par l’organisation d’accueil.",
+      "noMatchesTitle": "Aucune demande ne correspond aux filtres",
+      "noMatchesDescription": "Effacez les filtres pour voir toutes les demandes en attente de vérification.",
       "clearFilters": "Effacer les filtres",
       "previousPage": "Page précédente",
       "nextPage": "Page suivante",

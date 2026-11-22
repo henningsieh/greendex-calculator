@@ -73,6 +73,8 @@
       "showingCount": "Prikazanih {shown} od {total, plural, one {# zahtevka} two {# zahtevkov} few {# zahtevki} other {# zahtevkov}}",
       "emptyTitle": "Ni oddanih zahtevkov, ki čakajo na pregled",
       "emptyDescription": "Ko partner odda zahtevek, se ta prikaže tukaj za pregled gostiteljske organizacije.",
+      "noMatchesTitle": "Noben zahtevek ne ustreza filtrom",
+      "noMatchesDescription": "Počistite filtre, da prikažete vse zahtevke, ki čakajo na pregled.",
       "clearFilters": "Počisti filtre",
       "previousPage": "Prejšnja stran",
       "nextPage": "Naslednja stran",

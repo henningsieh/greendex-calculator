@@ -73,6 +73,8 @@
       "showingCount": "{shown} von {total, plural, one {# Erstattungsantrag} other {# Erstattungsanträge}} werden angezeigt",
       "emptyTitle": "Keine eingereichten Erstattungsanträge zur Prüfung",
       "emptyDescription": "Wenn ein Partner einen Erstattungsantrag einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
+      "noMatchesTitle": "Keine Erstattungsanträge passen zu den Filtern",
+      "noMatchesDescription": "Setze die Filter zurück, um alle Erstattungsanträge zu sehen, die auf eine Prüfung warten.",
       "clearFilters": "Filter zurücksetzen",
       "previousPage": "Vorherige Seite",
       "nextPage": "Nächste Seite",

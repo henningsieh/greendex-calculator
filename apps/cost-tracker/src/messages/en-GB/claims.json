@@ -25,7 +25,7 @@
     "queue": {
       "eyebrow": "Workspace",
       "title": "Claims",
-      "description": "Funding Requests submitted by Partners and awaiting Hosting review.",
+      "description": "Review travel reimbursement claims from project partners.",
       "sectionTitle": "Submitted Claims",
       "label": "Claims awaiting review",
       "searchLabel": "Project or Partner Organization",
@@ -73,6 +73,8 @@
       "showingCount": "Showing {shown} of {total, plural, one {# Claim} other {# Claims}}",
       "emptyTitle": "No submitted Claims awaiting review",
       "emptyDescription": "When a Partner submits a Claim, it appears here for Hosting review.",
+      "noMatchesTitle": "No claims match your filters",
+      "noMatchesDescription": "Clear the filters to see all claims awaiting review.",
       "clearFilters": "Clear filters",
       "previousPage": "Previous page",
       "nextPage": "Next page",

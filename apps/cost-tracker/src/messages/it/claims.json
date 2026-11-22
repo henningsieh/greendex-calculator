@@ -73,6 +73,8 @@
       "showingCount": "Visualizzate {shown} di {total, plural, one {# richiesta di rimborso} other {# richieste di rimborso}}",
       "emptyTitle": "Nessuna richiesta di rimborso inviata in attesa di verifica",
       "emptyDescription": "Quando un partner invia una richiesta di rimborso, compare qui per la verifica dell’organizzazione ospitante.",
+      "noMatchesTitle": "Nessuna richiesta corrisponde ai filtri",
+      "noMatchesDescription": "Cancella i filtri per vedere tutte le richieste in attesa di verifica.",
       "clearFilters": "Rimuovi filtri",
       "previousPage": "Pagina precedente",
       "nextPage": "Pagina successiva",

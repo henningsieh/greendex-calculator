@@ -73,6 +73,8 @@
       "showingCount": "{shown} van {total, plural, one {# declaratie} other {# declaraties}} weergegeven",
       "emptyTitle": "Geen ingediende declaraties die op beoordeling wachten",
       "emptyDescription": "Wanneer een partner een declaratie indient, verschijnt die hier voor beoordeling door de organiserende organisatie.",
+      "noMatchesTitle": "Geen declaraties komen overeen met je filters",
+      "noMatchesDescription": "Wis de filters om alle declaraties te zien die op beoordeling wachten.",
       "clearFilters": "Filters wissen",
       "previousPage": "Vorige pagina",
       "nextPage": "Volgende pagina",
