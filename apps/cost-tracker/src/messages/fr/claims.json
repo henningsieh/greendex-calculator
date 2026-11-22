@@ -64,12 +64,11 @@
         "status": "Statut",
         "submitted": "Soumise",
         "estimatedReimbursement": "Remboursement estimé",
-        "action": "Action"
+        "claimReview": "Vérification de la demande"
       },
       "status": {
         "submitted": "En attente de vérification"
       },
-      "reviewClaim": "Vérifier la demande",
       "showingCount": "Affichage de {shown} sur {total, plural, one {# demande} other {# demandes}}",
       "emptyTitle": "Aucune demande soumise en attente de vérification",
       "emptyDescription": "Lorsqu’un partenaire soumet une demande, elle apparaît ici pour la vérification par l’organisation d’accueil.",
@@ -268,6 +267,9 @@
         "noClaim": "Aucune demande créée. Ouvrir cet espace n’enregistre rien.",
         "payable": "Montant à payer calculé : {amount} EUR (calculé par le serveur)."
       }
+    },
+    "link": {
+      "claimReview": "Vérification de la demande"
     }
   }
 }

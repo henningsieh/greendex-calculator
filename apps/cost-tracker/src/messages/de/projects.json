@@ -154,7 +154,6 @@
       "statParticipantsDetail": "bisher erfasst",
       "claimsInReviewDetail": "warten auf Entscheidung",
       "daysUntil": "bis {date}",
-      "claimReview": "Antragsprüfung",
       "participants": "Teilnehmende"
     }
   }

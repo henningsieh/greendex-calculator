@@ -64,12 +64,11 @@
         "status": "Stanje",
         "submitted": "Oddano",
         "estimatedReimbursement": "Ocenjeno povračilo",
-        "action": "Dejanje"
+        "claimReview": "Pregled zahtevka"
       },
       "status": {
         "submitted": "Čaka na pregled"
       },
-      "reviewClaim": "Pregled zahtevka",
       "showingCount": "Prikazanih {shown} od {total, plural, one {# zahtevka} two {# zahtevkov} few {# zahtevki} other {# zahtevkov}}",
       "emptyTitle": "Ni oddanih zahtevkov, ki čakajo na pregled",
       "emptyDescription": "Ko partner odda zahtevek, se ta prikaže tukaj za pregled gostiteljske organizacije.",
@@ -268,6 +267,9 @@
         "noClaim": "Zahtevek še ni ustvarjen. Odpiranje tega prostora ne shrani ničesar.",
         "payable": "Izračunano izplačilo: {amount} EUR (izračuna strežnik)."
       }
+    },
+    "link": {
+      "claimReview": "Pregled zahtevka"
     }
   }
 }

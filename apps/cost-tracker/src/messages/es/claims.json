@@ -64,12 +64,11 @@
         "status": "Estado",
         "submitted": "Enviada",
         "estimatedReimbursement": "Reembolso estimado",
-        "action": "Acción"
+        "claimReview": "Revisión de solicitudes de reembolso"
       },
       "status": {
         "submitted": "Pendiente de revisión"
       },
-      "reviewClaim": "Revisar solicitud de reembolso",
       "showingCount": "Mostrando {shown} de {total, plural, one {# solicitud de reembolso} other {# solicitudes de reembolso}}",
       "emptyTitle": "No hay solicitudes de reembolso enviadas pendientes de revisión",
       "emptyDescription": "Cuando un socio envíe una solicitud de reembolso, aparecerá aquí para su revisión por la organización anfitriona.",
@@ -268,6 +267,9 @@
         "noClaim": "No se ha creado ninguna solicitud de reembolso. Abrir este espacio de trabajo no guarda nada.",
         "payable": "Importe pagable calculado: {amount} EUR (calculado por el servidor)."
       }
+    },
+    "link": {
+      "claimReview": "Revisión de solicitudes de reembolso"
     }
   }
 }

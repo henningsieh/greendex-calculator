@@ -177,6 +177,23 @@ describe("Project list", { timeout: 20_000 }, () => {
     ).toBe("/en-GB/projects/project-1/participants");
   });
 
+  it("moves the card Participants destination into its own footer", async () => {
+    renderList();
+
+    const cardLink = await screen.findByTestId(
+      "project-participants-project-1-card",
+      {},
+      { timeout: 10_000 },
+    );
+    expect(cardLink.getAttribute("href")).toBe(
+      "/en-GB/projects/project-1/participants",
+    );
+    // Same shape as the submitted-Claim cards: the footer below a hairline
+    // separates the navigation from the card's data list.
+    expect(cardLink.closest("dl")).toBeNull();
+    expect(cardLink.parentElement).toHaveClass("border-t");
+  });
+
   it("links to the Project without carrying list state", async () => {
     renderList();
 

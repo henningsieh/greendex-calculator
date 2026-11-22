@@ -64,12 +64,11 @@
         "status": "Status",
         "submitted": "Ingediend",
         "estimatedReimbursement": "Geschatte vergoeding",
-        "action": "Actie"
+        "claimReview": "Beoordeling van declaratie"
       },
       "status": {
         "submitted": "In afwachting van beoordeling"
       },
-      "reviewClaim": "Declaratie beoordelen",
       "showingCount": "{shown} van {total, plural, one {# declaratie} other {# declaraties}} weergegeven",
       "emptyTitle": "Geen ingediende declaraties die op beoordeling wachten",
       "emptyDescription": "Wanneer een partner een declaratie indient, verschijnt die hier voor beoordeling door de organiserende organisatie.",
@@ -268,6 +267,9 @@
         "noClaim": "Er is geen declaratie aangemaakt. Het openen van deze werkruimte slaat niets op.",
         "payable": "Berekend uit te betalen: {amount} EUR (door de server berekend)."
       }
+    },
+    "link": {
+      "claimReview": "Beoordeling van declaratie"
     }
   }
 }

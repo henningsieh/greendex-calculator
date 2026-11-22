@@ -64,12 +64,11 @@
         "status": "Status",
         "submitted": "Submitted",
         "estimatedReimbursement": "Estimated reimbursement",
-        "action": "Action"
+        "claimReview": "Claim review"
       },
       "status": {
         "submitted": "Awaiting review"
       },
-      "reviewClaim": "Review Claim",
       "showingCount": "Showing {shown} of {total, plural, one {# Claim} other {# Claims}}",
       "emptyTitle": "No submitted Claims awaiting review",
       "emptyDescription": "When a Partner submits a Claim, it appears here for Hosting review.",
@@ -268,6 +267,9 @@
         "noClaim": "No Claim has been created. Opening this workspace saves nothing.",
         "payable": "Calculated payable: {amount} EUR (computed by the server)."
       }
+    },
+    "link": {
+      "claimReview": "Claim review"
     }
   }
 }

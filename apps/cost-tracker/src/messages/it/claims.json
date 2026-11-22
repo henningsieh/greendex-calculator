@@ -64,12 +64,11 @@
         "status": "Stato",
         "submitted": "Inviata",
         "estimatedReimbursement": "Rimborso stimato",
-        "action": "Azione"
+        "claimReview": "Verifica della richiesta di rimborso"
       },
       "status": {
         "submitted": "In attesa di verifica"
       },
-      "reviewClaim": "Verifica richiesta di rimborso",
       "showingCount": "Visualizzate {shown} di {total, plural, one {# richiesta di rimborso} other {# richieste di rimborso}}",
       "emptyTitle": "Nessuna richiesta di rimborso inviata in attesa di verifica",
       "emptyDescription": "Quando un partner invia una richiesta di rimborso, compare qui per la verifica dell’organizzazione ospitante.",
@@ -268,6 +267,9 @@
         "noClaim": "Nessuna richiesta di rimborso creata. Aprire quest’area di lavoro non salva nulla.",
         "payable": "Importo da pagare calcolato: {amount} EUR (calcolato dal server)."
       }
+    },
+    "link": {
+      "claimReview": "Verifica della richiesta di rimborso"
     }
   }
 }

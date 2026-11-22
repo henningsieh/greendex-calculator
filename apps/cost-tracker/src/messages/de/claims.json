@@ -64,12 +64,11 @@
         "status": "Status",
         "submitted": "Eingereicht",
         "estimatedReimbursement": "Voraussichtliche Erstattung",
-        "action": "Aktion"
+        "claimReview": "Antragsprüfung"
       },
       "status": {
         "submitted": "Zur Prüfung"
       },
-      "reviewClaim": "Erstattungsantrag prüfen",
       "showingCount": "{shown} von {total, plural, one {# Erstattungsantrag} other {# Erstattungsanträge}} werden angezeigt",
       "emptyTitle": "Keine eingereichten Erstattungsanträge zur Prüfung",
       "emptyDescription": "Wenn ein Partner einen Erstattungsantrag einreicht, erscheint er hier zur Prüfung durch die Hosting-Organisation.",
@@ -268,6 +267,9 @@
         "noClaim": "Es wurde kein Erstattungsantrag erstellt. Das Öffnen dieses Arbeitsbereichs speichert nichts.",
         "payable": "Berechneter Auszahlungsbetrag: {amount} EUR (vom Server berechnet)."
       }
+    },
+    "link": {
+      "claimReview": "Antragsprüfung"
     }
   }
 }

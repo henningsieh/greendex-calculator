@@ -3,21 +3,16 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-  ArrowUpRightIcon,
-  CalendarDaysIcon,
-  MapPinIcon,
-  Users2Icon,
-} from "lucide-react";
+import { CalendarDaysIcon, MapPinIcon, Users2Icon } from "lucide-react";
 import { Suspense, useSyncExternalStore } from "react";
 
-import { partnershipClaimPath, partnershipClaimReviewPath } from "@/app/paths";
+import { partnershipClaimPath } from "@/app/paths";
+import { ButtonLink } from "@/components/button-link";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -30,6 +25,7 @@ import {
   isClaimAwaitingReview,
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
+import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
 import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   PartnershipActions,
@@ -42,7 +38,6 @@ import {
   StatsSkeletonGrid,
 } from "@/features/projects/components/project-loading-states";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
-import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
@@ -204,19 +199,11 @@ function AssignedPartnersCard({
                       already carries the state, so an inert duplicate would
                       only pretend at navigation. */}
                   {isClaimReviewable(partner.claimStatus) ? (
-                    <Link
-                      className={buttonVariants({
-                        variant: "link",
-                        size: "sm",
-                      })}
-                      href={partnershipClaimReviewPath(partner.id)}
-                      aria-describedby={`project-partner-${partner.id}`}
-                      data-testid={`review-claim-${partner.id}`}
-                    >
-                      <EntityIcon entity="claim" className="size-3.5" />
-                      {t("claimReview")}
-                      <ArrowUpRightIcon aria-hidden="true" />
-                    </Link>
+                    <ClaimReviewLink
+                      describedBy={`project-partner-${partner.id}`}
+                      partnershipId={partner.id}
+                      testId={`review-claim-${partner.id}`}
+                    />
                   ) : null}
                 </span>
               </li>
@@ -288,18 +275,13 @@ function PartnerProjectCard({
           </div>
         </dl>
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3">
-          <Link
-            className={buttonVariants({
-              variant: "link",
-              size: "sm",
-            })}
+          <ButtonLink
             href={partnershipClaimPath(partnership.id)}
-            data-testid="open-claim-workspace"
+            icon={<EntityIcon className="size-3.5 shrink-0" entity="claim" />}
+            testId="open-claim-workspace"
           >
-            <EntityIcon entity="claim" className="size-3.5" />
             {t("openClaim")}
-            <ArrowUpRightIcon aria-hidden="true" />
-          </Link>
+          </ButtonLink>
         </div>
       </CardContent>
     </Card>
