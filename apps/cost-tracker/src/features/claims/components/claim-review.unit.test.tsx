@@ -105,6 +105,7 @@ describe("Claim decisions", () => {
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
     render(
       <ClaimReviewDetails
+        status="submitted"
         partnershipId="partner"
         details={{
           projectName: "Workshop",
@@ -237,6 +238,7 @@ describe("Claim decisions", () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
     await userEvent.click(screen.getByTestId("claim-decision-requestCorrection"));
+    expect(screen.queryByTestId("claim-decision-requestCorrection")).toBeNull();
     expect(
       screen.getByTestId("claim-decision-confirm-requestCorrection"),
     ).toBeDisabled();
@@ -259,6 +261,11 @@ describe("Claim decisions", () => {
   it("confirms approval without offering payment until approved", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
+    expect(screen.getByTestId("estimated-payable")).toHaveAttribute(
+      "data-message",
+      "estimatedReimbursement",
+    );
+    expect(screen.queryByTestId("approved-payable")).toBeNull();
     expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
     await userEvent.click(screen.getByTestId("claim-decision-approve"));
     expect(onDecision).not.toHaveBeenCalled();
@@ -268,11 +275,39 @@ describe("Claim decisions", () => {
     });
   });
 
+  it("moves keyboard focus into confirmation and back to the action on cancel", async () => {
+    const keyboard = userEvent.setup();
+    render(<ClaimDecisionPanel {...base} />);
+    screen.getByTestId("claim-decision-reject").focus();
+    await keyboard.keyboard("{Enter}");
+    expect(screen.getByRole("alert").contains(document.activeElement)).toBe(true);
+    await keyboard.tab();
+    expect(screen.getByTestId("claim-decision-reason-reject")).toHaveFocus();
+    await keyboard.tab();
+    expect(screen.getByTestId("claim-decision-cancel")).toHaveFocus();
+    await keyboard.keyboard("{Enter}");
+    expect(screen.getByTestId("claim-decision-reject")).toHaveFocus();
+  });
+
+  it.each(["rejected", "correction_requested"] as const)(
+    "does not present a retained amount as current for a %s claim",
+    (status) => {
+      render(<ClaimDecisionPanel {...base} status={status} />);
+      expect(screen.queryByTestId("estimated-payable")).toBeNull();
+      expect(screen.queryByTestId("approved-payable")).toBeNull();
+    },
+  );
+
   it("separates approved-unpaid transfer from paid-flag correction, requiring a correction reason", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     const { rerender } = render(
       <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
     );
+    expect(screen.getByTestId("approved-payable")).toHaveAttribute(
+      "data-message",
+      "approvedAmount",
+    );
+    expect(screen.queryByTestId("estimated-payable")).toBeNull();
     expect(document.querySelector("[data-review-status]")).toHaveAttribute(
       "data-review-status",
       "approved",
