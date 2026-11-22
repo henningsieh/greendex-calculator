@@ -88,6 +88,49 @@ describe("Cost Tracker request catalogue", () => {
     expect(config.messages).toEqual(await readMerged(locale));
   });
 
+  it.each(LANGUAGE_CODES)(
+    "formats journey and payment copy from the %s claim catalogue",
+    async (locale) => {
+      const config = await requestConfig({
+        requestLocale: Promise.resolve(locale),
+      });
+      const onError = vi.fn();
+      const t = createTranslator({
+        locale,
+        messages: config.messages ?? undefined,
+        namespace: "claims",
+        onError,
+      });
+      expect(t("workspace.journey.distanceHelp")).toContain("Erasmus+");
+      for (const key of [
+        "distanceSuffix",
+        "correctFor",
+        "oneWay",
+        "roundTrip",
+        "saveCorrection",
+      ] as const) {
+        expect(t(`workspace.journey.${key}`).trim()).not.toBe("");
+      }
+      for (const key of ["originFor", "destinationFor", "tripTypeFor"] as const) {
+        expect(t(`workspace.journey.${key}`, { name: "Zoë" })).toContain("Zoë");
+      }
+      expect(t("workspace.common.cancel").trim()).not.toBe("");
+      expect(t("workspace.journey.distanceFor", { name: "Zoë" })).toContain(
+        "Zoë",
+      );
+      expect(t("review.confirmTransfer", { amount: "56.00" })).toContain("56.00");
+      expect(t("queue.noMatchesTitle")).not.toBe(t("queue.emptyTitle"));
+      expect(t("review.approvedAmount")).not.toBe(
+        t("review.estimatedReimbursement"),
+      );
+      expect(t("review.actions.approve")).not.toBe(t("review.actions.markPaid"));
+      expect(t("review.confirmApproval")).not.toBe(
+        t("review.confirmTransfer", { amount: "56.00" }),
+      );
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([undefined, "", "zz", "EN", "../en"])(
     "falls back for %s",
     async (locale) => {

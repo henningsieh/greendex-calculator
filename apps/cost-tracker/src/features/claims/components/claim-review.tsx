@@ -5,7 +5,7 @@ import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorizati
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -37,33 +37,14 @@ type ReviewDetails = Outputs["claims"]["getReviewDetails"];
 type Decision = ClaimPanelAction;
 type DecisionInput = ClaimDecisionInput;
 
-const decisionDefinitions: Record<
-  Decision,
-  {
-    confirmation: string;
-    label: string;
-    reasonLabel?: string;
-  }
-> = {
-  requestCorrection: {
-    confirmation: "correction request",
-    label: "Request correction",
-    reasonLabel: "Correction reason",
-  },
-  approve: { confirmation: "approval", label: "Approve Claim" },
-  reject: {
-    confirmation: "rejection",
-    label: "Reject Claim",
-    reasonLabel: "Rejection reason",
-  },
-  reopen: { confirmation: "reopening", label: "Reopen Claim" },
-  markPaid: { confirmation: "payment", label: "Mark paid" },
-  correctPayment: {
-    confirmation: "paid-flag correction",
-    label: "Correct paid flag",
-    reasonLabel: "Paid-flag correction reason",
-  },
-};
+function reimbursementLabel(status: Claim["status"] | undefined) {
+  return status === "approved" || status === "paid"
+    ? "approvedAmount"
+    : status === "submitted"
+      ? "estimatedReimbursement"
+      : null;
+}
+
 const historyLabels: Record<History[number]["eventType"], string> = {
   submitted: "Submitted",
   correction_requested: "Correction requested",
@@ -136,6 +117,7 @@ function ClaimDecisionSummary({
   approvedAmountEur: string | null;
 }) {
   const t = useTranslations("claims.review");
+  const amountLabel = reimbursementLabel(status);
 
   return (
     <>
@@ -152,13 +134,19 @@ function ClaimDecisionSummary({
                   ? t("status.submitted")
                   : t("status.in_preparation")}
       </p>
-      {approvedAmountEur && (
-        <p data-testid="approved-payable">
-          {t("calculatedPayable")}{" "}
+      {amountLabel && approvedAmountEur && (
+        <p
+          data-message={amountLabel}
+          data-testid={
+            amountLabel === "approvedAmount"
+              ? "approved-payable"
+              : "estimated-payable"
+          }
+        >
+          {t(amountLabel)}{" "}
           <span className="block font-mono tabular-nums">
             {approvedAmountEur} {t("currencyEur")}
-          </span>{" "}
-          {t("serverApprovedAmount")}
+          </span>
         </p>
       )}
     </>
@@ -185,11 +173,17 @@ export function ClaimDecisionPanel({
   const [reason, setReason] = useState<string>("");
   const [pending, setPending] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<React.ReactNode>(null);
-  const controls = claimPanelActions(status).map((action) => ({
-    action,
-    label: decisionDefinitions[action].label,
-  }));
-  const definition = confirming ? decisionDefinitions[confirming] : null;
+  const focusConfirmation = useCallback((prompt: HTMLDivElement | null) => {
+    prompt?.focus();
+  }, []);
+  const returnFocus = useRef<Decision | null>(null);
+  const controls = claimPanelActions(status);
+  const reasonAction =
+    confirming === "requestCorrection" ||
+    confirming === "reject" ||
+    confirming === "correctPayment"
+      ? confirming
+      : null;
   function begin(action: Decision) {
     setConfirming(action);
     setReason("");
@@ -197,14 +191,13 @@ export function ClaimDecisionPanel({
   }
   async function execute() {
     if (!canReview || archived || !confirming || pending) return;
-    const needsReason = Boolean(definition?.reasonLabel);
-    if (needsReason && !reason.trim()) return;
+    if (reasonAction && !reason.trim()) return;
     setPending(true);
     setFeedback("");
     try {
       await onDecision(confirming, {
         partnershipId,
-        ...(needsReason ? { reason: reason.trim() } : {}),
+        ...(reasonAction ? { reason: reason.trim() } : {}),
         ...(confirming === "markPaid"
           ? { amountEur: approvedAmountEur ?? "" }
           : {}),
@@ -228,8 +221,10 @@ export function ClaimDecisionPanel({
           approvedAmountEur={approvedAmountEur}
         />
         {canReview &&
-          controls.map(({ action, label }) => (
+          !confirming &&
+          controls.map((action) => (
             <Button
+              className="h-auto min-h-12 max-w-full whitespace-normal"
               size="lg"
               key={action}
               data-testid={`claim-decision-${action}`}
@@ -240,9 +235,15 @@ export function ClaimDecisionPanel({
                   : "outline"
               }
               disabled={pending || archived}
+              ref={(button) => {
+                if (button && returnFocus.current === action) {
+                  returnFocus.current = null;
+                  button.focus();
+                }
+              }}
               onClick={() => begin(action)}
             >
-              {label}
+              {t(`actions.${action}`)}
             </Button>
           ))}
         {canReview && archived && controls.length > 0 && (
@@ -250,18 +251,20 @@ export function ClaimDecisionPanel({
         )}
         {canReview && confirming && (
           <Alert>
-            <AlertDescription>
+            <AlertDescription ref={focusConfirmation} tabIndex={-1}>
               {confirming === "markPaid"
                 ? t("confirmTransfer", { amount: approvedAmountEur ?? "" })
                 : confirming === "reopen"
                   ? t("confirmReopen")
-                  : t("confirmAction", {
-                      action: definition?.confirmation ?? "",
-                    })}
-              {definition?.reasonLabel && (
+                  : confirming === "approve"
+                    ? t("confirmApproval")
+                    : confirming === "correctPayment"
+                      ? t("confirmPaymentCorrection")
+                      : t(`actions.${confirming}`)}
+              {reasonAction && (
                 <div>
                   <Label htmlFor="decision-reason">
-                    {definition.reasonLabel}
+                    {t(`reasons.${reasonAction}`)}
                   </Label>
                   <textarea
                     id="decision-reason"
@@ -277,26 +280,31 @@ export function ClaimDecisionPanel({
             </AlertDescription>
             <div className="flex flex-wrap gap-2">
               <Button
+                className="h-auto min-h-12 max-w-full whitespace-normal"
                 variant="default"
                 size="lg"
                 type="button"
                 disabled={
                   pending ||
                   archived ||
-                  (Boolean(definition?.reasonLabel) && !reason.trim()) ||
+                  (Boolean(reasonAction) && !reason.trim()) ||
                   (confirming === "markPaid" && !approvedAmountEur)
                 }
                 data-testid={`claim-decision-confirm-${confirming}`}
                 onClick={() => void execute()}
               >
-                {t("confirm")} {definition?.confirmation}
+                {t(`actions.${confirming}`)}
               </Button>
               <Button
                 size="lg"
                 type="button"
                 variant="outline"
+                data-testid="claim-decision-cancel"
                 disabled={pending}
-                onClick={() => setConfirming(null)}
+                onClick={() => {
+                  returnFocus.current = confirming;
+                  setConfirming(null);
+                }}
               >
                 {t("cancel")}
               </Button>
@@ -312,11 +320,14 @@ export function ClaimDecisionPanel({
 export function ClaimReviewDetails({
   details,
   partnershipId,
+  status,
 }: {
   details: ReviewDetails;
   partnershipId: string;
+  status?: Claim["status"];
 }) {
   const t = useTranslations("claims.review");
+  const amountLabel = reimbursementLabel(status);
 
   return (
     <Card variant="document">
@@ -329,16 +340,18 @@ export function ClaimReviewDetails({
         ) : (
           <p>{t("noPayoutAccount")}</p>
         )}
-        <p>
-          {t("calculatedPayable")}{" "}
-          <span
-            className="font-mono tabular-nums"
-            data-testid="review-approved-payable"
-            data-amount-eur={details.approvedAmountEur}
-          >
-            {details.approvedAmountEur ?? t("unavailable")} {t("currencyEur")}
-          </span>
-        </p>
+        {amountLabel && (
+          <p>
+            {t(amountLabel)}{" "}
+            <span
+              className="font-mono tabular-nums"
+              data-testid="review-approved-payable"
+              data-amount-eur={details.approvedAmountEur}
+            >
+              {details.approvedAmountEur ?? t("unavailable")} {t("currencyEur")}
+            </span>
+          </p>
+        )}
         <h3 className="text-xl">{t("costsAndDocuments")}</h3>
         {details.entries.length === 0 ? (
           <p>{t("noCosts")}</p>
@@ -522,6 +535,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
               <ClaimReviewDetails
                 details={details}
                 partnershipId={partnershipId}
+                status={claim?.status}
               />
             </div>
           </div>

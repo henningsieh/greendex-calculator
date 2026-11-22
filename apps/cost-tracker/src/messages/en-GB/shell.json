@@ -18,7 +18,7 @@
       "organization": "Organization",
       "workspace": "Workspace",
       "manage": "Administration",
-      "claimReview": "Claim review"
+      "claimReview": "Claims"
     },
     "account": {
       "openMenu": "Open account menu for {name}",

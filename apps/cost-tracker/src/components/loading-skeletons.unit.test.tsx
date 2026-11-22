@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import LocalizedClaimReviewQueueLoading from "@/app/[locale]/(protected)/claims/review/loading";
+import LocalizedClaimReviewQueueLoading from "@/app/[locale]/(protected)/claims/loading";
 import LocalizedPartnerOrganizationsLoading from "@/app/[locale]/(protected)/partner-organizations/loading";
 import LocalizedClaimLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/loading";
 import LocalizedClaimReviewLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/review/loading";

@@ -17,18 +17,22 @@ _Avoid_: Project Participation
 
 **Organization Owner**:
 A User with full authority over one Organization, including its Users, settings, and Projects.
+_UI label (de)_: Verantwortliche.
 _Avoid_: Organization Administrator, Administrator
 
 **Organization Admin**:
 A User with Organization-wide administrative authority below the Organization Owner.
+_UI label (de)_: Verwaltende.
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
 The acting person who runs a project day to day. Coordinates participants. Has no organization-wide authority. The Partner-side UI calls this actor a Group Organizer.
+_UI label (de)_: Koordinierende.
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:
 An Organization Membership role granting Participant-facing capability in one Hosting Organization, distinct from involvement in a particular Project.
+_UI label (de)_: Teilnehmende.
 _Avoid_: Member, Project Participation
 
 **Project**:
@@ -44,4 +48,5 @@ _Avoid_: Member, User (when referring to participation in a Project)
 
 **Participant Journey**:
 One Participant's real journey to or from a Project, belonging to their Project Participation and shared by Calculator and Cost Tracker. It describes a personal route rather than a cost or Proof Document.
+_UI label (de)_: Reise (plural: Reisen).
 _Avoid_: Ticket, Travel Cost Entry, Partner Organization distance

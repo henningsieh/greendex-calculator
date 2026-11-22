@@ -602,8 +602,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     baseURL,
   }) => {
     const host = await pageFor(browser, "H", baseURL!);
-    await host.goto("/claims/review");
-    await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
+    await host.goto("/claims");
+    await expect(
+      host.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
     const first = host
       .locator(`a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`)
       .filter({ visible: true });
@@ -653,7 +655,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     await breadcrumb.locator("a").first().focus();
     await host.keyboard.press("Enter");
     await expectPrivateURL(host, /\/projects$/);
-    await host.goto("/claims/review");
+    await host.goto("/claims");
+    await expect(
+      host.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
     await expect(first).toBeVisible();
     await first.click();
     await expectPrivateURL(
@@ -665,10 +670,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
-    // Text-free: server-approved amount section renders (value proven by DB claimState below).
-    await expect(
-      review.locator('[data-testid="approved-payable"]'),
-    ).toBeVisible();
+    // Before approval, show the stored calculation as an estimate.
+    await expect(review.getByTestId("estimated-payable")).toBeVisible();
+    await expect(review.getByTestId("approved-payable")).toHaveCount(0);
     const cost = review
       .getByTestId("claim-cost-table")
       .locator(
@@ -734,7 +738,10 @@ test.describe.serial("Claim review journey 25–26", () => {
       ]),
     );
     expect((await claimState(0))!.status).toBe("correction_requested");
-    await host.goto("/claims/review");
+    await host.goto("/claims");
+    await expect(
+      host.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
     await expect(
       host
         .locator(`a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`)
@@ -882,7 +889,10 @@ test.describe.serial("Claim review journey 25–26", () => {
       "approved",
     ]);
 
-    await host.goto("/claims/review");
+    await host.goto("/claims");
+    await expect(
+      host.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
     await expect(
       host.locator(
         `a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`,
@@ -890,6 +900,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toHaveCount(0);
     await host
       .locator(`a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`)
+      .filter({ visible: true })
       .click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(

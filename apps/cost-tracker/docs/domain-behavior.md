@@ -56,7 +56,7 @@ Participant-only Memberships are read-only for Project management: neither the U
 
 ### Archive presentation
 
-- Use “Archivieren” for the Project-level action, not “Project abschließen”. Initial Claim status is “In Vorbereitung” / “In preparation”, internally `in_preparation`; `correction_requested` remains distinct. The first-create button is “Claim erstellen” / “Create claim”.
+- Use “Archivieren” for the Project-level action, not “Project abschließen”. Initial Claim status is “In Vorbereitung” / “In preparation”, internally `in_preparation`; `correction_requested` remains distinct. The first-create button is “Erstattungsantrag erstellen” / “Create claim”.
 - Archive uses the existing reusable [confirmation dialog](confirm-dialog.md) as a destructive action. Explain that data becomes read-only, the Project leaves the default active list, and only authorized Users may reopen it. Cancellation changes nothing.
 - Actions unavailable because of archive remain visible and disabled, with an independent explanation that works by keyboard and touch. The assigned Partner Organizations card is the deliberate exception: its Invite/Assign controls are replaced by an Archived badge, as accepted in the partnership UI redesign. The card's records remain readable.
 - Never mention the Calculator app in Cost Tracker user-facing archive/reopen text. Cross-application separation is an engineering rule, not UI copy.

@@ -18,7 +18,7 @@
       "organization": "Organisation",
       "workspace": "Arbeitsbereich",
       "manage": "Verwaltung",
-      "claimReview": "Claim-Prüfung"
+      "claimReview": "Anträge"
     },
     "account": {
       "openMenu": "Kontomenü für {name} öffnen",
@@ -87,7 +87,7 @@
         },
         "support": {
           "title": "Belegen",
-          "description": "Füge Belege, Rechnungen oder Tickets als Nachweisdokumente hinzu."
+          "description": "Füge Belege, Rechnungen oder Tickets hinzu."
         },
         "allocate": {
           "title": "Aufteilen",
@@ -238,10 +238,10 @@
         "chipOpen": "Offen",
         "chipExpired": "Abgelaufen",
         "chipUsed": "Verwendet",
-        "claimTitle": "Claim-Zustände wie gerendert",
+        "claimTitle": "Antragszustände wie gerendert",
         "claimDescription": "Das heutige Mapping im Hosted-Workspace. Diese Referenz darf hinterfragt werden.",
         "claim": {
-          "none": "Kein Claim",
+          "none": "Kein Erstattungsantrag",
           "in_preparation": "In Vorbereitung",
           "submitted": "Eingereicht",
           "correction": "Korrektur angefordert",
@@ -263,10 +263,10 @@
       "partnership": "Partnerschaft",
       "participants": "Teilnahmen",
       "participantDetails": "Teilnahmedetails",
-      "claimReviews": "Claim-Prüfung",
-      "claimWorkspace": "Claim",
+      "claimReviews": "Antragsprüfung",
+      "claimWorkspace": "Erstattungsantrag",
       "userSettings": "Benutzereinstellungen",
-      "claimReview": "Claim-Prüfung",
+      "claimReview": "Antragsprüfung",
       "hostedProject": "Gehostetes Projekt",
       "partnerProject": "Partnerprojekt"
     }

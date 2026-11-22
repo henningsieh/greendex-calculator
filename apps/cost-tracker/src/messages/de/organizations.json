@@ -1,5 +1,11 @@
 {
   "organizations": {
+    "roles": {
+      "owner": "Verantwortliche",
+      "admin": "Verwaltende",
+      "coordinator": "Koordinierende",
+      "participant": "Teilnehmende"
+    },
     "confirmations": {
       "cancel": "Abbrechen",
       "close": "Schließen",
@@ -21,10 +27,10 @@
     },
     "team": {
       "membersTitle": "Mitglieder",
-      "membersDescription": "Alle mit einer Organisationsteam-Rolle. Kombinierte Rollen wie Participant bleiben sichtbar und behalten ihren eigenen Zugriff.",
+      "membersDescription": "Alle mit einer Organisationsteam-Rolle. Kombinierte Rollen wie Teilnehmende bleiben sichtbar und behalten ihren eigenen Zugriff.",
       "noMembers": "Noch keine Mitglieder.",
       "inviteTitle": "Team einladen",
-      "inviteDescription": "Owner können Owner und Admins einladen. Admins können Admins einladen. Coordination bleibt zuweisungsbasiert und wird hier nie vergeben.",
+      "inviteDescription": "Verantwortliche können Verantwortliche und Verwaltende einladen. Verwaltende können Verwaltende einladen. Die Rolle Koordinierende bleibt zuweisungsbasiert und wird hier nie vergeben.",
       "unavailable": "Organisationsteam ist nicht verfügbar",
       "invitationSent": "Einladung an {email} gesendet.",
       "invitationCancelled": "Einladung storniert.",

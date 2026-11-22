@@ -1,7 +1,10 @@
 "use client";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import { parseOrganizationRoles } from "@greendex/auth/permissions";
+import {
+  ORGANIZATION_ROLES,
+  parseOrganizationRoles,
+  type OrganizationRole,
+} from "@greendex/auth/permissions";
 import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
@@ -62,7 +65,16 @@ const pendingOptions = {
   }),
 };
 
-function roleBadges(role: string) {
+// Stored role identifiers never reach the screen; each role maps to a
+// gender-neutral label in the `organizations.roles` bundle.
+const ROLE_MESSAGE_KEYS = {
+  [ORGANIZATION_ROLES.OrganizationOwner]: "roles.owner",
+  [ORGANIZATION_ROLES.OrganizationAdmin]: "roles.admin",
+  [ORGANIZATION_ROLES.ProjectCoordinator]: "roles.coordinator",
+  [ORGANIZATION_ROLES.Participant]: "roles.participant",
+} as const satisfies Record<OrganizationRole, string>;
+
+function roleBadges(role: string, label: (entry: OrganizationRole) => string) {
   return parseOrganizationRoles(role).map((entry) => (
     <Badge
       key={entry}
@@ -70,7 +82,7 @@ function roleBadges(role: string) {
       data-testid={`staff-role-${entry}`}
       data-role={entry}
     >
-      {entry}
+      {label(entry)}
     </Badge>
   ));
 }
@@ -194,7 +206,9 @@ export function OrganizationTeam({
                   <TableCell>{entry.email}</TableCell>
                   <TableCell>
                     <span className="flex flex-wrap gap-1">
-                      {roleBadges(entry.role)}
+                      {roleBadges(entry.role, (entry) =>
+                        t(ROLE_MESSAGE_KEYS[entry]),
+                      )}
                     </span>
                   </TableCell>
                 </TableRow>

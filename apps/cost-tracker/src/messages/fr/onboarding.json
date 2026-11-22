@@ -99,21 +99,21 @@
       "signOut": "Déconnexion impossible"
     },
     "layout": {
-      "tagline": "Turn scattered travel costs into one trusted Project record.",
-      "benefitTotals": "Keep exact EUR totals intact",
-      "benefitDocuments": "Connect every entry to its Proof Documents",
-      "benefitAllocations": "Allocate shared tickets without guesswork",
-      "footer": "Greendex · Cost tracking for shared journeys"
+      "tagline": "Transformez des frais de voyage dispersés en un seul dossier de projet fiable.",
+      "benefitTotals": "Gardez intacts les totaux exacts en EUR",
+      "benefitDocuments": "Reliez chaque ligne à ses justificatifs",
+      "benefitAllocations": "Répartissez les billets partagés sans approximation",
+      "footer": "Greendex · Suivi des coûts pour les trajets partagés"
     },
     "createOrganization": {
-      "eyebrow": "Your Organization",
-      "heading": "A home for your Projects",
-      "description": "Your personal login is ready. Now add your Organization to host Erasmus Projects. You'll become its Owner. You can create your first Project next, whenever you're ready.",
-      "nameLabel": "Organization name",
-      "countryLabel": "Organization country",
-      "countryPlaceholder": "Select an EU country",
-      "submit": "Create Organization",
-      "invitationHint": "Expecting an invitation? Open the link in your invitation email to join the right Organization instead."
+      "eyebrow": "Votre organisation",
+      "heading": "Un espace pour vos projets",
+      "description": "Votre accès personnel est prêt. Ajoutez maintenant votre organisation pour accueillir des projets Erasmus. Vous en deviendrez le propriétaire. Vous pourrez créer votre premier projet ensuite, quand vous le souhaiterez.",
+      "nameLabel": "Nom de l’organisation",
+      "countryLabel": "Pays de l’organisation",
+      "countryPlaceholder": "Sélectionnez un pays de l’UE",
+      "submit": "Créer l’organisation",
+      "invitationHint": "Vous attendez une invitation ? Ouvrez plutôt le lien de votre e-mail d’invitation pour rejoindre la bonne organisation."
     }
   }
 }

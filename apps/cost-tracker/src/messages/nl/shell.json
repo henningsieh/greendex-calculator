@@ -3,34 +3,34 @@
     "brand": {
       "name": "GreenDex",
       "product": "Cost Tracker",
-      "markLabel": "GreenDex star wreath",
+      "markLabel": "GreenDex-sterrenkrans",
       "edition": "GreenDex Cost Tracker · Erasmus Edition"
     },
     "common": {
-      "signIn": "Sign in",
-      "retry": "Retry",
+      "signIn": "Inloggen",
+      "retry": "Opnieuw proberen",
       "loading": "Laden"
     },
     "nav": {
-      "primaryLabel": "Primary navigation",
-      "projects": "Projects",
+      "primaryLabel": "Hoofdnavigatie",
+      "projects": "Projecten",
       "partnerOrganizations": "Partners",
-      "organization": "Organization",
+      "organization": "Organisatie",
       "workspace": "Werkruimte",
-      "manage": "Administration",
-      "claimReview": "Claim review"
+      "manage": "Beheer",
+      "claimReview": "Declaraties"
     },
     "account": {
-      "openMenu": "Open account menu for {name}",
-      "settings": "Account settings",
+      "openMenu": "Accountmenu voor {name} openen",
+      "settings": "Accountinstellingen",
       "signOut": "Uitloggen",
       "signingOut": "Bezig…"
     },
     "themeSwitcher": {
-      "label": "Color theme",
-      "triggerFallback": "Theme",
-      "ariaLabel": "Color theme: {theme}. Switch theme",
-      "system": "system"
+      "label": "Kleurthema",
+      "triggerFallback": "Thema",
+      "ariaLabel": "Kleurthema: {theme}. Thema wisselen",
+      "system": "systeem"
     },
     "languageSwitcher": {
       "label": "Taal",
@@ -39,158 +39,158 @@
       "changing": "Taal wijzigen…"
     },
     "combobox": {
-      "defaultSearchBy": "name or ID",
-      "select": "Select {label}",
-      "searchLabel": "Search {label} by {searchBy}",
-      "searchPlaceholder": "Search {searchBy}…",
-      "searching": "Searching",
-      "searchFailed": "Search failed.",
-      "noMatches": "No matches — refine or paste full ID"
+      "defaultSearchBy": "naam of ID",
+      "select": "{label} selecteren",
+      "searchLabel": "{label} zoeken op {searchBy}",
+      "searchPlaceholder": "Zoeken op {searchBy}…",
+      "searching": "Zoeken",
+      "searchFailed": "Zoeken mislukt.",
+      "noMatches": "Geen resultaten — verfijn je zoekopdracht of plak de volledige ID"
     },
     "errorBoundary": {
-      "unableToLoad": "Unable to load {resource}"
+      "unableToLoad": "{resource} kan niet worden geladen"
     },
-    "loading": "Loading Cost Tracker",
+    "loading": "Cost Tracker laden",
     "landing": {
       "accountNav": "Account",
-      "createAccount": "Create account",
+      "createAccount": "Account aanmaken",
       "hero": {
-        "titleLead": "Receipts in.",
-        "titleAccent": "Money out.",
-        "description": "Settle Erasmus travel costs without the spreadsheet struggle. Snap a photo of the ticket, share the cost, file the claim — every number stays traceable to its receipt.",
-        "start": "Start tracking costs",
-        "seeHow": "See how it works",
-        "trustLine": "Free to start · No credit card · Demo data below"
+        "titleLead": "Bewijsstukken erin.",
+        "titleAccent": "Geld eruit.",
+        "description": "Reiskosten voor Erasmus afhandelen zonder gedoe met spreadsheets. Maak een foto van het ticket, deel de kosten, dien de declaratie in — elk bedrag blijft herleidbaar tot het bewijsstuk.",
+        "start": "Kosten bijhouden starten",
+        "seeHow": "Bekijk hoe het werkt",
+        "trustLine": "Gratis starten · Geen creditcard · Demodata hieronder"
       },
       "stats": {
         "disbursed": {
-          "label": "Disbursed",
-          "detail": "calculated · not editable"
+          "label": "Uitbetaald",
+          "detail": "berekend · niet bewerkbaar"
         },
         "documented": {
-          "label": "Documented",
-          "detail": "zero open gaps"
+          "label": "Gedocumenteerd",
+          "detail": "geen openstaande lacunes"
         },
         "avgReview": {
-          "label": "Avg. review time",
-          "detail": "hosting review",
-          "unit": "h"
+          "label": "Gem. beoordelingstijd",
+          "detail": "beoordeling door organiserende organisatie",
+          "unit": "u"
         }
       },
       "process": {
-        "eyebrow": "The process",
-        "title": "One claim. Zero follow-up questions.",
-        "description": "The workspace checks everything before you submit: payout account, cost entries, receipt links, frozen funding rates. What is missing shows up as a checklist — not as an email three weeks later.",
+        "eyebrow": "Het proces",
+        "title": "Eén declaratie. Nul vervolgvragen.",
+        "description": "De werkruimte controleert alles voordat je indient: uitbetalingsrekening, kostenposten, bewijsdocumentkoppelingen, vastgelegde financieringstarieven. Wat ontbreekt, verschijnt als controlelijst — niet als e-mail drie weken later.",
         "record": {
-          "title": "Record",
-          "description": "Choose the project and enter the exact journey cost."
+          "title": "Vastleggen",
+          "description": "Kies het project en voer de exacte reiskosten in."
         },
         "support": {
-          "title": "Support",
-          "description": "Add receipts, invoices, or tickets as proof documents."
+          "title": "Onderbouwen",
+          "description": "Voeg bonnetjes, facturen of tickets toe als bewijsdocument."
         },
         "allocate": {
-          "title": "Allocate",
-          "description": "Assign the cost to the participants it covered."
+          "title": "Toewijzen",
+          "description": "Wijs de kosten toe aan de deelnemers die ze dekten."
         }
       },
       "terminal": {
-        "payoutAccount": "Payout account · Green Routes e.V.",
-        "train": "Train · €428.60 · receipt linked",
-        "bus": "Bus · €86.40 · receipt linked",
-        "openUpload": "Local bus tickets · upload open",
-        "status": "€515.00 ready for submission"
+        "payoutAccount": "Uitbetalingsrekening · Green Routes e.V.",
+        "train": "Trein · €428,60 · bewijsdocument gekoppeld",
+        "bus": "Bus · €86,40 · bewijsdocument gekoppeld",
+        "openUpload": "Lokale bustickets · upload open",
+        "status": "€515,00 klaar voor indiening"
       },
       "values": {
         "proof": {
-          "title": "Proof stays with the cost",
-          "description": "Attach the document once and connect it to the costs it supports."
+          "title": "Bewijs blijft bij de kosten",
+          "description": "Voeg het document één keer toe en koppel het aan de kosten die het ondersteunt."
         },
         "group": {
-          "title": "Group travel stays legible",
-          "description": "Split a ticket equally, by percentage, or by exact EUR amount."
+          "title": "Groepsreizen blijven overzichtelijk",
+          "description": "Verdeel een ticket gelijk, op percentage of op een exact bedrag in EUR."
         },
         "partners": {
-          "title": "Partners stay aligned",
-          "description": "Hosting Organizations and Partners see one project-specific record."
+          "title": "Partners blijven op één lijn",
+          "description": "Organiserende organisaties en partners zien één projectspecifiek overzicht."
         }
       },
       "cta": {
-        "eyebrow": "Free to start",
-        "title": "Ready for your next claim?",
-        "description": "Upload the photo. Share the cost. Get the money back."
+        "eyebrow": "Gratis starten",
+        "title": "Klaar voor je volgende declaratie?",
+        "description": "Upload de foto. Deel de kosten. Krijg het geld terug."
       },
       "footer": {
         "product": "Greendex Cost Tracker",
-        "tagline": "Clear records for shared travel."
+        "tagline": "Heldere administratie voor gedeelde reizen."
       },
       "journey": {
-        "project": "Spring workshop",
-        "subtitle": "Travel cost trail",
+        "project": "Voorjaarsworkshop",
+        "subtitle": "Reiskostenspoor",
         "train": {
-          "title": "Train to Utrecht",
-          "detail": "Berlin · 2 participants"
+          "title": "Trein naar Utrecht",
+          "detail": "Berlijn · 2 deelnemers"
         },
         "receipt": {
-          "title": "Receipt attached",
+          "title": "Bewijsstuk toegevoegd",
           "detail": "bahn-ticket.pdf",
-          "status": "Ready"
+          "status": "Gereed"
         },
         "allocation": {
-          "title": "Cost allocated",
-          "detail": "Equal share"
+          "title": "Kosten toegewezen",
+          "detail": "Gelijk aandeel"
         },
-        "submissionComplete": "Submission complete"
+        "submissionComplete": "Indiening voltooid"
       }
     },
     "designSystem": {
       "titleLead": "Ember",
       "titleAccent": "design",
-      "titleTail": "system",
-      "intro": "Four themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
+      "titleTail": "systeem",
+      "intro": "Vier thema's, één vuuraccent. Tokens, knoppenmatrix, kaarten, typespecimen en de vergrendelde brand-uitbreidingen — live weergegeven.",
       "themes": {
-        "eyebrow": "Themes · 4 slots",
-        "title": "Theme switcher",
-        "active": "active:",
-        "system": "system"
+        "eyebrow": "Thema's · 4 plekken",
+        "title": "Thema-wisselaar",
+        "active": "actief:",
+        "system": "systeem"
       },
       "tokens": {
-        "eyebrow": "Tokens · roles",
-        "title": "Color roles",
+        "eyebrow": "Tokens · rollen",
+        "title": "Kleurrollen",
         "sample": "Aa"
       },
       "buttons": {
-        "eyebrow": "Buttons · matrix",
-        "title": "Button variants and states",
-        "primary": "Primary",
+        "eyebrow": "Knoppen · matrix",
+        "title": "Knopvarianten en -statussen",
+        "primary": "Primair",
         "ghost": "Ghost",
         "outline": "Outline",
-        "secondary": "Secondary",
-        "mainCta": "Main CTA",
+        "secondary": "Secundair",
+        "mainCta": "Hoofd-CTA",
         "link": "Link",
-        "destructive": "Destructive",
-        "disabledPrimary": "Disabled primary",
-        "disabledGhost": "Disabled ghost",
-        "saving": "saving…",
-        "small": "Small",
-        "large": "Large",
-        "spinnerNote": "spinner pattern — composed, never an isPending prop"
+        "destructive": "Destructief",
+        "disabledPrimary": "Uitgeschakeld primair",
+        "disabledGhost": "Uitgeschakeld ghost",
+        "saving": "opslaan…",
+        "small": "Klein",
+        "large": "Groot",
+        "spinnerNote": "spinnerpatroon — samengesteld, nooit als isPending-prop"
       },
       "cards": {
-        "eyebrow": "Cards · states",
-        "title": "Card hover and active",
-        "hoverTitle": "Hover card",
-        "hoverDescription": "Lifts −2px with a fire border. Hover-gated, static under reduced motion.",
-        "hoverAction": "Enabled action",
-        "activeTitle": "Active card",
-        "activeDescription": "Permanent fire border with the amber wash from above.",
-        "exemptTitle": "Exempt card",
-        "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
-        "exemptAction": "working…"
+        "eyebrow": "Kaarten · statussen",
+        "title": "Kaart-hover en -actief",
+        "hoverTitle": "Hover-kaart",
+        "hoverDescription": "Schuift 2px omhoog met een vuurrand. Alleen bij hover, statisch bij verminderde beweging.",
+        "hoverAction": "Actieve actie",
+        "activeTitle": "Actieve kaart",
+        "activeDescription": "Permanente vuurrand met de amberkleurige gloed van hierboven.",
+        "exemptTitle": "Uitgezonderde kaart",
+        "exemptDescription": "data-disabled — volledig stil, geen hover, ook niet bij plakkerige touch.",
+        "exemptAction": "bezig…"
       },
       "forms": {
         "eyebrow": "Formulieren · partnerschap",
-        "title": "Projectpartnerschapsformulier",
+        "title": "Formulier projectpartnerschap",
         "cardTitle": "Bestaand partnerschap toewijzen",
         "project": "Project",
         "projectPlaceholder": "Selecteer een project",
@@ -205,49 +205,49 @@
       },
       "type": {
         "eyebrow": "Type · specimen",
-        "title": "Typography",
+        "title": "Typografie",
         "headline": "Riesen-Headline",
         "label": "Cost Tracker · Ember C",
-        "body": "Body copy stays quiet: warm white on plum-black, lavender-grey for secondary text. One fire accent everywhere — interaction, highlights, focus."
+        "body": "Fluittekst blijft rustig: warm wit op pruimzwart, lavendelgrijs voor secundaire tekst. Overal één vuuraccent — interactie, markeringen, focus."
       },
       "brand": {
-        "eyebrow": "Brand · locked",
-        "title": "Brand extensions",
-        "heroLabel": "Hero stat",
-        "heroDetail": "amber wash · fire unit",
-        "claimsLabel": "Claims",
-        "claimsDetail": "seamless raster · 1px lines",
-        "conformityLabel": "Conformity",
-        "conformityDetail": "tabular numbers · mono labels"
+        "eyebrow": "Brand · vergrendeld",
+        "title": "Brand-uitbreidingen",
+        "heroLabel": "Hero-statistiek",
+        "heroDetail": "amberkleurige gloed · vuureenheid",
+        "claimsLabel": "Declaraties",
+        "claimsDetail": "naadloos raster · 1px-lijnen",
+        "conformityLabel": "Conformiteit",
+        "conformityDetail": "tabellarische cijfers · monospace-labels"
       },
       "terminal": {
-        "tokens": "tokens mapped — 4 themes",
-        "buttons": "buttons rebuilt — spinner pending",
-        "landing": "landing page — next section",
-        "status": "ember-c · all systems nominal"
+        "tokens": "tokens toegewezen — 4 thema's",
+        "buttons": "knoppen opnieuw gebouwd — spinner volgt",
+        "landing": "landingspagina — volgende sectie",
+        "status": "ember-c · alle systemen normaal"
       },
       "badges": {
         "eyebrow": "Badges · chips",
-        "title": "Status badges and chips",
-        "variantsTitle": "Badge variants",
-        "variantsDescription": "Every variant the shared Badge exposes. Small labels use the default; data chips pick a semantic.",
+        "title": "Statusbadges en chips",
+        "variantsTitle": "Badgevarianten",
+        "variantsDescription": "Elke variant die de gedeelde Badge ondersteunt. Kleine labels gebruiken de standaard; data-chips kiezen een semantische variant.",
         "badgeLabel": "Label",
-        "chipPartners": "2 Partners",
-        "chipsTitle": "Count and status chips",
-        "chipsDescription": "Pills carry counts; semantic chips carry state. Colour never travels alone — the word stays.",
+        "chipPartners": "2 partners",
+        "chipsTitle": "Aantal- en statuschips",
+        "chipsDescription": "Pillen dragen aantallen; semantische chips dragen de status. Kleur staat nooit alleen — het woord blijft.",
         "chipOpen": "Open",
-        "chipExpired": "Expired",
-        "chipUsed": "Used",
-        "claimTitle": "Claim states as rendered",
-        "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
+        "chipExpired": "Verlopen",
+        "chipUsed": "Gebruikt",
+        "claimTitle": "Declaratiestatussen zoals weergegeven",
+        "claimDescription": "De huidige toewijzing in de gehoste werkruimte. Dit is de referentie om uit te dagen.",
         "claim": {
-          "none": "No claim",
-          "in_preparation": "In preparation",
-          "submitted": "Submitted",
-          "correction": "Correction requested",
-          "approved": "Approved",
-          "rejected": "Rejected",
-          "paid": "Paid"
+          "none": "Geen declaratie",
+          "in_preparation": "In voorbereiding",
+          "submitted": "Ingediend",
+          "correction": "Correctie gevraagd",
+          "approved": "Goedgekeurd",
+          "rejected": "Afgewezen",
+          "paid": "Betaald"
         }
       }
     },
@@ -259,16 +259,16 @@
       "notSet": "Niet ingesteld"
     },
     "crumbs": {
-      "projectDetails": "Project details",
-      "partnership": "Partnership",
-      "participants": "Participations",
-      "participantDetails": "Participation details",
-      "claimReviews": "Claim review",
-      "claimWorkspace": "Claim",
-      "userSettings": "User settings",
-      "claimReview": "Claim review",
+      "projectDetails": "Projectdetails",
+      "partnership": "Partnerschap",
+      "participants": "Deelnames",
+      "participantDetails": "Deelnamedetails",
+      "claimReviews": "Beoordeling van declaraties",
+      "claimWorkspace": "Declaratie",
+      "userSettings": "Gebruikersinstellingen",
+      "claimReview": "Beoordeling van declaratie",
       "hostedProject": "Gehost project",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partnerproject"
     }
   }
 }

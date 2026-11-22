@@ -1,68 +1,74 @@
 {
   "organizations": {
+    "roles": {
+      "owner": "Responsable",
+      "admin": "Administrador/a",
+      "coordinator": "Coordinador/a",
+      "participant": "Participante"
+    },
     "confirmations": {
       "cancel": "Cancelar",
       "close": "Cerrar",
       "pending": "Procesando…",
       "cancelInvitation": {
-        "title": "¿Cancelar la invitación a la Organización?",
-        "description": "¿Cancelar la invitación a la Organización para {email}? Ya no podrá aceptarse.",
+        "title": "¿Cancelar la invitación a la organización?",
+        "description": "¿Cancelar la invitación a la organización para {email}? Ya no se podrá aceptar.",
         "execute": "Cancelar invitación"
       }
     },
     "page": {
-      "eyebrow": "Administration",
-      "title": "Organization",
-      "description": "Manage staff members and pending invitations for the active Organization."
+      "eyebrow": "Administración",
+      "title": "Organización",
+      "description": "Gestiona el personal y las invitaciones pendientes de la organización activa."
     },
     "loading": {
-      "label": "Loading Organization",
-      "staff": "Loading Organization staff"
+      "label": "Cargando organización",
+      "staff": "Cargando personal de la organización"
     },
     "team": {
-      "membersTitle": "Members",
-      "membersDescription": "Everyone with an Organization staff role. Combined roles such as participant stay visible and keep their own access.",
-      "noMembers": "No members yet.",
-      "inviteTitle": "Invite staff",
-      "inviteDescription": "Owners can invite owners and admins. Admins can invite admins. Coordination stays assignment-based and is never granted here.",
-      "unavailable": "Organization staff is unavailable",
-      "invitationSent": "Invitation sent to {email}.",
-      "invitationCancelled": "Invitation cancelled.",
-      "sendInvitation": "Send invitation",
-      "sending": "Sending…",
-      "pendingTitle": "Pending invitations",
-      "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
-      "noPending": "No pending invitations.",
-      "noRole": "No role",
-      "cancel": "Cancel",
+      "membersTitle": "Miembros",
+      "membersDescription": "Todas las personas con un rol de personal de la organización. Los roles combinados, como Participante, siguen visibles y mantienen su propio acceso.",
+      "noMembers": "Todavía no hay miembros.",
+      "inviteTitle": "Invitar personal",
+      "inviteDescription": "Las personas responsables pueden invitar a otras personas responsables y administradoras. Las personas administradoras pueden invitar a otras personas administradoras. El acceso como coordinador/a se basa en asignaciones y nunca se concede aquí.",
+      "unavailable": "El personal de la organización no está disponible",
+      "invitationSent": "Invitación enviada a {email}.",
+      "invitationCancelled": "Invitación cancelada.",
+      "sendInvitation": "Enviar invitación",
+      "sending": "Enviando…",
+      "pendingTitle": "Invitaciones pendientes",
+      "pendingDescription": "Cancela una invitación para revocarla antes de que se acepte.",
+      "noPending": "No hay invitaciones pendientes.",
+      "noRole": "Sin rol",
+      "cancel": "Cancelar",
       "columns": {
-        "name": "Name",
-        "email": "Email",
-        "emailAddress": "Email address",
-        "role": "Role",
+        "name": "Nombre",
+        "email": "Correo electrónico",
+        "emailAddress": "Dirección de correo electrónico",
+        "role": "Rol",
         "roles": "Roles",
-        "actions": "Actions",
-        "members": "Members",
-        "use": "Use",
-        "saving": "Saving…",
-        "send": "Send",
-        "loadingOrganization": "Loading Organization",
-        "loadingOrganizationStaff": "Loading Organization staff"
+        "actions": "Acciones",
+        "members": "Miembros",
+        "use": "Usar",
+        "saving": "Guardando…",
+        "send": "Enviar",
+        "loadingOrganization": "Cargando organización",
+        "loadingOrganizationStaff": "Cargando personal de la organización"
       }
     },
     "settings": {
-      "title": "{organization} settings",
-      "country": "Organization country",
-      "saved": "Organization country saved.",
-      "saveError": "Could not save Organization country",
-      "save": "Save Organization country",
-      "saving": "Saving…"
+      "title": "Ajustes de {organization}",
+      "country": "País de la organización",
+      "saved": "País de la organización guardado.",
+      "saveError": "No se pudo guardar el país de la organización",
+      "save": "Guardar país de la organización",
+      "saving": "Guardando…"
     },
     "switcher": {
-      "acting": "Acting Organization",
-      "select": "Select Organization",
-      "aria": "Acting Organization: {organization}. Switch Organization",
-      "failed": "Could not switch Organization. Try again."
+      "acting": "Organización activa",
+      "select": "Seleccionar organización",
+      "aria": "Organización activa: {organization}. Cambiar de organización",
+      "failed": "No se pudo cambiar de organización. Inténtalo de nuevo."
     }
   }
 }

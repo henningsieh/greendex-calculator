@@ -307,7 +307,9 @@ function expectFieldError(field: HTMLElement) {
   const alert = within(field.parentElement!).getByRole("alert");
   expect(field).toHaveAttribute("aria-invalid", "true");
   expect(alert).toHaveAttribute("id");
-  expect(field).toHaveAttribute("aria-describedby", alert.id);
+  expect(field.getAttribute("aria-describedby")?.split(/\s+/)).toContain(
+    alert.id,
+  );
   expect(field).toHaveAccessibleDescription();
 }
 
@@ -449,6 +451,12 @@ describe("Claim workspace", () => {
     expect(screen.getByTestId("journey-correction-person-distance")).toHaveValue(
       "800.00",
     );
+    const distance = screen.getByTestId("journey-correction-person-distance");
+    const help = document.getElementById(
+      distance.getAttribute("aria-describedby") ?? "",
+    );
+    expect(help).toBeVisible();
+    expect(distance).toHaveAccessibleDescription();
     await userEvent.clear(screen.getByTestId("journey-correction-person-origin"));
     await userEvent.type(
       screen.getByTestId("journey-correction-person-destination"),
@@ -743,9 +751,17 @@ describe("Claim workspace", () => {
         await screen.findByTestId("journey-person"),
         "person",
       );
+      const distance = screen.getByTestId("journey-distance");
+      const help = document.getElementById("journey-distance-help");
+      expect(help).toBeVisible();
+      expect(distance).toHaveAttribute("aria-describedby", help?.id);
+      expect(distance).toHaveAccessibleDescription();
       await userEvent.click(screen.getByTestId("journey-save"));
       await waitFor(() => expectFieldError(screen.getByTestId("journey-origin")));
-      expectFieldError(screen.getByTestId("journey-distance"));
+      expectFieldError(distance);
+      expect(distance.getAttribute("aria-describedby")?.split(/\s+/)).toContain(
+        help?.id,
+      );
       expect(screen.getByTestId("journey-origin")).toHaveFocus();
       expect(mocks.saveJourney).not.toHaveBeenCalled();
     },

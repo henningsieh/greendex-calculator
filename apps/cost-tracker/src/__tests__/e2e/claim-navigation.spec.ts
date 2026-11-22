@@ -420,8 +420,13 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
         .getByTestId("claim-history")
         .locator('[data-history-event="submitted"]'),
     ).toBeVisible();
-    await h.goto("/claims/review");
-    await expect(h.locator(`a[href$="${reviewURL}"]`)).toBeVisible();
+    await h.goto("/claims");
+    await expect(
+      h.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(
+      h.locator(`a[href$="${reviewURL}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
     await expect(
@@ -432,8 +437,10 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     expect((await counts())[4]).toBe(1);
     expect((await counts())[5]).toBe(1);
     await h.goForward();
-    await expect(h).toHaveURL(/\/claims\/review$/);
-    await expect(h.locator(`a[href$="${reviewURL}"]`)).toBeVisible();
+    await expect(h).toHaveURL(/\/claims$/);
+    await expect(
+      h.locator(`a[href$="${reviewURL}"]`).filter({ visible: true }),
+    ).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
     await expect(
@@ -460,9 +467,12 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     ).toBeVisible();
     // Project rows now link to one Partnership's review page, so the queue is
     // entered directly; the queue-to-review hop below stays under test.
-    await h.goto("/claims/review");
-    await expect(h).toHaveURL(/\/claims\/review$/);
-    const queued = h.locator(`a[href$="${reviewURL}"]`);
+    await h.goto("/claims");
+    await expect(
+      h.locator('[data-testid="review-queue"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(h).toHaveURL(/\/claims$/);
+    const queued = h.locator(`a[href$="${reviewURL}"]`).filter({ visible: true });
     await expect(queued).toBeVisible();
     await queued.click();
     await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
@@ -495,7 +505,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     };
     await approved();
     await h.goBack();
-    await expect(h).toHaveURL(/\/claims\/review$/);
+    await expect(h).toHaveURL(/\/claims$/);
     await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(`/projects/${ids.project}`);
@@ -504,7 +514,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       readiness.locator('[data-claim-status="approved"]'),
     ).toBeVisible();
     await h.goForward();
-    await expect(h).toHaveURL(/\/claims\/review$/);
+    await expect(h).toHaveURL(/\/claims$/);
     await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goForward();
     await approved();

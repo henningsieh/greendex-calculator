@@ -5,7 +5,7 @@
       "description": "Teilnahmen nach vertretener Organisation.",
       "agreementVersion": "Agreement-Version",
       "agreementUnpublished": "ist nicht veröffentlicht, daher zählt keine teilnehmende Person als abgeschlossen.",
-      "empty": "Noch keine Project Participations sind diesem Projekt beigetreten.",
+      "empty": "Noch keine Teilnahmen sind diesem Projekt beigetreten.",
       "country": "Land:",
       "completed": "abgeschlossen",
       "pending": "ausstehend",
@@ -26,7 +26,7 @@
     "review": {
       "registeredUser": "Registrierte Person:",
       "task": "Review Task",
-      "existingParticipation": "Bestehende Project Participation:",
+      "existingParticipation": "Bestehende Teilnahme:",
       "assignedUser": "Zugewiesene registrierte Person:",
       "assignToMe": "Review Task mir zuweisen",
       "decision": "Review-Task-Entscheidung",
@@ -81,7 +81,7 @@
       "removeFor": "Projektteilnahme von {name} entfernen"
     },
     "page": {
-      "label": "Project Participations",
+      "label": "Teilnahmen",
       "project": "Projekt:",
       "addUser": "Registrierte Person zu diesem Projekt hinzufügen",
       "addUserDescription": "Füge nur eine registrierte Person hinzu, die Profil und Agreement akzeptiert hat.",
@@ -89,7 +89,7 @@
       "registeredUserLabel": "Registrierte Person",
       "groupOrganizers": "Group Organizers",
       "reviewTasks": "Review Tasks",
-      "reviewTasksDescription": "Prüfe doppelte Identitäten registrierter Personen. Die Auflösung behält die bestehende Project Participation.",
+      "reviewTasksDescription": "Prüfe doppelte Identitäten registrierter Personen. Die Auflösung behält die bestehende Teilnahme.",
       "invitationsTitle": "Teilnehmendeneinladungen und Registrierungslinks",
       "invitationsDescription": "E-Mail-gebundene Einladungen erreichen eine Adresse; nur dieses verifizierte Konto kann sie einlösen.",
       "inviteeEmail": "E-Mail der eingeladenen Person",
@@ -109,14 +109,14 @@
       "saveCountry": "Land speichern für",
       "label": "Teilnehmendendetails",
       "project": "Projekt:",
-      "participation": "Project Participation",
+      "participation": "Teilnahme",
       "country": "Land",
       "correctCountry": "Land korrigieren",
       "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur der Partner darf es korrigieren.",
       "noEmail": "Keine E-Mail-Adresse erfasst",
       "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren.",
       "eyebrow": "Teilnahmen",
-      "participants": "Project Participations",
+      "participants": "Teilnahmen",
       "projects": "Projekte"
     },
     "app": {
@@ -127,7 +127,7 @@
       "projectParticipations": "Teilnahmen",
       "coordinateDescription": "Teilnahmen für diese Partnerschaft.",
       "participantDetails": "Teilnahmedetails",
-      "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst.",
+      "participantDetailsDescription": "Lies diese Teilnahme und korrigiere die Daten, die du korrigieren darfst.",
       "projects": "Projekte",
       "hostedEyebrow": "Gehostetes Projekt"
     },
@@ -151,7 +151,7 @@
         "countryPlaceholder": "EU-Land auswählen"
       },
       "dashboard": {
-        "title": "Meine Project Participations",
+        "title": "Meine Teilnahmen",
         "acceptAgreement": "Agreement akzeptieren",
         "loading": "Deine Projekte werden geladen…",
         "profileRequired": "Vervollständige dein Profil, bevor Teilnehmendenaktionen verfügbar sind.",

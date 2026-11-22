@@ -105,7 +105,7 @@ export function AppSidebar({
       icon: <EntityIcon entity="project" />,
     },
     {
-      href: "/claims/review",
+      href: "/claims",
       label: t("nav.claimReview"),
       testId: "sidebar-nav-claim-review",
       icon: <EntityIcon entity="claim" />,

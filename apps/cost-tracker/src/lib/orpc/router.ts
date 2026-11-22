@@ -23,6 +23,7 @@ import {
 } from "@/features/claims/procedures/costs";
 import { list as listDocuments } from "@/features/claims/procedures/documents";
 import { correctPayment, markPaid } from "@/features/claims/procedures/payment";
+import { listReviewQueue } from "@/features/claims/procedures/queue";
 import {
   approve,
   getHistory,
@@ -122,6 +123,7 @@ export const router = {
     correctPayment,
     reject,
     reopen,
+    listReviewQueue,
   },
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   documents: { list: listDocuments },

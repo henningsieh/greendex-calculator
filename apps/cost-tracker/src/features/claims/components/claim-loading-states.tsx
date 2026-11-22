@@ -59,7 +59,47 @@ export function ClaimReviewQueueSkeleton() {
   const t = useTranslations("claims.loading");
   return (
     <LoadingRegion label={t("submitted")}>
-      <CardSkeleton />
+      <div className="mt-6 flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <Card>
+          <div className="grid gap-3 p-4 md:grid-cols-2 @4xl/content:grid-cols-5">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton className="h-10 w-full" key={index} />
+            ))}
+          </div>
+        </Card>
+        <div className="hidden @4xl/content:block">
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="border-b bg-muted/40 p-3">
+              <Skeleton className="h-4 w-full" />
+            </div>
+            {Array.from({ length: 4 }, (_, index) => (
+              <div
+                className="flex items-center gap-4 border-b p-3 last:border-b-0"
+                key={index}
+              >
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-3 @4xl/content:hidden">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div className="rounded-xl border bg-card p-4" key={index}>
+              <Skeleton className="h-5 w-48 max-w-full" />
+              <div className="mt-3 flex flex-col gap-2 border-t pt-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </LoadingRegion>
   );
 }

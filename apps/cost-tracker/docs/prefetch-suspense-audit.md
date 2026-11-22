@@ -21,18 +21,18 @@ still precedes the shell, and navigating away can still cancel the RSC stream.
 
 All ten protected routes that prefetch into `HydrateClient`:
 
-| Route                                               | Initial queries                                     | Boundary                | Consumer                                    |
-| --------------------------------------------------- | --------------------------------------------------- | ----------------------- | ------------------------------------------- |
-| `/projects`                                         | scopes, then selected list or assigned-project list | route and inner section | `useSuspenseQuery`                          |
-| `/projects/[id]`                                    | detail                                              | route and inner section | `useSuspenseQuery`                          |
-| `/partner-organizations`                            | partnership list                                    | route and inner section | `useSuspenseQuery`                          |
-| `/partnerships/[id]/participants`                   | participant list                                    | route and inner section | `useSuspenseQuery`                          |
-| `/partnerships/[id]/participants/[participationId]` | participant detail                                  | route and inner section | `useSuspenseQuery`                          |
-| `/projects/[id]/participants`                       | Hosting Participant report                          | route and inner section | `useSuspenseQuery`                          |
-| `/partnerships/[id]/claim`                          | eight parallel queries                              | route and inner section | `useSuspenseQueries`                        |
-| `/claims/review`                                    | partnership list, then parallel draft reads         | route and inner section | `useSuspenseQuery` and `useSuspenseQueries` |
-| `/partnerships/[partnershipId]/claim/review`        | four parallel queries                               | route and inner section | `useSuspenseQueries`                        |
-| `/organization`                                     | three parallel queries                              | route and inner section | `useSuspenseQueries`                        |
+| Route                                               | Initial queries                                     | Boundary                | Consumer              |
+| --------------------------------------------------- | --------------------------------------------------- | ----------------------- | --------------------- |
+| `/projects`                                         | scopes, then selected list or assigned-project list | route and inner section | `useSuspenseQuery`    |
+| `/projects/[id]`                                    | detail                                              | route and inner section | `useSuspenseQuery`    |
+| `/partner-organizations`                            | partnership list                                    | route and inner section | `useSuspenseQuery`    |
+| `/partnerships/[id]/participants`                   | participant list                                    | route and inner section | `useSuspenseQuery`    |
+| `/partnerships/[id]/participants/[participationId]` | participant detail                                  | route and inner section | `useSuspenseQuery`    |
+| `/projects/[id]/participants`                       | Hosting Participant report                          | route and inner section | `useSuspenseQuery`    |
+| `/partnerships/[id]/claim`                          | eight parallel queries                              | route and inner section | `useSuspenseQueries`  |
+| `/claims`                                           | Claim review queue                                  | route and inner section | `useQuery` (hydrated) |
+| `/partnerships/[partnershipId]/claim/review`        | four parallel queries                               | route and inner section | `useSuspenseQueries`  |
+| `/organization`                                     | three parallel queries                              | route and inner section | `useSuspenseQueries`  |
 
 Sources: `src/app/(protected)/**/page.tsx`, `src/app/(protected)/**/loading.tsx`,
 `src/features/projects/components/{project-list,claim-workspace,claim-review,claim-review-queue,project-workspace,participant-coordination,project-partnership-manager,assigned-project-list}.tsx`,
@@ -166,7 +166,7 @@ layout fallback above the shared segment.
 | `/partnerships/[id]/participants`                   | Improved                      | Neutral entry shell; identity/Participant list inside boundary         |
 | `/partnerships/[id]/participants/[participationId]` | Improved                      | Neutral entry shell; identities/Participant detail inside boundary     |
 | `/partnerships/[id]/claim`                          | Improved                      | Neutral entry shell; identity/eight Claim queries inside boundary      |
-| `/claims/review`                                    | Improved                      | Neutral entry shell; list then drafts inside boundary                  |
+| `/claims`                                           | Improved                      | Neutral entry shell; Claim queue inside boundary                       |
 | `/partnerships/[partnershipId]/claim/review`        | Improved                      | Neutral entry shell; identity/four review queries inside boundary      |
 | `/organization`                                     | Improved                      | Neutral entry shell; three queries inside boundary                     |
 | `/user-settings`                                    | Improved entry; page deferred | Existing request-bound session read; no page restructuring             |

@@ -1,6 +1,17 @@
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
+
 import { defineConfig, devices } from "@playwright/test";
 
 import { playwrightRetries } from "../../scripts/playwright-retries";
+
+// The root runner injects its environment. Editor discovery does not.
+if (!process.env.COST_TRACKER_E2E_BASE_URL && !process.env.NEXT_PUBLIC_BASE_URL) {
+  for (const file of ["./.env", "../../packages/database/.env"]) {
+    const path = new URL(file, import.meta.url);
+    if (existsSync(path)) loadEnvFile(path);
+  }
+}
 
 const baseURL =
   process.env.COST_TRACKER_E2E_BASE_URL ?? process.env.NEXT_PUBLIC_BASE_URL;

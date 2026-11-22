@@ -18,6 +18,7 @@
     "PARTNER_ENTRY_REQUIRED": "Only the Partner in this Project Partnership may issue participant entry points.",
     "ELIGIBLE_COORDINATOR_REQUIRED": "Select an Owner, Admin, or Project Coordinator from the Partner.",
     "INVALID_PROJECT_CURSOR": "The Project page cursor is invalid for these filters.",
+    "INVALID_CLAIM_QUEUE_CURSOR": "The Claim queue page cursor is invalid for these filters.",
     "PROJECT_READ_REQUIRED": "The active Organization role cannot read this Project.",
     "HOSTING_STAFF_REQUIRED": "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
     "HOSTING_SIDE_REQUIRED": "Only the Hosting Organization can assign this Project.",

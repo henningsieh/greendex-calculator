@@ -59,7 +59,7 @@ describe("shared localized error presentation", () => {
   it.each([
     [
       errors.proofDailyQuotaExceeded(),
-      "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Es wird um 00:00 UTC zurückgesetzt.",
+      "Das tägliche Upload-Limit für Belege ist erreicht. Es wird um 00:00 UTC zurückgesetzt.",
     ],
     [errors.setupLinkExpired(), "Dieser Einrichtungslink ist abgelaufen."],
     [errors.setupLinkUsed(), "Dieser Einrichtungslink wurde bereits verwendet."],
@@ -120,17 +120,17 @@ describe("shared localized error presentation", () => {
     [
       "payoutAccountRequired",
       "Select a Partner Payout Account.",
-      "Wähle einen Payout Account des Partners aus.",
+      "Wähle ein Auszahlungskonto des Partners aus.",
     ],
     [
       "entryRequired",
       "Add at least one Travel Cost Entry.",
-      "Füge mindestens einen Reisekosteneintrag hinzu.",
+      "Füge mindestens eine Reisekostenposition hinzu.",
     ],
     [
       "entryRequiredForCheck",
       "Add a Travel Cost Entry to check this requirement.",
-      "Füge einen Reisekosteneintrag hinzu, um diese Anforderung zu prüfen.",
+      "Füge eine Reisekostenposition hinzu, um diese Anforderung zu prüfen.",
     ],
     [
       "participationOutsidePartnership",
@@ -185,7 +185,7 @@ describe("shared localized error presentation", () => {
     [
       "proofDocumentRequired",
       "Link a Proof Document belonging to this Claim.",
-      "Verknüpfe einen zu diesem Claim gehörenden Nachweis.",
+      "Verknüpfe einen zu diesem Erstattungsantrag gehörenden Beleg.",
     ],
     [
       "fundingRulesRequired",
@@ -238,7 +238,7 @@ describe("shared localized error presentation", () => {
       ]),
     ]);
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-      'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
+      'Die Checkliste zur Einreichung des Erstattungsantrags ist unvollständig.<ul class="block"><li class="block">Wähle ein Auszahlungskonto des Partners aus.</li><li class="block">Gib den Startort der Reise ein.</li></ul>',
     );
   });
 
@@ -248,7 +248,7 @@ describe("shared localized error presentation", () => {
       { name: "Nord", status: null },
     ]);
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-      'Das Projekt kann noch nicht abgeschlossen werden. Prüfe die folgenden Projektpartnerschaften.<ul class="block"><li class="block">&lt;Gruppe Süd&gt; (Eingereicht)</li><li class="block">Nord (Kein Claim)</li></ul>',
+      'Das Projekt kann noch nicht abgeschlossen werden. Prüfe die folgenden Projektpartnerschaften.<ul class="block"><li class="block">&lt;Gruppe Süd&gt; (Eingereicht)</li><li class="block">Nord (Kein Erstattungsantrag)</li></ul>',
     );
   });
 
@@ -306,7 +306,7 @@ describe("shared localized error presentation", () => {
         message,
       };
       expect(present(<ErrorDetail issue={issue} />, "de")).toBe(
-        "Wähle einen Payout Account des Partners aus.",
+        "Wähle ein Auszahlungskonto des Partners aus.",
       );
       expect(
         present(<ErrorDetail issue={issue} />, "de", { apiErrors: {} }),
@@ -315,7 +315,7 @@ describe("shared localized error presentation", () => {
         data: { reason: "CLAIM_SUBMISSION_INCOMPLETE", issues: [issue] },
       });
       expect(present(<ErrorPresentation error={error} />, "de")).toBe(
-        'Die Checkliste zur Einreichung des Claims ist unvollständig.<ul class="block"><li class="block">Wähle einen Payout Account des Partners aus.</li></ul>',
+        'Die Checkliste zur Einreichung des Erstattungsantrags ist unvollständig.<ul class="block"><li class="block">Wähle ein Auszahlungskonto des Partners aus.</li></ul>',
       );
     },
   );
@@ -405,7 +405,7 @@ describe("shared localized error presentation", () => {
         />,
         "de",
       ),
-    ).toBe("Wähle einen Payout Account des Partners aus.");
+    ).toBe("Wähle ein Auszahlungskonto des Partners aus.");
     expect(
       present(
         <ErrorPresentation
