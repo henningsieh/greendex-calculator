@@ -3,197 +3,197 @@
     "brand": {
       "name": "GreenDex",
       "product": "Cost Tracker",
-      "markLabel": "GreenDex star wreath",
-      "edition": "GreenDex Cost Tracker · Erasmus Edition"
+      "markLabel": "Corona de estrellas de GreenDex",
+      "edition": "GreenDex Cost Tracker · Edición Erasmus"
     },
     "common": {
-      "signIn": "Sign in",
-      "retry": "Retry",
+      "signIn": "Iniciar sesión",
+      "retry": "Reintentar",
       "loading": "Cargando"
     },
     "nav": {
-      "primaryLabel": "Primary navigation",
-      "projects": "Projects",
+      "primaryLabel": "Navegación principal",
+      "projects": "Proyectos",
       "partnerOrganizations": "Socios",
-      "organization": "Organization",
-      "workspace": "Área de trabajo",
-      "manage": "Administration",
-      "claimReview": "Claims"
+      "organization": "Organización",
+      "workspace": "Espacio de trabajo",
+      "manage": "Administración",
+      "claimReview": "Solicitudes"
     },
     "account": {
-      "openMenu": "Open account menu for {name}",
-      "settings": "Account settings",
+      "openMenu": "Abrir el menú de la cuenta de {name}",
+      "settings": "Ajustes de la cuenta",
       "signOut": "Cerrar sesión",
       "signingOut": "Procesando…"
     },
     "themeSwitcher": {
-      "label": "Color theme",
-      "triggerFallback": "Theme",
-      "ariaLabel": "Color theme: {theme}. Switch theme",
-      "system": "system"
+      "label": "Tema de color",
+      "triggerFallback": "Tema",
+      "ariaLabel": "Tema de color: {theme}. Cambiar tema",
+      "system": "sistema"
     },
     "languageSwitcher": {
       "label": "Idioma",
       "description": "Elige tu idioma de visualización",
       "ariaLabel": "Idioma: {language}. Cambiar idioma",
-      "changing": "Cambiando idioma…"
+      "changing": "Cambiando de idioma…"
     },
     "combobox": {
-      "defaultSearchBy": "name or ID",
-      "select": "Select {label}",
-      "searchLabel": "Search {label} by {searchBy}",
-      "searchPlaceholder": "Search {searchBy}…",
-      "searching": "Searching",
-      "searchFailed": "Search failed.",
-      "noMatches": "No matches — refine or paste full ID"
+      "defaultSearchBy": "nombre o ID",
+      "select": "Seleccionar {label}",
+      "searchLabel": "Buscar {label} por {searchBy}",
+      "searchPlaceholder": "Buscar por {searchBy}…",
+      "searching": "Buscando",
+      "searchFailed": "La búsqueda ha fallado.",
+      "noMatches": "No hay coincidencias: afina la búsqueda o pega el ID completo"
     },
     "errorBoundary": {
-      "unableToLoad": "Unable to load {resource}"
+      "unableToLoad": "No se pudo cargar {resource}"
     },
-    "loading": "Loading Cost Tracker",
+    "loading": "Cargando Cost Tracker",
     "landing": {
-      "accountNav": "Account",
-      "createAccount": "Create account",
+      "accountNav": "Cuenta",
+      "createAccount": "Crear cuenta",
       "hero": {
-        "titleLead": "Receipts in.",
-        "titleAccent": "Money out.",
-        "description": "Settle Erasmus travel costs without the spreadsheet struggle. Snap a photo of the ticket, share the cost, file the claim — every number stays traceable to its receipt.",
-        "start": "Start tracking costs",
-        "seeHow": "See how it works",
-        "trustLine": "Free to start · No credit card · Demo data below"
+        "titleLead": "Justificantes dentro.",
+        "titleAccent": "Dinero fuera.",
+        "description": "Liquida los costes de viaje de Erasmus sin pelearte con la hoja de cálculo. Fotografía el billete, reparte el coste y presenta la solicitud: cada cifra sigue siendo trazable hasta su justificante.",
+        "start": "Empezar a registrar costes",
+        "seeHow": "Ver cómo funciona",
+        "trustLine": "Gratis para empezar · Sin tarjeta de crédito · Datos de demostración más abajo"
       },
       "stats": {
         "disbursed": {
-          "label": "Disbursed",
-          "detail": "calculated · not editable"
+          "label": "Abonado",
+          "detail": "calculado · no editable"
         },
         "documented": {
-          "label": "Documented",
-          "detail": "zero open gaps"
+          "label": "Documentado",
+          "detail": "sin lagunas abiertas"
         },
         "avgReview": {
-          "label": "Avg. review time",
-          "detail": "hosting review",
+          "label": "Tiempo medio de revisión",
+          "detail": "revisión por la organización anfitriona",
           "unit": "h"
         }
       },
       "process": {
-        "eyebrow": "The process",
-        "title": "One claim. Zero follow-up questions.",
-        "description": "The workspace checks everything before you submit: payout account, cost entries, receipt links, frozen funding rates. What is missing shows up as a checklist — not as an email three weeks later.",
+        "eyebrow": "El proceso",
+        "title": "Una solicitud. Cero preguntas posteriores.",
+        "description": "El espacio de trabajo lo comprueba todo antes de que envíes: cuenta de abono, apuntes de coste, enlaces a justificantes y tipos de financiación congelados. Lo que falte aparece en una lista de comprobación, no en un correo tres semanas después.",
         "record": {
-          "title": "Record",
-          "description": "Choose the project and enter the exact journey cost."
+          "title": "Registrar",
+          "description": "Elige el proyecto e introduce el coste exacto del viaje."
         },
         "support": {
-          "title": "Support",
-          "description": "Add receipts, invoices, or tickets as proof documents."
+          "title": "Justificar",
+          "description": "Añade recibos, facturas o billetes como justificantes."
         },
         "allocate": {
-          "title": "Allocate",
-          "description": "Assign the cost to the participants it covered."
+          "title": "Asignar",
+          "description": "Asigna el coste a las personas participantes que cubría."
         }
       },
       "terminal": {
-        "payoutAccount": "Payout account · Green Routes e.V.",
-        "train": "Train · €428.60 · receipt linked",
-        "bus": "Bus · €86.40 · receipt linked",
-        "openUpload": "Local bus tickets · upload open",
-        "status": "€515.00 ready for submission"
+        "payoutAccount": "Cuenta de abono · Green Routes e.V.",
+        "train": "Tren · 428,60 € · justificante vinculado",
+        "bus": "Autobús · 86,40 € · justificante vinculado",
+        "openUpload": "Billetes de autobús locales · subida pendiente",
+        "status": "515,00 € listos para enviar"
       },
       "values": {
         "proof": {
-          "title": "Proof stays with the cost",
-          "description": "Attach the document once and connect it to the costs it supports."
+          "title": "El justificante acompaña al coste",
+          "description": "Adjunta el documento una vez y vincúlalo a los costes que respalda."
         },
         "group": {
-          "title": "Group travel stays legible",
-          "description": "Split a ticket equally, by percentage, or by exact EUR amount."
+          "title": "Los viajes en grupo se entienden fácilmente",
+          "description": "Reparte un billete a partes iguales, por porcentaje o por importe exacto en EUR."
         },
         "partners": {
-          "title": "Partners stay aligned",
-          "description": "Hosting Organizations and Partners see one project-specific record."
+          "title": "Los socios siguen alineados",
+          "description": "Las organizaciones anfitrionas y los socios ven un único registro específico del proyecto."
         }
       },
       "cta": {
-        "eyebrow": "Free to start",
-        "title": "Ready for your next claim?",
-        "description": "Upload the photo. Share the cost. Get the money back."
+        "eyebrow": "Gratis para empezar",
+        "title": "¿Listo para tu próxima solicitud?",
+        "description": "Sube la foto. Reparte el coste. Recupera el dinero."
       },
       "footer": {
         "product": "Greendex Cost Tracker",
-        "tagline": "Clear records for shared travel."
+        "tagline": "Registros claros para viajes compartidos."
       },
       "journey": {
-        "project": "Spring workshop",
-        "subtitle": "Travel cost trail",
+        "project": "Taller de primavera",
+        "subtitle": "Rastro de costes de viaje",
         "train": {
-          "title": "Train to Utrecht",
-          "detail": "Berlin · 2 participants"
+          "title": "Tren a Utrecht",
+          "detail": "Berlín · 2 participantes"
         },
         "receipt": {
-          "title": "Receipt attached",
+          "title": "Justificante adjunto",
           "detail": "bahn-ticket.pdf",
-          "status": "Ready"
+          "status": "Listo"
         },
         "allocation": {
-          "title": "Cost allocated",
-          "detail": "Equal share"
+          "title": "Coste asignado",
+          "detail": "Reparto a partes iguales"
         },
-        "submissionComplete": "Submission complete"
+        "submissionComplete": "Envío completado"
       }
     },
     "designSystem": {
-      "titleLead": "Ember",
-      "titleAccent": "design",
-      "titleTail": "system",
-      "intro": "Four themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
+      "titleLead": "Sistema",
+      "titleAccent": "de diseño",
+      "titleTail": "Ember",
+      "intro": "Cuatro temas, un acento de fuego. Tokens, matriz de botones, tarjetas, muestra tipográfica y las extensiones de marca fijadas, renderizadas en directo.",
       "themes": {
-        "eyebrow": "Themes · 4 slots",
-        "title": "Theme switcher",
-        "active": "active:",
-        "system": "system"
+        "eyebrow": "Temas · 4 espacios",
+        "title": "Selector de tema",
+        "active": "activo:",
+        "system": "sistema"
       },
       "tokens": {
         "eyebrow": "Tokens · roles",
-        "title": "Color roles",
+        "title": "Roles de color",
         "sample": "Aa"
       },
       "buttons": {
-        "eyebrow": "Buttons · matrix",
-        "title": "Button variants and states",
-        "primary": "Primary",
-        "ghost": "Ghost",
-        "outline": "Outline",
-        "secondary": "Secondary",
-        "mainCta": "Main CTA",
-        "link": "Link",
-        "destructive": "Destructive",
-        "disabledPrimary": "Disabled primary",
-        "disabledGhost": "Disabled ghost",
-        "saving": "saving…",
-        "small": "Small",
-        "large": "Large",
-        "spinnerNote": "spinner pattern — composed, never an isPending prop"
+        "eyebrow": "Botones · matriz",
+        "title": "Variantes y estados de botón",
+        "primary": "Principal",
+        "ghost": "Fantasma",
+        "outline": "Contorno",
+        "secondary": "Secundario",
+        "mainCta": "CTA principal",
+        "link": "Enlace",
+        "destructive": "Destructivo",
+        "disabledPrimary": "Principal deshabilitado",
+        "disabledGhost": "Fantasma deshabilitado",
+        "saving": "guardando…",
+        "small": "Pequeño",
+        "large": "Grande",
+        "spinnerNote": "patrón de spinner: compuesto, nunca como prop isPending"
       },
       "cards": {
-        "eyebrow": "Cards · states",
-        "title": "Card hover and active",
-        "hoverTitle": "Hover card",
-        "hoverDescription": "Lifts −2px with a fire border. Hover-gated, static under reduced motion.",
-        "hoverAction": "Enabled action",
-        "activeTitle": "Active card",
-        "activeDescription": "Permanent fire border with the amber wash from above.",
-        "exemptTitle": "Exempt card",
-        "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
-        "exemptAction": "working…"
+        "eyebrow": "Tarjetas · estados",
+        "title": "Tarjeta al pasar el cursor y activa",
+        "hoverTitle": "Tarjeta con cursor",
+        "hoverDescription": "Se eleva −2px con borde de fuego. Solo al pasar el cursor; estática con movimiento reducido.",
+        "hoverAction": "Acción habilitada",
+        "activeTitle": "Tarjeta activa",
+        "activeDescription": "Borde de fuego permanente con el degradado ámbar de arriba.",
+        "exemptTitle": "Tarjeta exenta",
+        "exemptDescription": "data-disabled: completamente quieta, sin efecto al pasar el cursor, ni siquiera en pantallas táctiles.",
+        "exemptAction": "trabajando…"
       },
       "forms": {
         "eyebrow": "Formularios · colaboración",
-        "title": "Formulario de colaboración del proyecto",
+        "title": "Formulario de colaboración de proyecto",
         "cardTitle": "Asignar colaboración existente",
         "project": "Proyecto",
-        "projectPlaceholder": "Seleccionar un proyecto",
+        "projectPlaceholder": "Selecciona un proyecto",
         "organizationId": "ID de la organización",
         "organizationPlaceholder": "p. ej. org_8f3a2c",
         "assign": "Asignar",
@@ -204,50 +204,50 @@
         }
       },
       "type": {
-        "eyebrow": "Type · specimen",
-        "title": "Typography",
-        "headline": "Riesen-Headline",
+        "eyebrow": "Tipografía · muestra",
+        "title": "Tipografía",
+        "headline": "Titular gigante",
         "label": "Cost Tracker · Ember C",
-        "body": "Body copy stays quiet: warm white on plum-black, lavender-grey for secondary text. One fire accent everywhere — interaction, highlights, focus."
+        "body": "El texto de cuerpo se mantiene discreto: blanco cálido sobre negro ciruela y gris lavanda para el texto secundario. Un único acento de fuego en todas partes: interacción, destacados y foco."
       },
       "brand": {
-        "eyebrow": "Brand · locked",
-        "title": "Brand extensions",
-        "heroLabel": "Hero stat",
-        "heroDetail": "amber wash · fire unit",
-        "claimsLabel": "Claims",
-        "claimsDetail": "seamless raster · 1px lines",
-        "conformityLabel": "Conformity",
-        "conformityDetail": "tabular numbers · mono labels"
+        "eyebrow": "Marca · fijada",
+        "title": "Extensiones de marca",
+        "heroLabel": "Estadística destacada",
+        "heroDetail": "degradado ámbar · unidad de fuego",
+        "claimsLabel": "Solicitudes",
+        "claimsDetail": "trama sin costuras · líneas de 1 px",
+        "conformityLabel": "Conformidad",
+        "conformityDetail": "cifras tabulares · etiquetas monoespaciadas"
       },
       "terminal": {
-        "tokens": "tokens mapped — 4 themes",
-        "buttons": "buttons rebuilt — spinner pending",
-        "landing": "landing page — next section",
-        "status": "ember-c · all systems nominal"
+        "tokens": "tokens asignados: 4 temas",
+        "buttons": "botones reconstruidos: spinner pendiente",
+        "landing": "página de inicio: siguiente sección",
+        "status": "ember-c · todos los sistemas en orden"
       },
       "badges": {
-        "eyebrow": "Badges · chips",
-        "title": "Status badges and chips",
-        "variantsTitle": "Badge variants",
-        "variantsDescription": "Every variant the shared Badge exposes. Small labels use the default; data chips pick a semantic.",
-        "badgeLabel": "Label",
-        "chipPartners": "2 Partners",
-        "chipsTitle": "Count and status chips",
-        "chipsDescription": "Pills carry counts; semantic chips carry state. Colour never travels alone — the word stays.",
-        "chipOpen": "Open",
-        "chipExpired": "Expired",
-        "chipUsed": "Used",
-        "claimTitle": "Claim states as rendered",
-        "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
+        "eyebrow": "Insignias · chips",
+        "title": "Insignias de estado y chips",
+        "variantsTitle": "Variantes de insignia",
+        "variantsDescription": "Todas las variantes que expone la insignia compartida. Las etiquetas pequeñas usan la predeterminada; los chips de datos eligen una semántica.",
+        "badgeLabel": "Etiqueta",
+        "chipPartners": "2 socios",
+        "chipsTitle": "Chips de recuento y estado",
+        "chipsDescription": "Las píldoras muestran recuentos; los chips semánticos muestran el estado. El color nunca va solo: la palabra permanece.",
+        "chipOpen": "Abierta",
+        "chipExpired": "Caducado",
+        "chipUsed": "Usado",
+        "claimTitle": "Estados de solicitud tal como se muestran",
+        "claimDescription": "La asignación actual del espacio de trabajo alojado. Es la referencia que conviene revisar.",
         "claim": {
-          "none": "No claim",
-          "in_preparation": "In preparation",
-          "submitted": "Submitted",
-          "correction": "Correction requested",
-          "approved": "Approved",
-          "rejected": "Rejected",
-          "paid": "Paid"
+          "none": "Sin solicitud",
+          "in_preparation": "En preparación",
+          "submitted": "Enviada",
+          "correction": "Corrección solicitada",
+          "approved": "Aprobada",
+          "rejected": "Rechazada",
+          "paid": "Pagada"
         }
       }
     },
@@ -255,20 +255,20 @@
       "placeholder": "Selecciona un país",
       "searchLabel": "Buscar países",
       "searchPlaceholder": "Buscar países…",
-      "noMatches": "No se encontraron países.",
-      "notSet": "Sin especificar"
+      "noMatches": "No se han encontrado países.",
+      "notSet": "Sin definir"
     },
     "crumbs": {
-      "projectDetails": "Project details",
-      "partnership": "Partnership",
-      "participants": "Participations",
-      "participantDetails": "Participation details",
-      "claimReviews": "Claim review",
-      "claimWorkspace": "Claim",
-      "userSettings": "User settings",
-      "claimReview": "Claim review",
+      "projectDetails": "Detalles del proyecto",
+      "partnership": "Colaboración",
+      "participants": "Participaciones",
+      "participantDetails": "Detalles de la participación",
+      "claimReviews": "Revisión de solicitudes",
+      "claimWorkspace": "Solicitud de reembolso",
+      "userSettings": "Ajustes de usuario",
+      "claimReview": "Revisión de solicitud",
       "hostedProject": "Proyecto alojado",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Proyecto socio"
     }
   }
 }

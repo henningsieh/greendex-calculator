@@ -1,33 +1,33 @@
 {
   "settings": {
     "page": {
-      "eyebrow": "Settings",
-      "title": "Account settings",
-      "description": "Choose how Cost Tracker looks and keep your account details current."
+      "eyebrow": "Instellingen",
+      "title": "Accountinstellingen",
+      "description": "Kies hoe Cost Tracker eruitziet en houd je accountgegevens actueel."
     },
     "tabs": {
-      "sections": "User settings sections",
-      "account": "Account details",
-      "accountDescription": "Keep the identity shown to other Project members accurate.",
-      "appearance": "Appearance",
-      "appearanceDescription": "Your choice is saved in this browser."
+      "sections": "Onderdelen van gebruikersinstellingen",
+      "account": "Accountgegevens",
+      "accountDescription": "Houd de identiteit die andere projectleden zien correct.",
+      "appearance": "Weergave",
+      "appearanceDescription": "Je keuze wordt in deze browser opgeslagen."
     },
     "name": {
-      "label": "Name",
-      "description": "This name appears in the navigation and across shared Project work.",
-      "emailLabel": "Email address",
-      "emailDescription": "Email changes are not available in Cost Tracker yet.",
-      "save": "Save name",
-      "saving": "Saving name",
-      "success": "Your name has been updated."
+      "label": "Naam",
+      "description": "Deze naam verschijnt in de navigatie en bij gedeeld projectwerk.",
+      "emailLabel": "E-mailadres",
+      "emailDescription": "E-mailwijzigingen zijn in Cost Tracker nog niet beschikbaar.",
+      "save": "Naam opslaan",
+      "saving": "Naam wordt opgeslagen",
+      "success": "Je naam is bijgewerkt."
     },
     "theme": {
-      "title": "Color theme",
-      "description": "All four themes side by side — Erasmus light and three Erasmus dark vibes.",
-      "ariaLabel": "Color theme",
-      "use": "Use {theme}",
-      "shortcutTitle": "Switch from anywhere",
-      "shortcutDescription": "Press {key} anywhere in Cost Tracker to switch between light and dark. The shortcut stays inactive while you are typing."
+      "title": "Kleurthema",
+      "description": "Alle vier thema's naast elkaar — Erasmus licht en drie Erasmus donkere varianten.",
+      "ariaLabel": "Kleurthema",
+      "use": "{theme} gebruiken",
+      "shortcutTitle": "Overal wisselen",
+      "shortcutDescription": "Druk overal in Cost Tracker op {key} om te wisselen tussen licht en donker. De sneltoets is niet actief terwijl je typt."
     }
   }
 }

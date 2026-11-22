@@ -4,6 +4,8 @@ import { playwrightRetries } from "./playwright-retries";
 
 describe("Playwright retry configuration", () => {
   afterEach(() => {
+    vi.doUnmock("node:fs");
+    vi.doUnmock("node:process");
     vi.unstubAllEnvs();
     vi.resetModules();
   });
@@ -42,5 +44,26 @@ describe("Playwright retry configuration", () => {
     await expect(import(file)).rejects.toThrow(
       "PLAYWRIGHT_RETRIES must be a non-negative safe integer.",
     );
+  });
+
+  it("loads Cost Tracker's local configuration during editor discovery", async () => {
+    vi.stubEnv("COST_TRACKER_E2E_BASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_BASE_URL", undefined);
+    const loadEnvFile = vi.fn((file: URL) => {
+      if (file.pathname.endsWith("/cost-tracker/.env")) {
+        vi.stubEnv("NEXT_PUBLIC_BASE_URL", "http://localhost:3202");
+      }
+    });
+    vi.doMock("node:fs", { spy: true });
+    vi.mocked((await import("node:fs")).existsSync).mockReturnValue(true);
+    vi.doMock("node:process", () => ({ loadEnvFile }));
+
+    const { default: config } =
+      await import("../apps/cost-tracker/playwright.config");
+    expect(config.use?.baseURL).toBe("http://localhost:3202");
+    expect(loadEnvFile.mock.calls.map(([file]) => file.pathname)).toEqual([
+      expect.stringMatching(/\/apps\/cost-tracker\/\.env$/),
+      expect.stringMatching(/\/packages\/database\/\.env$/),
+    ]);
   });
 });

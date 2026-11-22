@@ -2,23 +2,23 @@
   "onboarding": {
     "auth": {
       "signInHeading": "Te damos la bienvenida de nuevo",
-      "invitationHeading": "Únete a tu Organización",
-      "partnerHeading": "Prepara la configuración de tu socio",
-      "directHeading": "Empieza con tu Organización",
-      "invitationSignInDescription": "Inicia sesión con la dirección invitada para unirte a esta Organización.",
-      "invitationDescription": "Crea tu acceso personal con la dirección invitada. Verifica tu correo y después acepta la invitación.",
-      "signInDescription": "Inicia sesión para seguir gestionando los gastos de viaje de tus Proyectos.",
-      "partnerDescription": "Crea tu acceso personal con la dirección que recibió el enlace de configuración. Después continúa la configuración de tu socio.",
-      "directDescription": "Crea tu acceso personal, verifica tu correo y configura tu Organización para organizar Proyectos Erasmus.",
+      "invitationHeading": "Únete a tu organización",
+      "partnerHeading": "Prepárate para la configuración de socio",
+      "directHeading": "Empecemos con tu organización",
+      "invitationSignInDescription": "Inicia sesión con la dirección invitada para continuar uniéndote a esta organización.",
+      "invitationDescription": "Crea tu acceso personal con la dirección invitada. Verifica tu correo electrónico y luego acepta la invitación para unirte.",
+      "signInDescription": "Inicia sesión para seguir gestionando los costes de viaje de los proyectos.",
+      "partnerDescription": "Crea tu acceso personal con la dirección que recibió el enlace de configuración. Después, continúa con la configuración de tu socio.",
+      "directDescription": "Crea tu acceso personal, verifica tu correo electrónico y luego configura tu organización para alojar proyectos Erasmus.",
       "google": "Continuar con Google",
-      "emailSeparator": "o usar correo electrónico",
+      "emailSeparator": "o usa el correo electrónico",
       "name": "Nombre",
       "namePlaceholder": "Tu nombre",
       "email": "Dirección de correo electrónico",
       "emailPlaceholder": "tu@example.org",
       "password": "Contraseña",
       "passwordHint": "Usa al menos 8 caracteres.",
-      "newAccount": "¿Es tu primera vez en Cost Tracker?",
+      "newAccount": "¿Eres nuevo en Cost Tracker?",
       "existingAccount": "¿Ya tienes una cuenta?",
       "createAccount": "Crear cuenta",
       "signIn": "Iniciar sesión",
@@ -26,7 +26,7 @@
       "creatingAccount": "Creando cuenta",
       "home": "Volver al inicio",
       "signOut": "Cerrar sesión",
-      "invitationPointer": "¿Vas a unirte a una Organización existente? Abre el enlace del correo de invitación.",
+      "invitationPointer": "¿Quieres unirte a una organización existente? Abre el enlace de tu correo de invitación.",
       "metadata": "Inicia sesión o crea un acceso personal para Greendex Cost Tracker.",
       "confirmSignOut": {
         "cancel": "Cancelar",
@@ -38,82 +38,82 @@
     },
     "invitation": {
       "context": "Invitación para unirte a {organization}",
-      "heading": "Únete a tu Organización",
+      "heading": "Únete a tu organización",
       "checking": "Comprobando tu invitación…",
       "joining": "Uniéndote…",
       "accept": "Aceptar invitación",
-      "recheck": "Comprobar de nuevo",
-      "creationBlocked": "No puedes crear una Organización mientras tengas una invitación pendiente a {organization}. Únete o rechaza la invitación abajo. Otras invitaciones o una membresía existente pueden seguir impidiendo la creación.",
+      "recheck": "Volver a comprobar la invitación",
+      "creationBlocked": "No puedes crear una organización mientras tengas una invitación pendiente a {organization}. Únete a esta organización o rechaza su invitación más abajo. Otras invitaciones o una pertenencia existente podrían seguir impidiendo la creación.",
       "reject": "Rechazar invitación",
-      "rejected": "Has rechazado la invitación a {organization}. Se ha comprobado de nuevo tu acceso actual. Sigue el siguiente paso abajo.",
+      "rejected": "Has rechazado la invitación a {organization}. Se ha vuelto a comprobar tu acceso actual. Sigue el siguiente paso de abajo.",
       "continue": "Continuar con el acceso actual",
-      "options": "Únete a esta Organización o rechaza su invitación abajo. Las invitaciones de colegas pendientes impiden crear una nueva Organización. El rechazo solo elimina esta invitación, no otras invitaciones ni membresías existentes.",
+      "options": "Únete a esta organización o rechaza su invitación más abajo. Las invitaciones pendientes de compañeros impiden crear una nueva organización. Rechazar solo elimina esta invitación, no otras invitaciones ni las pertenencias existentes.",
       "confirmReject": {
         "cancel": "Cancelar",
         "close": "Cerrar",
         "pending": "Procesando…",
-        "title": "¿Rechazar la invitación a la Organización?",
+        "title": "¿Rechazar la invitación a la organización?",
         "description": "¿Rechazar la invitación para unirte a {organization}? Necesitarás una nueva invitación para unirte más adelante.",
         "execute": "Rechazar invitación"
       }
     },
     "progress": {
-      "verify": "1. Verificar correo",
-      "verified": "1. Correo verificado",
+      "verify": "1. Verificar correo electrónico",
+      "verified": "1. Correo electrónico verificado",
       "accept": "2. Aceptar invitación"
     },
     "inbox": {
       "heading": "Revisa tu bandeja de entrada",
-      "address": "Busca tu enlace de verificación en <address>{email}</address>.",
-      "invitationInstruction": "Primero verifica tu correo. Después podrás unirte a la Organización o rechazar la invitación. Si no llega el mensaje, solicita un nuevo enlace abajo.",
+      "address": "Busca en <address>{email}</address> tu enlace de verificación.",
+      "invitationInstruction": "Verifica primero tu correo electrónico. Después, revisa la invitación para unirte a la organización o recházala. Si el mensaje no llega, envía un enlace nuevo más abajo.",
       "instruction": "Abre el enlace para verificar tu acceso personal y continuar donde lo dejaste en Cost Tracker.",
-      "spam": "Si no ves el mensaje, revisa también la carpeta de correo no deseado.",
-      "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación.",
+      "spam": "Si el mensaje no aparece, revisa también la carpeta de spam.",
+      "signIn": "¿Ya estás verificado o ya tienes una cuenta? Inicia sesión para continuar con esta invitación.",
       "resend": {
-        "label": "Enviar un nuevo enlace de verificación",
+        "label": "Enviar un enlace de verificación nuevo",
         "pending": "Enviando…",
-        "success": "Solicitud recibida. Si aún necesitas verificar tu cuenta, un nuevo enlace está en camino. Revisa tu bandeja de entrada y la carpeta de spam.",
-        "error": "No se pudo solicitar un nuevo enlace. Inténtalo de nuevo en unos momentos."
+        "success": "Solicitud recibida. Si tu cuenta todavía necesita verificación, un enlace nuevo está en camino. Revisa tu bandeja de entrada y la carpeta de spam.",
+        "error": "No se pudo solicitar un enlace nuevo. Inténtalo de nuevo dentro de unos minutos."
       }
     },
     "recovery": {
-      "title": "Vuelve a tu invitación",
-      "wrongEmail": "Esta invitación se envió a otra dirección de correo. Continúa con la dirección que la recibió.",
-      "expired": "Esta invitación ha caducado. Pide una nueva a tu Organización.",
-      "closed": "Esta invitación ya no está disponible. Pide una nueva a tu Organización.",
-      "unavailable": "No podemos usar esta invitación. Abre el enlace completo del correo o pide una nueva a tu Organización.",
-      "recheck": "Tras corregir tu acceso o recibir un enlace nuevo, abre esa invitación. También puedes comprobar esta invitación de nuevo.",
-      "rejected": "Esta invitación fue rechazada. Comprueba tu acceso abajo para resolver otras invitaciones o continuar con tu Organización.",
-      "withdrawn": "La Organización retiró esta invitación. Comprueba tu acceso actual abajo para continuar.",
-      "accepted": "Esta invitación fue aceptada. Comprueba tu acceso a la Organización abajo. Si se retiró el acceso, pide ayuda a su Owner."
+      "title": "Volver a tu invitación",
+      "wrongEmail": "Esta invitación se envió a otra dirección de correo electrónico. Continúa con la dirección que la recibió.",
+      "expired": "Esta invitación ha caducado. Pide a tu organización una invitación nueva.",
+      "closed": "Esta invitación ya no está disponible. Pide a tu organización una invitación nueva.",
+      "unavailable": "No podemos usar esta invitación. Abre el enlace completo de tu correo de invitación o pide a tu organización una invitación nueva.",
+      "recheck": "Después de corregir tu acceso o de recibir un enlace nuevo, abre esa invitación. También puedes volver a comprobar esta invitación.",
+      "rejected": "Esta invitación fue rechazada. Revisa abajo tu acceso actual para resolver otras invitaciones o continuar con tu organización.",
+      "withdrawn": "La organización que invitaba ha retirado esta invitación. Revisa abajo tu acceso actual para ver el siguiente paso.",
+      "accepted": "Esta invitación fue aceptada. Revisa abajo tu acceso a la organización. Si se ha quitado el acceso, pide ayuda a su responsable."
     },
     "selection": {
-      "heading": "Selecciona una Organización",
-      "description": "Elige con qué Organización continuar. Solo cambia tu Organización activa, no tus membresías ni participaciones en Proyectos.",
-      "error": "No se pudo seleccionar esa Organización. Comprueba tu acceso e inténtalo de nuevo."
+      "heading": "Selecciona una organización",
+      "description": "Elige con qué organización quieres continuar. Esto cambia tu organización activa, no tus pertenencias ni tus participaciones en proyectos.",
+      "error": "No se pudo seleccionar esa organización. Revisa tu acceso e inténtalo de nuevo."
     },
     "error": {
-      "request": "No se pudo completar la solicitud. Comprueba tu conexión e inténtalo de nuevo.",
-      "credentials": "Correo o contraseña incorrectos. Comprueba tus datos e inténtalo de nuevo.",
-      "verification": "Verifica tu correo antes de iniciar sesión. Abre el enlace de verificación de tu bandeja de entrada.",
+      "request": "No se pudo completar la solicitud. Revisa tu conexión e inténtalo de nuevo.",
+      "credentials": "Correo electrónico o contraseña incorrectos. Revisa tus datos e inténtalo de nuevo.",
+      "verification": "Verifica tu correo electrónico antes de iniciar sesión. Abre el enlace de verificación de tu bandeja de entrada.",
       "signOut": "No se pudo cerrar sesión"
     },
     "layout": {
-      "tagline": "Turn scattered travel costs into one trusted Project record.",
-      "benefitTotals": "Keep exact EUR totals intact",
-      "benefitDocuments": "Connect every entry to its Proof Documents",
-      "benefitAllocations": "Allocate shared tickets without guesswork",
-      "footer": "Greendex · Cost tracking for shared journeys"
+      "tagline": "Convierte los costes de viaje dispersos en un único registro de proyecto fiable.",
+      "benefitTotals": "Mantén intactos los totales exactos en EUR",
+      "benefitDocuments": "Vincula cada entrada con sus justificantes",
+      "benefitAllocations": "Asigna los billetes compartidos sin conjeturas",
+      "footer": "Greendex · Seguimiento de costes para viajes compartidos"
     },
     "createOrganization": {
-      "eyebrow": "Your Organization",
-      "heading": "A home for your Projects",
-      "description": "Your personal login is ready. Now add your Organization to host Erasmus Projects. You'll become its Owner. You can create your first Project next, whenever you're ready.",
-      "nameLabel": "Organization name",
-      "countryLabel": "Organization country",
-      "countryPlaceholder": "Select an EU country",
-      "submit": "Create Organization",
-      "invitationHint": "Expecting an invitation? Open the link in your invitation email to join the right Organization instead."
+      "eyebrow": "Tu organización",
+      "heading": "Un hogar para tus proyectos",
+      "description": "Tu acceso personal está listo. Ahora añade tu organización para alojar proyectos Erasmus. Serás su responsable. Podrás crear tu primer proyecto a continuación, cuando quieras.",
+      "nameLabel": "Nombre de la organización",
+      "countryLabel": "País de la organización",
+      "countryPlaceholder": "Selecciona un país de la UE",
+      "submit": "Crear organización",
+      "invitationHint": "¿Esperas una invitación? Abre el enlace de tu correo de invitación para unirte a la organización correcta."
     }
   }
 }

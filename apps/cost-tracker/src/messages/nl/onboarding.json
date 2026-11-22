@@ -2,14 +2,14 @@
   "onboarding": {
     "auth": {
       "signInHeading": "Welkom terug",
-      "invitationHeading": "Word lid van je Organisatie",
+      "invitationHeading": "Word lid van je organisatie",
       "partnerHeading": "Bereid de inrichting van je partner voor",
-      "directHeading": "Begin met je Organisatie",
-      "invitationSignInDescription": "Log in met het uitgenodigde adres om lid te worden van deze Organisatie.",
+      "directHeading": "Begin met je organisatie",
+      "invitationSignInDescription": "Log in met het uitgenodigde adres om lid te worden van deze organisatie.",
       "invitationDescription": "Maak je persoonlijke login met het uitgenodigde adres. Verifieer je e-mail en accepteer daarna de uitnodiging.",
-      "signInDescription": "Log in om de reiskosten van je Projecten te blijven beheren.",
-      "partnerDescription": "Maak je persoonlijke login met het adres dat de instellink heeft ontvangen. Ga daarna verder met het instellen van je partner.",
-      "directDescription": "Maak je persoonlijke login, verifieer je e-mail en stel je Organisatie in om Erasmus-projecten te organiseren.",
+      "signInDescription": "Log in om de reiskosten van je projecten te blijven beheren.",
+      "partnerDescription": "Maak je persoonlijke login met het adres dat de instellingslink heeft ontvangen. Ga daarna verder met het instellen van je partner.",
+      "directDescription": "Maak je persoonlijke login, verifieer je e-mail en stel je organisatie in om Erasmus-projecten te organiseren.",
       "google": "Doorgaan met Google",
       "emailSeparator": "of gebruik e-mail",
       "name": "Naam",
@@ -26,7 +26,7 @@
       "creatingAccount": "Account wordt gemaakt",
       "home": "Terug naar de startpagina",
       "signOut": "Uitloggen",
-      "invitationPointer": "Word je lid van een bestaande Organisatie? Open de link in je uitnodigingsmail.",
+      "invitationPointer": "Word je lid van een bestaande organisatie? Open de link in je uitnodigingsmail.",
       "metadata": "Log in of maak een persoonlijke login voor Greendex Cost Tracker.",
       "confirmSignOut": {
         "cancel": "Annuleren",
@@ -38,16 +38,16 @@
     },
     "invitation": {
       "context": "Uitnodiging voor {organization}",
-      "heading": "Word lid van je Organisatie",
+      "heading": "Word lid van je organisatie",
       "checking": "Je uitnodiging wordt gecontroleerd…",
       "joining": "Lidmaatschap wordt aangemaakt…",
       "accept": "Uitnodiging accepteren",
       "recheck": "Uitnodiging opnieuw controleren",
-      "creationBlocked": "Je kunt geen Organisatie maken zolang je een openstaande uitnodiging voor {organization} hebt. Word lid of wijs de uitnodiging hieronder af. Andere uitnodigingen of een bestaand lidmaatschap kunnen het maken nog steeds verhinderen.",
+      "creationBlocked": "Je kunt geen organisatie maken zolang je een openstaande uitnodiging voor {organization} hebt. Word lid of wijs de uitnodiging hieronder af. Andere uitnodigingen of een bestaand lidmaatschap kunnen het maken nog steeds verhinderen.",
       "reject": "Uitnodiging afwijzen",
       "rejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
       "continue": "Doorgaan met huidige toegang",
-      "options": "Word lid van deze Organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe Organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen.",
+      "options": "Word lid van deze organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen.",
       "confirmReject": {
         "cancel": "Annuleren",
         "close": "Sluiten",
@@ -65,32 +65,32 @@
     "inbox": {
       "heading": "Controleer je inbox",
       "address": "Zoek je verificatielink in <address>{email}</address>.",
-      "invitationInstruction": "Verifieer eerst je e-mailadres. Daarna kun je lid worden van de Organisatie of de uitnodiging afwijzen. Vraag hieronder een nieuwe link aan als het bericht niet aankomt.",
+      "invitationInstruction": "Verifieer eerst je e-mailadres. Daarna kun je lid worden van de organisatie of de uitnodiging afwijzen. Vraag hieronder een nieuwe link aan als het bericht niet aankomt.",
       "instruction": "Open de link om je persoonlijke login te verifiëren en verder te gaan in Cost Tracker.",
       "spam": "Zie je het bericht niet? Controleer ook je spammap.",
       "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging.",
       "resend": {
         "label": "Een nieuwe verificatielink sturen",
         "pending": "Bezig met versturen…",
-        "success": "Verzoek ontvangen. Als je je account nog moet verifiëren, is er een nieuwe link onderweg. Controleer je inbox en spammap.",
+        "success": "Verzoek ontvangen. Als je account nog moet worden geverifieerd, is er een nieuwe link onderweg. Controleer je inbox en spammap.",
         "error": "Er kon geen nieuwe link worden aangevraagd. Probeer het zo opnieuw."
       }
     },
     "recovery": {
       "title": "Terug naar je uitnodiging",
       "wrongEmail": "Deze uitnodiging is naar een ander e-mailadres gestuurd. Ga verder met het adres dat de uitnodiging heeft ontvangen.",
-      "expired": "Deze uitnodiging is verlopen. Vraag je Organisatie om een nieuwe uitnodiging.",
-      "closed": "Deze uitnodiging is niet meer beschikbaar. Vraag je Organisatie om een nieuwe uitnodiging.",
-      "unavailable": "We kunnen deze uitnodiging niet gebruiken. Open de volledige link in je uitnodigingsmail of vraag je Organisatie om een nieuwe uitnodiging.",
+      "expired": "Deze uitnodiging is verlopen. Vraag je organisatie om een nieuwe uitnodiging.",
+      "closed": "Deze uitnodiging is niet meer beschikbaar. Vraag je organisatie om een nieuwe uitnodiging.",
+      "unavailable": "We kunnen deze uitnodiging niet gebruiken. Open de volledige link in je uitnodigingsmail of vraag je organisatie om een nieuwe uitnodiging.",
       "recheck": "Open de uitnodiging nadat je je login hebt gecorrigeerd of een nieuwe link hebt ontvangen. Je kunt deze uitnodiging ook opnieuw controleren.",
-      "rejected": "Deze uitnodiging is afgewezen. Controleer hieronder je toegang om andere uitnodigingen af te handelen of door te gaan met je Organisatie.",
-      "withdrawn": "De Organisatie heeft deze uitnodiging ingetrokken. Controleer hieronder je huidige toegang voor de volgende stap.",
-      "accepted": "Deze uitnodiging is geaccepteerd. Controleer hieronder je toegang tot de Organisatie. Vraag de Owner om hulp als je toegang is verwijderd."
+      "rejected": "Deze uitnodiging is afgewezen. Controleer hieronder je toegang om andere uitnodigingen af te handelen of door te gaan met je organisatie.",
+      "withdrawn": "De organisatie heeft deze uitnodiging ingetrokken. Controleer hieronder je huidige toegang voor de volgende stap.",
+      "accepted": "Deze uitnodiging is geaccepteerd. Controleer hieronder je toegang tot de organisatie. Vraag de eigenaar om hulp als je toegang is verwijderd."
     },
     "selection": {
-      "heading": "Selecteer een Organisatie",
-      "description": "Kies met welke Organisatie je wilt doorgaan. Dit verandert alleen je actieve Organisatie, niet je lidmaatschappen of deelnames aan Projecten.",
-      "error": "Deze Organisatie kon niet worden geselecteerd. Controleer je toegang en probeer het opnieuw."
+      "heading": "Selecteer een organisatie",
+      "description": "Kies met welke organisatie je wilt doorgaan. Dit verandert alleen je actieve organisatie, niet je lidmaatschappen of deelnames aan projecten.",
+      "error": "Deze organisatie kon niet worden geselecteerd. Controleer je toegang en probeer het opnieuw."
     },
     "error": {
       "request": "Het verzoek kon niet worden voltooid. Controleer je verbinding en probeer het opnieuw.",
@@ -99,21 +99,21 @@
       "signOut": "Uitloggen mislukt"
     },
     "layout": {
-      "tagline": "Turn scattered travel costs into one trusted Project record.",
-      "benefitTotals": "Keep exact EUR totals intact",
-      "benefitDocuments": "Connect every entry to its Proof Documents",
-      "benefitAllocations": "Allocate shared tickets without guesswork",
-      "footer": "Greendex · Cost tracking for shared journeys"
+      "tagline": "Verander verspreide reiskosten in één betrouwbaar projectoverzicht.",
+      "benefitTotals": "Houd exacte EUR-totalen intact",
+      "benefitDocuments": "Koppel elke post aan de bijbehorende bewijsdocumenten",
+      "benefitAllocations": "Verdeel gedeelde tickets zonder giswerk",
+      "footer": "Greendex · Kostenregistratie voor gedeelde reizen"
     },
     "createOrganization": {
-      "eyebrow": "Your Organization",
-      "heading": "A home for your Projects",
-      "description": "Your personal login is ready. Now add your Organization to host Erasmus Projects. You'll become its Owner. You can create your first Project next, whenever you're ready.",
-      "nameLabel": "Organization name",
-      "countryLabel": "Organization country",
-      "countryPlaceholder": "Select an EU country",
-      "submit": "Create Organization",
-      "invitationHint": "Expecting an invitation? Open the link in your invitation email to join the right Organization instead."
+      "eyebrow": "Jouw organisatie",
+      "heading": "Een thuis voor je projecten",
+      "description": "Je persoonlijke login is klaar. Voeg nu je organisatie toe om Erasmus-projecten te organiseren. Je wordt de eigenaar. Je kunt daarna je eerste project aanmaken, wanneer je wilt.",
+      "nameLabel": "Naam van de organisatie",
+      "countryLabel": "Land van de organisatie",
+      "countryPlaceholder": "Selecteer een EU-land",
+      "submit": "Organisatie aanmaken",
+      "invitationHint": "Verwacht je een uitnodiging? Open dan de link in je uitnodigingsmail om in plaats daarvan de juiste organisatie te betreden."
     }
   }
 }

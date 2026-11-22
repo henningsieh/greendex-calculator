@@ -1,10 +1,10 @@
 {
   "organizations": {
     "roles": {
-      "owner": "Owner",
-      "admin": "Admin",
-      "coordinator": "Project Coordinator",
-      "participant": "Participant"
+      "owner": "Eigenaar",
+      "admin": "Beheerder",
+      "coordinator": "Projectcoördinator",
+      "participant": "Deelnemer"
     },
     "confirmations": {
       "cancel": "Annuleren",
@@ -12,63 +12,63 @@
       "pending": "Bezig…",
       "cancelInvitation": {
         "title": "Organisatie-uitnodiging annuleren?",
-        "description": "De Organisatie-uitnodiging voor {email} annuleren? Deze kan daarna niet meer worden geaccepteerd.",
+        "description": "De organisatie-uitnodiging voor {email} annuleren? Daarna kan ze niet meer worden geaccepteerd.",
         "execute": "Uitnodiging annuleren"
       }
     },
     "page": {
-      "eyebrow": "Administration",
-      "title": "Organization",
-      "description": "Manage staff members and pending invitations for the active Organization."
+      "eyebrow": "Beheer",
+      "title": "Organisatie",
+      "description": "Beheer teamleden en openstaande uitnodigingen voor de actieve organisatie."
     },
     "loading": {
-      "label": "Loading Organization",
-      "staff": "Loading Organization staff"
+      "label": "Organisatie laden",
+      "staff": "Organisatieteam laden"
     },
     "team": {
-      "membersTitle": "Members",
-      "membersDescription": "Everyone with an Organization staff role. Combined roles such as Participant stay visible and keep their own access.",
-      "noMembers": "No members yet.",
-      "inviteTitle": "Invite staff",
-      "inviteDescription": "Owners can invite owners and admins. Admins can invite admins. Project Coordinator access stays assignment-based and is never granted here.",
-      "unavailable": "Organization staff is unavailable",
-      "invitationSent": "Invitation sent to {email}.",
-      "invitationCancelled": "Invitation cancelled.",
-      "sendInvitation": "Send invitation",
-      "sending": "Sending…",
-      "pendingTitle": "Pending invitations",
-      "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
-      "noPending": "No pending invitations.",
-      "noRole": "No role",
-      "cancel": "Cancel",
+      "membersTitle": "Leden",
+      "membersDescription": "Iedereen met een rol in het organisatieteam. Gecombineerde rollen zoals Deelnemer blijven zichtbaar en behouden hun eigen toegang.",
+      "noMembers": "Nog geen leden.",
+      "inviteTitle": "Teamleden uitnodigen",
+      "inviteDescription": "Eigenaren kunnen eigenaren en beheerders uitnodigen. Beheerders kunnen beheerders uitnodigen. Toegang als projectcoördinator blijft toewijzingsgebaseerd en wordt hier nooit verleend.",
+      "unavailable": "Het organisatieteam is niet beschikbaar",
+      "invitationSent": "Uitnodiging verstuurd naar {email}.",
+      "invitationCancelled": "Uitnodiging geannuleerd.",
+      "sendInvitation": "Uitnodiging versturen",
+      "sending": "Versturen…",
+      "pendingTitle": "Openstaande uitnodigingen",
+      "pendingDescription": "Annuleer een uitnodiging om die in te trekken voordat ze is geaccepteerd.",
+      "noPending": "Geen openstaande uitnodigingen.",
+      "noRole": "Geen rol",
+      "cancel": "Annuleren",
       "columns": {
-        "name": "Name",
-        "email": "Email",
-        "emailAddress": "Email address",
-        "role": "Role",
-        "roles": "Roles",
-        "actions": "Actions",
-        "members": "Members",
-        "use": "Use",
-        "saving": "Saving…",
-        "send": "Send",
-        "loadingOrganization": "Loading Organization",
-        "loadingOrganizationStaff": "Loading Organization staff"
+        "name": "Naam",
+        "email": "E-mail",
+        "emailAddress": "E-mailadres",
+        "role": "Rol",
+        "roles": "Rollen",
+        "actions": "Acties",
+        "members": "Leden",
+        "use": "Gebruiken",
+        "saving": "Opslaan…",
+        "send": "Versturen",
+        "loadingOrganization": "Organisatie laden",
+        "loadingOrganizationStaff": "Organisatieteam laden"
       }
     },
     "settings": {
-      "title": "{organization} settings",
-      "country": "Organization country",
-      "saved": "Organization country saved.",
-      "saveError": "Could not save Organization country",
-      "save": "Save Organization country",
-      "saving": "Saving…"
+      "title": "Instellingen van {organization}",
+      "country": "Land van de organisatie",
+      "saved": "Land van de organisatie opgeslagen.",
+      "saveError": "Land van de organisatie kon niet worden opgeslagen",
+      "save": "Land van de organisatie opslaan",
+      "saving": "Opslaan…"
     },
     "switcher": {
-      "acting": "Acting Organization",
-      "select": "Select Organization",
-      "aria": "Acting Organization: {organization}. Switch Organization",
-      "failed": "Could not switch Organization. Try again."
+      "acting": "Actieve organisatie",
+      "select": "Organisatie selecteren",
+      "aria": "Actieve organisatie: {organization}. Organisatie wisselen",
+      "failed": "De organisatie kon niet worden gewisseld. Probeer het opnieuw."
     }
   }
 }

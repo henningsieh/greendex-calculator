@@ -58,19 +58,22 @@ describe("Cost Tracker locale proxy", () => {
     );
   });
 
-  it("retains next-intl language negotiation and locale cookie precedence", () => {
-    const detected = proxy(signedIn("/projects", { "accept-language": "de" }));
+  it.each(LANGUAGE_CODES)("negotiates %s from Accept-Language", (locale) => {
+    const detected = proxy(signedIn("/projects", { "accept-language": locale }));
     expect(new URL(detected.headers.get("x-middleware-rewrite")!).pathname).toBe(
-      "/de/projects",
+      `/${locale}/projects`,
     );
-    const cookie = proxy(
+  });
+
+  it("ignores NEXT_LOCALE because the URL is the only persisted language state", () => {
+    const response = proxy(
       signedIn("/login", {
         cookie: `NEXT_LOCALE=fr; ${SESSION.cookie}`,
         "accept-language": "de",
       }),
     );
-    expect(new URL(cookie.headers.get("x-middleware-rewrite")!).pathname).toBe(
-      "/fr/login",
+    expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe(
+      "/de/login",
     );
   });
 

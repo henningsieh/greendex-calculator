@@ -670,10 +670,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
-    // Text-free: server-approved amount section renders (value proven by DB claimState below).
-    await expect(
-      review.locator('[data-testid="approved-payable"]'),
-    ).toBeVisible();
+    // Before approval, show the stored calculation as an estimate.
+    await expect(review.getByTestId("estimated-payable")).toBeVisible();
+    await expect(review.getByTestId("approved-payable")).toHaveCount(0);
     const cost = review
       .getByTestId("claim-cost-table")
       .locator(

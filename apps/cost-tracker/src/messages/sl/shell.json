@@ -3,34 +3,34 @@
     "brand": {
       "name": "GreenDex",
       "product": "Cost Tracker",
-      "markLabel": "GreenDex star wreath",
-      "edition": "GreenDex Cost Tracker · Erasmus Edition"
+      "markLabel": "Zvezdni venec GreenDex",
+      "edition": "GreenDex Cost Tracker · izdaja Erasmus"
     },
     "common": {
-      "signIn": "Sign in",
-      "retry": "Retry",
+      "signIn": "Prijava",
+      "retry": "Poskusi znova",
       "loading": "Nalaganje"
     },
     "nav": {
-      "primaryLabel": "Primary navigation",
-      "projects": "Projects",
+      "primaryLabel": "Glavna navigacija",
+      "projects": "Projekti",
       "partnerOrganizations": "Partnerji",
-      "organization": "Organization",
+      "organization": "Organizacija",
       "workspace": "Delovni prostor",
-      "manage": "Administration",
-      "claimReview": "Claims"
+      "manage": "Administracija",
+      "claimReview": "Zahtevki"
     },
     "account": {
-      "openMenu": "Open account menu for {name}",
-      "settings": "Account settings",
+      "openMenu": "Odpri meni računa za {name}",
+      "settings": "Nastavitve računa",
       "signOut": "Odjava",
       "signingOut": "Obdelovanje…"
     },
     "themeSwitcher": {
-      "label": "Color theme",
-      "triggerFallback": "Theme",
-      "ariaLabel": "Color theme: {theme}. Switch theme",
-      "system": "system"
+      "label": "Barvna tema",
+      "triggerFallback": "Tema",
+      "ariaLabel": "Barvna tema: {theme}. Preklopi temo",
+      "system": "sistem"
     },
     "languageSwitcher": {
       "label": "Jezik",
@@ -39,154 +39,154 @@
       "changing": "Spreminjanje jezika…"
     },
     "combobox": {
-      "defaultSearchBy": "name or ID",
-      "select": "Select {label}",
-      "searchLabel": "Search {label} by {searchBy}",
-      "searchPlaceholder": "Search {searchBy}…",
-      "searching": "Searching",
-      "searchFailed": "Search failed.",
-      "noMatches": "No matches — refine or paste full ID"
+      "defaultSearchBy": "ime ali ID",
+      "select": "Izberite {label}",
+      "searchLabel": "Iskanje: {label} po {searchBy}",
+      "searchPlaceholder": "Iščite po {searchBy}…",
+      "searching": "Iskanje",
+      "searchFailed": "Iskanje ni uspelo.",
+      "noMatches": "Ni zadetkov — zožite iskanje ali prilepite celoten ID"
     },
     "errorBoundary": {
-      "unableToLoad": "Unable to load {resource}"
+      "unableToLoad": "Ni mogoče naložiti: {resource}"
     },
-    "loading": "Loading Cost Tracker",
+    "loading": "Nalaganje Cost Trackerja",
     "landing": {
-      "accountNav": "Account",
-      "createAccount": "Create account",
+      "accountNav": "Račun",
+      "createAccount": "Ustvari račun",
       "hero": {
-        "titleLead": "Receipts in.",
-        "titleAccent": "Money out.",
-        "description": "Settle Erasmus travel costs without the spreadsheet struggle. Snap a photo of the ticket, share the cost, file the claim — every number stays traceable to its receipt.",
-        "start": "Start tracking costs",
-        "seeHow": "See how it works",
-        "trustLine": "Free to start · No credit card · Demo data below"
+        "titleLead": "Dokazila noter.",
+        "titleAccent": "Denar ven.",
+        "description": "Poravnajte potne stroške Erasmus brez preglavic s preglednicami. Fotografirajte vozovnico, razdelite strošek, oddajte zahtevek — vsaka številka ostane sledljiva do svojega dokazila.",
+        "start": "Začnite spremljati stroške",
+        "seeHow": "Oglejte si, kako deluje",
+        "trustLine": "Brezplačen začetek · Kreditna kartica ni potrebna · Spodaj so demo podatki"
       },
       "stats": {
         "disbursed": {
-          "label": "Disbursed",
-          "detail": "calculated · not editable"
+          "label": "Izplačano",
+          "detail": "izračunano · ni urejljivo"
         },
         "documented": {
-          "label": "Documented",
-          "detail": "zero open gaps"
+          "label": "Dokumentirano",
+          "detail": "brez odprtih vrzeli"
         },
         "avgReview": {
-          "label": "Avg. review time",
-          "detail": "hosting review",
+          "label": "Povprečni čas pregleda",
+          "detail": "pregled gostiteljske organizacije",
           "unit": "h"
         }
       },
       "process": {
-        "eyebrow": "The process",
-        "title": "One claim. Zero follow-up questions.",
-        "description": "The workspace checks everything before you submit: payout account, cost entries, receipt links, frozen funding rates. What is missing shows up as a checklist — not as an email three weeks later.",
+        "eyebrow": "Postopek",
+        "title": "En zahtevek. Nič dodatnih vprašanj.",
+        "description": "Delovni prostor pred oddajo preveri vse: račun za izplačilo, postavke stroškov, povezave do dokazil in zamrznjene stopnje financiranja. Kar manjka, se pokaže kot kontrolni seznam — ne kot e-pošta tri tedne pozneje.",
         "record": {
-          "title": "Record",
-          "description": "Choose the project and enter the exact journey cost."
+          "title": "Zabeležite",
+          "description": "Izberite projekt in vnesite natančen strošek poti."
         },
         "support": {
-          "title": "Support",
-          "description": "Add receipts, invoices, or tickets as proof documents."
+          "title": "Podprite",
+          "description": "Dodajte račune, fakture ali vozovnice kot dokazila."
         },
         "allocate": {
-          "title": "Allocate",
-          "description": "Assign the cost to the participants it covered."
+          "title": "Razporedite",
+          "description": "Dodelite strošek udeležencem, ki jih je pokrival."
         }
       },
       "terminal": {
-        "payoutAccount": "Payout account · Green Routes e.V.",
-        "train": "Train · €428.60 · receipt linked",
-        "bus": "Bus · €86.40 · receipt linked",
-        "openUpload": "Local bus tickets · upload open",
-        "status": "€515.00 ready for submission"
+        "payoutAccount": "Račun za izplačilo · Green Routes e.V.",
+        "train": "Vlak · 428,60 € · dokazilo povezano",
+        "bus": "Avtobus · 86,40 € · dokazilo povezano",
+        "openUpload": "Lokalne avtobusne vozovnice · nalaganje odprto",
+        "status": "515,00 € pripravljeno za oddajo"
       },
       "values": {
         "proof": {
-          "title": "Proof stays with the cost",
-          "description": "Attach the document once and connect it to the costs it supports."
+          "title": "Dokazilo ostane pri stroških",
+          "description": "Dokument priložite enkrat in ga povežite s stroški, ki jih podpira."
         },
         "group": {
-          "title": "Group travel stays legible",
-          "description": "Split a ticket equally, by percentage, or by exact EUR amount."
+          "title": "Skupinska potovanja ostanejo pregledna",
+          "description": "Vozovnico razdelite enakomerno, po odstotkih ali po natančnem znesku v EUR."
         },
         "partners": {
-          "title": "Partners stay aligned",
-          "description": "Hosting Organizations and Partners see one project-specific record."
+          "title": "Partnerji ostanejo usklajeni",
+          "description": "Gostiteljske organizacije in partnerji vidijo en zapis, specifičen za projekt."
         }
       },
       "cta": {
-        "eyebrow": "Free to start",
-        "title": "Ready for your next claim?",
-        "description": "Upload the photo. Share the cost. Get the money back."
+        "eyebrow": "Brezplačen začetek",
+        "title": "Pripravljeni na naslednji zahtevek?",
+        "description": "Naložite fotografijo. Razdelite strošek. Dobite denar nazaj."
       },
       "footer": {
         "product": "Greendex Cost Tracker",
-        "tagline": "Clear records for shared travel."
+        "tagline": "Jasni zapisi za skupna potovanja."
       },
       "journey": {
-        "project": "Spring workshop",
-        "subtitle": "Travel cost trail",
+        "project": "Pomladna delavnica",
+        "subtitle": "Sled potnih stroškov",
         "train": {
-          "title": "Train to Utrecht",
-          "detail": "Berlin · 2 participants"
+          "title": "Vlak do Utrechta",
+          "detail": "Berlin · 2 udeleženca"
         },
         "receipt": {
-          "title": "Receipt attached",
+          "title": "Priloženo dokazilo",
           "detail": "bahn-ticket.pdf",
-          "status": "Ready"
+          "status": "Pripravljeno"
         },
         "allocation": {
-          "title": "Cost allocated",
-          "detail": "Equal share"
+          "title": "Strošek razporejen",
+          "detail": "Enak delež"
         },
-        "submissionComplete": "Submission complete"
+        "submissionComplete": "Oddaja dokončana"
       }
     },
     "designSystem": {
       "titleLead": "Ember",
-      "titleAccent": "design",
-      "titleTail": "system",
-      "intro": "Four themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
+      "titleAccent": "oblikovalski",
+      "titleTail": "sistem",
+      "intro": "Štiri teme, en ognjeni poudarek. Žetoni, matrika gumbov, kartice, vzorec pisave in zaklenjene razširitve blagovne znamke — prikazano v živo.",
       "themes": {
-        "eyebrow": "Themes · 4 slots",
-        "title": "Theme switcher",
-        "active": "active:",
-        "system": "system"
+        "eyebrow": "Teme · 4 mesta",
+        "title": "Preklopnik teme",
+        "active": "aktivno:",
+        "system": "sistem"
       },
       "tokens": {
-        "eyebrow": "Tokens · roles",
-        "title": "Color roles",
+        "eyebrow": "Žetoni · vloge",
+        "title": "Barvne vloge",
         "sample": "Aa"
       },
       "buttons": {
-        "eyebrow": "Buttons · matrix",
-        "title": "Button variants and states",
-        "primary": "Primary",
+        "eyebrow": "Gumbi · matrika",
+        "title": "Različice in stanja gumbov",
+        "primary": "Primarni",
         "ghost": "Ghost",
-        "outline": "Outline",
-        "secondary": "Secondary",
-        "mainCta": "Main CTA",
-        "link": "Link",
-        "destructive": "Destructive",
-        "disabledPrimary": "Disabled primary",
-        "disabledGhost": "Disabled ghost",
-        "saving": "saving…",
-        "small": "Small",
-        "large": "Large",
-        "spinnerNote": "spinner pattern — composed, never an isPending prop"
+        "outline": "Obrobni",
+        "secondary": "Sekundarni",
+        "mainCta": "Glavni CTA",
+        "link": "Povezava",
+        "destructive": "Rušilni",
+        "disabledPrimary": "Onemogočen primarni",
+        "disabledGhost": "Onemogočen ghost",
+        "saving": "shranjevanje…",
+        "small": "Majhen",
+        "large": "Velik",
+        "spinnerNote": "vzorec vrtečega indikatorja — sestavljen, nikoli kot prop isPending"
       },
       "cards": {
-        "eyebrow": "Cards · states",
-        "title": "Card hover and active",
-        "hoverTitle": "Hover card",
-        "hoverDescription": "Lifts −2px with a fire border. Hover-gated, static under reduced motion.",
-        "hoverAction": "Enabled action",
-        "activeTitle": "Active card",
-        "activeDescription": "Permanent fire border with the amber wash from above.",
-        "exemptTitle": "Exempt card",
-        "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
-        "exemptAction": "working…"
+        "eyebrow": "Kartice · stanja",
+        "title": "Lebdenje in aktivnost kartice",
+        "hoverTitle": "Kartica ob lebdenju",
+        "hoverDescription": "Dvigne se za −2 px z ognjeno obrobo. Samo ob lebdenju, pri zmanjšanem gibanju statično.",
+        "hoverAction": "Omogočeno dejanje",
+        "activeTitle": "Aktivna kartica",
+        "activeDescription": "Trajna ognjena obroba z jantarnim pregledom od zgoraj.",
+        "exemptTitle": "Izjema kartice",
+        "exemptDescription": "data-disabled — brez premikanja, brez lebdenja, tudi na lepljivem dotiku.",
+        "exemptAction": "obdelovanje…"
       },
       "forms": {
         "eyebrow": "Obrazci · partnerstvo",
@@ -204,50 +204,50 @@
         }
       },
       "type": {
-        "eyebrow": "Type · specimen",
-        "title": "Typography",
+        "eyebrow": "Pisava · vzorec",
+        "title": "Tipografija",
         "headline": "Riesen-Headline",
         "label": "Cost Tracker · Ember C",
-        "body": "Body copy stays quiet: warm white on plum-black, lavender-grey for secondary text. One fire accent everywhere — interaction, highlights, focus."
+        "body": "Besedilo ostaja tiho: topla bela na temno vijolično črni, sivo-vijolična za sekundarno besedilo. En ognjeni poudarek povsod — interakcija, poudarki, fokus."
       },
       "brand": {
-        "eyebrow": "Brand · locked",
-        "title": "Brand extensions",
-        "heroLabel": "Hero stat",
-        "heroDetail": "amber wash · fire unit",
-        "claimsLabel": "Claims",
-        "claimsDetail": "seamless raster · 1px lines",
-        "conformityLabel": "Conformity",
-        "conformityDetail": "tabular numbers · mono labels"
+        "eyebrow": "Blagovna znamka · zaklenjeno",
+        "title": "Razširitve blagovne znamke",
+        "heroLabel": "Glavna statistika",
+        "heroDetail": "jantarni pregled · ognjena enota",
+        "claimsLabel": "Zahtevki",
+        "claimsDetail": "brezšivna rastrska slika · 1px črte",
+        "conformityLabel": "Skladnost",
+        "conformityDetail": "tabelarične številke · enojne oznake"
       },
       "terminal": {
-        "tokens": "tokens mapped — 4 themes",
-        "buttons": "buttons rebuilt — spinner pending",
-        "landing": "landing page — next section",
-        "status": "ember-c · all systems nominal"
+        "tokens": "žetoni preslikani — 4 teme",
+        "buttons": "gumbi obnovljeni — vrteči indikator čaka",
+        "landing": "vstopna stran — naslednji razdelek",
+        "status": "ember-c · vsi sistemi v redu"
       },
       "badges": {
-        "eyebrow": "Badges · chips",
-        "title": "Status badges and chips",
-        "variantsTitle": "Badge variants",
-        "variantsDescription": "Every variant the shared Badge exposes. Small labels use the default; data chips pick a semantic.",
-        "badgeLabel": "Label",
-        "chipPartners": "2 Partners",
-        "chipsTitle": "Count and status chips",
-        "chipsDescription": "Pills carry counts; semantic chips carry state. Colour never travels alone — the word stays.",
-        "chipOpen": "Open",
-        "chipExpired": "Expired",
-        "chipUsed": "Used",
-        "claimTitle": "Claim states as rendered",
-        "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
+        "eyebrow": "Značke · čipi",
+        "title": "Značke stanja in čipi",
+        "variantsTitle": "Različice značk",
+        "variantsDescription": "Vse različice skupne značke. Majhne oznake uporabljajo privzeto; podatkovni čipi izberejo pomen.",
+        "badgeLabel": "Oznaka",
+        "chipPartners": "2 partnerja",
+        "chipsTitle": "Čipi števila in stanja",
+        "chipsDescription": "Tablete nosijo števila; pomenski čipi nosijo stanje. Barva nikoli ne nastopa sama — beseda ostane.",
+        "chipOpen": "Odprto",
+        "chipExpired": "Poteklo",
+        "chipUsed": "Uporabljeno",
+        "claimTitle": "Stanja zahtevka, kot so prikazana",
+        "claimDescription": "Trenutna preslikava delovnega prostora. To je referenca, ki jo je treba preizkusiti.",
         "claim": {
-          "none": "No claim",
-          "in_preparation": "In preparation",
-          "submitted": "Submitted",
-          "correction": "Correction requested",
-          "approved": "Approved",
-          "rejected": "Rejected",
-          "paid": "Paid"
+          "none": "Brez zahtevka",
+          "in_preparation": "V pripravi",
+          "submitted": "Oddano",
+          "correction": "Zahtevan popravek",
+          "approved": "Odobreno",
+          "rejected": "Zavrnjeno",
+          "paid": "Izplačano"
         }
       }
     },
@@ -259,16 +259,16 @@
       "notSet": "Ni nastavljeno"
     },
     "crumbs": {
-      "projectDetails": "Project details",
-      "partnership": "Partnership",
-      "participants": "Participations",
-      "participantDetails": "Participation details",
-      "claimReviews": "Claim review",
-      "claimWorkspace": "Claim",
-      "userSettings": "User settings",
-      "claimReview": "Claim review",
+      "projectDetails": "Podrobnosti projekta",
+      "partnership": "Partnerstvo",
+      "participants": "Udeležbe",
+      "participantDetails": "Podrobnosti udeležbe",
+      "claimReviews": "Pregled zahtevka",
+      "claimWorkspace": "Zahtevek",
+      "userSettings": "Uporabniške nastavitve",
+      "claimReview": "Pregled zahtevka",
       "hostedProject": "Gostovani projekt",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partnerski projekt"
     }
   }
 }

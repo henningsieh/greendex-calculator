@@ -18,7 +18,7 @@
     "PARTNER_ENTRY_REQUIRED": "Samo partner tega projektnega partnerstva lahko izdaja povabila ali registracijske povezave za udeležence.",
     "ELIGIBLE_COORDINATOR_REQUIRED": "Izberite lastnika, skrbnika ali koordinatorja projekta pri partnerju.",
     "INVALID_PROJECT_CURSOR": "Kazalec strani projekta ni veljaven za te filtre.",
-    "INVALID_CLAIM_QUEUE_CURSOR": "The Claim queue page cursor is invalid for these filters.",
+    "INVALID_CLAIM_QUEUE_CURSOR": "Kazalec strani čakalne vrste zahtevkov ni veljaven za te filtre.",
     "PROJECT_READ_REQUIRED": "Vloga v aktivni organizaciji ne omogoča ogleda tega projekta.",
     "HOSTING_STAFF_REQUIRED": "Potrebujete dostop lastnika, skrbnika ali koordinatorja projekta v gostiteljski organizaciji.",
     "HOSTING_SIDE_REQUIRED": "Samo gostiteljska organizacija lahko dodeli ta projekt.",
@@ -169,7 +169,7 @@
       "summary": "Projekta še ni mogoče zaključiti. Preglejte naslednja projektna partnerstva.",
       "status": {
         "none": "Brez zahtevka za financiranje",
-        "in_preparation": "In preparation",
+        "in_preparation": "V pripravi",
         "correction_requested": "Zahtevan popravek",
         "submitted": "Oddan",
         "approved": "Odobren",

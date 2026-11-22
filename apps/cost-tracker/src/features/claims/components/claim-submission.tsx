@@ -124,7 +124,7 @@ export function ClaimSubmission({
           ))}
         </ul>
         <p className="border-t pt-5">
-          {t("calculatedPayable")}{" "}
+          {t("estimatedReimbursement")}{" "}
           {preview.calculatedPayableEur === null ? (
             t("unavailable")
           ) : (
@@ -136,7 +136,7 @@ export function ClaimSubmission({
               {preview.calculatedPayableEur} {t("currencyEur")}
             </span>
           )}{" "}
-          {t("notEditable")}
+          {t("payableHelp")}
         </p>
         {!confirming ? (
           <Button

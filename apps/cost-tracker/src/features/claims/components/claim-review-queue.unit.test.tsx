@@ -1,13 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { Suspense } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
-const mocks = vi.hoisted(() => ({
-  data: {
+const fixtures = vi.hoisted(() => {
+  const data = {
     rows: [
       {
         partnershipId: "one",
@@ -25,16 +26,17 @@ const mocks = vi.hoisted(() => ({
       filtered: { claimCount: 1, projectCount: 1, partnerOrganizationCount: 1 },
     },
     partnerOptions: [{ id: "partner-a", name: "Partner A" }],
-  },
-}));
+  };
+  return { data, query: vi.fn<() => Promise<typeof data>>() };
+});
 
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
     claims: {
       listReviewQueue: {
-        queryOptions: () => ({
-          queryKey: ["claims", "review-queue"],
-          queryFn: async () => mocks.data,
+        queryOptions: ({ input }: { input: { search?: string } }) => ({
+          queryKey: ["claims", "review-queue", input],
+          queryFn: fixtures.query,
         }),
       },
     },
@@ -43,9 +45,13 @@ vi.mock("@/lib/orpc/orpc", () => ({
 
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 
-function renderQueue() {
+function renderQueue(searchParams = "", onUrlUpdate = vi.fn()) {
   return render(
-    <NuqsTestingAdapter hasMemory searchParams="">
+    <NuqsTestingAdapter
+      hasMemory
+      searchParams={searchParams}
+      onUrlUpdate={onUrlUpdate}
+    >
       <QueryClientProvider
         client={
           new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -60,7 +66,14 @@ function renderQueue() {
 }
 
 describe("Host submitted Claim queue", () => {
+  const emptyMetrics = {
+    claimCount: 0,
+    projectCount: 0,
+    partnerOrganizationCount: 0,
+  };
+
   it("renders submitted Claims with a direct review link", async () => {
+    fixtures.query.mockReset().mockResolvedValue(fixtures.data);
     renderQueue();
     expect(await screen.findByTestId("review-queue")).toBeTruthy();
     expect(await screen.findByTestId("review-claim-one")).toHaveAttribute(
@@ -70,15 +83,44 @@ describe("Host submitted Claim queue", () => {
   });
 
   it("renders one empty state when no Claim awaits review", async () => {
-    mocks.data = {
+    fixtures.query.mockReset().mockResolvedValue({
       rows: [],
       metrics: {
-        whole: { claimCount: 0, projectCount: 0, partnerOrganizationCount: 0 },
-        filtered: { claimCount: 0, projectCount: 0, partnerOrganizationCount: 0 },
+        whole: emptyMetrics,
+        filtered: emptyMetrics,
       },
       partnerOptions: [],
-    };
+    });
     renderQueue();
-    expect(await screen.findByTestId("review-queue-empty")).toBeTruthy();
+    const empty = await screen.findByTestId("review-queue-empty");
+    expect(empty.querySelector('[data-message="emptyTitle"]')).toBeVisible();
+    expect(within(empty).queryByTestId("claim-queue-clear-filters")).toBeNull();
+  });
+
+  it("explains when filters hide pending Claims and offers to clear them", async () => {
+    const unfiltered = Promise.withResolvers<typeof fixtures.data>();
+    fixtures.query
+      .mockReset()
+      .mockReturnValue(unfiltered.promise)
+      .mockResolvedValueOnce({
+        rows: [],
+        metrics: {
+          whole: { claimCount: 1, projectCount: 1, partnerOrganizationCount: 1 },
+          filtered: emptyMetrics,
+        },
+        partnerOptions: [],
+      });
+    const onUrlUpdate = vi.fn();
+    renderQueue("?search=unmatched", onUrlUpdate);
+
+    const empty = await screen.findByTestId("review-queue-empty");
+    expect(empty.querySelector('[data-message="noMatchesTitle"]')).toBeVisible();
+    await userEvent.click(within(empty).getByTestId("claim-queue-clear-filters"));
+    expect(onUrlUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryString: "" }),
+    );
+    expect(screen.queryByTestId("review-queue-empty")).toBeNull();
+    unfiltered.resolve(fixtures.data);
+    expect(await screen.findByTestId("review-claim-one")).toBeVisible();
   });
 });
