@@ -100,6 +100,7 @@
       "workspace": "Cargando espacio de trabajo del proyecto"
     },
     "workspace": {
+      "active": "Activo",
       "archived": "Archivado",
       "archive": "Archivar proyecto",
       "archiving": "Archivando…",

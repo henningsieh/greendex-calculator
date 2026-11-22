@@ -61,6 +61,7 @@ import {
   isProjectPageSize,
   pushColumnFiltersToUrl,
 } from "@/features/projects/components/project-list-filtering";
+import { ProjectSettlementBadge } from "@/features/projects/components/project-status-badge";
 import { getProjectListQueryOptions } from "@/features/projects/list-query-options";
 import type { ProjectListState } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
@@ -278,10 +279,9 @@ export function ResolvedProjectListResults({
             }
           />
         ),
-        cell: ({ row }) =>
-          row.original.settlement === "archived"
-            ? t("archive.archived")
-            : t(`settlement.${row.original.settlement}`),
+        cell: ({ row }) => (
+          <ProjectSettlementBadge status={row.original.settlement} />
+        ),
       },
       {
         accessorKey: "startDate",
@@ -840,7 +840,12 @@ export function ResolvedProjectListResults({
             // <dl> for the card footer, matching the submitted-Claim cards.
             // A hidden Participants column takes the footer with it.
             const detailCells = cellList.filter(
-              (cell) => cell.column.id !== "participants",
+              (cell) =>
+                cell.column.id !== "participants" &&
+                cell.column.id !== "settlement",
+            );
+            const settlementCell = cellList.find(
+              (cell) => cell.column.id === "settlement",
             );
             const showsParticipants = cellList.some(
               (cell) => cell.column.id === "participants",
@@ -851,7 +856,7 @@ export function ResolvedProjectListResults({
                 data-project-id={row.id}
                 key={row.id}
               >
-                <div className="text-sm font-medium">
+                <div className="flex items-start justify-between gap-3 text-sm font-medium">
                   <Link
                     className="block wrap-anywhere link-prose"
                     data-testid={`project-link-${row.original.id}-card`}
@@ -859,6 +864,11 @@ export function ResolvedProjectListResults({
                   >
                     {row.original.name}
                   </Link>
+                  {settlementCell &&
+                    flexRender(
+                      settlementCell.column.columnDef.cell,
+                      settlementCell.getContext(),
+                    )}
                 </div>
                 <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
                   {detailCells.map((cell) => (

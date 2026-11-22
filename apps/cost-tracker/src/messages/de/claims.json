@@ -157,6 +157,7 @@
       "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist"
     },
     "workspace": {
+      "noClaim": "Kein Erstattungsantrag",
       "label": "Erstattungsantrag-Arbeitsbereich",
       "bandTitle": "Erstattungsantrag-Arbeitsbereich",
       "submissionLabel": "Einreichung",

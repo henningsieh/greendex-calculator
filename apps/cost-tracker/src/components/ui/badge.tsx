@@ -33,12 +33,14 @@ const badgeVariants = cva(
           "border border-brand/45 bg-brand/15 px-2.5 py-1 text-foreground",
         // Settled-positive tints; the solid forms mark terminal states.
         "status-success":
-          "border border-success/40 bg-success/10 px-2.5 py-1 text-success",
+          "border border-success/40 bg-success/10 px-2.5 py-1 text-foreground",
+        "status-correction":
+          "border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-foreground",
         "status-success-solid":
           "border border-transparent bg-success px-2.5 py-1 text-success-foreground",
         // Terminal-negative: the hairline tint is correction, this is final.
         "status-destructive-solid":
-          "border border-transparent bg-destructive px-2.5 py-1 text-destructive-foreground",
+          "border border-transparent bg-red-800 px-2.5 py-1 text-white",
       },
     },
     defaultVariants: {

@@ -157,6 +157,7 @@
       "unavailable": "Ni na voljo, dokler kontrolni seznam ni izpolnjen"
     },
     "workspace": {
+      "noClaim": "Ni zahtevka",
       "label": "Delovni prostor zahtevka",
       "bandTitle": "Delovni prostor zahtevka",
       "submissionLabel": "Oddaja",

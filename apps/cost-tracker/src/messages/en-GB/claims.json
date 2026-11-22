@@ -157,6 +157,7 @@
       "unavailable": "Not available until the checklist passes"
     },
     "workspace": {
+      "noClaim": "No Claim",
       "label": "Claim workspace",
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",

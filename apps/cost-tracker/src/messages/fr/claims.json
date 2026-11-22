@@ -157,6 +157,7 @@
       "unavailable": "Indisponible tant que la liste de contrôle n’est pas validée"
     },
     "workspace": {
+      "noClaim": "Aucune demande",
       "label": "Espace de travail de la demande",
       "bandTitle": "Espace de travail de la demande",
       "submissionLabel": "Soumission",

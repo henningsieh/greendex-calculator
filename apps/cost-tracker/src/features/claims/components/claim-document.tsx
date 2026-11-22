@@ -4,7 +4,6 @@ import type { travelCostEntriesTable } from "@greendex/database/schema";
 import { useTranslations } from "@greendex/i18n/client";
 import type { ReactNode } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -15,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import type { Outputs } from "@/lib/orpc/router";
 
 export function ClaimBand({
@@ -32,13 +32,9 @@ export function ClaimBand({
         <p className="w-full type-ember-eyebrow">{t("band.eyebrow")}</p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (
-          <Badge
-            variant="claim-status"
-            data-testid="claim-status"
-            data-status={status}
-          >
-            {t(`workspace.status.${status}`)}
-          </Badge>
+          <span className="inline-flex rounded-xl bg-card">
+            <ClaimStatusBadge status={status} />
+          </span>
         )}
       </Card>
     </header>

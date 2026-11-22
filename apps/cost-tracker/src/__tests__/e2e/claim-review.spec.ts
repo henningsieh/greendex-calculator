@@ -934,7 +934,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeDisabled();
     await review.locator("#decision-reason").fill(rejectionReason);
     await review.getByTestId("claim-decision-confirm-reject").click();
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     // Text-free: history event recorded with reason (DB proof), rendered entry (UI proof).
     await expect(
       review

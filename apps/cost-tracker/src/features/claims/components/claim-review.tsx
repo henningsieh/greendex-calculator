@@ -121,20 +121,11 @@ function ClaimDecisionSummary({
   const amountLabel = reimbursementLabel(status);
 
   return (
-    <>
-      <p data-review-status={status}>
-        {status === "approved"
-          ? t("status.approved")
-          : status === "paid"
-            ? t("status.paid")
-            : status === "rejected"
-              ? t("status.rejected")
-              : status === "correction_requested"
-                ? t("status.correctionRequested")
-                : status === "submitted"
-                  ? t("status.submitted")
-                  : t("status.in_preparation")}
-      </p>
+    <div data-review-status={status}>
+      {status === "submitted" && <p>{t("status.submitted")}</p>}
+      {status === "correction_requested" && (
+        <p>{t("status.correctionRequested")}</p>
+      )}
       {amountLabel && reimbursementAmountEur && (
         <p
           data-message={amountLabel}
@@ -150,7 +141,7 @@ function ClaimDecisionSummary({
           </span>
         </p>
       )}
-    </>
+    </div>
   );
 }
 

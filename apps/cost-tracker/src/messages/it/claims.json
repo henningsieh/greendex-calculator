@@ -157,6 +157,7 @@
       "unavailable": "Disponibile solo quando la lista di controllo è superata"
     },
     "workspace": {
+      "noClaim": "Nessuna richiesta di rimborso",
       "label": "Area di lavoro della richiesta di rimborso",
       "bandTitle": "Area di lavoro della richiesta di rimborso",
       "submissionLabel": "Invio",

@@ -157,6 +157,7 @@
       "unavailable": "Niet beschikbaar totdat de controlelijst is geslaagd"
     },
     "workspace": {
+      "noClaim": "Geen declaratie",
       "label": "Declaratie-werkruimte",
       "bandTitle": "Declaratie-werkruimte",
       "submissionLabel": "Indiening",

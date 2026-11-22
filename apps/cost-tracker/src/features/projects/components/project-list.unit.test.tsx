@@ -194,6 +194,16 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(cardLink.parentElement).toHaveClass("border-t");
   });
 
+  it("places the settlement badge next to the card title, not in the details", async () => {
+    renderList();
+    const title = await screen.findByTestId("project-link-project-1-card");
+    const card = title.closest("article");
+    const badge = card?.querySelector("[data-settlement]");
+    expect(badge).toHaveAttribute("data-settlement", "open");
+    expect(badge?.parentElement).toBe(title.parentElement);
+    expect(card?.querySelector("dl [data-settlement]")).toBeNull();
+  });
+
   it("links to the Project without carrying list state", async () => {
     renderList();
 

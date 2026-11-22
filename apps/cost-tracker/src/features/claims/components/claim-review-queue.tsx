@@ -19,7 +19,6 @@ import { useQueryStates } from "nuqs";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -48,6 +47,7 @@ import {
 } from "@/components/ui/table";
 import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
+import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import {
   claimQueueParsers,
   getClaimQueueQueryOptions,
@@ -559,9 +559,7 @@ export function ClaimReviewQueue() {
                         {row.organizationName}
                       </TableCell>
                       <TableCell className="px-2 text-xs">
-                        <Badge variant="status-attention">
-                          {t("status.submitted")}
-                        </Badge>
+                        <ClaimStatusBadge status="submitted" />
                       </TableCell>
                       <TableCell className="px-2 text-xs whitespace-nowrap tabular-nums">
                         {dateFormat.format(row.submittedAt, "date.medium")}
@@ -597,9 +595,7 @@ export function ClaimReviewQueue() {
                   >
                     {row.projectName}
                   </Link>
-                  <Badge variant="status-attention">
-                    {t("status.submitted")}
-                  </Badge>
+                  <ClaimStatusBadge status="submitted" />
                 </div>
                 <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
                   <dt className="text-xs text-muted-foreground">

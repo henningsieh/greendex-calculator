@@ -157,6 +157,7 @@
       "unavailable": "No disponible hasta que se superen todos los puntos de la lista de comprobación"
     },
     "workspace": {
+      "noClaim": "Sin solicitud de reembolso",
       "label": "Espacio de trabajo de la solicitud de reembolso",
       "bandTitle": "Espacio de trabajo de la solicitud de reembolso",
       "submissionLabel": "Envío",

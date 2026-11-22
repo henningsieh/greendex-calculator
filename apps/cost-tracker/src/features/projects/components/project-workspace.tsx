@@ -26,6 +26,7 @@ import {
   isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
 import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
+import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   PartnershipActions,
@@ -37,47 +38,13 @@ import {
   ProjectMetrics,
   StatsSkeletonGrid,
 } from "@/features/projects/components/project-loading-states";
+import {
+  ProjectArchiveBadge,
+  ProjectSettlementBadge,
+} from "@/features/projects/components/project-status-badge";
+import { projectSettlement } from "@/features/projects/project-lifecycle";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
-
-function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
-  const t = useTranslations("projects.workspace");
-  if (!status) {
-    return (
-      <Badge data-claim-status="none" variant="secondary">
-        {t("noClaim")}
-      </Badge>
-    );
-  }
-  const labels: Record<ClaimStatus, string> = {
-    in_preparation: t("claimStatus.in_preparation"),
-    submitted: t("claimStatus.submitted"),
-    correction_requested: t("claimStatus.correctionRequested"),
-    approved: t("claimStatus.approved"),
-    rejected: t("claimStatus.rejected"),
-    paid: t("claimStatus.paid"),
-  };
-  return (
-    <Badge
-      data-claim-status={status}
-      variant={
-        status === "submitted"
-          ? "status-attention"
-          : status === "correction_requested"
-            ? "destructive"
-            : status === "approved"
-              ? "status-success"
-              : status === "rejected"
-                ? "status-destructive-solid"
-                : status === "paid"
-                  ? "status-success-solid"
-                  : "secondary"
-      }
-    >
-      {labels[status]}
-    </Badge>
-  );
-}
 
 function ProjectMetric({
   label,
@@ -186,7 +153,7 @@ function AssignedPartnersCard({
                   </div>
                 </div>
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <ClaimReadiness status={partner.claimStatus} />
+                  <ClaimStatusBadge status={partner.claimStatus} />
                   <ParticipantsLink
                     partnershipId={partner.id}
                     describedBy={`project-partner-${partner.id}`}
@@ -254,7 +221,7 @@ function PartnerProjectCard({
               {t("claimReadiness")}
             </dt>
             <dd className="mt-1">
-              <ClaimReadiness status={partnership.claimStatus} />
+              <ClaimStatusBadge status={partnership.claimStatus} />
             </dd>
           </div>
           <div>
@@ -344,10 +311,19 @@ export function ProjectWorkspace({
         title={project.name}
         rightButton={
           <div className="flex flex-wrap items-center gap-3">
-            {project.archived && (
-              <Badge variant="secondary" data-testid="project-archived-status">
-                {t("archived")}
-              </Badge>
+            {project.relationship === "hosted" ? (
+              <ProjectSettlementBadge
+                status={projectSettlement(
+                  project.archived,
+                  project.partnerOrganizations.map(
+                    ({ claimStatus }) => claimStatus,
+                  ),
+                )}
+              />
+            ) : (
+              <ProjectArchiveBadge
+                status={project.archived ? "archived" : "active"}
+              />
             )}
             <ProjectLifecycleActions projectId={project.id} />
           </div>

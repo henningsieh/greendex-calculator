@@ -545,7 +545,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     const reviewPage = await hostContext!.newPage();
     await reviewPage.goto(`/partnerships/${ids.settledA}/claim/review`);
     const review = reviewPage.getByTestId("claim-review");
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     await review.getByTestId("claim-decision-reopen").click();
     const confirm = review.getByTestId("claim-decision-confirm-reopen");
     await expect(confirm).toBeEnabled();
@@ -559,7 +559,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(confirm).toBeVisible();
     await confirm.click();
     await expect(review.getByRole("alert")).toBeVisible();
-    await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
+    await expect(review.locator('[data-claim-status="rejected"]')).toBeVisible();
     const [claim] = await db
       .select({ status: claimsTable.status })
       .from(claimsTable)

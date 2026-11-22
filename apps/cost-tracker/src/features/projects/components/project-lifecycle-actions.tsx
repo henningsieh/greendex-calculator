@@ -114,15 +114,6 @@ export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
       </Dialog>
       {workflow.settlement && (
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <span
-            className="text-sm text-muted-foreground"
-            data-testid="project-workspace-settlement"
-            data-settlement={workflow.settlement}
-          >
-            {workflow.settlement === "archived"
-              ? t("workspace.archived")
-              : t(`list.settlement.${workflow.settlement}`)}
-          </span>
           {workflow.canArchive && (
             <Button
               ref={archiveTrigger}
