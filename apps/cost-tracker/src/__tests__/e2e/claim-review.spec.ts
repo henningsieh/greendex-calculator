@@ -61,7 +61,6 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // Unique synthetic PDF bytes are seeded in S3 and deleted with the fixture;
 // Hosting review download is real browser evidence, not a mocked byte response.
 // The test-only payout reference is deliberately NOT an IBAN or bank account.
-// Case 27 is NOT-RUN: no transfer or paid marking is authorized.
 const suffix = randomUUID();
 const ids = {
   host: randomUUID(),
@@ -880,7 +879,6 @@ test.describe.serial("Claim review journey 25–26", () => {
       status: "approved",
       approvedAmountEur: "100.00",
     });
-    // Mark paid is deliberately never clicked: approval is not a bank transfer.
     expect((await events(0)).map((event) => event.eventType)).toEqual([
       "submitted",
       "correction_requested",
@@ -888,6 +886,26 @@ test.describe.serial("Claim review journey 25–26", () => {
       "resubmitted",
       "approved",
     ]);
+
+    const payment = review.getByTestId("claim-decision-markPaid");
+    await payment.focus();
+    await host.keyboard.press("Enter");
+    await review.getByTestId("claim-decision-cancel").click();
+    await expect(payment).toBeFocused();
+    expect((await claimState(0))?.status).toBe("approved");
+    await payment.click();
+    await review.getByTestId("claim-decision-confirm-markPaid").click();
+    await expect(review.locator('[data-review-status="paid"]')).toBeVisible();
+    await expect(review.locator('[data-history-event="paid"]')).toHaveCount(1);
+    await review.getByTestId("claim-decision-correctPayment").click();
+    await review
+      .getByTestId("claim-decision-reason-correctPayment")
+      .fill("Fixture payment was recorded in error");
+    await review.getByTestId("claim-decision-confirm-correctPayment").click();
+    await expect(review.locator('[data-review-status="approved"]')).toBeVisible();
+    await expect(
+      review.locator('[data-history-event="payment_corrected"]'),
+    ).toHaveCount(1);
 
     await host.goto("/claims");
     await expect(

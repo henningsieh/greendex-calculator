@@ -11,11 +11,7 @@ Status: recommended MVP target derived from the clickdummy's use cases and the a
 
 ## Claim lifecycle
 
-```text
-in preparation → submitted → correction requested → submitted
-                     ↘ approved → paid
-                     ↘ rejected → reopened for Hosting review
-```
+See the [generated Claim lifecycle](claim-lifecycle.generated.md) for the allowed transitions.
 
 Opening Claim UI persists nothing; there is no separate start ceremony. “Erstattungsantrag erstellen” / “Create claim” creates the Claim after the Project Partnership has selected a Payout Account. Its initial status is `in_preparation` (“In Vorbereitung” / “In preparation”), not a Project-wide phase or a synonym for every editable Claim. A submitted Claim is locked. Browser Back/Forward restoration revalidates the Claim's saved state and history rather than trusting a pre-submission snapshot; reload also preserves the lock. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
 
@@ -53,7 +49,9 @@ A Claim may be rejected only by the defined Hosting-side roles, with a reason. I
 
 ## Payment
 
-Approval and payment are separate. The MVP supports one full bank transfer only:
+See the [generated confirmation workflow](payment-confirmation.generated.md). Cancelling before confirmation changes nothing. A failed request keeps the confirmation and any entered reason available for retry.
+
+Approval and payment are separate. Cost Tracker records one full bank transfer:
 
 - an approved Claim begins unpaid;
 - authorized Hosting staff mark it paid only after sending one transfer equal to the approved amount;

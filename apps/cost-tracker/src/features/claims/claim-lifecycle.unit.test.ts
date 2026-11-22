@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  canCompleteProject,
   canCorrectPaidFlag,
   canPartnerEditClaim,
   canRecordPayment,
@@ -161,7 +160,7 @@ describe("review surfaces", () => {
   });
 });
 
-describe("Project completion", () => {
+describe("Claim settlement", () => {
   it("identifies only paid and rejected Claims as settled", () => {
     expect(isSettledClaimStatus("paid")).toBe(true);
     expect(isSettledClaimStatus("rejected")).toBe(true);
@@ -174,22 +173,5 @@ describe("Project completion", () => {
       undefined,
     ] as const)
       expect(isSettledClaimStatus(status)).toBe(false);
-  });
-
-  it("completes only when every Claim is paid or rejected", () => {
-    // No Partnerships means no open Claim blocks completion; this preserves
-    // the long-standing every/blockers semantics on both call sites.
-    expect(canCompleteProject([])).toBe(true);
-    expect(canCompleteProject(["paid", "rejected"])).toBe(true);
-    expect(canCompleteProject(["paid", "paid"])).toBe(true);
-    for (const status of [
-      "in_preparation",
-      "submitted",
-      "correction_requested",
-      "approved",
-    ] as const)
-      expect(canCompleteProject(["paid", status])).toBe(false);
-    expect(canCompleteProject([null])).toBe(false);
-    expect(canCompleteProject([undefined])).toBe(false);
   });
 });

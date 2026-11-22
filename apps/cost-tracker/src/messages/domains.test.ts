@@ -104,6 +104,7 @@ it.each([
 
 it.each([
   ["components/error-presentation/api-error.tsx", "apiErrors"],
+  ["components/reason-field-error.tsx", "common"],
   ["components/error-boundary.tsx", "shell"],
   ["app/(setup)/setup-links/[id]/page.tsx", "partnerships"],
   ["app/(setup)/participant/page.tsx", "participations"],

@@ -5,10 +5,10 @@ import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorizati
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { ReasonFieldError } from "@/components/reason-field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   ClaimCostTable,
   PayoutAccountLines,
 } from "@/features/claims/components/claim-document";
+import { usePaymentController } from "@/features/claims/payment-controller";
 import type { ClaimDecisionInput } from "@/features/claims/types";
 import { authClient } from "@/lib/auth-client";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -169,47 +170,26 @@ export function ClaimDecisionPanel({
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
 }) {
   const t = useTranslations("claims.review");
-  const [confirming, setConfirming] = useState<Decision | null>(null);
-  const [reason, setReason] = useState<string>("");
-  const [pending, setPending] = useState<boolean>(false);
-  const [feedback, setFeedback] = useState<React.ReactNode>(null);
-  const focusConfirmation = useCallback((prompt: HTMLDivElement | null) => {
-    prompt?.focus();
-  }, []);
-  const returnFocus = useRef<Decision | null>(null);
+  const {
+    intent: confirming,
+    reasonAction,
+    form,
+    feedback,
+    returnFocus,
+    focusConfirmation,
+    begin,
+    cancel,
+    execute,
+    pending,
+    confirmDisabled,
+  } = usePaymentController({
+    partnershipId,
+    approvedAmountEur,
+    canReview,
+    archived,
+    onDecision,
+  });
   const controls = claimPanelActions(status);
-  const reasonAction =
-    confirming === "requestCorrection" ||
-    confirming === "reject" ||
-    confirming === "correctPayment"
-      ? confirming
-      : null;
-  function begin(action: Decision) {
-    setConfirming(action);
-    setReason("");
-    setFeedback("");
-  }
-  async function execute() {
-    if (!canReview || archived || !confirming || pending) return;
-    if (reasonAction && !reason.trim()) return;
-    setPending(true);
-    setFeedback("");
-    try {
-      await onDecision(confirming, {
-        partnershipId,
-        ...(reasonAction ? { reason: reason.trim() } : {}),
-        ...(confirming === "markPaid"
-          ? { amountEur: approvedAmountEur ?? "" }
-          : {}),
-      });
-      setConfirming(null);
-      setReason("");
-    } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
-    } finally {
-      setPending(false);
-    }
-  }
   return (
     <Card variant="action">
       <CardHeader>
@@ -271,10 +251,33 @@ export function ClaimDecisionPanel({
                     data-testid={`claim-decision-reason-${confirming}`}
                     className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                     maxLength={MAX_CLAIM_REASON_LENGTH}
+                    readOnly={pending}
                     required
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
+                    aria-invalid={Boolean(form.formState.errors.reason)}
+                    aria-describedby={
+                      form.formState.errors.reason
+                        ? "decision-reason-error"
+                        : undefined
+                    }
+                    {...form.register("reason", {
+                      onChange: () => form.clearErrors("reason"),
+                      onBlur: () => {
+                        if (
+                          reasonAction === "correctPayment" &&
+                          !form.getValues("reason").trim()
+                        )
+                          form.setError("reason", {
+                            type: "required",
+                            message: "reasonInvalid",
+                          });
+                      },
+                    })}
                   />
+                  {form.formState.errors.reason && (
+                    <p id="decision-reason-error" role="alert">
+                      <ReasonFieldError />
+                    </p>
+                  )}
                 </div>
               )}
             </AlertDescription>
@@ -284,12 +287,7 @@ export function ClaimDecisionPanel({
                 variant="default"
                 size="lg"
                 type="button"
-                disabled={
-                  pending ||
-                  archived ||
-                  (Boolean(reasonAction) && !reason.trim()) ||
-                  (confirming === "markPaid" && !approvedAmountEur)
-                }
+                disabled={confirmDisabled}
                 data-testid={`claim-decision-confirm-${confirming}`}
                 onClick={() => void execute()}
               >
@@ -301,17 +299,18 @@ export function ClaimDecisionPanel({
                 variant="outline"
                 data-testid="claim-decision-cancel"
                 disabled={pending}
-                onClick={() => {
-                  returnFocus.current = confirming;
-                  setConfirming(null);
-                }}
+                onClick={cancel}
               >
                 {t("cancel")}
               </Button>
             </div>
           </Alert>
         )}
-        {feedback && <div role="alert">{feedback}</div>}
+        {feedback != null && (
+          <div role="alert">
+            <ErrorPresentation error={feedback} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -499,6 +498,8 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
         orpcQuery.claims.getReviewDetails,
         orpcQuery.projectPartnerships.list,
         orpcQuery.projects.get,
+        orpcQuery.projects.listHosted,
+        orpcQuery.projects.listPartner,
       ].map((query) =>
         client.invalidateQueries({ queryKey: query.key({ type: "query" }) }),
       ),

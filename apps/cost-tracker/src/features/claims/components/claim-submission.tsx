@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { useState } from "react";
 
 import {
   ErrorDetail,
@@ -11,8 +10,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { claimSubmissionAction } from "@/features/claims/claim-lifecycle";
+import { useClaimSubmission } from "@/features/claims/use-claim-submission";
 import { ChecklistFieldIssueSchema } from "@/lib/orpc/error-contract";
-import { orpc } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 const labels = {
@@ -48,34 +48,17 @@ function gapAnchor(path: (string | number)[]) {
 export function ClaimSubmission({
   partnershipId,
   preview,
+  action,
   refresh,
 }: {
   partnershipId: string;
   preview: Preview;
+  action: ReturnType<typeof claimSubmissionAction>;
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.submission");
-  const [confirming, setConfirming] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
-  const ready =
-    preview.items.length === 7 &&
-    preview.items.every((item) => item.passed) &&
-    preview.calculatedPayableEur !== null;
-  async function submit() {
-    setPending(true);
-    setFeedback("");
-    try {
-      await orpc.claims.submit({ partnershipId });
-      await refresh();
-    } catch (error) {
-      setConfirming(false);
-      setFeedback(<ErrorPresentation error={error} />);
-      await refresh();
-    } finally {
-      setPending(false);
-    }
-  }
+  const { confirming, pending, disabled, failure, open, cancel, submit } =
+    useClaimSubmission(partnershipId, action, preview, refresh);
   return (
     <Card variant="action">
       <CardHeader>
@@ -143,9 +126,9 @@ export function ClaimSubmission({
             variant="default"
             size="lg"
             type="button"
-            disabled={!ready || pending}
+            disabled={disabled}
             data-testid="claim-submit"
-            onClick={() => setConfirming(true)}
+            onClick={open}
           >
             {t("submit")}
           </Button>
@@ -157,7 +140,7 @@ export function ClaimSubmission({
                 variant="default"
                 size="lg"
                 type="button"
-                disabled={!ready || pending}
+                disabled={disabled}
                 data-testid="claim-submit-confirm"
                 onClick={() => void submit()}
               >
@@ -168,14 +151,18 @@ export function ClaimSubmission({
                 type="button"
                 variant="outline"
                 disabled={pending}
-                onClick={() => setConfirming(false)}
+                onClick={cancel}
               >
                 {t("cancel")}
               </Button>
             </div>
           </Alert>
         )}
-        {feedback && <div role="alert">{feedback}</div>}
+        {failure && (
+          <div role="alert">
+            <ErrorPresentation error={failure.error} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

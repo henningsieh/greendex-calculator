@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import {
   claimReviewTransition,
+  evaluateClaimTransition,
   type ClaimReviewDecision,
   isClaimReviewable,
   MAX_CLAIM_REASON_LENGTH,
@@ -111,7 +112,11 @@ function decision(action: ClaimReviewDecision) {
             };
         }
         if (!claim) throw createSituationErrors(errors).claimNotFound();
-        if (claim.status !== expectedStatus)
+        if (
+          evaluateClaimTransition(claim.status, action, {
+            reason: Boolean(input.reason),
+          }).kind === "refused"
+        )
           throw expectedStatus === "rejected"
             ? createSituationErrors(errors).claimRejectedRequired()
             : createSituationErrors(errors).claimSubmittedRequired();

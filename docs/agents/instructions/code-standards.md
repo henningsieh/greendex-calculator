@@ -51,6 +51,18 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 - Keep application runtime database-client access in feature procedures. Route and view modules consume oRPC; integration-test fixtures, Better Auth integration, and schema-derived validation are separate allowed seams.
 - Keep database schemas and migrations in `packages/database/`.
 
+## State machines
+
+Use a state machine when a named event changes a workflow and the current state determines whether that event is allowed. Apply this pattern to domain lifecycles and UI workflows alike. Derive labels, badges, and read-only statuses from existing facts instead of giving them their own machines. In Cost Tracker, for example, Project archive/reopen changes stored state; settlement readiness is derived from Claims ([ADR-0027](../../adr/0027-archive-settled-cost-tracker-projects.md)).
+
+1. **Define transitions once.** Keep a typed transition table in the owning feature. A pure function takes the current state, a named event, and any facts required by the transition. It returns the next state or an explicit, typed refusal. Derive state-based action availability from the same definition. Start with plain TypeScript; extract a shared helper only when implementations show real duplication.
+2. **Run effects outside the machine.** For domain transitions, the server authorizes the action, reads authoritative state, and applies the change and any history in the same transaction with the required locks. The UI may use the shared policy to guide presentation, but never overrides server enforcement ([ADR-0014](../../adr/0014-declare-permissions-once-and-evaluate-them-on-the-server.md)). UI machines own interaction state only; their controllers run requests and other effects without duplicating persisted domain status.
+3. **Show each actionable error once.** Use React Hook Form field errors for problems the user can fix in a specific field; use the app's error toast for other action failures. Keep the dialog and entered values on failure. Keep localized feedback outside the transition function. An intentionally ignored event, such as a second click while saving, does not need a toast.
+4. **Generate and check the diagram.** Generate a Mermaid state diagram from each machine's transition definition and commit it in the owning app's behavior docs under `docs/`. Include named actions and important user-facing prerequisites; omit implementation details such as locks. Use an automated drift check to reject stale diagrams. User documentation must follow the generated workflow without copying technical detail. Use ADRs for the reasoning, not a second hand-maintained diagram.
+5. **Test both outcomes.** Test valid transitions, invalid events, and guard refusals. Cover server enforcement at the procedure boundary and, for UI machines, the appropriate error placement and preserved input.
+
+Use the Cost Tracker Claim lifecycle and its payment dialog as the first domain and UI reference implementations, respectively.
+
 ## Tests
 
 Follow the authoritative [two-loop testing policy](conventions.md#two-verification-loops) for focused selection, dev/MCP runtime checks, production-only exceptions, and coordinator-owned final acceptance. Report selected checks and rationale, runtime mode/target, evidence, and blockers. Shared-boundary changes require broader affected coverage, not an unrelated full suite per implementer.

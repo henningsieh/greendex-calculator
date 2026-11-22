@@ -9,7 +9,10 @@ import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
+import {
+  canPartnerEditClaim,
+  evaluateClaimTransition,
+} from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import {
   ClaimDraftSchema,
@@ -319,22 +322,28 @@ export const saveDraft = authorized
         )
         .where(eq(selections.partnershipId, input.partnershipId))
         .limit(1);
-      if (!selected) throw createSituationErrors(errors).payoutAccountRequired();
       if (claim) {
+        if (!selected)
+          throw createSituationErrors(errors).payoutAccountRequired();
         if (!canPartnerEditClaim(claim.status))
           throw createSituationErrors(errors).claimNotEditable();
         return ClaimDraftSchema.parse(claim);
       }
+      const decision = evaluateClaimTransition(null, "create", {
+        payoutAccount: Boolean(selected),
+      });
+      if (decision.kind === "refused")
+        throw createSituationErrors(errors).payoutAccountRequired();
       const [created] = await tx
         .insert(claims)
-        .values(input)
+        .values({ ...input, status: decision.state })
         .onConflictDoNothing({ target: claims.partnershipId })
         .returning({
           id: claims.id,
           partnershipId: claims.partnershipId,
           status: claims.status,
         });
-      if (created) return { ...created, status: "in_preparation" as const };
+      if (created) return { ...created, status: decision.state };
       const [raced] = await tx
         .select({
           id: claims.id,

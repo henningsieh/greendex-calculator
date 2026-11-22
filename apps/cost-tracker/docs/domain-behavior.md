@@ -41,6 +41,8 @@ Participant-only Memberships are read-only for Project management: neither the U
 
 ## Cost Tracker archive and reopening
 
+See the [generated Project lifecycle](project-lifecycle.generated.md). Settlement is derived, not stored: an active Project with any missing or unsettled Claim has settlement open, and an active Project with no blockers is ready to archive. An archived Project shows Archived instead of either readiness label.
+
 [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) establishes archive and reopening for Cost Tracker. [#416](https://github.com/henningsieh/greendex-calculator/issues/416) records the implementation and subsequent setup-link closure decision.
 
 - A Project has zero or more Project Partnerships, each with at most one Claim. A Claim is settled when paid or rejected. Approved unpaid Claims are not settled. No additional Claim-close action or status follows payment or rejection.

@@ -18,7 +18,15 @@ import { openapi } from "@orpc/openapi";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
+import {
+  canPartnerEditClaim,
+  evaluateClaimTransition,
+  claimSubmissionAction,
+} from "@/features/claims/claim-lifecycle";
+import {
+  claimChecklistKeys as checklistKeys,
+  isClaimChecklistReady,
+} from "@/features/claims/claim-submission-policy";
 import {
   decimalUnits,
   derivePayable,
@@ -47,16 +55,6 @@ const exact = (value: string | null, scale: number) => {
 };
 
 type SubmissionTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-const checklistKeys = [
-  "payoutAccount",
-  "entries",
-  "entryDetails",
-  "proofDocuments",
-  "participations",
-  "journeys",
-  "fundingRules",
-] as const;
 
 function checklistItems(issues: ReturnType<typeof issue>[]) {
   const groups: Record<
@@ -465,8 +463,8 @@ export const submit = authorized
       }
       if (!claim)
         throw createSituationErrors(errors).claimRequiredForSubmission();
-      if (!canPartnerEditClaim(claim.status))
-        throw createSituationErrors(errors).claimNotEditable();
+      const action = claimSubmissionAction(claim.status);
+      if (!action) throw createSituationErrors(errors).claimNotEditable();
 
       const { issues, approvedAmountEur } = await evaluateSubmission(
         tx,
@@ -474,7 +472,10 @@ export const submit = authorized
         input.partnershipId,
         scope,
       );
-      if (issues.length)
+      const decision = evaluateClaimTransition(claim.status, action, {
+        submissionReady: isClaimChecklistReady(checklistItems(issues)),
+      });
+      if (decision.kind === "refused")
         throw createSituationErrors(errors).submissionIncomplete(issues);
       if (approvedAmountEur === null) {
         console.error("Complete Claim checklist has no payable amount");
@@ -482,14 +483,13 @@ export const submit = authorized
       }
       await tx
         .update(claims)
-        .set({ status: "submitted", approvedAmountEur })
+        .set({ status: decision.state, approvedAmountEur })
         .where(eq(claims.id, claim.id));
       await tx.insert(history).values({
         claimId: claim.id,
         actorUserId: context.user.id,
-        eventType:
-          claim.status === "correction_requested" ? "resubmitted" : "submitted",
+        eventType: action === "resubmit" ? "resubmitted" : "submitted",
       });
-      return { id: claim.id, status: "submitted" as const, approvedAmountEur };
+      return { id: claim.id, status: decision.state, approvedAmountEur };
     });
   });

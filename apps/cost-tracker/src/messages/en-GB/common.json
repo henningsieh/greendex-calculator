@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Enter a reason of at most 2,000 characters.",
       "confirm": "Confirm",
       "cancel": "Cancel",
       "close": "Close"

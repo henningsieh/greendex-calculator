@@ -14,6 +14,11 @@ const workspaceLint: Check = {
 
 // These checks can read the final sources concurrently after workspace autofixes.
 const checks: Check[] = [
+  {
+    name: "cost-tracker-workflows",
+    command: "pnpm",
+    args: ["run", "check:cost-tracker-workflows"],
+  },
   { name: "tailwind", command: "pnpm", args: ["run", "check:tailwind"] },
   {
     name: "schema-derivation",

@@ -15,7 +15,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
+import {
+  canCreateClaim,
+  canPartnerEditClaim,
+  claimSubmissionAction,
+} from "@/features/claims/claim-lifecycle";
 import { CostEditor } from "@/features/claims/components/claim-cost-editor";
 import {
   ClaimBand,
@@ -499,7 +503,10 @@ function ClaimDraftEditor({
             variant="default"
             size="lg"
             type="button"
-            disabled={pending || !payout.selectedPayoutAccountId}
+            disabled={
+              pending ||
+              !canCreateClaim(null, Boolean(payout.selectedPayoutAccountId))
+            }
             data-testid="claim-create"
             onClick={() => void saveDraft()}
           >
@@ -617,6 +624,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
               <ClaimSubmission
                 partnershipId={partnershipId}
                 preview={preview}
+                action={claimSubmissionAction(draft?.status ?? null)}
                 refresh={refresh}
               />
             </aside>

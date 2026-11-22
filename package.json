@@ -7,6 +7,8 @@
     "build": "turbo run build --concurrency=1",
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
+    "check:cost-tracker-workflows": "tsx --tsconfig apps/cost-tracker/tsconfig.json scripts/cost-tracker-workflows.ts",
+    "generate:cost-tracker-workflows": "pnpm run check:cost-tracker-workflows --write",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "check:schema-derivation": "tsx scripts/check-schema-derivation.ts --gate",
     "check:schema-duplication": "tsx scripts/check-schema-duplication.ts --gate",

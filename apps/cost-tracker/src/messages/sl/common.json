@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Vnesite razlog z največ 2.000 znaki.",
       "confirm": "Potrdi",
       "cancel": "Prekliči",
       "close": "Zapri"

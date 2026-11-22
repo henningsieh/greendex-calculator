@@ -1,6 +1,7 @@
 {
   "common": {
     "confirmDialog": {
+      "reasonInvalid": "Inserisci un motivo di massimo 2.000 caratteri.",
       "confirm": "Conferma",
       "cancel": "Annulla",
       "close": "Chiudi"

@@ -443,6 +443,7 @@ describe("Project workspace", () => {
     await user.type(screen.getByRole("textbox"), "Correction");
     await user.click(screen.getByTestId("reopen-project-confirm"));
     await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("textbox")).toHaveValue("Correction");
     expect(screen.getByTestId("reopen-project-confirm")).toBeEnabled();
     await user.click(screen.getByTestId("reopen-project-confirm"));
     expect(mocks.reopen).toHaveBeenCalledTimes(2);
@@ -486,9 +487,9 @@ describe("Project workspace", () => {
       expect.objectContaining({ type: "error" }),
     );
     await waitFor(() => {
-      expect(screen.getByTestId("archive-project")).toBeEnabled();
+      expect(screen.getByTestId("confirm-dialog-execute")).toBeEnabled();
     });
-    expect(screen.getByTestId("archive-project")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeVisible();
   });
 
   it.each(["FORBIDDEN", "NOT_FOUND"] as const)(

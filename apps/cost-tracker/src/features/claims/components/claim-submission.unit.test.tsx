@@ -29,6 +29,7 @@ it.each([
     const markup = renderToStaticMarkup(
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ClaimSubmission
+          action="submit"
           partnershipId="partnership"
           refresh={async () => undefined}
           preview={{
@@ -103,6 +104,7 @@ it.each(["Reworded diagnostic.", "private server failure"])(
     const markup = renderToStaticMarkup(
       <NextIntlClientProvider locale="de" messages={german}>
         <ClaimSubmission
+          action="submit"
           partnershipId="partnership"
           refresh={async () => undefined}
           preview={preview}
@@ -153,6 +155,7 @@ it.each([
   const markup = renderToStaticMarkup(
     <NextIntlClientProvider locale="de" messages={german}>
       <ClaimSubmission
+        action="submit"
         partnershipId="partnership"
         refresh={async () => undefined}
         preview={preview}

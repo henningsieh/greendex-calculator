@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,11 +9,14 @@ import {
   ClaimHistory,
   ClaimReviewDetails,
 } from "@/features/claims/components/claim-review";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
 const access = vi.hoisted(() => ({
   role: "coordinator",
   canReview: true,
 }));
+const toastAdd = vi.hoisted(() => vi.fn());
+vi.mock("@/components/ui/toast", () => ({ toast: { add: toastAdd } }));
 vi.mock("@/lib/auth-client", async (importOriginal) => {
   const { authClient } =
     await importOriginal<typeof import("@/lib/auth-client")>();
@@ -46,6 +49,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ],
 }));
 beforeEach(() => {
+  toastAdd.mockClear();
   access.role = "coordinator";
   access.canReview = true;
 });
@@ -80,6 +84,93 @@ const base = {
 };
 
 describe("Claim decisions", () => {
+  it("cancels payment without a write and restores keyboard focus", async () => {
+    const user = userEvent.setup();
+    const onDecision = vi.fn();
+    render(
+      <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
+    );
+    const action = screen.getByTestId("claim-decision-markPaid");
+    action.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("alert").contains(document.activeElement)).toBe(true);
+    await user.click(screen.getByTestId("claim-decision-cancel"));
+    expect(screen.getByTestId("claim-decision-markPaid")).toHaveFocus();
+    expect(onDecision).not.toHaveBeenCalled();
+  });
+  it("ignores duplicate payment submissions while pending and closes on success", async () => {
+    let finish: () => void = () => {};
+    const onDecision = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
+    );
+    await userEvent.click(screen.getByTestId("claim-decision-markPaid"));
+    const confirm = screen.getByTestId("claim-decision-confirm-markPaid");
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(onDecision).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("claim-decision-cancel")).toBeDisabled();
+    finish();
+    await waitFor(() =>
+      expect(screen.getByTestId("claim-decision-markPaid")).toBeVisible(),
+    );
+    expect(toastAdd).not.toHaveBeenCalled();
+  });
+
+  it.each([new Error("offline"), createSituationErrors().partnershipNotFound()])(
+    "retains the correction reason and shows one toast after a request failure",
+    async (failure) => {
+      const onDecision = vi
+        .fn()
+        .mockRejectedValueOnce(failure)
+        .mockResolvedValueOnce(undefined);
+      render(
+        <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
+      );
+      await userEvent.click(screen.getByTestId("claim-decision-correctPayment"));
+      const reason = screen.getByTestId("claim-decision-reason-correctPayment");
+      await userEvent.type(reason, "Recorded in error");
+      await userEvent.click(
+        screen.getByTestId("claim-decision-confirm-correctPayment"),
+      );
+      await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1));
+      expect(reason).toHaveValue("Recorded in error");
+      expect(reason).not.toHaveAttribute("aria-invalid", "true");
+      await userEvent.click(
+        screen.getByTestId("claim-decision-confirm-correctPayment"),
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("claim-decision-correctPayment")).toBeVisible(),
+      );
+      expect(onDecision).toHaveBeenLastCalledWith("correctPayment", {
+        partnershipId: "partner",
+        reason: "Recorded in error",
+      });
+    },
+  );
+
+  it("puts a refused correction reason at the field without a toast", async () => {
+    const onDecision = vi.fn();
+    render(
+      <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
+    );
+    await userEvent.click(screen.getByTestId("claim-decision-correctPayment"));
+    const reason = screen.getByTestId("claim-decision-reason-correctPayment");
+    const overlong = "x".repeat(2001);
+    fireEvent.change(reason, { target: { value: overlong } });
+    await userEvent.click(
+      screen.getByTestId("claim-decision-confirm-correctPayment"),
+    );
+    expect(reason).toHaveAttribute("aria-invalid", "true");
+    expect(reason).toHaveValue(overlong);
+    expect(onDecision).not.toHaveBeenCalled();
+    expect(toastAdd).not.toHaveBeenCalled();
+  });
   it.each(["coordinator", "owner", "admin"])(
     "offers decisions for an authorized %s through Better Auth permissions",
     (role) => {

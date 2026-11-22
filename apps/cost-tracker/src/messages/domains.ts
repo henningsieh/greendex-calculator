@@ -25,6 +25,7 @@ export const messageBundleRoutes = [
   ["features/projects/", "projects"],
   ["components/archived-action-explanation.tsx", "projects"],
   ["components/confirm-dialog.tsx", "common"],
+  ["components/reason-field-error.tsx", "common"],
   ["components/error-presentation/", "apiErrors"],
   ["components/", "shell"],
   ["app/(protected)/projects/[id]/participants/", "participations"],
