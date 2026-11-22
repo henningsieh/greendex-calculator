@@ -986,11 +986,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expectPrivateURL(page, new RegExp(`/projects/${projectId}$`));
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator(`a[href$="${claimURL}"]`)).toBeVisible();
-      // Text-free: readiness card carries the submitted claim state (no copy).
+      // Text-free: the readiness card for this Claim carries the submitted
+      // claim state (no copy). Scope by the Claim link first: the retained
+      // claim-page band also renders the shared status badge.
       await expect(
-        page.locator('[data-slot="card"]').filter({
-          has: page.locator('[data-claim-status="submitted"]'),
-        }),
+        page
+          .locator('[data-slot="card"]')
+          .filter({ has: page.locator(`a[href$="${claimURL}"]`) })
+          .filter({ has: page.locator('[data-claim-status="submitted"]') }),
       ).toBeVisible();
       await page.goForward();
       await expectPrivateURL(page, new RegExp(`${claimURL}$`));

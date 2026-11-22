@@ -229,8 +229,14 @@ describe("Project list", { timeout: 20_000 }, () => {
     });
 
     const advanced = screen.getByTestId("project-advanced-filters");
+    // The Partner filter resolves inside its own Suspense boundary, so it can
+    // arrive after the list itself. Wait for it instead of asserting at once.
     expect(advanced).toContainElement(
-      screen.getByTestId("project-partner-filter-menu"),
+      await screen.findByTestId(
+        "project-partner-filter-menu",
+        {},
+        { timeout: 10_000 },
+      ),
     );
     await userEvent.click(advanced.querySelector("summary")!);
     expect(advanced).toHaveAttribute("open");
@@ -251,7 +257,14 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(screen.getByTestId("project-advanced-filters")).toHaveAttribute(
       "open",
     );
-    expect(screen.getAllByTestId("project-partner-filter-menu")).toHaveLength(1);
+    // Same Suspense boundary as above: await the resolved filter menu.
+    expect(
+      await screen.findAllByTestId(
+        "project-partner-filter-menu",
+        {},
+        { timeout: 10_000 },
+      ),
+    ).toHaveLength(1);
     await userEvent.click(screen.getByTestId("project-partner-filter-menu"));
     expect(
       await screen.findByTestId("project-partner-filter-partner-1"),
