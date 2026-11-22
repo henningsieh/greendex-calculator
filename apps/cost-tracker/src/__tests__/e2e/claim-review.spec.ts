@@ -229,7 +229,7 @@ async function claimState(index: number) {
   const [claim] = await db
     .select({
       status: claims.status,
-      approvedAmountEur: claims.approvedAmountEur,
+      reimbursementAmountEur: claims.reimbursementAmountEur,
     })
     .from(claims)
     .where(eq(claims.id, ids.claims[index]!));
@@ -405,7 +405,7 @@ test.describe.serial("Claim review journey 25–26", () => {
         id,
         partnershipId: ids.partnerships[index]!,
         status: "submitted" as const,
-        approvedAmountEur: "100.00",
+        reimbursementAmountEur: "100.00",
       })),
     );
     await db.insert(entries).values(
@@ -670,8 +670,8 @@ test.describe.serial("Claim review journey 25–26", () => {
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     // Before approval, show the stored calculation as an estimate.
-    await expect(review.getByTestId("estimated-payable")).toBeVisible();
-    await expect(review.getByTestId("approved-payable")).toHaveCount(0);
+    await expect(review.getByTestId("estimated-reimbursement")).toBeVisible();
+    await expect(review.getByTestId("approved-reimbursement")).toHaveCount(0);
     const cost = review
       .getByTestId("claim-cost-table")
       .locator(
@@ -877,7 +877,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeVisible();
     expect(await claimState(0)).toEqual({
       status: "approved",
-      approvedAmountEur: "100.00",
+      reimbursementAmountEur: "100.00",
     });
     expect((await events(0)).map((event) => event.eventType)).toEqual([
       "submitted",

@@ -13,8 +13,8 @@ import {
   evaluateClaimTransition,
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
-import { decimalUnits } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { decimalUnits } from "@/features/claims/reimbursement";
 import { ClaimInputSchema } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -23,7 +23,7 @@ import { authorized } from "@/lib/orpc/middleware";
 const result = z.object({
   id: z.string(),
   status: z.enum(["approved", "paid"]),
-  approvedAmountEur: z.string(),
+  reimbursementAmountEur: z.string(),
 });
 
 /** Call only after the bank confirms one full transfer; a failed transfer is not a Claim event. */
@@ -65,13 +65,13 @@ export const markPaid = authorized
       // below keeps the one-full-transfer invariant (ADR-0009).
       if (!canRecordPayment(claim.status))
         throw createSituationErrors(errors).claimApprovalRequired();
-      if (claim.approvedAmountEur === null) {
+      if (claim.reimbursementAmountEur === null) {
         console.error("Approved/paid Claim lacks an approved amount");
         throw createSituationErrors(errors).internalFailure();
       }
       const amount = decimalUnits(input.amountEur, 2);
       const fullPayment =
-        amount > 0n && amount === decimalUnits(claim.approvedAmountEur, 2);
+        amount > 0n && amount === decimalUnits(claim.reimbursementAmountEur, 2);
       // Repeating the same confirmed transfer does not create another payment or history entry.
       if (claim.status === "paid") {
         if (!fullPayment)
@@ -79,7 +79,7 @@ export const markPaid = authorized
         return {
           id: claim.id,
           status: "paid" as const,
-          approvedAmountEur: claim.approvedAmountEur,
+          reimbursementAmountEur: claim.reimbursementAmountEur,
         };
       }
       const decision = evaluateClaimTransition(claim.status, "markPaid", {
@@ -101,7 +101,7 @@ export const markPaid = authorized
       return {
         id: claim.id,
         status: decision.state,
-        approvedAmountEur: claim.approvedAmountEur,
+        reimbursementAmountEur: claim.reimbursementAmountEur,
       };
     });
   });
@@ -136,7 +136,7 @@ export const correctPayment = authorized
         errors,
         "project",
       );
-      if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
+      if (claim?.status === "approved" && claim.reimbursementAmountEur !== null) {
         const [latest] = await tx
           .select({ eventType: history.eventType, reason: history.reason })
           .from(history)
@@ -150,7 +150,7 @@ export const correctPayment = authorized
           return {
             id: claim.id,
             status: "approved" as const,
-            approvedAmountEur: claim.approvedAmountEur,
+            reimbursementAmountEur: claim.reimbursementAmountEur,
           };
       }
       if (!claim) throw createSituationErrors(errors).claimNotFound();
@@ -159,7 +159,7 @@ export const correctPayment = authorized
       });
       if (decision.kind === "refused")
         throw createSituationErrors(errors).claimPaidRequired();
-      if (claim.approvedAmountEur === null) {
+      if (claim.reimbursementAmountEur === null) {
         console.error("Paid Claim lacks an approved amount");
         throw createSituationErrors(errors).internalFailure();
       }
@@ -176,7 +176,7 @@ export const correctPayment = authorized
       return {
         id: claim.id,
         status: decision.state,
-        approvedAmountEur: claim.approvedAmountEur,
+        reimbursementAmountEur: claim.reimbursementAmountEur,
       };
     });
   });

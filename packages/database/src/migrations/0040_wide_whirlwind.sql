@@ -1,0 +1,1 @@
+ALTER TABLE "claim" ADD CONSTRAINT "claim_approved_amount_required_unless_preparation" CHECK ("claim"."status" = 'in_preparation' or "claim"."approved_amount_eur" is not null);

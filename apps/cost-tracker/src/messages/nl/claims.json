@@ -63,13 +63,12 @@
         "partner": "Partnerorganisatie",
         "status": "Status",
         "submitted": "Ingediend",
-        "payable": "Uit te betalen",
-        "action": "Actie"
+        "estimatedReimbursement": "Geschatte vergoeding",
+        "claimReview": "Beoordeling van declaratie"
       },
       "status": {
         "submitted": "In afwachting van beoordeling"
       },
-      "reviewClaim": "Declaratie beoordelen",
       "showingCount": "{shown} van {total, plural, one {# declaratie} other {# declaraties}} weergegeven",
       "emptyTitle": "Geen ingediende declaraties die op beoordeling wachten",
       "emptyDescription": "Wanneer een partner een declaratie indient, verschijnt die hier voor beoordeling door de organiserende organisatie.",
@@ -78,7 +77,6 @@
       "clearFilters": "Filters wissen",
       "previousPage": "Vorige pagina",
       "nextPage": "Volgende pagina",
-      "unavailable": "Niet beschikbaar",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "Heropenen zet de declaratie terug naar beoordeling door de organiserende organisatie en houdt bewerking door de partner vergrendeld. Vraag apart een correctie aan als er wijzigingen nodig zijn.",
       "confirmApproval": "Keur de declaratie goed voor het getoonde bedrag. Hiermee maak je geen geld over en registreer je geen betaling.",
       "confirmPaymentCorrection": "De declaratie blijft goedgekeurd en staat weer op onbetaald. Hiermee draai je de bankoverschrijving niet terug.",
-      "unavailable": "Niet beschikbaar",
       "equalShare": "Gelijk aandeel (berekend bij indiening)",
       "title": "Beoordeling van declaratie",
       "contextLoading": "Context laden",
@@ -269,6 +266,9 @@
         "noClaim": "Er is geen declaratie aangemaakt. Het openen van deze werkruimte slaat niets op.",
         "payable": "Berekend uit te betalen: {amount} EUR (door de server berekend)."
       }
+    },
+    "link": {
+      "claimReview": "Beoordeling van declaratie"
     }
   }
 }

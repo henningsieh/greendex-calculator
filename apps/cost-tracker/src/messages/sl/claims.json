@@ -63,13 +63,12 @@
         "partner": "Partnerska organizacija",
         "status": "Stanje",
         "submitted": "Oddano",
-        "payable": "Izplačljivo",
-        "action": "Dejanje"
+        "estimatedReimbursement": "Ocenjeno povračilo",
+        "claimReview": "Pregled zahtevka"
       },
       "status": {
         "submitted": "Čaka na pregled"
       },
-      "reviewClaim": "Pregled zahtevka",
       "showingCount": "Prikazanih {shown} od {total, plural, one {# zahtevka} two {# zahtevkov} few {# zahtevki} other {# zahtevkov}}",
       "emptyTitle": "Ni oddanih zahtevkov, ki čakajo na pregled",
       "emptyDescription": "Ko partner odda zahtevek, se ta prikaže tukaj za pregled gostiteljske organizacije.",
@@ -78,7 +77,6 @@
       "clearFilters": "Počisti filtre",
       "previousPage": "Prejšnja stran",
       "nextPage": "Naslednja stran",
-      "unavailable": "Ni na voljo",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
       "confirmApproval": "Odobrite zahtevek za prikazani znesek. S tem ne nakažete denarja in ne zabeležite plačila.",
       "confirmPaymentCorrection": "Zahtevek ostane odobren in znova velja za neplačanega. S tem ne razveljavite bančnega nakazila.",
-      "unavailable": "Ni na voljo",
       "equalShare": "Enak delež (izračunan ob oddaji)",
       "title": "Pregled zahtevka",
       "contextLoading": "Nalaganje konteksta",
@@ -269,6 +266,9 @@
         "noClaim": "Zahtevek še ni ustvarjen. Odpiranje tega prostora ne shrani ničesar.",
         "payable": "Izračunano izplačilo: {amount} EUR (izračuna strežnik)."
       }
+    },
+    "link": {
+      "claimReview": "Pregled zahtevka"
     }
   }
 }

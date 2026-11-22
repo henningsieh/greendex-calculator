@@ -28,14 +28,15 @@ export function canSubmitClaim(
   action: "submit" | "resubmit" | null,
   facts: {
     items: readonly ChecklistItem[];
-    calculatedPayableEur: string | null;
+    calculatedReimbursementEur: string | null;
   },
 ): boolean {
   return (
     action !== null &&
     evaluateClaimTransition(claimTransitions[action].from, action, {
       submissionReady:
-        isClaimChecklistReady(facts.items) && facts.calculatedPayableEur !== null,
+        isClaimChecklistReady(facts.items) &&
+        facts.calculatedReimbursementEur !== null,
     }).kind === "transition"
   );
 }

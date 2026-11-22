@@ -133,7 +133,7 @@ function getRowSelection() {
     organizationName: organization.name,
     status: claimsTable.status,
     submittedAt: claimsTable.updatedAt,
-    payableAmountEur: claimsTable.approvedAmountEur,
+    reimbursementAmountEur: claimsTable.reimbursementAmountEur,
   };
 }
 
@@ -326,8 +326,19 @@ export const listReviewQueue = authorized
           .orderBy(asc(organization.name), asc(organization.id)),
       ]);
 
+    // The database check owns this invariant: the queue scope is submitted
+    // only, so a null amount here means the constraint was bypassed. Fail
+    // loud rather than widening the row type back to nullable.
+    const rows = pageRows.map((row) => {
+      if (row.reimbursementAmountEur === null) {
+        console.error("Submitted Claim lacks a saved estimated reimbursement");
+        throw createSituationErrors(errors).internalFailure();
+      }
+      return { ...row, reimbursementAmountEur: row.reimbursementAmountEur };
+    });
+
     return {
-      ...finalizePage(pageRows, input, cursor, fingerprint),
+      ...finalizePage(rows, input, cursor, fingerprint),
       metrics: {
         whole: mapMetrics(wholeMetricRows[0]),
         filtered: mapMetrics(filteredMetricRows[0]),

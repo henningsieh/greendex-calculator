@@ -336,7 +336,9 @@ export function ResolvedProjectListResults({
             {
               id: "participants",
               enableSorting: false,
-              header: t("participants"),
+              // The link names the column, so the header stays bare on screen
+              // while assistive tech keeps the column name.
+              header: () => <span className="sr-only">{t("participants")}</span>,
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
                 <ParticipantsLink
                   density="compact"
@@ -410,12 +412,22 @@ export function ResolvedProjectListResults({
     startDate: t("startDate"),
     endDate: t("endDate"),
   };
+  // Fixed table layout: each data column owns a share, so a long Project name
+  // can only truncate instead of widening the register past the card. The
+  // shares hold at the narrowest desktop container (56rem), where every label
+  // and sorting badge still fits.
+  const columnWidths: Record<string, string> = {
+    settlement: "w-[16%]",
+    startDate: "w-[16%]",
+    endDate: "w-[15%]",
+    location: "w-[15%]",
+    participants: "w-[16%]",
+  };
   const cellLabels: Record<string, string> = {
     settlement: t("settlementFilter"),
     startDate: t("startDate"),
     endDate: t("endDate"),
     location: t("location"),
-    participants: t("participants"),
   };
   const hasActiveFilters = Boolean(
     state.search ||
@@ -737,10 +749,11 @@ export function ResolvedProjectListResults({
         </div>
       </div>
 
-      {/* Desktop: dense table. */}
+      {/* Desktop: dense table. Fixed layout, so a long Project name ellipsises
+          in its own column instead of widening the register past the card. */}
       <div className="hidden @4xl/content:block">
         <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-          <Table aria-label={t("label")}>
+          <Table aria-label={t("label")} className="table-fixed">
             <TableHeader className="bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -750,7 +763,10 @@ export function ResolvedProjectListResults({
                       className={
                         header.column.id === "name"
                           ? "w-auto whitespace-nowrap"
-                          : "w-[15%] px-2 tracking-normal whitespace-nowrap normal-case"
+                          : cn(
+                              "px-2 tracking-normal whitespace-nowrap normal-case",
+                              columnWidths[header.column.id],
+                            )
                       }
                       data-testid={`project-column-header-${header.column.id}`}
                       aria-sort={
@@ -793,6 +809,9 @@ export function ResolvedProjectListResults({
                           (cell.column.id === "startDate" ||
                             cell.column.id === "endDate") &&
                             "whitespace-nowrap tabular-nums",
+                          // A button link reads as a row action, so it sits on the
+                          // cell's trailing edge like the Claim register's link.
+                          cell.column.id === "participants" && "text-right",
                         )}
                       >
                         {flexRender(
@@ -817,6 +836,15 @@ export function ResolvedProjectListResults({
           rows.map((row) => {
             const [titleCell, ...cellList] = row.getVisibleCells();
             if (!titleCell) return null;
+            // Participants is navigation, not a data field: it leaves the
+            // <dl> for the card footer, matching the submitted-Claim cards.
+            // A hidden Participants column takes the footer with it.
+            const detailCells = cellList.filter(
+              (cell) => cell.column.id !== "participants",
+            );
+            const showsParticipants = cellList.some(
+              (cell) => cell.column.id === "participants",
+            );
             return (
               <article
                 className="rounded-xl border bg-card px-4 py-3.5"
@@ -833,28 +861,28 @@ export function ResolvedProjectListResults({
                   </Link>
                 </div>
                 <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
-                  {cellList.map((cell) => (
+                  {detailCells.map((cell) => (
                     <Fragment key={cell.id}>
                       <dt className="text-xs text-muted-foreground">
                         {cellLabels[cell.column.id]}
                       </dt>
                       <dd className="min-w-0 text-right text-xs wrap-anywhere">
-                        {cell.column.id === "participants" ? (
-                          <ParticipantsLink
-                            density="compact"
-                            projectId={row.original.id}
-                            testId={`project-participants-${row.original.id}-card`}
-                          />
-                        ) : (
-                          flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
                         )}
                       </dd>
                     </Fragment>
                   ))}
                 </dl>
+                {showsParticipants && (
+                  <div className="mt-2 border-t pt-2 text-right">
+                    <ParticipantsLink
+                      projectId={row.original.id}
+                      testId={`project-participants-${row.original.id}-card`}
+                    />
+                  </div>
+                )}
               </article>
             );
           })

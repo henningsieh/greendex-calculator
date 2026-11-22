@@ -108,15 +108,15 @@ export function ClaimSubmission({
         </ul>
         <p className="border-t pt-5">
           {t("estimatedReimbursement")}{" "}
-          {preview.calculatedPayableEur === null ? (
+          {preview.calculatedReimbursementEur === null ? (
             t("unavailable")
           ) : (
             <span
               className="block font-mono tabular-nums"
-              data-testid="calculated-payable"
-              data-payable={String(preview.calculatedPayableEur)}
+              data-testid="calculated-reimbursement"
+              data-reimbursement={String(preview.calculatedReimbursementEur)}
             >
-              {preview.calculatedPayableEur} {t("currencyEur")}
+              {preview.calculatedReimbursementEur} {t("currencyEur")}
             </span>
           )}{" "}
           {t("payableHelp")}

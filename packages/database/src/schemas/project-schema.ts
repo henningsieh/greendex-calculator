@@ -656,7 +656,7 @@ export const claimsTable = pgTable(
       })
       .unique(),
     status: claimStatusEnum("status").default("in_preparation").notNull(),
-    approvedAmountEur: numeric("approved_amount_eur", {
+    reimbursementAmountEur: numeric("reimbursement_amount_eur", {
       precision: 14,
       scale: 2,
     }),
@@ -668,8 +668,15 @@ export const claimsTable = pgTable(
   },
   (table) => [
     check(
-      "claim_approved_amount_nonnegative",
-      sql`${table.approvedAmountEur} is null or ${table.approvedAmountEur} >= 0`,
+      "claim_reimbursement_amount_nonnegative",
+      sql`${table.reimbursementAmountEur} is null or ${table.reimbursementAmountEur} >= 0`,
+    ),
+    // reimbursement_amount_eur holds the estimated reimbursement before approval
+    // and the approved amount afterwards. Only in_preparation may lack one;
+    // every submitted/reviewed/decided Claim must carry its estimate.
+    check(
+      "claim_reimbursement_amount_required_unless_preparation",
+      sql`${table.status} = 'in_preparation' or ${table.reimbursementAmountEur} is not null`,
     ),
   ],
 );

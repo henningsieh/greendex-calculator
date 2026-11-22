@@ -63,13 +63,12 @@
         "partner": "Organización socia",
         "status": "Estado",
         "submitted": "Enviada",
-        "payable": "Pagable",
-        "action": "Acción"
+        "estimatedReimbursement": "Reembolso estimado",
+        "claimReview": "Revisión de solicitudes de reembolso"
       },
       "status": {
         "submitted": "Pendiente de revisión"
       },
-      "reviewClaim": "Revisar solicitud de reembolso",
       "showingCount": "Mostrando {shown} de {total, plural, one {# solicitud de reembolso} other {# solicitudes de reembolso}}",
       "emptyTitle": "No hay solicitudes de reembolso enviadas pendientes de revisión",
       "emptyDescription": "Cuando un socio envíe una solicitud de reembolso, aparecerá aquí para su revisión por la organización anfitriona.",
@@ -78,7 +77,6 @@
       "clearFilters": "Quitar filtros",
       "previousPage": "Página anterior",
       "nextPage": "Página siguiente",
-      "unavailable": "No disponible",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "Reabrir devuelve la solicitud de reembolso a la revisión de la organización anfitriona y mantiene bloqueada la edición del socio. Si necesitas cambios, solicita una corrección por separado.",
       "confirmApproval": "Aprueba la solicitud por el importe indicado. Esto no envía dinero ni registra un pago.",
       "confirmPaymentCorrection": "La solicitud sigue aprobada y vuelve a figurar como pendiente de pago. Esto no revierte la transferencia bancaria.",
-      "unavailable": "No disponible",
       "equalShare": "Parte igual (calculada al enviar)",
       "title": "Revisión de la solicitud de reembolso",
       "contextLoading": "Cargando contexto",
@@ -269,6 +266,9 @@
         "noClaim": "No se ha creado ninguna solicitud de reembolso. Abrir este espacio de trabajo no guarda nada.",
         "payable": "Importe pagable calculado: {amount} EUR (calculado por el servidor)."
       }
+    },
+    "link": {
+      "claimReview": "Revisión de solicitudes de reembolso"
     }
   }
 }

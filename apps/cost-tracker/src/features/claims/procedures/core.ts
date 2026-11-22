@@ -93,7 +93,7 @@ export const getDraft = authorized
       .object({
         id: z.string(),
         partnershipId: z.string(),
-        approvedAmountEur: z.string().nullable(),
+        reimbursementAmountEur: z.string().nullable(),
         status: ClaimStatusSchema,
       })
       .nullable(),
@@ -116,7 +116,7 @@ export const getDraft = authorized
         id: claims.id,
         partnershipId: claims.partnershipId,
         status: claims.status,
-        approvedAmountEur: claims.approvedAmountEur,
+        reimbursementAmountEur: claims.reimbursementAmountEur,
       })
       .from(claims)
       .where(eq(claims.partnershipId, input.partnershipId))

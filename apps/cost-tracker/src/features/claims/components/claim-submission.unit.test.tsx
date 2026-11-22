@@ -66,7 +66,7 @@ it.each([
                 ],
               },
             ],
-            calculatedPayableEur: null,
+            calculatedReimbursementEur: null,
           }}
         />
       </NextIntlClientProvider>,
@@ -99,7 +99,7 @@ it.each(["Reworded diagnostic.", "private server failure"])(
           ],
         },
       ],
-      calculatedPayableEur: null,
+      calculatedReimbursementEur: null,
     };
     const markup = renderToStaticMarkup(
       <NextIntlClientProvider locale="de" messages={german}>
@@ -149,7 +149,7 @@ it.each([
         gaps: [createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"])],
       },
     ],
-    calculatedPayableEur: null,
+    calculatedReimbursementEur: null,
   };
   Reflect.set(preview.items[0].gaps, 0, gap);
   const markup = renderToStaticMarkup(

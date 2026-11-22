@@ -63,13 +63,12 @@
         "partner": "Organisation partenaire",
         "status": "Statut",
         "submitted": "Soumise",
-        "payable": "Montant à payer",
-        "action": "Action"
+        "estimatedReimbursement": "Remboursement estimé",
+        "claimReview": "Vérification de la demande"
       },
       "status": {
         "submitted": "En attente de vérification"
       },
-      "reviewClaim": "Vérifier la demande",
       "showingCount": "Affichage de {shown} sur {total, plural, one {# demande} other {# demandes}}",
       "emptyTitle": "Aucune demande soumise en attente de vérification",
       "emptyDescription": "Lorsqu’un partenaire soumet une demande, elle apparaît ici pour la vérification par l’organisation d’accueil.",
@@ -78,7 +77,6 @@
       "clearFilters": "Effacer les filtres",
       "previousPage": "Page précédente",
       "nextPage": "Page suivante",
-      "unavailable": "Indisponible",
       "currencyEur": "EUR"
     },
     "page": {
@@ -136,7 +134,6 @@
       "confirmReopen": "La réouverture renvoie la demande en vérification et maintient le blocage des modifications du partenaire. Demandez une correction séparément si nécessaire.",
       "confirmApproval": "Approuvez la demande pour le montant affiché. Cette action n’envoie pas d’argent et n’enregistre aucun paiement.",
       "confirmPaymentCorrection": "La demande reste approuvée et repasse en attente de paiement. Cette action n’annule pas le virement bancaire.",
-      "unavailable": "Indisponible",
       "equalShare": "Part égale (calculée à la soumission)",
       "title": "Vérification de la demande",
       "contextLoading": "Chargement du contexte",
@@ -269,6 +266,9 @@
         "noClaim": "Aucune demande créée. Ouvrir cet espace n’enregistre rien.",
         "payable": "Montant à payer calculé : {amount} EUR (calculé par le serveur)."
       }
+    },
+    "link": {
+      "claimReview": "Vérification de la demande"
     }
   }
 }

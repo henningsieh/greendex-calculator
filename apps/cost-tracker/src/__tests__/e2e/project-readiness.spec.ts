@@ -211,9 +211,17 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     ]);
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
-      { partnershipId: ids.mainA, status: "rejected" },
+      {
+        partnershipId: ids.mainA,
+        status: "rejected",
+        reimbursementAmountEur: "100.00",
+      },
       { partnershipId: ids.otherB, status: "in_preparation" },
-      { partnershipId: ids.settledA, status: "rejected" },
+      {
+        partnershipId: ids.settledA,
+        status: "rejected",
+        reimbursementAmountEur: "100.00",
+      },
     ]);
     expect(await ownedCounts()).toEqual([2, 4, 5, 5, 3]);
   });

@@ -154,7 +154,6 @@
       "statParticipantsDetail": "enregistrées jusqu’ici",
       "claimsInReviewDetail": "nécessitent une décision",
       "daysUntil": "jusqu’au {date}",
-      "claimReview": "Vérification de la demande",
       "participants": "Participants"
     }
   }

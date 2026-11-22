@@ -48,7 +48,7 @@ const lockedClaim = {
   id: claims.id,
   partnershipId: claims.partnershipId,
   status: claims.status,
-  approvedAmountEur: claims.approvedAmountEur,
+  reimbursementAmountEur: claims.reimbursementAmountEur,
 };
 
 /**

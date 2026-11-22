@@ -281,6 +281,20 @@
       "when": 1794854486247,
       "tag": "0039_brainy_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795337664324,
+      "tag": "0040_wide_whirlwind",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795354260046,
+      "tag": "0041_futuristic_stephen_strange",
+      "breakpoints": true
     }
   ]
 }
