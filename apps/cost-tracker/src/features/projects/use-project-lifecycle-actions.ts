@@ -14,7 +14,13 @@ import {
 import { ReopenProjectInputSchema } from "@/features/projects/validation-schemas";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
-export function useProjectLifecycleActions(projectId: string) {
+export function useProjectLifecycleActions(
+  projectId: string,
+  options: {
+    /** Called after a committed archive, once the workspace reflects it. */
+    onArchived?: () => void;
+  } = {},
+) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const [confirmation, setConfirmation] = useState<ProjectAction | null>(null);
@@ -92,6 +98,9 @@ export function useProjectLifecycleActions(projectId: string) {
         type: "success",
       });
       await refreshProjectState();
+      // The archive trigger unmounts with capability, so the dialog's own
+      // finalFocus target is detached and focus would fall back to body.
+      if (archive) options.onArchived?.();
     } catch (error) {
       toast.add({
         title: t(archive ? "archiveError" : "reopenError"),

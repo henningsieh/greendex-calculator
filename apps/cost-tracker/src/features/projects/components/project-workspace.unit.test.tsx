@@ -348,6 +348,11 @@ describe("Project workspace", () => {
       expect.objectContaining({ type: "success" }),
     );
     expect(screen.queryByTestId("archive-project")).toBeNull();
+    // The trigger unmounts with archive capability, so Base UI's finalFocus
+    // points at a detached node. Focus must land on the workspace instead of
+    // falling back to body, or keyboard users lose their place.
+    expect(document.activeElement).not.toBe(document.body);
+    expect(screen.getByTestId("project-workspace")).toHaveFocus();
   });
 
   it("hides completion for blocked, completed and Partner Projects", async () => {

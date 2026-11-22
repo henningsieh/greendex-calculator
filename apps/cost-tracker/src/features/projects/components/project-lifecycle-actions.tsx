@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ReasonFieldError } from "@/components/reason-field-error";
@@ -18,9 +18,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjectLifecycleActions } from "@/features/projects/use-project-lifecycle-actions";
 
-export function ProjectLifecycleActions({ projectId }: { projectId: string }) {
+export function ProjectLifecycleActions({
+  projectId,
+  focusAfterArchive,
+}: {
+  projectId: string;
+  /** Surviving element that takes focus once archiving removes the trigger. */
+  focusAfterArchive?: RefObject<HTMLElement | null>;
+}) {
   const t = useTranslations("projects");
-  const workflow = useProjectLifecycleActions(projectId);
+  const workflow = useProjectLifecycleActions(projectId, {
+    onArchived: () => focusAfterArchive?.current?.focus(),
+  });
   const archiveTrigger = useRef<HTMLButtonElement>(null);
   const archiveCancel = useRef<HTMLButtonElement>(null);
   const reopenTrigger = useRef<HTMLButtonElement>(null);

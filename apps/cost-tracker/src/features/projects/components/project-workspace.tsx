@@ -4,7 +4,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, MapPinIcon, Users2Icon } from "lucide-react";
-import { Suspense, useSyncExternalStore } from "react";
+import { Suspense, useRef, useSyncExternalStore } from "react";
 
 import { partnershipClaimPath } from "@/app/paths";
 import { ButtonLink } from "@/components/button-link";
@@ -276,6 +276,9 @@ export function ProjectWorkspace({
       meta: { costTrackerORPC: true },
     }),
   );
+  // Archiving unmounts its own trigger, so this container is the deliberate
+  // focus landing place instead of a detached node or body.
+  const workspace = useRef<HTMLDivElement>(null);
 
   const isHosted = project.relationship === "hosted";
 
@@ -305,6 +308,8 @@ export function ProjectWorkspace({
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
+      ref={workspace}
+      tabIndex={-1}
     >
       <ProtectedPageHeader
         eyebrow={isHosted ? t("hostedProject") : t("partnerProject")}
@@ -325,7 +330,10 @@ export function ProjectWorkspace({
                 status={project.archived ? "archived" : "active"}
               />
             )}
-            <ProjectLifecycleActions projectId={project.id} />
+            <ProjectLifecycleActions
+              focusAfterArchive={workspace}
+              projectId={project.id}
+            />
           </div>
         }
       />
