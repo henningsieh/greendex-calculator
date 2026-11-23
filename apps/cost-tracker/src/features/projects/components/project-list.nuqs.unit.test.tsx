@@ -131,6 +131,34 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
   });
 
+  it("drops a cursor from another format version, rewrites the URL and explains it", async () => {
+    const onUrlUpdate = vi.fn();
+    const staleCursor = Buffer.from(
+      JSON.stringify({ version: 4, id: "project-1" }),
+      "utf8",
+    ).toString("base64url");
+
+    renderList({
+      onUrlUpdate,
+      searchParams: `?scope=hosted&cursor=${staleCursor}`,
+    });
+
+    expect(await screen.findByTestId("project-list")).toBeTruthy();
+    // The stale cursor never reaches the query.
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
+      "hosted",
+      expect.objectContaining({ cursor: undefined }),
+    );
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "error" }),
+      ),
+    );
+    const update = onUrlUpdate.mock.calls[0]?.[0] as UrlUpdateEvent;
+    expect(update.options.history).toBe("replace");
+    expect(update.searchParams.has("cursor")).toBe(false);
+  });
+
   it("renders the guidance Empty without tabs when a staff member has no available scope", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };

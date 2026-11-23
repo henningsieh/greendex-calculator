@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Espace de travail",
       "title": "Projets",
-      "description": "Consultez les projets hébergés par votre organisation active ou qui lui sont affectés."
+      "description": "Les projets portés par votre organisation active ou auxquels votre organisation participe en tant que partenaire."
     },
     "create": {
       "title": "Nouveau projet",
@@ -84,6 +84,11 @@
       "participants": "Participations",
       "refreshing": "Actualisation des projets…",
       "updatedAt": "Mis à jour à {time} UTC",
+      "invalidCursor": {
+        "title": "Paramètres non valides",
+        "description": "Vous avez été redirigé vers la page 1.",
+        "hint": "Mettez à jour votre lien enregistré."
+      },
       "metrics": {
         "projects": "Projets",
         "projectsTotal": "Projets ({count} au total)",

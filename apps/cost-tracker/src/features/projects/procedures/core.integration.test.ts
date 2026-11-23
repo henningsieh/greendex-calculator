@@ -960,21 +960,19 @@ describe("projects procedures", () => {
       },
     );
 
-    it("recovers at the first page when a cursor protocol version is unsupported", async () => {
-      const first = await client.projects.listHosted({ pageSize: 25 });
+    it("rejects a cursor from an unsupported protocol version", async () => {
+      // Same contract as any other unusable cursor; the list UI drops a
+      // foreign-version cursor before requesting, so it never reaches here.
       const staleCursor = Buffer.from(JSON.stringify({ version: 2 })).toString(
         "base64url",
       );
 
-      const recovered = await client.projects.listHosted({
-        pageSize: 25,
-        cursor: staleCursor,
-      });
-
-      expect(recovered.rows.map((project) => project.id)).toEqual(
-        first.rows.map((project) => project.id),
-      );
-      expect(recovered.previousCursor).toBeUndefined();
+      await expect(
+        client.projects.listHosted({
+          pageSize: 25,
+          cursor: staleCursor,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     });
 
     it("rejects a cursor when its scope, search, filters, sort, or page size change", async () => {

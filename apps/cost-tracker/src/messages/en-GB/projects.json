@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Workspace",
       "title": "Projects",
-      "description": "Review Projects hosted by or assigned to your active Organization."
+      "description": "Projects hosted by your active organization or to which your organization is assigned as a partner."
     },
     "create": {
       "title": "New project",
@@ -84,6 +84,11 @@
       "participants": "Participations",
       "refreshing": "Refreshing Projects…",
       "updatedAt": "Updated {time} UTC",
+      "invalidCursor": {
+        "title": "Invalid parameters",
+        "description": "You have been taken to page 1.",
+        "hint": "Update your saved link."
+      },
       "metrics": {
         "projects": "Projects",
         "projectsTotal": "Projects ({count} total)",

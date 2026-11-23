@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
+import { PROJECT_CURSOR_VERSION } from "@/features/projects/list-cursor-version";
 import {
   normalizeProjectStatuses,
   ProjectSortOrderSchema,
@@ -12,7 +13,7 @@ import {
 const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
 
 const CursorSchema = z.object({
-  version: z.literal(5),
+  version: z.literal(PROJECT_CURSOR_VERSION),
   direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
   id: z.string().min(1).max(128),
@@ -82,7 +83,8 @@ export function decodeProjectListCursor(
     const version = CursorVersionSchema.safeParse(payload);
 
     if (!version.success) return { status: "invalid" };
-    if (version.data.version !== 5) return { status: "unsupported-version" };
+    if (version.data.version !== PROJECT_CURSOR_VERSION)
+      return { status: "unsupported-version" };
 
     const cursor = CursorSchema.safeParse(payload);
     if (!cursor.success || cursor.data.fingerprint !== fingerprint) {

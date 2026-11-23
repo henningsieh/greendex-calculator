@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Espacio de trabajo",
       "title": "Proyectos",
-      "description": "Revisa los proyectos alojados por tu organización activa o asignados a ella."
+      "description": "Proyectos gestionados por tu organización activa o en los que tu organización participa como socio."
     },
     "create": {
       "title": "Nuevo proyecto",
@@ -84,6 +84,11 @@
       "participants": "Participaciones",
       "refreshing": "Actualizando proyectos…",
       "updatedAt": "Actualizado a las {time} UTC",
+      "invalidCursor": {
+        "title": "Parámetros no válidos",
+        "description": "Te hemos llevado a la página 1.",
+        "hint": "Actualiza tu enlace guardado."
+      },
       "metrics": {
         "projects": "Proyectos",
         "projectsTotal": "Proyectos ({count} en total)",

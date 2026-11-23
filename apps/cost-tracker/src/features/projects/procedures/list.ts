@@ -294,10 +294,11 @@ function parseCursor(
   if (!input.cursor) return undefined;
 
   const decodedCursor = decodeProjectListCursor(input.cursor, fingerprint);
-  if (decodedCursor.status === "unsupported-version") return undefined;
+  if (decodedCursor.status !== "valid") {
+    throw createSituationErrors(errors).invalidProjectCursor();
+  }
 
   if (
-    decodedCursor.status === "invalid" ||
     decodedCursor.cursor.values.length !== input.sort.length ||
     decodedCursor.cursor.values.some(
       (value, index) => value.field !== input.sort[index]?.field,

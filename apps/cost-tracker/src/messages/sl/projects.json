@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Delovni prostor",
       "title": "Projekti",
-      "description": "Pregledujte projekte, ki jih gosti ali so dodeljeni vaši aktivni organizaciji."
+      "description": "Projekti, ki jih vodi vaša aktivna organizacija ali v katerih je vaša organizacija vključena kot partner."
     },
     "create": {
       "title": "Nov projekt",
@@ -84,6 +84,11 @@
       "participants": "Udeležbe",
       "refreshing": "Osveževanje projektov…",
       "updatedAt": "Posodobljeno ob {time} UTC",
+      "invalidCursor": {
+        "title": "Neveljavni parametri",
+        "description": "Preusmerjeni ste na stran 1.",
+        "hint": "Posodobite shranjeno povezavo."
+      },
       "metrics": {
         "projects": "Projekti",
         "projectsTotal": "Projekti (skupaj {count})",

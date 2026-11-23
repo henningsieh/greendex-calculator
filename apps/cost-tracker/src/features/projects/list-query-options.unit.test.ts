@@ -8,7 +8,30 @@ import {
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
 
+const encodeCursor = (payload: unknown) =>
+  Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+
 describe("Project list URL state", () => {
+  it("keeps current and opaque cursors and drops an obsolete format", () => {
+    const current = encodeCursor({ version: 5, id: "project-1" });
+    const stale = encodeCursor({ version: 4, id: "project-1" });
+    const opaque = "not-a-cursor";
+
+    expect(
+      normalizeProjectListState(loadProjectListSearchParams({ cursor: current }))
+        .cursor,
+    ).toBe(current);
+    expect(
+      normalizeProjectListState(loadProjectListSearchParams({ cursor: stale }))
+        .cursor,
+    ).toBeUndefined();
+    // Opaque cursors are the procedure's business, not the URL layer's.
+    expect(
+      normalizeProjectListState(loadProjectListSearchParams({ cursor: opaque }))
+        .cursor,
+    ).toBe(opaque);
+  });
+
   it("restores an ordered sort from a shared URL", () => {
     const order = [
       { field: "name", direction: "desc" },
@@ -91,6 +114,7 @@ describe("Project list URL state", () => {
   });
 
   it("normalizes search, Partner filters, and invalid date ranges safely", () => {
+    const cursor = encodeCursor({ version: 5, id: "project-1" });
     expect(
       normalizeProjectListState({
         scope: "hosted",
@@ -100,7 +124,7 @@ describe("Project list URL state", () => {
         status: ["archived", "ready"],
         partnerOrganizationIds: ["partner-2", "", "partner-1", "partner-2"],
         sort: [{ field: "startDate", direction: "desc" }],
-        cursor: "opaque",
+        cursor,
         pageSize: 50,
       }),
     ).toEqual({
@@ -111,7 +135,7 @@ describe("Project list URL state", () => {
       status: ["ready", "archived"],
       partnerOrganizationIds: ["partner-1", "partner-2"],
       sort: [{ field: "startDate", direction: "desc" }],
-      cursor: "opaque",
+      cursor,
       pageSize: 50,
     });
   });

@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Arbeitsbereich",
       "title": "Projekte",
-      "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
+      "description": "Projekte, die von deiner aktiven Organisation gehostet oder denen deine Organisation als Partner zugewiesen ist. Projekte können Erstattungsanträge enthalten, die von den Teilnehmenden eingereicht werden."
     },
     "create": {
       "title": "Neues Projekt",
@@ -84,6 +84,11 @@
       "participants": "Teilnahmen",
       "refreshing": "Projekte werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",
+      "invalidCursor": {
+        "title": "Ungültige Parameter",
+        "description": "Du wurdest auf Seite 1 gesetzt.",
+        "hint": "Aktualisiere deinen gespeicherten Link."
+      },
       "metrics": {
         "projects": "Projekte",
         "projectsTotal": "Projekte ({count} insgesamt)",

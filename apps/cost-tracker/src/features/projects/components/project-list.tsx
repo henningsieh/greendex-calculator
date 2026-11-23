@@ -132,6 +132,7 @@ function ResolvedProjectList({
 }) {
   const t = useTranslations("projects.list");
   const fallbackNotices = useRef(new Set<string>());
+  const cursorNotices = useRef(new Set<string>());
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -159,6 +160,26 @@ function ResolvedProjectList({
     scope,
     setUrlState,
   ]);
+
+  useEffect(() => {
+    // Normalization drops a cursor from another format version before the
+    // request, so the list already shows page 1; tidy the URL and say why.
+    const droppedCursor = urlState.cursor && !requestedState.cursor;
+    if (!droppedCursor || cursorNotices.current.has(urlState.cursor)) return;
+
+    cursorNotices.current.add(urlState.cursor);
+    void setUrlState({ cursor: null }, { history: "replace" });
+    toast.add({
+      description: (
+        <span className="flex flex-col gap-1">
+          <span>{t("invalidCursor.description")}</span>
+          <span className="text-xs">{t("invalidCursor.hint")}</span>
+        </span>
+      ),
+      title: t("invalidCursor.title"),
+      type: "error",
+    });
+  }, [requestedState.cursor, setUrlState, t, urlState.cursor]);
 
   const updateListState = (patch: Parameters<typeof setUrlState>[0]) =>
     void setUrlState({ ...patch, cursor: null });

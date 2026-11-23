@@ -9,6 +9,7 @@ import {
   type inferParserType,
 } from "nuqs/server";
 
+import { isObsoleteProjectCursor } from "@/features/projects/list-cursor-version";
 import type {
   HostedProjectList,
   PartnerProjectList,
@@ -111,7 +112,13 @@ export function normalizeProjectListState(
       .sort()
       .slice(0, MAX_PARTNER_FILTERS),
     sort: state.sort,
-    cursor: state.cursor || undefined,
+    // A cursor from an older format version cannot be honored. Dropping it here
+    // keeps the server prefetch and the client on page 1 before any request.
+    // Opaque cursors stay untouched: only the procedure decides on those.
+    cursor:
+      state.cursor && !isObsoleteProjectCursor(state.cursor)
+        ? state.cursor
+        : undefined,
     pageSize: state.pageSize,
   };
 }

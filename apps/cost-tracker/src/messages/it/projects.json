@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Area di lavoro",
       "title": "Progetti",
-      "description": "Verifica i progetti ospitati dalla tua organizzazione attiva o a essa assegnati."
+      "description": "Progetti promossi dalla tua organizzazione attiva o ai quali la tua organizzazione è associata in qualità di partner."
     },
     "create": {
       "title": "Nuovo progetto",
@@ -84,6 +84,11 @@
       "participants": "Partecipazioni",
       "refreshing": "Aggiornamento dei progetti…",
       "updatedAt": "Aggiornato alle {time} UTC",
+      "invalidCursor": {
+        "title": "Parametri non validi",
+        "description": "Sei stato riportato alla pagina 1.",
+        "hint": "Aggiorna il link salvato."
+      },
       "metrics": {
         "projects": "Progetti",
         "projectsTotal": "Progetti ({count} in totale)",
