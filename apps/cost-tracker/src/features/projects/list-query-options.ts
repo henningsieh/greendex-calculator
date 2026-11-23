@@ -9,27 +9,35 @@ import {
   type inferParserType,
 } from "nuqs/server";
 
+import { isObsoleteProjectCursor } from "@/features/projects/list-cursor-version";
 import type {
   HostedProjectList,
   PartnerProjectList,
 } from "@/features/projects/types";
 import {
-  PROJECT_ARCHIVE_FILTERS,
+  canonicalProjectStatuses,
+  normalizeProjectStatuses,
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
-  PROJECT_SETTLEMENT_FILTERS,
+  PROJECT_STATUSES,
   DEFAULT_PROJECT_SORT,
   ProjectSortOrderSchema,
+  type ProjectStatus,
 } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 export {
-  PROJECT_ARCHIVE_FILTERS,
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
-  PROJECT_SETTLEMENT_FILTERS,
+  PROJECT_STATUSES,
   DEFAULT_PROJECT_SORT,
 };
+
+/** URL default only; the status contract tuple and its normalizer live with the validation schemas. */
+export const DEFAULT_PROJECT_STATUS_SELECTION: readonly ProjectStatus[] = [
+  "open",
+  "ready",
+];
 
 const MAX_PARTNER_FILTERS = 20;
 const MINIMUM_SEARCH_LENGTH = 3;
@@ -39,8 +47,11 @@ export const projectListParsers = {
   search: parseAsString.withDefault(""),
   dateFrom: parseAsIsoDate,
   dateTo: parseAsIsoDate,
-  archive: parseAsStringLiteral(PROJECT_ARCHIVE_FILTERS).withDefault("active"),
-  settlement: parseAsStringLiteral(PROJECT_SETTLEMENT_FILTERS).withDefault("all"),
+  // An absent status is the default working view; an explicit empty value
+  // (`?status=`) means no status constraint.
+  status: parseAsNativeArrayOf(
+    parseAsStringLiteral(PROJECT_STATUSES),
+  ).withDefault([...DEFAULT_PROJECT_STATUS_SELECTION]),
   partnerOrganizationIds: parseAsNativeArrayOf(parseAsString),
   sort: parseAsJson(ProjectSortOrderSchema).withDefault(DEFAULT_PROJECT_SORT),
   cursor: parseAsString.withDefault(""),
@@ -67,8 +78,7 @@ export type ProjectListState = {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
-  archive: (typeof PROJECT_ARCHIVE_FILTERS)[number];
-  settlement: (typeof PROJECT_SETTLEMENT_FILTERS)[number];
+  status: ProjectStatus[];
   partnerOrganizationIds: string[];
   sort: ProjectListUrlState["sort"];
   cursor?: string;
@@ -97,14 +107,19 @@ export function normalizeProjectListState(
         : undefined,
     dateFrom: hasValidDateRange && state.dateFrom ? state.dateFrom : undefined,
     dateTo: hasValidDateRange && state.dateTo ? state.dateTo : undefined,
-    archive: state.archive,
-    settlement: state.settlement,
+    status: canonicalProjectStatuses(state.status),
     partnerOrganizationIds: [...new Set(state.partnerOrganizationIds)]
       .filter(Boolean)
       .sort()
       .slice(0, MAX_PARTNER_FILTERS),
     sort: state.sort,
-    cursor: state.cursor || undefined,
+    // A cursor from an older format version cannot be honored. Dropping it here
+    // keeps the server prefetch and the client on page 1 before any request.
+    // Opaque cursors stay untouched: only the procedure decides on those.
+    cursor:
+      state.cursor && !isObsoleteProjectCursor(state.cursor)
+        ? state.cursor
+        : undefined,
     pageSize: state.pageSize,
   };
 }
@@ -138,6 +153,18 @@ export function resolveProjectListState(
     didPartnerToHostedFallback:
       state.scope === "partner" && scope === "hosted" && !availableScopes.partner,
   };
+}
+
+export function isDefaultProjectStatusSelection(
+  statuses: readonly ProjectStatus[],
+): boolean {
+  const normalized = normalizeProjectStatuses(statuses);
+  return (
+    normalized.length === DEFAULT_PROJECT_STATUS_SELECTION.length &&
+    normalized.every(
+      (status, index) => status === DEFAULT_PROJECT_STATUS_SELECTION[index],
+    )
+  );
 }
 
 export function getProjectAvailableScopesQueryOptions() {
@@ -181,8 +208,7 @@ export function getProjectListQueryOptions(
     search: state.search,
     dateFrom: state.dateFrom,
     dateTo: state.dateTo,
-    archive: state.archive,
-    settlement: state.settlement,
+    status: state.status,
     sort: state.sort,
     cursor: state.cursor,
     pageSize: state.pageSize,

@@ -17,7 +17,7 @@ import {
 } from "@/features/projects/procedures/lifecycle-authorization";
 import {
   evaluateProjectTransition,
-  projectSettlement,
+  projectStatus,
 } from "@/features/projects/project-lifecycle";
 import {
   ProjectDetailInputSchema,
@@ -88,7 +88,7 @@ export const archiveProject = authorized
         "archive",
         {
           settled:
-            projectSettlement(
+            projectStatus(
               project.archived,
               rows.map(({ status }) => status),
             ) === "ready",

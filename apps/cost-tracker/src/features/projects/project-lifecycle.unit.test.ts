@@ -1,18 +1,19 @@
+import { claimStatusEnum } from "@greendex/database/schema";
 import { describe, expect, it } from "vitest";
 
 import {
   evaluateProjectTransition,
   projectLifecycleCapabilities,
-  projectSettlement,
+  projectStatus,
 } from "./project-lifecycle";
 
 describe("Project lifecycle", () => {
-  it("projects settlement independently of permission and archive state", () => {
-    expect(projectSettlement(false, [])).toBe("ready");
-    expect(projectSettlement(false, ["paid", "rejected"])).toBe("ready");
-    expect(projectSettlement(false, ["paid", null])).toBe("open");
-    expect(projectSettlement(false, ["approved"])).toBe("open");
-    expect(projectSettlement(true, ["paid"])).toBe("archived");
+  it("projects status independently of permission and archive state", () => {
+    expect(projectStatus(false, [])).toBe("ready");
+    expect(projectStatus(false, ["paid", "rejected"])).toBe("ready");
+    expect(projectStatus(false, ["paid", null])).toBe("open");
+    expect(projectStatus(false, ["approved"])).toBe("open");
+    expect(projectStatus(true, ["paid"])).toBe("archived");
     expect(
       projectLifecycleCapabilities({
         archived: false,
@@ -20,7 +21,23 @@ describe("Project lifecycle", () => {
         canArchive: false,
         canReopen: true,
       }),
-    ).toEqual({ settlement: "ready", canArchive: false, canReopen: false });
+    ).toEqual({ status: "ready", canArchive: false, canReopen: false });
+  });
+
+  it.each(
+    claimStatusEnum.enumValues.map((status) => [
+      status,
+      status === "paid" || status === "rejected" ? "ready" : "open",
+    ]),
+  )("derives list status from Claim status %s", (claimStatus, expected) => {
+    expect(projectStatus(false, [claimStatus])).toBe(expected);
+  });
+
+  it("treats a missing Claim as unsettled and archive as masking readiness", () => {
+    expect(projectStatus(false, [undefined])).toBe("open");
+    expect(projectStatus(false, [null])).toBe("open");
+    expect(projectStatus(true, [])).toBe("archived");
+    expect(projectStatus(true, ["approved"])).toBe("archived");
   });
 
   it("requires settlement and a reopening reason", () => {

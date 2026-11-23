@@ -1,8 +1,12 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
-import { claimTransitions } from "../apps/cost-tracker/src/features/claims/claim-lifecycle";
+import {
+  claimTransitions,
+  settledClaimStatuses,
+} from "../apps/cost-tracker/src/features/claims/claim-lifecycle";
 import { paymentTransitions } from "../apps/cost-tracker/src/features/claims/payment-interaction";
 import { projectTransitions } from "../apps/cost-tracker/src/features/projects/project-lifecycle";
+import { PROJECT_STATUSES } from "../apps/cost-tracker/src/features/projects/validation-schemas";
 
 const guards = {
   payoutAccount: "Payout Account selected",
@@ -37,6 +41,25 @@ function diagram(
   ].join("\n");
 }
 
+function projectStatusProjection() {
+  const ordered = PROJECT_STATUSES.map((status) => `\`${status}\``).join(" → ");
+  const settled = settledClaimStatuses
+    .map((status) => `\`${status}\``)
+    .join(" or ");
+  return [
+    "## Derived list status",
+    "",
+    "`status` is a read-only projection over the Project archive flag and the Claim settled rule. It is not a state machine.",
+    "",
+    "- `archived` when the Project is archived.",
+    "- `ready` when the Project is active and every Project Partnership has a settled Claim.",
+    "- `open` when the Project is active and at least one Project Partnership has no settled Claim.",
+    "",
+    `A Claim is settled when it is ${settled}. Status sort rank follows ${ordered}.`,
+    "",
+  ].join("\n");
+}
+
 const documents = {
   "claim-lifecycle.generated.md": diagram(
     "Claim lifecycle",
@@ -57,13 +80,13 @@ const documents = {
           : edge.event,
     })),
   ),
-  "project-lifecycle.generated.md": diagram(
+  "project-lifecycle.generated.md": `${diagram(
     "Cost Tracker Project lifecycle",
     Object.entries(projectTransitions).map(([event, transition]) => ({
       ...transition,
       event: event === "archive" ? "confirm archive" : event,
     })),
-  ),
+  )}\n${projectStatusProjection()}`,
 };
 
 for (const [name, expected] of Object.entries(documents)) {

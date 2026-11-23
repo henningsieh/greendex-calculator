@@ -104,13 +104,33 @@ describe("Project list input", () => {
   it("applies list defaults without requiring optional filters", () => {
     expect(PartnerProjectListInputSchema.parse({ pageSize: 25 })).toEqual({
       sort: [
-        { field: "settlement", direction: "asc" },
+        { field: "status", direction: "asc" },
         { field: "startDate", direction: "asc" },
       ],
-      archive: "active",
-      settlement: "all",
+      status: ["open", "ready", "archived"],
       pageSize: 25,
     });
+  });
+
+  it("normalizes the Status selection into tuple order and deduplicates it", () => {
+    expect(
+      PartnerProjectListInputSchema.parse({
+        pageSize: 25,
+        status: ["archived", "open", "ready", "open"],
+      }).status,
+    ).toEqual(["open", "ready", "archived"]);
+  });
+
+  it("rejects unknown Status values and canonicalizes an empty selection", () => {
+    expect(
+      PartnerProjectListInputSchema.safeParse({
+        pageSize: 25,
+        status: ["bogus"],
+      }).success,
+    ).toBe(false);
+    expect(
+      PartnerProjectListInputSchema.parse({ pageSize: 25, status: [] }).status,
+    ).toEqual(["open", "ready", "archived"]);
   });
 
   it("normalizes search to trimmed lowercase and enforces length", () => {

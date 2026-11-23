@@ -40,9 +40,9 @@ import {
 } from "@/features/projects/components/project-loading-states";
 import {
   ProjectArchiveBadge,
-  ProjectSettlementBadge,
+  ProjectStatusBadge,
 } from "@/features/projects/components/project-status-badge";
-import { projectSettlement } from "@/features/projects/project-lifecycle";
+import { projectStatus } from "@/features/projects/project-lifecycle";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
@@ -317,8 +317,8 @@ export function ProjectWorkspace({
         rightButton={
           <div className="flex flex-wrap items-center gap-3">
             {project.relationship === "hosted" ? (
-              <ProjectSettlementBadge
-                status={projectSettlement(
+              <ProjectStatusBadge
+                status={projectStatus(
                   project.archived,
                   project.partnerOrganizations.map(
                     ({ claimStatus }) => claimStatus,

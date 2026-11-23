@@ -61,8 +61,11 @@ import {
   isProjectPageSize,
   pushColumnFiltersToUrl,
 } from "@/features/projects/components/project-list-filtering";
-import { ProjectSettlementBadge } from "@/features/projects/components/project-status-badge";
-import { getProjectListQueryOptions } from "@/features/projects/list-query-options";
+import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
+import {
+  getProjectListQueryOptions,
+  isDefaultProjectStatusSelection,
+} from "@/features/projects/list-query-options";
 import type { ProjectListState } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
 import type { ProjectListRow } from "@/features/projects/types";
@@ -85,6 +88,7 @@ const projectListTableFeatures = tableFeatures({
 function SortHeader({
   label,
   direction,
+  directionLabels,
   priority,
   disabled,
   onClick,
@@ -92,6 +96,7 @@ function SortHeader({
 }: {
   label: string;
   direction: false | "asc" | "desc";
+  directionLabels?: { asc: string; desc: string };
   priority: number;
   disabled: boolean;
   onClick: () => void;
@@ -104,6 +109,12 @@ function SortHeader({
       : direction === "desc"
         ? ArrowDownIcon
         : ArrowDownUpIcon;
+  const directionLabel =
+    direction === "asc"
+      ? (directionLabels?.asc ?? t("ascending"))
+      : direction === "desc"
+        ? (directionLabels?.desc ?? t("descending"))
+        : undefined;
   return (
     <Button
       className="-ml-2 h-auto min-h-9 justify-start gap-1 px-2 text-xs font-medium tracking-normal whitespace-nowrap normal-case"
@@ -111,7 +122,7 @@ function SortHeader({
         direction
           ? t("sortHeaderActive", {
               field: label,
-              direction: direction === "asc" ? t("ascending") : t("descending"),
+              direction: directionLabel!,
               priority: priority + 1,
             })
           : t("sortHeaderInactive", { field: label })
@@ -266,22 +277,24 @@ export function ResolvedProjectListResults({
         ),
       },
       {
-        accessorKey: "settlement",
+        accessorKey: "status",
         header: ({ column }) => (
           <SortHeader
-            label={t("settlementFilter")}
+            label={t("statusFilter")}
             direction={column.getIsSorted()}
+            directionLabels={{
+              asc: t("statusOpenFirst"),
+              desc: t("statusArchivedFirst"),
+            }}
             priority={column.getSortIndex()}
-            testId="sort-project-settlement"
+            testId="sort-project-status"
             disabled={!isHydrated}
             onClick={() =>
               column.toggleSorting(column.getIsSorted() === "asc", true)
             }
           />
         ),
-        cell: ({ row }) => (
-          <ProjectSettlementBadge status={row.original.settlement} />
-        ),
+        cell: ({ row }) => <ProjectStatusBadge status={row.original.status} />,
       },
       {
         accessorKey: "startDate",
@@ -408,23 +421,31 @@ export function ResolvedProjectListResults({
   const whole = data.metrics.whole;
   const sortLabels: Record<string, string> = {
     name: t("project"),
-    settlement: t("settlementFilter"),
+    status: t("statusFilter"),
     startDate: t("startDate"),
     endDate: t("endDate"),
   };
+  const sortDirectionLabel = (criterion: { id: string; desc: boolean }) =>
+    criterion.id === "status"
+      ? criterion.desc
+        ? t("statusArchivedFirst")
+        : t("statusOpenFirst")
+      : criterion.desc
+        ? t("descending")
+        : t("ascending");
   // Fixed table layout: each data column owns a share, so a long Project name
   // can only truncate instead of widening the register past the card. The
   // shares hold at the narrowest desktop container (56rem), where every label
   // and sorting badge still fits.
   const columnWidths: Record<string, string> = {
-    settlement: "w-[16%]",
+    status: "w-[16%]",
     startDate: "w-[16%]",
     endDate: "w-[15%]",
     location: "w-[15%]",
     participants: "w-[16%]",
   };
   const cellLabels: Record<string, string> = {
-    settlement: t("settlementFilter"),
+    status: t("statusFilter"),
     startDate: t("startDate"),
     endDate: t("endDate"),
     location: t("location"),
@@ -434,8 +455,7 @@ export function ResolvedProjectListResults({
     state.dateFrom ||
     state.dateTo ||
     state.partnerOrganizationIds.length ||
-    state.archive !== "active" ||
-    state.settlement !== "all",
+    !isDefaultProjectStatusSelection(state.status),
   );
   const rows = table.getRowModel().rows;
   const emptyState = (
@@ -445,13 +465,12 @@ export function ResolvedProjectListResults({
         <Button
           onClick={() =>
             void setUrlState({
-              archive: null,
               cursor: null,
               dateFrom: null,
               dateTo: null,
               partnerOrganizationIds: null,
               search: null,
-              settlement: null,
+              status: null,
             })
           }
           size="sm"
@@ -480,9 +499,7 @@ export function ResolvedProjectListResults({
               <li className="inline-flex items-center" key={criterion.id}>
                 {index + 1}. {sortLabels[criterion.id]}{" "}
                 {criterion.desc ? "↓" : "↑"}
-                <span className="sr-only">
-                  {criterion.desc ? t("descending") : t("ascending")}
-                </span>
+                <span className="sr-only">{sortDirectionLabel(criterion)}</span>
                 <Button
                   aria-label={t("removeSort", {
                     field: sortLabels[criterion.id] ?? criterion.id,
@@ -571,7 +588,7 @@ export function ResolvedProjectListResults({
                       ) : (
                         <ArrowUpIcon data-icon="inline-start" />
                       )}
-                      {criterion.desc ? t("descending") : t("ascending")}
+                      {sortDirectionLabel(criterion)}
                     </Button>
                     <Button
                       size="icon-xs"
@@ -841,11 +858,10 @@ export function ResolvedProjectListResults({
             // A hidden Participants column takes the footer with it.
             const detailCells = cellList.filter(
               (cell) =>
-                cell.column.id !== "participants" &&
-                cell.column.id !== "settlement",
+                cell.column.id !== "participants" && cell.column.id !== "status",
             );
-            const settlementCell = cellList.find(
-              (cell) => cell.column.id === "settlement",
+            const statusCell = cellList.find(
+              (cell) => cell.column.id === "status",
             );
             const showsParticipants = cellList.some(
               (cell) => cell.column.id === "participants",
@@ -864,10 +880,10 @@ export function ResolvedProjectListResults({
                   >
                     {row.original.name}
                   </Link>
-                  {settlementCell &&
+                  {statusCell &&
                     flexRender(
-                      settlementCell.column.columnDef.cell,
-                      settlementCell.getContext(),
+                      statusCell.column.columnDef.cell,
+                      statusCell.getContext(),
                     )}
                 </div>
                 <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">

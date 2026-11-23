@@ -16,8 +16,7 @@ const mocks = vi.hoisted(() => ({
     search: "",
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
-    archive: "active" as const,
-    settlement: "all" as const,
+    status: ["open", "ready"] as ("open" | "ready" | "archived")[],
     partnerOrganizationIds: [] as string[],
     sort: [{ field: "startDate" as const, direction: "asc" as const }],
     cursor: "",
@@ -54,7 +53,7 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => {
           endDate: new Date("2026-06-03T00:00:00.000Z"),
           location: "Berlin",
           country: "DE",
-          settlement: "open",
+          status: "open",
         },
       ],
       nextCursor: "next-page",
@@ -194,14 +193,14 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(cardLink.parentElement).toHaveClass("border-t");
   });
 
-  it("places the settlement badge next to the card title, not in the details", async () => {
+  it("places the status badge next to the card title, not in the details", async () => {
     renderList();
     const title = await screen.findByTestId("project-link-project-1-card");
     const card = title.closest("article");
-    const badge = card?.querySelector("[data-settlement]");
-    expect(badge).toHaveAttribute("data-settlement", "open");
+    const badge = card?.querySelector("[data-status]");
+    expect(badge).toHaveAttribute("data-status", "open");
     expect(badge?.parentElement).toBe(title.parentElement);
-    expect(card?.querySelector("dl [data-settlement]")).toBeNull();
+    expect(card?.querySelector("dl [data-status]")).toBeNull();
   });
 
   it("links to the Project without carrying list state", async () => {

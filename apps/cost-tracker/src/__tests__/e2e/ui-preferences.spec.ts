@@ -147,7 +147,7 @@ test.describe("UI preferences", () => {
     }
   });
 
-  test("restores archive filters through reloads and direct links", async ({
+  test("restores Status filters through reloads and direct links", async ({
     page,
     context,
     baseURL,
@@ -158,14 +158,16 @@ test.describe("UI preferences", () => {
     await expect(
       page.locator(`a[href$="/projects/${archivedProjectId}"]`),
     ).toHaveCount(0);
-    await page.getByTestId("project-archive-filter").click();
-    await page.getByTestId("project-archive-archived").click();
+    await page.getByTestId("project-status-filter").click();
+    await page.getByTestId("project-status-archived").click();
     await expect(
       page
         .locator(`a[href$="/projects/${archivedProjectId}"]`)
         .filter({ visible: true }),
     ).toBeVisible();
-    await expect(page).toHaveURL(/archive=archived/);
+    await expect(page).toHaveURL((url) =>
+      url.searchParams.getAll("status").includes("archived"),
+    );
     await page.reload();
     await expect(
       page
@@ -181,8 +183,8 @@ test.describe("UI preferences", () => {
         .filter({ visible: true }),
     ).toBeVisible();
     await directPage.close();
-    await page.getByTestId("project-settlement-filter").click();
-    await page.getByTestId("project-settlement-ready").click();
+    await page.getByTestId("project-status-filter").click();
+    await page.getByTestId("project-status-archived").click();
     await expect(
       page.locator(`a[href$="/projects/${archivedProjectId}"]`),
     ).toHaveCount(0);
@@ -195,7 +197,7 @@ test.describe("UI preferences", () => {
         .filter({ visible: true }),
     ).toBeVisible();
     await page.goto(
-      `/projects?scope=hosted&archive=archived&search=${encodeURIComponent(activeProjectName)}`,
+      `/projects?scope=hosted&status=archived&search=${encodeURIComponent(activeProjectName)}`,
     );
     await expect(
       page.locator(`a[href$="/projects/${activeProjectId}"]`),
@@ -222,7 +224,7 @@ test.describe("UI preferences", () => {
         ]),
       )}`,
     );
-    await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute(
+    await expect(page.locator('[data-slot="sidebar"]').first()).toHaveAttribute(
       "data-state",
       "collapsed",
     );
@@ -239,13 +241,13 @@ test.describe("UI preferences", () => {
     await page.goto("/partner-organizations");
     await page.goto("/projects");
     await expectColumnVisibility(page, "location", false);
-    await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute(
+    await expect(page.locator('[data-slot="sidebar"]').first()).toHaveAttribute(
       "data-state",
       "collapsed",
     );
-    await page.locator('[data-slot="sidebar-trigger"]').click();
+    await page.locator('[data-slot="sidebar-trigger"]').first().click();
     await page.reload();
-    await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute(
+    await expect(page.locator('[data-slot="sidebar"]').first()).toHaveAttribute(
       "data-state",
       "expanded",
     );

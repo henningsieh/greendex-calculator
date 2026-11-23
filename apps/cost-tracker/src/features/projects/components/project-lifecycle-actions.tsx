@@ -121,7 +121,7 @@ export function ProjectLifecycleActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {workflow.settlement && (
+      {workflow.status && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {workflow.canArchive && (
             <Button

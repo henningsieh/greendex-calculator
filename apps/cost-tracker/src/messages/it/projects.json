@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Area di lavoro",
       "title": "Progetti",
-      "description": "Verifica i progetti ospitati dalla tua organizzazione attiva o a essa assegnati."
+      "description": "Progetti promossi dalla tua organizzazione attiva o ai quali la tua organizzazione è associata in qualità di partner."
     },
     "create": {
       "title": "Nuovo progetto",
@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Elenco dei progetti",
-      "archiveFilter": "Stato di archiviazione",
-      "archive": {
-        "active": "Attivi",
-        "archived": "Archiviati",
-        "all": "Tutti"
-      },
-      "settlementFilter": "Liquidazione",
-      "settlement": {
-        "all": "Tutti",
+      "statusFilter": "Stato",
+      "status": {
         "open": "Liquidazione aperta",
-        "ready": "Pronti per l’archiviazione"
+        "ready": "Pronti per l’archiviazione",
+        "archived": "Archiviati"
       },
+      "statusAll": "Tutti",
+      "statusOpenFirst": "Prima gli aperti",
+      "statusArchivedFirst": "Prima gli archiviati",
       "emptyTitle": "Nessun progetto disponibile",
       "emptyDescription": "Nessun progetto è ospitato dalla tua organizzazione attiva o a essa assegnato.",
       "relationship": "Relazione con il progetto",
@@ -87,6 +84,11 @@
       "participants": "Partecipazioni",
       "refreshing": "Aggiornamento dei progetti…",
       "updatedAt": "Aggiornato alle {time} UTC",
+      "invalidCursor": {
+        "title": "Parametri non validi",
+        "description": "Sei stato riportato alla pagina 1.",
+        "hint": "Aggiorna il link salvato."
+      },
       "metrics": {
         "projects": "Progetti",
         "projectsTotal": "Progetti ({count} in totale)",

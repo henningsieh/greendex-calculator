@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Arbeitsbereich",
       "title": "Projekte",
-      "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
+      "description": "Projekte, die von deiner aktiven Organisation gehostet oder denen deine Organisation als Partner zugewiesen ist. Projekte können Erstattungsanträge enthalten, die von den Teilnehmenden eingereicht werden."
     },
     "create": {
       "title": "Neues Projekt",
@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Projektliste",
-      "archiveFilter": "Archivstatus",
-      "archive": {
-        "active": "Aktiv",
-        "archived": "Archiviert",
-        "all": "Alle"
-      },
-      "settlementFilter": "Abrechnung",
-      "settlement": {
-        "all": "Alle",
+      "statusFilter": "Status",
+      "status": {
         "open": "Abrechnung offen",
-        "ready": "Bereit zum Archivieren"
+        "ready": "Bereit zum Archivieren",
+        "archived": "Archiviert"
       },
+      "statusAll": "Alle",
+      "statusOpenFirst": "Offen zuerst",
+      "statusArchivedFirst": "Archiviert zuerst",
       "emptyTitle": "Keine Projekte verfügbar",
       "emptyDescription": "Keine Projekte werden von deiner aktiven Organisation gehostet oder ihr zugewiesen.",
       "relationship": "Projektbeziehung",
@@ -87,6 +84,11 @@
       "participants": "Teilnahmen",
       "refreshing": "Projekte werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",
+      "invalidCursor": {
+        "title": "Ungültige Parameter",
+        "description": "Du wurdest auf Seite 1 gesetzt.",
+        "hint": "Aktualisiere deinen gespeicherten Link."
+      },
       "metrics": {
         "projects": "Projekte",
         "projectsTotal": "Projekte ({count} insgesamt)",

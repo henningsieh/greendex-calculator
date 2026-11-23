@@ -68,6 +68,10 @@ _Avoid_: Approved Claim (when meaning settled)
 The confirmed closure of a Project's Claim administration, with a settled Claim for every Project Partnership or no Partnerships present. It is not the end of the real-world Project.
 _Avoid_: Project completion, Cost Submission Window
 
+**Project list status**:
+The lifecycle-masked value shown in the Cost Tracker Project list: `archived`, `ready` (an active Project whose Partnerships all have settled Claims), or `open` (an active Project with at least one missing or unsettled Claim). It is a derived read-only projection over the Project archive flag and the Claim settled rule, not its own state machine.
+_Avoid_: Settlement filter and archive filter as separate facets, stored list status
+
 **Payout Account**:
 A reusable bank account owned by one Partner Organization and selected by a Project Partnership for its Claim.
 _UI label (de)_: Auszahlungskonto (plural: Auszahlungskonten).

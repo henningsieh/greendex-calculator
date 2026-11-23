@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Werkruimte",
       "title": "Projecten",
-      "description": "Bekijk projecten die door je actieve organisatie worden gehost of aan haar zijn toegewezen."
+      "description": "Projecten die door uw actieve organisatie worden georganiseerd of waaraan uw organisatie als partner is toegewezen."
     },
     "create": {
       "title": "Nieuw project",
@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Projectlijst",
-      "archiveFilter": "Archiefstatus",
-      "archive": {
-        "active": "Actief",
-        "archived": "Gearchiveerd",
-        "all": "Alle"
-      },
-      "settlementFilter": "Afrekening",
-      "settlement": {
-        "all": "Alle",
+      "statusFilter": "Status",
+      "status": {
         "open": "Afrekening open",
-        "ready": "Klaar om te archiveren"
+        "ready": "Klaar om te archiveren",
+        "archived": "Gearchiveerd"
       },
+      "statusAll": "Alle",
+      "statusOpenFirst": "Open eerst",
+      "statusArchivedFirst": "Gearchiveerd eerst",
       "emptyTitle": "Geen projecten beschikbaar",
       "emptyDescription": "Er worden geen projecten gehost door of toegewezen aan je actieve organisatie.",
       "relationship": "Projectrelatie",
@@ -87,6 +84,11 @@
       "participants": "Deelnames",
       "refreshing": "Projecten vernieuwen…",
       "updatedAt": "Bijgewerkt om {time} UTC",
+      "invalidCursor": {
+        "title": "Ongeldige parameters",
+        "description": "Je bent naar pagina 1 gebracht.",
+        "hint": "Werk je opgeslagen link bij."
+      },
       "metrics": {
         "projects": "Projecten",
         "projectsTotal": "Projecten ({count} totaal)",

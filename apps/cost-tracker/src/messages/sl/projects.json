@@ -3,7 +3,7 @@
     "page": {
       "eyebrow": "Delovni prostor",
       "title": "Projekti",
-      "description": "Pregledujte projekte, ki jih gosti ali so dodeljeni vaši aktivni organizaciji."
+      "description": "Projekti, ki jih vodi vaša aktivna organizacija ali v katerih je vaša organizacija vključena kot partner."
     },
     "create": {
       "title": "Nov projekt",
@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Seznam projektov",
-      "archiveFilter": "Stanje arhiviranja",
-      "archive": {
-        "active": "Aktiven",
-        "archived": "Arhiviran",
-        "all": "Vsi"
-      },
-      "settlementFilter": "Poravnava",
-      "settlement": {
-        "all": "Vsi",
+      "statusFilter": "Stanje",
+      "status": {
         "open": "Odprta poravnava",
-        "ready": "Pripravljeno za arhiviranje"
+        "ready": "Pripravljeno za arhiviranje",
+        "archived": "Arhiviran"
       },
+      "statusAll": "Vsi",
+      "statusOpenFirst": "Najprej odprti",
+      "statusArchivedFirst": "Najprej arhivirani",
       "emptyTitle": "Ni projektov na voljo",
       "emptyDescription": "Aktivni organizaciji ni dodeljen noben gostujoči projekt.",
       "relationship": "Vrsta povezave s projektom",
@@ -87,6 +84,11 @@
       "participants": "Udeležbe",
       "refreshing": "Osveževanje projektov…",
       "updatedAt": "Posodobljeno ob {time} UTC",
+      "invalidCursor": {
+        "title": "Neveljavni parametri",
+        "description": "Preusmerjeni ste na stran 1.",
+        "hint": "Posodobite shranjeno povezavo."
+      },
       "metrics": {
         "projects": "Projekti",
         "projectsTotal": "Projekti (skupaj {count})",

@@ -131,6 +131,34 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
   });
 
+  it("drops a cursor from another format version, rewrites the URL and explains it", async () => {
+    const onUrlUpdate = vi.fn();
+    const staleCursor = Buffer.from(
+      JSON.stringify({ version: 4, id: "project-1" }),
+      "utf8",
+    ).toString("base64url");
+
+    renderList({
+      onUrlUpdate,
+      searchParams: `?scope=hosted&cursor=${staleCursor}`,
+    });
+
+    expect(await screen.findByTestId("project-list")).toBeTruthy();
+    // The stale cursor never reaches the query.
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
+      "hosted",
+      expect.objectContaining({ cursor: undefined }),
+    );
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "error" }),
+      ),
+    );
+    const update = onUrlUpdate.mock.calls[0]?.[0] as UrlUpdateEvent;
+    expect(update.options.history).toBe("replace");
+    expect(update.searchParams.has("cursor")).toBe(false);
+  });
+
   it("renders the guidance Empty without tabs when a staff member has no available scope", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };
@@ -206,8 +234,8 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
   );
 
   it.each([
-    ["startDate", "endDate", "name", "settlement"],
-    ["settlement", "name", "endDate", "startDate"],
+    ["startDate", "endDate", "name", "status"],
+    ["status", "name", "endDate", "startDate"],
   ])(
     "preserves and toggles every sort priority through real URL state: %s",
     async (...fields) => {
@@ -218,7 +246,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
         startDate: "start",
         endDate: "end",
         name: "name",
-        settlement: "settlement",
+        status: "status",
       };
       renderList({
         onUrlUpdate,
@@ -308,9 +336,113 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
       const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
       expect(update.options.history).toBe("push");
       expect(JSON.parse(update.searchParams.get("sort") ?? "null")).toEqual([
-        { field: "settlement", direction: "asc" },
+        { field: "status", direction: "asc" },
         { field: "startDate", direction: "desc" },
       ]);
     },
   );
+
+  it("passes the default Status selection without writing it to the URL", async () => {
+    const onUrlUpdate = vi.fn();
+    renderList({
+      onUrlUpdate,
+      searchParams: "?scope=hosted&cursor=page-two",
+    });
+
+    await screen.findByTestId("project-status-filter", {}, { timeout: 10_000 });
+    expect(mocks.getListOptions).toHaveBeenLastCalledWith(
+      "hosted",
+      expect.objectContaining({ status: ["open", "ready"] }),
+    );
+    expect(onUrlUpdate).not.toHaveBeenCalled();
+  });
+
+  it("writes a repeated Status selection and resets the cursor", async () => {
+    const user = userEvent.setup();
+    const onUrlUpdate = vi.fn();
+    renderList({
+      onUrlUpdate,
+      searchParams: "?scope=hosted&cursor=page-two",
+    });
+
+    await user.click(
+      await screen.findByTestId("project-status-filter", {}, { timeout: 10_000 }),
+    );
+    expect(await screen.findByTestId("project-status-open")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByTestId("project-status-ready")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByTestId("project-status-archived")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    await user.click(screen.getByTestId("project-status-archived"));
+
+    await waitFor(() => {
+      const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
+      expect(update.searchParams.getAll("status")).toEqual([
+        "open",
+        "ready",
+        "archived",
+      ]);
+      expect(update.searchParams.has("cursor")).toBe(false);
+    });
+    expect(mocks.getListOptions).toHaveBeenLastCalledWith(
+      "hosted",
+      expect.objectContaining({
+        status: ["open", "ready", "archived"],
+        cursor: undefined,
+      }),
+    );
+  });
+
+  it("canonicalizes clearing every Status or choosing All to the full selection", async () => {
+    const user = userEvent.setup();
+    const onUrlUpdate = vi.fn();
+    renderList({ onUrlUpdate, searchParams: "?scope=hosted" });
+
+    await user.click(
+      await screen.findByTestId("project-status-filter", {}, { timeout: 10_000 }),
+    );
+    await user.click(
+      await screen.findByTestId("project-status-open", {}, { timeout: 10_000 }),
+    );
+    await user.click(screen.getByTestId("project-status-ready"));
+
+    // Unchecking the last value means "everything", not "nothing".
+    await waitFor(() => {
+      const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
+      expect(update.searchParams.getAll("status")).toEqual([
+        "open",
+        "ready",
+        "archived",
+      ]);
+    });
+    expect(mocks.getListOptions).toHaveBeenLastCalledWith(
+      "hosted",
+      expect.objectContaining({ status: ["open", "ready", "archived"] }),
+    );
+
+    await user.click(screen.getByTestId("project-status-open"));
+    await waitFor(() =>
+      expect(mocks.getListOptions).toHaveBeenLastCalledWith(
+        "hosted",
+        expect.objectContaining({ status: ["ready", "archived"] }),
+      ),
+    );
+
+    await user.click(screen.getByTestId("project-status-all"));
+    await waitFor(() => {
+      const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
+      expect(update.searchParams.getAll("status")).toEqual([
+        "open",
+        "ready",
+        "archived",
+      ]);
+    });
+  });
 });

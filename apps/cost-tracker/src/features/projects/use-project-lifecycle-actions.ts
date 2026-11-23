@@ -35,7 +35,7 @@ export function useProjectLifecycleActions(
     }),
   );
   const hosted = project.relationship === "hosted";
-  const { canArchive, canReopen, settlement } = hosted
+  const { canArchive, canReopen, status } = hosted
     ? projectLifecycleCapabilities({
         archived: project.archived,
         statuses: project.partnerOrganizations.map(
@@ -44,7 +44,7 @@ export function useProjectLifecycleActions(
         canArchive: project.canArchive === true,
         canReopen: project.canReopen,
       })
-    : { canArchive: false, canReopen: false, settlement: null };
+    : { canArchive: false, canReopen: false, status: null };
 
   function open(action: ProjectAction) {
     form.reset();
@@ -124,7 +124,7 @@ export function useProjectLifecycleActions(
     reopenOpen: confirmation === "reopen",
     canArchive,
     canReopen,
-    settlement,
+    status,
     showArchivedInfo: hosted && project.archived && !project.canReopen,
     archiveDisabled: !canArchive || pending,
     reopenDisabled: !canReopen || !reason.trim() || pending,

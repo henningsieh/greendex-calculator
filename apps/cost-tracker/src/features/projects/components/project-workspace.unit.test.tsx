@@ -133,9 +133,9 @@ describe("Project workspace", () => {
     );
     expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
     expect(screen.queryByTestId("manage-project-partnerships")).toBeNull();
-    expect(screen.getAllByTestId("project-workspace-settlement")).toHaveLength(1);
-    expect(screen.getByTestId("project-workspace-settlement")).toHaveAttribute(
-      "data-settlement",
+    expect(screen.getAllByTestId("project-status")).toHaveLength(1);
+    expect(screen.getByTestId("project-status")).toHaveAttribute(
+      "data-status",
       "open",
     );
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
@@ -232,11 +232,9 @@ describe("Project workspace", () => {
       await screen.findByTestId("assigned-partnerships-empty"),
     ).toBeInTheDocument();
     const header = screen.getByRole("heading", { level: 1 }).closest("header");
-    expect(header).toContainElement(
-      screen.getByTestId("project-workspace-settlement"),
-    );
-    expect(screen.getByTestId("project-workspace-settlement")).toHaveAttribute(
-      "data-settlement",
+    expect(header).toContainElement(screen.getByTestId("project-status"));
+    expect(screen.getByTestId("project-status")).toHaveAttribute(
+      "data-status",
       "archived",
     );
     expect(screen.queryByTestId("partnership-shortcut-intro")).toBeNull();
