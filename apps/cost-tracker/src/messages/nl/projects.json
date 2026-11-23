@@ -33,7 +33,8 @@
         "endDateRequired": "Kies een einddatum.",
         "endBeforeStart": "De einddatum moet op of na de startdatum liggen.",
         "tooLong": "Gebruik maximaal {count} tekens."
-      }
+      },
+      "close": "Sluiten"
     },
     "list": {
       "label": "Projectlijst",

@@ -33,7 +33,8 @@
         "endDateRequired": "Izberite datum konca.",
         "endBeforeStart": "Datum konca mora biti enak ali poznejši od datuma začetka.",
         "tooLong": "Uporabite največ {count} znakov."
-      }
+      },
+      "close": "Zapri"
     },
     "list": {
       "label": "Seznam projektov",

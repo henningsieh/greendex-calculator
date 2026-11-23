@@ -33,7 +33,8 @@
         "endDateRequired": "Choose an end date.",
         "endBeforeStart": "The end date must be on or after the start date.",
         "tooLong": "Use {count} characters or fewer."
-      }
+      },
+      "close": "Close"
     },
     "list": {
       "label": "Project list",

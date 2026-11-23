@@ -142,7 +142,11 @@ export function CreateProjectDialog() {
       <DialogTrigger data-testid="new-project" render={<Button type="button" />}>
         {t("submit")}
       </DialogTrigger>
-      <DialogContent data-testid="create-project-dialog" variant="form">
+      <DialogContent
+        closeLabel={t("close")}
+        data-testid="create-project-dialog"
+        variant="form"
+      >
         <DialogHeader variant="form">
           <div className="flex flex-col gap-2">
             <DialogTitle size="lg">{t("title")}</DialogTitle>
