@@ -31,7 +31,7 @@ function pathsFromIndex(parent) {
   ];
 }
 
-function run(binary, args) {
+function runCaptured(binary, args) {
   const result = spawnSync(path.join(root, "node_modules/.bin", binary), args, {
     cwd: snapshot,
     encoding: "utf8",
@@ -39,7 +39,26 @@ function run(binary, args) {
   if (result.error) throw result.error;
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
-  return result.status;
+  return result;
+}
+
+function run(binary, args) {
+  return runCaptured(binary, args).status;
+}
+
+/**
+ * oxlint exits 1 when its arguments match no lintable file. That is normal for
+ * a commit that only touches ignored paths, such as the vendored shadcn
+ * primitives under `src/components/ui/**`, and is not a lint failure.
+ */
+function noFilesMatched(result) {
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  const lines = output.split("\n").filter(Boolean);
+  if (!lines.some((line) => line.startsWith("No files found"))) return false;
+  return lines.every(
+    (line) =>
+      line.startsWith("No files found") || line.startsWith("Finished in "),
+  );
 }
 
 function stageIfChanged(file, before) {
@@ -96,16 +115,14 @@ if (tailwindCandidates.length) {
   // Two passes: collapsing `mt-2 mb-2` into `my-2` removes classes and leaves
   // the whitespace that no-unnecessary-whitespace normalises on the next pass.
   for (let pass = 0; pass < 2; pass += 1) {
-    if (
-      run("oxlint", [
-        "--config",
-        "oxlint.tailwind.json",
-        "--fix",
-        "--",
-        ...tailwindCandidates,
-      ]) !== 0
-    )
-      process.exit(1);
+    const result = runCaptured("oxlint", [
+      "--config",
+      "oxlint.tailwind.json",
+      "--fix",
+      "--",
+      ...tailwindCandidates,
+    ]);
+    if (result.status !== 0 && !noFilesMatched(result)) process.exit(1);
   }
   for (const file of tailwindCandidates) stageIfChanged(file, before.get(file));
 }
@@ -117,19 +134,9 @@ if (lint.length) {
     { cwd: snapshot, encoding: "utf8" },
   );
   if (result.error) throw result.error;
-  const output = result.stdout + result.stderr;
-  if (output) process.stdout.write(output);
-  if (
-    result.status !== 0 &&
-    (!output.includes("No files found to lint.") ||
-      output
-        .split("\n")
-        .some(
-          (line) =>
-            line && !/^No files found to lint\.|^Finished in .*$/.test(line),
-        ))
-  )
-    process.exit(1);
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.status !== 0 && !noFilesMatched(result)) process.exit(1);
 }
 if (run("tsx", ["scripts/check-agent-instructions.ts"]) !== 0) process.exit(1);
 if (
