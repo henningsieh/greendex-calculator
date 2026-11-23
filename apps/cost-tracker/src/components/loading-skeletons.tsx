@@ -1,6 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Announces a loading region without smuggling its content into a phrasing
+ * element. `<output>` only accepts phrasing content, so the status text sits
+ * in its own `sr-only` output and the landmarks and blocks beside it.
+ */
 export function LoadingRegion({
   children,
   label,
@@ -9,10 +14,12 @@ export function LoadingRegion({
   label: string;
 }) {
   return (
-    <output aria-label={label} aria-live="polite">
-      <span className="sr-only">{label}</span>
+    <>
+      <output className="sr-only" aria-label={label} aria-live="polite">
+        {label}
+      </output>
       {children}
-    </output>
+    </>
   );
 }
 
