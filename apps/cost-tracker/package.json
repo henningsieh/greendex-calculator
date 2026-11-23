@@ -38,6 +38,7 @@
     "@scalar/api-reference": "catalog:",
     "@t3-oss/env-nextjs": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-query-devtools": "catalog:",
     "@tanstack/react-table": "catalog:",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",

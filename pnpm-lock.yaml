@@ -215,6 +215,9 @@ catalogs:
     '@tanstack/react-query':
       specifier: ^5.107.1
       version: 5.107.1
+    '@tanstack/react-query-devtools':
+      specifier: ^5.107.1
+      version: 5.107.1
     '@tanstack/react-table':
       specifier: ^9.3.1
       version: 9.3.1
@@ -510,7 +513,7 @@ importers:
         specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-query-devtools':
-        specifier: ^5.107.1
+        specifier: 'catalog:'
         version: 5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-table':
         specifier: 'catalog:'
@@ -741,6 +744,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-query-devtools':
+        specifier: 'catalog:'
+        version: 5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-table':
         specifier: 'catalog:'
         version: 9.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
