@@ -37,6 +37,7 @@ export default async function ProjectsPage(
       <ProtectedPageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
+        description={t("description")}
         rightButton={canCreate ? <CreateProjectDialog /> : undefined}
       />
 
