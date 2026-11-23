@@ -28,10 +28,15 @@ export function BreadcrumbTrailFallback() {
       aria-hidden="true"
       className="mx-auto w-full max-w-7xl min-w-0 pr-5 pl-0 sm:pr-8 lg:pr-10"
     >
-      <div className="flex items-center gap-2">
-        <span className="h-3 w-16 animate-pulse rounded-full bg-muted" />
-        <span className="size-3.5 shrink-0 rounded-full bg-muted" />
-        <span className="h-3 w-28 animate-pulse rounded-full bg-muted" />
+      <div className="flex items-center lg:gap-1">
+        <span className="flex size-8 shrink-0 items-center justify-center lg:m-0">
+          <span className="size-3.5 animate-pulse rounded-xs bg-muted" />
+        </span>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="h-4 w-16 animate-pulse rounded-xs bg-muted" />
+          <span className="h-3.5 w-2 shrink-0 rounded-xs bg-muted" />
+          <span className="h-4 w-28 animate-pulse rounded-xs bg-muted" />
+        </div>
       </div>
     </div>
   );
