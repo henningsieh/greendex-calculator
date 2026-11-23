@@ -16,7 +16,25 @@
       "welcomeMessage": "Willkommensnachricht (optional)",
       "cancel": "Abbrechen",
       "creating": "Wird erstellt…",
-      "submit": "Projekt erstellen"
+      "submit": "Projekt erstellen",
+      "namePlaceholder": "z. B. Erasmus+ Austausch Berlin",
+      "locationPlaceholder": "z. B. Berlin",
+      "scheduleHint": "Der Projektzeitraum, sichtbar in der Projektliste und im Arbeitsbereich.",
+      "spanDays": "{count, plural, one {# Tag} other {# Tage}}",
+      "welcomePlaceholder": "Eine kurze Begrüßung für Teilnehmende…",
+      "welcomeHint": "Teilnehmende sehen diese Nachricht nach dem Beitritt.",
+      "charactersLeft": "{count, plural, one {# Zeichen übrig} other {# Zeichen übrig}}",
+      "requiredHint": "Mit * markierte Felder sind erforderlich.",
+      "errors": {
+        "nameRequired": "Gib einen Projektnamen ein.",
+        "locationRequired": "Gib einen Ort ein.",
+        "countryRequired": "Wähle ein Land.",
+        "startDateRequired": "Wähle ein Startdatum.",
+        "endDateRequired": "Wähle ein Enddatum.",
+        "endBeforeStart": "Das Enddatum muss am oder nach dem Startdatum liegen.",
+        "tooLong": "Verwende höchstens {count} Zeichen."
+      },
+      "close": "Schließen"
     },
     "list": {
       "label": "Projektliste",

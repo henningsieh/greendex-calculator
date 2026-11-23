@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComboboxRootChangeEventReason } from "@base-ui/react/combobox";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { useLocale, useTranslations } from "@greendex/i18n/client";
 import { useMemo, type ComponentProps } from "react";
@@ -35,6 +36,8 @@ type EUCountrySelectorProps = Pick<
   disabled?: boolean;
   optional?: boolean;
   name?: string;
+  /** Called when the popover closes; carries the Base UI close reason. */
+  onClose?: (reason: ComboboxRootChangeEventReason) => void;
   "data-testid"?: string;
 };
 
@@ -54,9 +57,11 @@ export function EUCountrySelector({
   onValueChange,
   disabled = false,
   optional = false,
+  variant = "default",
   name,
+  onClose,
   ...props
-}: EUCountrySelectorProps) {
+}: EUCountrySelectorProps & { variant?: "default" | "field" }) {
   const locale = useLocale();
   const t = useTranslations("shell.countrySelector");
   const countries = useMemo(() => getEUCountryOptions(locale), [locale]);
@@ -78,8 +83,14 @@ export function EUCountrySelector({
       disabled={disabled}
       required={!optional}
       name={name}
+      onOpenChange={(open, details) => {
+        if (!open) onClose?.(details.reason);
+      }}
     >
-      <ComboboxTrigger render={<Button variant="outline" />} {...props}>
+      <ComboboxTrigger
+        render={<Button variant={variant === "field" ? "field" : "outline"} />}
+        {...props}
+      >
         <ComboboxValue>
           {(country: EUCountryOption | null) =>
             country ? <CountryPresentation country={country} /> : t("placeholder")

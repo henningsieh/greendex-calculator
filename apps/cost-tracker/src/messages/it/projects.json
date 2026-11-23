@@ -16,7 +16,25 @@
       "welcomeMessage": "Messaggio di benvenuto (facoltativo)",
       "cancel": "Annulla",
       "creating": "Creazione…",
-      "submit": "Crea progetto"
+      "submit": "Crea progetto",
+      "namePlaceholder": "es. scambio Erasmus+ Berlino",
+      "locationPlaceholder": "es. Berlino",
+      "scheduleHint": "Il periodo del progetto, visibile nell’elenco dei progetti e nell’area di lavoro.",
+      "spanDays": "{count, plural, one {# giorno} other {# giorni}}",
+      "welcomePlaceholder": "Un breve saluto per i partecipanti…",
+      "welcomeHint": "I partecipanti vedono questo messaggio dopo essersi uniti.",
+      "charactersLeft": "{count, plural, one {# carattere rimasto} other {# caratteri rimasti}}",
+      "requiredHint": "I campi contrassegnati da * sono obbligatori.",
+      "errors": {
+        "nameRequired": "Inserisci un nome per il progetto.",
+        "locationRequired": "Inserisci un luogo.",
+        "countryRequired": "Scegli un paese.",
+        "startDateRequired": "Scegli una data di inizio.",
+        "endDateRequired": "Scegli una data di fine.",
+        "endBeforeStart": "La data di fine deve essere uguale o successiva alla data di inizio.",
+        "tooLong": "Usa al massimo {count} caratteri."
+      },
+      "close": "Chiudi"
     },
     "list": {
       "label": "Elenco dei progetti",
