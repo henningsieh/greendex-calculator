@@ -57,7 +57,7 @@ export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
 export const PROJECT_STATUSES = ["open", "ready", "archived"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-/** Canonical, order-insensitive form shared by URL state, procedures and cursors. */
+/** Canonical, order-insensitive form shared by URL state, procedures and cursors. The URL default selection lives with the list query options. */
 export function normalizeProjectStatuses(
   statuses: readonly ProjectStatus[],
 ): ProjectStatus[] {

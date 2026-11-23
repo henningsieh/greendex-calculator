@@ -31,6 +31,7 @@ export {
   DEFAULT_PROJECT_SORT,
 };
 
+/** URL default only; the status contract tuple and its normalizer live with the validation schemas. */
 export const DEFAULT_PROJECT_STATUS_SELECTION: readonly ProjectStatus[] = [
   "open",
   "ready",
