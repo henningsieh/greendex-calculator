@@ -44,12 +44,21 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     render(<CreateProjectDialog />);
     await user.click(screen.getByTestId("new-project"));
     expect(screen.getByTestId("create-project-dialog")).toBeTruthy();
+    expect(document.querySelector('[data-slot="dialog-overlay"]')).toHaveClass(
+      "fixed",
+      "inset-0",
+      "z-50",
+    );
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
       expect(screen.getByTestId("new-project-name")).toHaveAttribute(
         "aria-invalid",
         "true",
       ),
+    );
+    expect(await screen.findByTestId("new-project-name-error")).toHaveAttribute(
+      "data-error-type",
+      "too_small",
     );
     expect(mocks.create).not.toHaveBeenCalled();
     const country = screen.getByRole("combobox", {
@@ -82,9 +91,19 @@ describe("New project dialog", { timeout: 60_000 }, () => {
         "true",
       ),
     );
+    expect(await screen.findByTestId("new-project-end-error")).toHaveAttribute(
+      "data-error-type",
+      "custom",
+    );
     fireEvent.change(screen.getByTestId("new-project-end"), {
       target: { value: "2027-04-05" },
     });
+    await waitFor(() =>
+      expect(screen.getByTestId("create-project-span")).toHaveAttribute(
+        "data-days",
+        "3",
+      ),
+    );
     fireEvent.change(screen.getByTestId("new-project-welcome"), {
       target: { value: "Welcome!" },
     });

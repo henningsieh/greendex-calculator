@@ -26,28 +26,72 @@ export const HostedProjectOptionSchema = projectColumns.pick({
 });
 export type HostedProjectOption = z.infer<typeof HostedProjectOptionSchema>;
 
-export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
-  .pick({
-    name: true,
-    startDate: true,
-    endDate: true,
-    location: true,
-    country: true,
-    welcomeMessage: true,
-  })
-  .safeExtend({
-    name: z.string().trim().min(1, "Name is required").max(200),
-    startDate: z.date(),
-    endDate: z.date(),
-    location: z.string().trim().min(1, "Location is required").max(200),
-    country: z.enum(EU_COUNTRY_CODES),
-    welcomeMessage: z.string().max(5000).nullable().optional(),
-  })
-  .strict()
-  .refine(({ startDate, endDate }) => endDate >= startDate, {
-    path: ["endDate"],
-    message: "End date must not precede start date.",
-  });
+export const PROJECT_NAME_MAX_LENGTH = 200;
+export const PROJECT_LOCATION_MAX_LENGTH = 200;
+export const PROJECT_WELCOME_MAX_LENGTH = 5000;
+
+export type ProjectCreateMessages = {
+  nameRequired: string;
+  locationRequired: string;
+  countryRequired: string;
+  startDateRequired: string;
+  endDateRequired: string;
+  endBeforeStart: string;
+  tooLong: (maxLength: number) => string;
+};
+
+export function createProjectCreateInputSchema(messages: ProjectCreateMessages) {
+  return createInsertSchema(projectsTable)
+    .pick({
+      name: true,
+      startDate: true,
+      endDate: true,
+      location: true,
+      country: true,
+      welcomeMessage: true,
+    })
+    .safeExtend({
+      name: z
+        .string()
+        .trim()
+        .min(1, messages.nameRequired)
+        .max(PROJECT_NAME_MAX_LENGTH, {
+          error: messages.tooLong(PROJECT_NAME_MAX_LENGTH),
+        }),
+      startDate: z.date({ error: messages.startDateRequired }),
+      endDate: z.date({ error: messages.endDateRequired }),
+      location: z
+        .string()
+        .trim()
+        .min(1, messages.locationRequired)
+        .max(PROJECT_LOCATION_MAX_LENGTH, {
+          error: messages.tooLong(PROJECT_LOCATION_MAX_LENGTH),
+        }),
+      country: z.enum(EU_COUNTRY_CODES, { error: messages.countryRequired }),
+      welcomeMessage: z
+        .string()
+        .max(PROJECT_WELCOME_MAX_LENGTH, {
+          error: messages.tooLong(PROJECT_WELCOME_MAX_LENGTH),
+        })
+        .nullable()
+        .optional(),
+    })
+    .strict()
+    .refine(({ startDate, endDate }) => endDate >= startDate, {
+      path: ["endDate"],
+      message: messages.endBeforeStart,
+    });
+}
+
+export const ProjectCreateInputSchema = createProjectCreateInputSchema({
+  nameRequired: "Name is required",
+  locationRequired: "Location is required",
+  countryRequired: "Choose a country.",
+  startDateRequired: "Choose a start date.",
+  endDateRequired: "Choose an end date.",
+  endBeforeStart: "End date must not precede start date.",
+  tooLong: (maxLength) => `Use ${maxLength} characters or fewer.`,
+});
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
 /**

@@ -16,7 +16,24 @@
       "welcomeMessage": "Pozdravno sporočilo (neobvezno)",
       "cancel": "Prekliči",
       "creating": "Ustvarjanje…",
-      "submit": "Ustvari projekt"
+      "submit": "Ustvari projekt",
+      "namePlaceholder": "npr. izmenjava Erasmus+ Berlin",
+      "locationPlaceholder": "npr. Berlin",
+      "scheduleHint": "Poti in zahtevki morajo biti znotraj tega obdobja.",
+      "spanDays": "{count, plural, one {# dan} two {# dneva} few {# dnevi} other {# dni}}",
+      "welcomePlaceholder": "Kratek pozdrav za udeležence…",
+      "welcomeHint": "Udeleženci to sporočilo vidijo po pridružitvi.",
+      "charactersLeft": "{count, plural, one {Še # znak} two {Še # znaka} few {Še # znaki} other {Še # znakov}}",
+      "requiredHint": "Polja z * so obvezna.",
+      "errors": {
+        "nameRequired": "Vnesite ime projekta.",
+        "locationRequired": "Vnesite lokacijo.",
+        "countryRequired": "Izberite državo.",
+        "startDateRequired": "Izberite datum začetka.",
+        "endDateRequired": "Izberite datum konca.",
+        "endBeforeStart": "Datum konca mora biti enak ali poznejši od datuma začetka.",
+        "tooLong": "Uporabite največ {count} znakov."
+      }
     },
     "list": {
       "label": "Seznam projektov",

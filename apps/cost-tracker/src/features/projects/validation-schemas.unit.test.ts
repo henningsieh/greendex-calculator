@@ -9,6 +9,7 @@ import {
   ProjectCreateInputSchema,
   ProjectDetailInputSchema,
   ProjectSortOrderSchema,
+  createProjectCreateInputSchema,
 } from "@/features/projects/validation-schemas";
 
 const country = EU_COUNTRY_CODES[0];
@@ -97,6 +98,30 @@ describe("Project creation input", () => {
         country: "XX",
       }).success,
     ).toBe(false);
+  });
+
+  it("injects supplied copy into field errors", () => {
+    const schema = createProjectCreateInputSchema({
+      nameRequired: "name-required",
+      locationRequired: "location-required",
+      countryRequired: "country-required",
+      startDateRequired: "start-required",
+      endDateRequired: "end-required",
+      endBeforeStart: "end-before-start",
+      tooLong: (maxLength) => `too-long-${maxLength}`,
+    });
+    const result = schema.safeParse({
+      ...validCreateInput(),
+      name: " ",
+      location: " ",
+      startDate: new Date("2026-12-31"),
+      endDate: new Date("2026-01-01"),
+    });
+    expect(result.success).toBe(false);
+    const messages = result.error?.issues.map((issue) => issue.message) ?? [];
+    expect(messages).toContain("name-required");
+    expect(messages).toContain("location-required");
+    expect(messages).toContain("end-before-start");
   });
 });
 

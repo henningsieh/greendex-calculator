@@ -16,7 +16,24 @@
       "welcomeMessage": "Welcome message (optional)",
       "cancel": "Cancel",
       "creating": "Creating…",
-      "submit": "Create project"
+      "submit": "Create project",
+      "namePlaceholder": "e.g. Erasmus+ exchange Berlin",
+      "locationPlaceholder": "e.g. Berlin",
+      "scheduleHint": "Travel and Claims must fall inside this window.",
+      "spanDays": "{count, plural, one {# day} other {# days}}",
+      "welcomePlaceholder": "A short greeting for participants…",
+      "welcomeHint": "Participants see this message after they join.",
+      "charactersLeft": "{count, plural, one {# character left} other {# characters left}}",
+      "requiredHint": "Fields marked * are required.",
+      "errors": {
+        "nameRequired": "Enter a project name.",
+        "locationRequired": "Enter a location.",
+        "countryRequired": "Choose a country.",
+        "startDateRequired": "Choose a start date.",
+        "endDateRequired": "Choose an end date.",
+        "endBeforeStart": "The end date must be on or after the start date.",
+        "tooLong": "Use {count} characters or fewer."
+      }
     },
     "list": {
       "label": "Project list",

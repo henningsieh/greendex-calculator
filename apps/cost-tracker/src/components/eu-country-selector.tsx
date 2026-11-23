@@ -54,9 +54,10 @@ export function EUCountrySelector({
   onValueChange,
   disabled = false,
   optional = false,
+  variant = "default",
   name,
   ...props
-}: EUCountrySelectorProps) {
+}: EUCountrySelectorProps & { variant?: "default" | "field" }) {
   const locale = useLocale();
   const t = useTranslations("shell.countrySelector");
   const countries = useMemo(() => getEUCountryOptions(locale), [locale]);
@@ -79,7 +80,10 @@ export function EUCountrySelector({
       required={!optional}
       name={name}
     >
-      <ComboboxTrigger render={<Button variant="outline" />} {...props}>
+      <ComboboxTrigger
+        render={<Button variant={variant === "field" ? "field" : "outline"} />}
+        {...props}
+      >
         <ComboboxValue>
           {(country: EUCountryOption | null) =>
             country ? <CountryPresentation country={country} /> : t("placeholder")

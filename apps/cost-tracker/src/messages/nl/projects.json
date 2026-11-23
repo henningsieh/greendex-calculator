@@ -16,7 +16,24 @@
       "welcomeMessage": "Welkomstbericht (optioneel)",
       "cancel": "Annuleren",
       "creating": "Aanmaken…",
-      "submit": "Project aanmaken"
+      "submit": "Project aanmaken",
+      "namePlaceholder": "bijv. Erasmus+ uitwisseling Berlijn",
+      "locationPlaceholder": "bijv. Berlijn",
+      "scheduleHint": "Reizen en declaraties moeten binnen deze periode vallen.",
+      "spanDays": "{count, plural, one {# dag} other {# dagen}}",
+      "welcomePlaceholder": "Een korte begroeting voor deelnemers…",
+      "welcomeHint": "Deelnemers zien dit bericht nadat ze zich hebben aangesloten.",
+      "charactersLeft": "{count, plural, one {# teken over} other {# tekens over}}",
+      "requiredHint": "Velden met * zijn verplicht.",
+      "errors": {
+        "nameRequired": "Vul een projectnaam in.",
+        "locationRequired": "Vul een locatie in.",
+        "countryRequired": "Kies een land.",
+        "startDateRequired": "Kies een startdatum.",
+        "endDateRequired": "Kies een einddatum.",
+        "endBeforeStart": "De einddatum moet op of na de startdatum liggen.",
+        "tooLong": "Gebruik maximaal {count} tekens."
+      }
     },
     "list": {
       "label": "Projectlijst",
