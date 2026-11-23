@@ -23,18 +23,45 @@ export function LoadingRegion({
   );
 }
 
-export function HeaderSkeleton() {
+/**
+ * Mirrors `ProtectedPageHeader` block for block: the eyebrow's 18px mono line
+ * box, the `mt-2` title line (40px at `text-4xl`), and the `mt-4`
+ * `text-sm/8` description. Only one description line is sketched; the
+ * resolved copy wraps to two only on narrow viewports.
+ *
+ * The geometry matters: this skeleton is the shell's own `main` fallback, so
+ * a mismatched height makes the page jump when the route's header replaces it.
+ */
+export function HeaderSkeleton({
+  rightButton,
+}: {
+  /** Trailing action slot, mirroring `ProtectedPageHeader`'s `rightButton`. */
+  rightButton?: React.ReactNode;
+} = {}) {
   return (
-    <header className="max-w-2xl">
-      <Skeleton className="h-4 w-28" data-testid="loading-skeleton" />
-      <Skeleton
-        className="mt-4 h-11 w-72 max-w-full"
-        data-testid="loading-skeleton"
-      />
-      <div className="mt-5 flex flex-col gap-2">
-        <Skeleton className="h-5 w-full" data-testid="loading-skeleton" />
-        <Skeleton className="h-5 w-4/5" data-testid="loading-skeleton" />
+    <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="max-w-3xl min-w-0">
+        <p className="type-ember-eyebrow" aria-hidden="true">
+          <span
+            className="inline-block h-3 w-28 animate-pulse bg-muted"
+            data-testid="loading-skeleton"
+          />
+        </p>
+        <Skeleton
+          className="mt-2 h-10 w-72 max-w-full"
+          data-testid="loading-skeleton"
+        />
+        {/* `text-sm/8` = one 32px line box. Reserving a single line keeps the
+            common case exact; long copy that wraps on a narrow viewport grows
+            by one line when it resolves. */}
+        <div className="mt-4 flex h-8 items-center">
+          <Skeleton
+            className="h-4 w-full max-w-xl"
+            data-testid="loading-skeleton"
+          />
+        </div>
       </div>
+      {rightButton ? <div className="shrink-0">{rightButton}</div> : null}
     </header>
   );
 }
