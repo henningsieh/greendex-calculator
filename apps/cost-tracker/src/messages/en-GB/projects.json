@@ -19,7 +19,7 @@
       "submit": "Create project",
       "namePlaceholder": "e.g. Erasmus+ exchange Berlin",
       "locationPlaceholder": "e.g. Berlin",
-      "scheduleHint": "Travel and Claims must fall inside this window.",
+      "scheduleHint": "The project timeline, shown in the project list and workspace.",
       "spanDays": "{count, plural, one {# day} other {# days}}",
       "welcomePlaceholder": "A short greeting for participants…",
       "welcomeHint": "Participants see this message after they join.",

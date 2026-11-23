@@ -19,7 +19,7 @@
       "submit": "Crea progetto",
       "namePlaceholder": "es. scambio Erasmus+ Berlino",
       "locationPlaceholder": "es. Berlino",
-      "scheduleHint": "I viaggi e le richieste di rimborso devono rientrare in questo periodo.",
+      "scheduleHint": "Il periodo del progetto, visibile nell’elenco dei progetti e nell’area di lavoro.",
       "spanDays": "{count, plural, one {# giorno} other {# giorni}}",
       "welcomePlaceholder": "Un breve saluto per i partecipanti…",
       "welcomeHint": "I partecipanti vedono questo messaggio dopo essersi uniti.",

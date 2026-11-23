@@ -19,7 +19,7 @@
       "submit": "Ustvari projekt",
       "namePlaceholder": "npr. izmenjava Erasmus+ Berlin",
       "locationPlaceholder": "npr. Berlin",
-      "scheduleHint": "Poti in zahtevki morajo biti znotraj tega obdobja.",
+      "scheduleHint": "Obdobje projekta, prikazano na seznamu projektov in v delovnem prostoru.",
       "spanDays": "{count, plural, one {# dan} two {# dneva} few {# dnevi} other {# dni}}",
       "welcomePlaceholder": "Kratek pozdrav za udeležence…",
       "welcomeHint": "Udeleženci to sporočilo vidijo po pridružitvi.",

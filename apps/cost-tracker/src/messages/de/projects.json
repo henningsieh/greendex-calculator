@@ -19,7 +19,7 @@
       "submit": "Projekt erstellen",
       "namePlaceholder": "z. B. Erasmus+ Austausch Berlin",
       "locationPlaceholder": "z. B. Berlin",
-      "scheduleHint": "Reisen und Erstattungsanträge müssen in diesen Zeitraum fallen.",
+      "scheduleHint": "Der Projektzeitraum, sichtbar in der Projektliste und im Arbeitsbereich.",
       "spanDays": "{count, plural, one {# Tag} other {# Tage}}",
       "welcomePlaceholder": "Eine kurze Begrüßung für Teilnehmende…",
       "welcomeHint": "Teilnehmende sehen diese Nachricht nach dem Beitritt.",
