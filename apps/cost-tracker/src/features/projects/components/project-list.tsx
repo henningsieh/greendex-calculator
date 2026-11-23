@@ -19,7 +19,7 @@ import {
   ProjectListMetrics,
   ResolvedProjectListResults,
 } from "@/features/projects/components/project-list-results";
-import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectResultsSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectScopeTabs } from "@/features/projects/components/project-scope-tabs";
 import { getProjectAvailableScopesQueryOptions } from "@/features/projects/list-query-options";
 import {
@@ -176,7 +176,14 @@ function ResolvedProjectList({
           availableScopes={availableScopes}
           updateListState={updateListState}
         />
-        <Suspense fallback={<Skeleton className="h-5 w-56" />}>
+        <Suspense
+          fallback={
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-36" />
+            </div>
+          }
+        >
           <ProjectListMetrics scope={scope} state={state} />
         </Suspense>
       </div>
@@ -185,7 +192,7 @@ function ResolvedProjectList({
         urlState={urlState}
         setUrlState={setUrlState}
       />
-      <Suspense fallback={<ProjectListSkeleton />}>
+      <Suspense fallback={<ProjectResultsSkeleton />}>
         <ResolvedProjectListResults
           key={preference.accountKey}
           preference={preference}
