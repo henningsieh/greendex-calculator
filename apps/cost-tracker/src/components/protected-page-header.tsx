@@ -18,7 +18,7 @@ export default function ProtectedPageHeader({
         <p className="type-ember-eyebrow">{eyebrow}</p>
         <h1 className="mt-2 text-4xl wrap-anywhere">{title}</h1>
         {description ? (
-          <p className="mt-4 text-lg/8 text-muted-foreground">{description}</p>
+          <p className="mt-4 text-sm/8 text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {rightButton ? <div className="shrink-0">{rightButton}</div> : null}
