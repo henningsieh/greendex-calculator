@@ -258,7 +258,7 @@ export function CreateProjectDialog() {
                         disabled={isSubmitting}
                         id="new-project-country"
                         onClose={(reason) => {
-                          if (reason === "itemPress" || field.value) return;
+                          if (reason === "item-press" || field.value) return;
                           void trigger("country");
                         }}
                         onValueChange={field.onChange}

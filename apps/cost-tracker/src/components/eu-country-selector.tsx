@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComboboxRootChangeEventReason } from "@base-ui/react/combobox";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { useLocale, useTranslations } from "@greendex/i18n/client";
 import { useMemo, type ComponentProps } from "react";
@@ -36,7 +37,7 @@ type EUCountrySelectorProps = Pick<
   optional?: boolean;
   name?: string;
   /** Called when the popover closes; carries the Base UI close reason. */
-  onClose?: (reason: string) => void;
+  onClose?: (reason: ComboboxRootChangeEventReason) => void;
   "data-testid"?: string;
 };
 
