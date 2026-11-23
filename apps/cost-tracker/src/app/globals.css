@@ -92,7 +92,7 @@
   --popover-foreground: #f7f2e9;
   --primary: #ffb800;
   --primary-foreground: #1c1200;
-  --secondary: rgb(255 255 255 / 0.04);
+  --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
   --muted: rgb(255 255 255 / 0.04);
   --muted-foreground: #9dacc9;
@@ -114,7 +114,7 @@
   --sidebar-foreground: #f7f2e9;
   --sidebar-primary: #ffb800;
   --sidebar-primary-foreground: #1c1200;
-  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent: rgb(147 180 255 / 0.13);
   --sidebar-accent-foreground: #f7f2e9;
   --sidebar-border: rgb(147 180 255 / 0.13);
   --sidebar-ring: #ffb800;
@@ -146,7 +146,7 @@
   --popover-foreground: #f7f2e9;
   --primary: #ffb800;
   --primary-foreground: #1c1200;
-  --secondary: rgb(255 255 255 / 0.04);
+  --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
   --muted: rgb(255 255 255 / 0.04);
   --muted-foreground: #b8a9d4;
@@ -168,7 +168,7 @@
   --sidebar-foreground: #f7f2e9;
   --sidebar-primary: #ffb800;
   --sidebar-primary-foreground: #1c1200;
-  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent: rgb(200 170 255 / 0.12);
   --sidebar-accent-foreground: #f7f2e9;
   --sidebar-border: rgb(200 170 255 / 0.12);
   --sidebar-ring: #ffb800;
@@ -200,7 +200,7 @@
   --popover-foreground: #f7f2e9;
   --primary: #ffb800;
   --primary-foreground: #1c1200;
-  --secondary: rgb(255 255 255 / 0.04);
+  --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
   --muted: rgb(255 255 255 / 0.04);
   --muted-foreground: #98a0b8;
@@ -222,7 +222,7 @@
   --sidebar-foreground: #f7f2e9;
   --sidebar-primary: #ffb800;
   --sidebar-primary-foreground: #1c1200;
-  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent: rgb(255 255 255 / 0.09);
   --sidebar-accent-foreground: #f7f2e9;
   --sidebar-border: rgb(255 255 255 / 0.09);
   --sidebar-ring: #ffb800;
