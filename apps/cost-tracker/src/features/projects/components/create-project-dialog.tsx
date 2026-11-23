@@ -44,6 +44,7 @@ import {
   ProjectCreateInputSchema,
   createProjectCreateInputSchema,
 } from "@/features/projects/validation-schemas";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
@@ -51,6 +52,7 @@ type Details = z.input<typeof ProjectCreateInputSchema>;
 
 export function CreateProjectDialog() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const t = useTranslations("projects.create");
   const locale = useLocale();
   const dateFormat = useDateFormat();
@@ -82,7 +84,7 @@ export function CreateProjectDialog() {
     reset,
   } = useForm<Details>({
     resolver,
-    mode: "onTouched",
+    mode: isMobile ? "onTouched" : "onBlur",
     defaultValues: { name: "", location: "", welcomeMessage: "" },
   });
 
