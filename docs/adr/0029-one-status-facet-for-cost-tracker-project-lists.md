@@ -27,6 +27,6 @@ The Cost Tracker Project list spread one project-level status across an Archive 
 ## Consequences
 
 - Existing bookmarks containing `archive` or `settlement` lose those parameters and fall back to the default Hosted/Partner list view. This is intentional and is the only compatibility cost.
-- API clients must send `status: ProjectStatus[]`; an absent or empty array applies no constraint, while the URL default remains `open` plus `ready`.
+- The list procedure applies no status filter on its own: an absent or empty `status` means no constraint. The list UI is one caller; it passes its default selection (`open` plus `ready`) and shows that selection in the filter.
 - The Archived selection is a query concern only. It cannot reach an archive or reopen action, and those lifecycle paths keep their existing authorization.
 - A future status value requires an ordered-tuple entry, both derivations, the generated projection document and the tests to move together; the drift check and projection comparison make a one-sided change fail.
