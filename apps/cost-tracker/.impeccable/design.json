@@ -9,6 +9,14 @@
       "refersTo": "button-primary"
     },
     {
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: var(--secondary); color: var(--secondary-foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-secondary:hover { background: color-mix(in oklch, var(--secondary), var(--foreground) 5%); } .ds-btn-secondary:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); } .ds-btn-secondary:active { transform: translateY(1px); }",
+      "description": "Quiet affirmative alternative. The secondary fill sits at 9% white in dark vibes, one step above the 5% card.",
+      "html": "<button class=\"ds-btn-secondary\">Save draft</button>",
+      "kind": "button",
+      "name": "Secondary Button",
+      "refersTo": "button-secondary"
+    },
+    {
       "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 24px; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--foreground); font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-ghost:hover { background: var(--muted); color: var(--foreground); } .ds-btn-ghost:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); }",
       "description": "Text-only until hovered. For secondary actions that must not compete.",
       "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
@@ -47,6 +55,14 @@
       "kind": "input",
       "name": "Text Input",
       "refersTo": "input"
+    },
+    {
+      "css": ".ds-sidebar-item { display: flex; width: 100%; align-items: center; gap: 8px; overflow: hidden; border-radius: 8px; padding: 8px 12px; background: transparent; color: var(--sidebar-foreground); font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 400; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color 0.22s cubic-bezier(0.23, 1, 0.32, 1), color 0.22s; } .ds-sidebar-item:hover { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); } .ds-sidebar-item[data-active=\"true\"] { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); font-weight: 700; }",
+      "description": "Sidebar row. In the dark vibes, hover and active share the theme's border tint at border strength; never a neutral grey.",
+      "html": "<button class=\"ds-sidebar-item\" data-active=\"true\">Projects</button>",
+      "kind": "nav",
+      "name": "Sidebar Item",
+      "refersTo": "navigation-sidebar-item"
     },
     {
       "css": ".ds-dialog-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.2); backdrop-filter: blur(4px); } .ds-dialog { position: fixed; top: 50%; left: 50%; translate: -50% -50%; width: min(448px, calc(100% - 32px)); display: grid; gap: 24px; border-radius: 18px; background: var(--popover); color: var(--popover-foreground); padding: 24px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.12), 0 0 0 1px color-mix(in srgb, var(--foreground) 10%, transparent); font-family: Inter, system-ui, sans-serif; } .ds-dialog h2 { margin: 0; font-size: 16px; font-weight: 600; } .ds-dialog p { margin: 0; font-size: 14px; color: var(--muted-foreground); }",
@@ -154,6 +170,21 @@
           "oklch(0.93 0.10 95)",
           "oklch(0.97 0.04 95)"
         ]
+      },
+      "secondary-surface": {
+        "canonical": "#dbe4ef",
+        "displayName": "Secondary Surface",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(0.22 0.02 250)",
+          "oklch(0.34 0.03 250)",
+          "oklch(0.48 0.03 250)",
+          "oklch(0.62 0.03 250)",
+          "oklch(0.74 0.025 250)",
+          "oklch(0.84 0.02 250)",
+          "oklch(0.91 0.015 250)",
+          "oklch(0.96 0.008 250)"
+        ]
       }
     },
     "motion": [
@@ -224,14 +255,15 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T16:30:00+01:00",
+  "generatedAt": "2026-11-23T15:16:00+01:00",
   "narrative": {
     "dos": [
       "Do keep button and dialog copy fixed and compact; render project, organization, and user names only in dedicated truncating surfaces (titles, title attributes), never inside controls.",
       "Do use the `link-prose` utility (or the Button `link` variant) for every content link — gold underline, generous focus, always visible affordance.",
       "Do mark numerals tabular in data (`tabular-nums`) and keep dates non-wrapping.",
       "Do respect `prefers-reduced-motion` — every animation ships a gentler variant, and calm zones opt out of hover motion entirely.",
-      "Do animate opacity, transform, and background-color only; the CTA breath lives on a blurred `::before` layer so only opacity animates."
+      "Do animate opacity, transform, and background-color only; the CTA breath lives on a blurred `::before` layer so only opacity animates.",
+      "Do keep dark-vibe fills on the theme's own tint: 9% white for secondary in every dark vibe, border-strength tint for sidebar accents. If a raised surface is fainter than the hairline beside it, raise the fill — do not add a new hue."
     ],
     "donts": [
       "Don't interpolate payload data into button labels, dialog titles-as-actions, or any control whose width must stay predictable.",
@@ -257,6 +289,11 @@
       {
         "body": "Ember Amber is used sparingly in light (eyebrows, seals, washes); its rarity is the point. If everything is amber, nothing is.",
         "name": "The One Voice Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Secondary fills sit at 9% white in every dark vibe, and dark-vibe sidebar accents reuse the theme's own border tint at its border alpha; a raised surface never dissolves into the ground, and never introduces a hue the theme does not already own.",
+        "name": "The Visible Fill Rule",
         "section": "colors"
       },
       {

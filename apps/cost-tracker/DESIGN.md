@@ -11,6 +11,7 @@ colors:
   parchment: "#f7f2e9"
   card-white: "#ffffff"
   muted-slate: "#52647a"
+  secondary-surface: "#dbe4ef"
   hairline: "#cdd5e0"
   signal-green: "#15803d"
   signal-red: "oklch(0.577 0.245 27.325)"
@@ -57,6 +58,12 @@ components:
     height: "40px"
   button-primary-hover:
     backgroundColor: "{colors.erasmus-blue-hover}"
+  button-secondary:
+    backgroundColor: "{colors.secondary-surface}"
+    textColor: "{colors.ledger-ink}"
+    rounded: "{rounded.xl}"
+    padding: "0 24px"
+    height: "40px"
   button-ghost:
     backgroundColor: "transparent"
     textColor: "{colors.ledger-ink}"
@@ -119,12 +126,13 @@ Daylight blues do the work; ember amber seals the action. The default light them
 
 ### Dark vibes
 
-Three self-sufficient themes, no cross-theme inheritance: **Midnight** (ground #0A1230, muted #9DACC9, border rgba(147,180,255,.13)), **Violet** (ground #130B26, muted #B8A9D4, border rgba(200,170,255,.12)), **Dark** (ground #070A16, muted #98A0B8, border rgba(255,255,255,.09)). All share Ember Amber primary, Parchment ink, 5%-white cards, and the same glow vocabulary. System theme is the default; the hotkey `d` flips light and dark from anywhere.
+Three self-sufficient themes, no cross-theme inheritance: **Midnight** (ground #0A1230, muted #9DACC9, border and sidebar accent rgba(147,180,255,.13)), **Violet** (ground #130B26, muted #B8A9D4, border and sidebar accent rgba(200,170,255,.12)), **Dark** (ground #070A16, muted #98A0B8, border and sidebar accent rgba(255,255,255,.09)). All share Ember Amber primary, Parchment ink, 5%-white cards, 9%-white secondary fills, and the same glow vocabulary. System theme is the default; the hotkey `d` flips light and dark from anywhere.
 
 ### Named Rules
 
 **The Sacred Glow Rule.** Glow and shadow appear only as state — hover lift, focus, the breathing CTA. A surface that glows at rest is a bug.
 **The One Voice Rule.** Ember Amber is used sparingly in light (eyebrows, seals, washes); its rarity is the point. If everything is amber, nothing is.
+**The Visible Fill Rule.** Secondary fills sit at 9% white in every dark vibe, and dark-vibe sidebar accents reuse the theme's own border tint at its border alpha; a raised surface never dissolves into the ground, and never introduces a hue the theme does not already own.
 
 ## Typography
 
@@ -185,8 +193,8 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 - **Character:** decisive stamps in the incumbent code, migrating toward a soft guiding voice: sentence case for new controls, uppercase micro-labels where they already exist.
 - **Shape:** 14px radius (`rounded-xl`) at standard sizes. Compact 28px text buttons use `rounded-lg` so they don't read as pills. Heights are 28 / 36 / 40 / 44px across xs / sm / default / lg, with icon-only squares to match.
 - **Primary:** Erasmus Blue ground, white text, deepens on hover; amber-on-brown in dark vibes.
-- **Secondary / Outline / Ghost:** tonal fills and hairline borders; ghost is text-only until hover.
-- **Outline buttons:** the shared `outline` variant uses a half-pixel border, with a softened brand color in dark themes so the line stays quiet even on displays that round it to one pixel.
+- **Secondary / Outline / Ghost:** tonal fills and hairline borders; the secondary fill sits at 9% white in dark vibes, one step above the 5% card so a secondary action stays legible at rest. Ghost is text-only until hover.
+- **Outline buttons:** the shared `outline` variant uses a half-pixel border, with a softened brand color in dark themes so the line stays quiet even on displays that round it to one pixel. In dark vibes, outline and ghost hover resolve to the full input tint (`bg-input`) instead of a half-strength muted wash, so the hovered control reads as the same material as its border.
 - **Destructive:** solid signal-red block for the one dangerous act; `outline-destructive` (hairline + red text) for repeated row actions so lists never compete with the primary act.
 - **Link:** not a button shape at all — prose-colored, always underlined in Seal Gold, sentence case, wrapping; the only button allowed to hold a sentence.
 - **Hover / Focus:** gentle tonal shifts; focus always visible via ring plus border (`focus-visible:ring-2`), 3–4px offset outlines on links. Pressed buttons settle 1px (`translate-y-px`).
@@ -217,7 +225,7 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 
 ### Navigation
 
-- **Sidebar:** theme-tinted ground with primary-marked active entries; collapsible to icon rail; secondary entries stay text-only.
+- **Sidebar:** theme-tinted ground with primary-marked active entries. In the dark vibes, hover and active accents borrow the theme's own border tint at border strength (blue 13% in Midnight, violet 12% in Violet, white 9% in Dark) rather than neutral grey, so a selected row reads as the same material as its dividers; light keeps a solid white row on Counter Paper. Collapsible to icon rail; secondary entries stay text-only.
 - **Breadcrumbs and tabs:** prose-colored text navigation with gold-underline actives; keyboard reachable with visible focus throughout.
 - **Links in content:** always the `link-prose` treatment — theme link color, gold underline on hover/focus, never a bare color shift.
 
@@ -247,6 +255,7 @@ The running Cost Tracker UI and its shared `src/components/ui/` primitives take 
 - **Do** mark numerals tabular in data (`tabular-nums`) and keep dates non-wrapping.
 - **Do** respect `prefers-reduced-motion` — every animation ships a gentler variant, and calm zones opt out of hover motion entirely.
 - **Do** animate opacity, transform, and background-color only; the CTA breath lives on a blurred `::before` layer so only opacity animates.
+- **Do** keep dark-vibe fills on the theme's own tint: 9% white for secondary in every dark vibe, border-strength tint for sidebar accents. If a raised surface is fainter than the hairline beside it, raise the fill — do not add a new hue.
 
 ### Don't:
 
