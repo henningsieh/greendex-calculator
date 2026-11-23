@@ -269,6 +269,13 @@
       "claimReview": "Beoordeling van declaratie",
       "hostedProject": "Gehost project",
       "partnerProject": "Partnerproject"
+    },
+    "datePicker": {
+      "placeholder": "Kies een datum",
+      "previousMonth": "Vorige maand",
+      "nextMonth": "Volgende maand",
+      "calendar": "Kalender",
+      "clear": "Wissen"
     }
   }
 }

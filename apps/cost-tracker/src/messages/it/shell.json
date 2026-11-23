@@ -269,6 +269,13 @@
       "claimReview": "Verifica della richiesta di rimborso",
       "hostedProject": "Progetto ospitato",
       "partnerProject": "Progetto partner"
+    },
+    "datePicker": {
+      "placeholder": "Scegli una data",
+      "previousMonth": "Mese precedente",
+      "nextMonth": "Mese successivo",
+      "calendar": "Calendario",
+      "clear": "Cancella"
     }
   }
 }

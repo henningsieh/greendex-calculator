@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,6 +22,20 @@ import messages from "@/messages/en-GB";
 
 const countryName = new Intl.DisplayNames(["en"], { type: "region" }).of("DE")!;
 
+async function selectDate(
+  user: ReturnType<typeof userEvent.setup>,
+  testId: string,
+  isoDate: string,
+) {
+  await user.click(screen.getByTestId(testId));
+  const popover = within(screen.getByTestId(`${testId}-popover`));
+  for (let step = 0; step < 24; step += 1) {
+    if (popover.queryByTestId(`calendar-day-${isoDate}`)) break;
+    await user.click(popover.getByTestId("calendar-next"));
+  }
+  await user.click(popover.getByTestId(`calendar-day-${isoDate}`));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal(
@@ -31,6 +45,18 @@ beforeEach(() => {
       unobserve() {}
       disconnect() {}
     },
+  );
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent: () => false,
+      }) satisfies Partial<MediaQueryList>,
   );
   Element.prototype.scrollIntoView = vi.fn();
   mocks.create.mockResolvedValue({ id: "created-project" });
@@ -71,12 +97,9 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     fireEvent.change(screen.getByTestId("new-project-name"), {
       target: { value: "Workshop" },
     });
-    fireEvent.change(screen.getByTestId("new-project-start"), {
-      target: { value: "2027-04-03" },
-    });
-    fireEvent.change(screen.getByTestId("new-project-end"), {
-      target: { value: "2027-04-01" },
-    });
+    await selectDate(user, "new-project-start", "2027-04-03");
+    await selectDate(user, "new-project-end", "2027-04-05");
+    await selectDate(user, "new-project-start", "2027-04-10");
     fireEvent.change(screen.getByTestId("new-project-location"), {
       target: { value: "Berlin" },
     });
@@ -100,9 +123,7 @@ describe("New project dialog", { timeout: 60_000 }, () => {
       "data-error-type",
       "custom",
     );
-    fireEvent.change(screen.getByTestId("new-project-end"), {
-      target: { value: "2027-04-05" },
-    });
+    await selectDate(user, "new-project-end", "2027-04-12");
     await waitFor(() =>
       expect(screen.getByTestId("create-project-span")).toHaveAttribute(
         "data-days",
@@ -131,8 +152,8 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     );
     expect(mocks.create).toHaveBeenCalledWith({
       name: "Workshop",
-      startDate: new Date("2027-04-03T00:00:00.000Z"),
-      endDate: new Date("2027-04-05T00:00:00.000Z"),
+      startDate: new Date("2027-04-10T00:00:00.000Z"),
+      endDate: new Date("2027-04-12T00:00:00.000Z"),
       location: "Berlin",
       country: "DE",
       welcomeMessage: "Welcome!",
@@ -153,12 +174,8 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     fireEvent.change(screen.getByTestId("new-project-name"), {
       target: { value: "Workshop" },
     });
-    fireEvent.change(screen.getByTestId("new-project-start"), {
-      target: { value: "2027-04-01" },
-    });
-    fireEvent.change(screen.getByTestId("new-project-end"), {
-      target: { value: "2027-04-03" },
-    });
+    await selectDate(user, "new-project-start", "2027-04-01");
+    await selectDate(user, "new-project-end", "2027-04-03");
     fireEvent.change(screen.getByTestId("new-project-location"), {
       target: { value: "Berlin" },
     });

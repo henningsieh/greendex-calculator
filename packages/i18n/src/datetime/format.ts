@@ -47,6 +47,12 @@ export type DateFormatter = {
   relative(value: DateInput, options?: RelativeTimeOptions): string;
   /** Placeholder for an empty date field in the locale's own order, e.g. `DD/MM/YYYY`. */
   pattern(): string;
+  /**
+   * Format a local calendar value without projecting it into the configured
+   * time zone. Client-only widgets such as react-day-picker hold local dates;
+   * server rendering must keep using `format`.
+   */
+  formatLocal(value: DateInput, name?: DateFormatName): string;
 };
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -79,6 +85,7 @@ const PLACEHOLDER_SEGMENTS: Partial<
 > = { day: "DD", month: "MM", year: "YYYY" };
 
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
+const localDateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 /** Zone keys already reported, so a bad configuration warns once and not per row. */
 const warnedTimeZones = new Set<string>();
 const relativeTimeFormats = new Map<string, Intl.RelativeTimeFormat>();
@@ -101,6 +108,18 @@ function canonicalize(text: string): string {
 function toDate(value: DateInput): Date | undefined {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function localDateTimeFormatFor(
+  locale: string,
+  name: DateFormatName,
+): Intl.DateTimeFormat {
+  const key = `${locale}\u0000${name}`;
+  const cached = localDateTimeFormats.get(key);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat(locale, dateFormats[name]);
+  localDateTimeFormats.set(key, formatter);
+  return formatter;
 }
 
 function dateTimeFormatFor(
@@ -211,6 +230,11 @@ export function createDateFormatter({
           .map((part) => PLACEHOLDER_SEGMENTS[part.type] ?? part.value)
           .join(""),
       );
+    },
+    formatLocal(value, name = "date.medium") {
+      const date = toDate(value);
+      if (!date) return "";
+      return localDateTimeFormatFor(locale, name).format(date);
     },
   };
 }

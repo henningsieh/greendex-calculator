@@ -1,12 +1,45 @@
+import { Temporal } from "temporal-polyfill";
+
 import type { DateInput } from "./format";
 
 const DATE_INPUT_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function asDate(value: DateInput | null | undefined): Date | undefined {
   if (value === null || value === undefined) return undefined;
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+/** Stored dates are UTC midnights; their calendar day is the UTC day. */
+function plainDateFromStored(
+  value: DateInput | null | undefined,
+): Temporal.PlainDate | undefined {
+  const date = asDate(value);
+  if (!date) return undefined;
+  return Temporal.PlainDate.from({
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  });
+}
+
+function plainDateFromCalendar(
+  value: Date | null | undefined,
+): Temporal.PlainDate | undefined {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined;
+  return Temporal.PlainDate.from({
+    year: value.getFullYear(),
+    month: value.getMonth() + 1,
+    day: value.getDate(),
+  });
+}
+
+function storedDateFromPlain(date: Temporal.PlainDate): Date {
+  return new Date(Date.UTC(date.year, date.month - 1, date.day));
+}
+
+function calendarDateFromPlain(date: Temporal.PlainDate): Date {
+  return new Date(date.year, date.month - 1, date.day);
 }
 
 /**
@@ -16,8 +49,7 @@ function asDate(value: DateInput | null | undefined): Date | undefined {
  * UTC day rather than the browser's local day.
  */
 export function toDateInputValue(value: DateInput | null | undefined): string {
-  const date = asDate(value);
-  return date ? date.toISOString().slice(0, 10) : "";
+  return plainDateFromStored(value)?.toString() ?? "";
 }
 
 /**
@@ -31,10 +63,31 @@ export function fromDateInputValue(
   value: string | null | undefined,
 ): Date | undefined {
   if (!value || !DATE_INPUT_PATTERN.test(value)) return undefined;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || toDateInputValue(date) !== value)
+  try {
+    const date = Temporal.PlainDate.from(value);
+    return date.toString() === value ? storedDateFromPlain(date) : undefined;
+  } catch {
     return undefined;
-  return date;
+  }
+}
+
+/**
+ * A stored UTC-midnight date as a local-midnight `Date` for calendar widgets
+ * such as react-day-picker, which render calendar days in local time.
+ */
+export function toCalendarDate(
+  value: DateInput | null | undefined,
+): Date | undefined {
+  const date = plainDateFromStored(value);
+  return date ? calendarDateFromPlain(date) : undefined;
+}
+
+/** A local calendar selection as a stored UTC midnight. */
+export function fromCalendarDate(
+  value: Date | null | undefined,
+): Date | undefined {
+  const date = plainDateFromCalendar(value);
+  return date ? storedDateFromPlain(date) : undefined;
 }
 
 /**
@@ -43,9 +96,9 @@ export function fromDateInputValue(
  * span.
  */
 export function spanInDays(start: DateInput, end: DateInput): number {
-  const first = asDate(start);
-  const last = asDate(end);
+  const first = plainDateFromStored(start);
+  const last = plainDateFromStored(end);
   if (!first || !last) return 0;
-  const days = Math.round((last.getTime() - first.getTime()) / MS_PER_DAY);
-  return days < 0 ? 0 : days + 1;
+  if (Temporal.PlainDate.compare(first, last) > 0) return 0;
+  return last.since(first, { largestUnit: "days" }).days + 1;
 }
