@@ -6,9 +6,15 @@ import { ProtectedShellSkeleton } from "@/components/protected-shell-skeleton";
 export default function ProtectedLayout({
   children,
   breadcrumb,
-}: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
+  sidebarOpen,
+}: Readonly<{
+  children: React.ReactNode;
+  breadcrumb?: React.ReactNode;
+  /** Persisted sidebar state, so the fallback reserves the same column. */
+  sidebarOpen: boolean;
+}>) {
   return (
-    <Suspense fallback={<ProtectedShellSkeleton />}>
+    <Suspense fallback={<ProtectedShellSkeleton sidebarOpen={sidebarOpen} />}>
       <ProtectedShell breadcrumb={breadcrumb}>{children}</ProtectedShell>
     </Suspense>
   );
