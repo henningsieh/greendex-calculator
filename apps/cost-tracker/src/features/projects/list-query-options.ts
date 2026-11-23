@@ -15,6 +15,7 @@ import type {
   PartnerProjectList,
 } from "@/features/projects/types";
 import {
+  canonicalProjectStatuses,
   normalizeProjectStatuses,
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
@@ -106,7 +107,7 @@ export function normalizeProjectListState(
         : undefined,
     dateFrom: hasValidDateRange && state.dateFrom ? state.dateFrom : undefined,
     dateTo: hasValidDateRange && state.dateTo ? state.dateTo : undefined,
-    status: normalizeProjectStatuses(state.status),
+    status: canonicalProjectStatuses(state.status),
     partnerOrganizationIds: [...new Set(state.partnerOrganizationIds)]
       .filter(Boolean)
       .sort()

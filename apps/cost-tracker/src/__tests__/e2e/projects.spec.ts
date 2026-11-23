@@ -118,8 +118,8 @@ test.describe("Cost Tracker Project production path", () => {
 
       await page.getByTestId("project-status-all").click();
       await expect
-        .poll(() => new URL(page.url()).searchParams.get("status"))
-        .toBe("");
+        .poll(() => new URL(page.url()).searchParams.getAll("status"))
+        .toEqual(["open", "ready", "archived"]);
       await page.reload();
       await expect(page.getByTestId("project-list")).toHaveAttribute(
         "data-hydrated",

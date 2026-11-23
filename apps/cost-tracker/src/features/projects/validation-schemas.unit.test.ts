@@ -107,7 +107,7 @@ describe("Project list input", () => {
         { field: "status", direction: "asc" },
         { field: "startDate", direction: "asc" },
       ],
-      status: [],
+      status: ["open", "ready", "archived"],
       pageSize: 25,
     });
   });
@@ -121,7 +121,7 @@ describe("Project list input", () => {
     ).toEqual(["open", "ready", "archived"]);
   });
 
-  it("rejects unknown Status values and keeps an empty selection", () => {
+  it("rejects unknown Status values and canonicalizes an empty selection", () => {
     expect(
       PartnerProjectListInputSchema.safeParse({
         pageSize: 25,
@@ -130,7 +130,7 @@ describe("Project list input", () => {
     ).toBe(false);
     expect(
       PartnerProjectListInputSchema.parse({ pageSize: 25, status: [] }).status,
-    ).toEqual([]);
+    ).toEqual(["open", "ready", "archived"]);
   });
 
   it("normalizes search to trimmed lowercase and enforces length", () => {

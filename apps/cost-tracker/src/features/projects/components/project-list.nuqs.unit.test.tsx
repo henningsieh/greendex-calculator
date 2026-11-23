@@ -400,7 +400,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
   });
 
-  it("treats a cleared or All Status selection as an explicit no-constraint URL", async () => {
+  it("canonicalizes clearing every Status or choosing All to the full selection", async () => {
     const user = userEvent.setup();
     const onUrlUpdate = vi.fn();
     renderList({ onUrlUpdate, searchParams: "?scope=hosted" });
@@ -413,27 +413,36 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
     await user.click(screen.getByTestId("project-status-ready"));
 
+    // Unchecking the last value means "everything", not "nothing".
     await waitFor(() => {
       const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
-      expect(update.searchParams.has("status")).toBe(true);
-      expect(update.searchParams.getAll("status")).toEqual([""]);
+      expect(update.searchParams.getAll("status")).toEqual([
+        "open",
+        "ready",
+        "archived",
+      ]);
     });
     expect(mocks.getListOptions).toHaveBeenLastCalledWith(
       "hosted",
-      expect.objectContaining({ status: [] }),
+      expect.objectContaining({ status: ["open", "ready", "archived"] }),
     );
 
     await user.click(screen.getByTestId("project-status-open"));
     await waitFor(() =>
       expect(mocks.getListOptions).toHaveBeenLastCalledWith(
         "hosted",
-        expect.objectContaining({ status: ["open"] }),
+        expect.objectContaining({ status: ["ready", "archived"] }),
       ),
     );
+
     await user.click(screen.getByTestId("project-status-all"));
     await waitFor(() => {
       const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
-      expect(update.searchParams.getAll("status")).toEqual([""]);
+      expect(update.searchParams.getAll("status")).toEqual([
+        "open",
+        "ready",
+        "archived",
+      ]);
     });
   });
 });

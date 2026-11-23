@@ -79,11 +79,11 @@ describe("Project list URL state", () => {
     ).toEqual(["archived"]);
   });
 
-  it("keeps an explicit empty Status as no constraint and defaults unknown values", () => {
+  it("canonicalizes an empty Status to every status and defaults unknown values", () => {
     expect(
       normalizeProjectListState(loadProjectListSearchParams({ status: "" }))
         .status,
-    ).toEqual([]);
+    ).toEqual(["open", "ready", "archived"]);
     expect(
       normalizeProjectListState(loadProjectListSearchParams({ status: "bogus" }))
         .status,

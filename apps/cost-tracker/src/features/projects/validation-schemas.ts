@@ -65,6 +65,18 @@ export function normalizeProjectStatuses(
   return PROJECT_STATUSES.filter((status) => selected.has(status));
 }
 
+/**
+ * One representation for "every status": the full ordered set. Selecting all
+ * values, selecting none, and sending no selection all mean the same rows, so
+ * URL state, fingerprints and query keys must not encode them differently.
+ */
+export function canonicalProjectStatuses(
+  statuses: readonly ProjectStatus[],
+): ProjectStatus[] {
+  const normalized = normalizeProjectStatuses(statuses);
+  return normalized.length === 0 ? [...PROJECT_STATUSES] : normalized;
+}
+
 export const PROJECT_SORT_FIELDS = [
   "status",
   "name",
@@ -103,7 +115,7 @@ const ProjectListInputBaseSchema = z
     status: z
       .array(z.enum(PROJECT_STATUSES))
       .default([])
-      .transform(normalizeProjectStatuses),
+      .transform(canonicalProjectStatuses),
     sort: ProjectSortOrderSchema.default(DEFAULT_PROJECT_SORT),
     cursor: z.string().min(1).max(2048).optional(),
     pageSize: z.union([

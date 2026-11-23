@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { PROJECT_CURSOR_VERSION } from "@/features/projects/list-cursor-version";
 import {
-  normalizeProjectStatuses,
+  canonicalProjectStatuses,
   ProjectSortOrderSchema,
   type ProjectStatus,
 } from "@/features/projects/validation-schemas";
@@ -54,7 +54,7 @@ export function getProjectListFingerprint(input: {
         search: input.search,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString(),
-        status: normalizeProjectStatuses(input.status ?? []),
+        status: canonicalProjectStatuses(input.status ?? []),
         sort: input.sort,
         pageSize: input.pageSize,
         partnerOrganizationIds: [...(input.partnerOrganizationIds ?? [])].sort(),

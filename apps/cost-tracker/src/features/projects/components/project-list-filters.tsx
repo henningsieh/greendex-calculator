@@ -37,7 +37,7 @@ import {
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
-import { normalizeProjectStatuses } from "@/features/projects/validation-schemas";
+import { canonicalProjectStatuses } from "@/features/projects/validation-schemas";
 
 /**
  * Filter controls above the Suspense boundary: search, selects, and date
@@ -95,10 +95,11 @@ export function ProjectListFilters({
     Boolean(state.dateTo),
     state.partnerOrganizationIds.length > 0,
   ].filter(Boolean).length;
-  const statusSummary =
-    state.status.length === 0 || state.status.length === PROJECT_STATUSES.length
-      ? t("statusAll")
-      : state.status.map((status) => t(`status.${status}`)).join(", ");
+  // "All" has exactly one representation: the complete selection.
+  const hasEveryStatus = state.status.length === PROJECT_STATUSES.length;
+  const statusSummary = hasEveryStatus
+    ? t("statusAll")
+    : state.status.map((status) => t(`status.${status}`)).join(", ");
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">
@@ -178,7 +179,7 @@ export function ProjectListFilters({
                   <span className="min-w-0 flex-1 truncate text-left">
                     {statusSummary}
                   </span>
-                  {state.status.length > 0 && (
+                  {hasEveryStatus ? null : (
                     <span className="shrink-0 text-muted-foreground tabular-nums">
                       {state.status.length}
                     </span>
@@ -198,10 +199,10 @@ export function ProjectListFilters({
                         closeOnClick={false}
                         onCheckedChange={(checked) => {
                           const nextStatus = checked
-                            ? normalizeProjectStatuses([...state.status, status])
+                            ? [...state.status, status]
                             : state.status.filter((value) => value !== status);
                           void setUrlState({
-                            status: nextStatus,
+                            status: canonicalProjectStatuses(nextStatus),
                             cursor: null,
                           });
                         }}
@@ -212,7 +213,10 @@ export function ProjectListFilters({
                     <DropdownMenuItem
                       data-testid="project-status-all"
                       onClick={() =>
-                        void setUrlState({ status: [], cursor: null })
+                        void setUrlState({
+                          status: [...PROJECT_STATUSES],
+                          cursor: null,
+                        })
                       }
                     >
                       {t("statusAll")}
