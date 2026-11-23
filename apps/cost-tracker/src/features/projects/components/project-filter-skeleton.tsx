@@ -21,8 +21,8 @@ function FilterFieldSkeleton({ wide = false }: { wide?: boolean }) {
 
 /**
  * Mirrors ProjectListFilters cell for cell: search (col-span-2 on wide),
- * archive, settlement and page-size selects share the real grid classes, so
- * the card keeps its exact height (one row on wide, two on md, toggle-only
+ * status (col-span-2 on wide) and page-size selects share the real grid
+ * classes, so the card keeps its exact height (one row on wide, two on md, toggle-only
  * on mobile). The collapsed details summary renders as a real
  * details/summary pair — Firefox sizes that pair 0.5px taller than a bare
  * div, so only the real elements reproduce it. The pair is inert (a skeleton
@@ -42,8 +42,7 @@ export function FiltersSkeleton() {
             className="max-md:mt-3 max-md:hidden md:contents"
             data-open={false}
           >
-            <FilterFieldSkeleton />
-            <FilterFieldSkeleton />
+            <FilterFieldSkeleton wide />
             <FilterFieldSkeleton />
           </div>
         </div>

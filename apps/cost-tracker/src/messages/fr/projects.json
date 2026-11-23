@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Liste des projets",
-      "archiveFilter": "Statut d’archivage",
-      "archive": {
-        "active": "Actif",
-        "archived": "Archivé",
-        "all": "Tous"
-      },
-      "settlementFilter": "Règlement",
-      "settlement": {
-        "all": "Tous",
+      "statusFilter": "Statut",
+      "status": {
         "open": "Règlement en cours",
-        "ready": "Prêt à archiver"
+        "ready": "Prêt à archiver",
+        "archived": "Archivé"
       },
+      "statusAll": "Tous",
+      "statusOpenFirst": "En premier : ouverts",
+      "statusArchivedFirst": "En premier : archivés",
       "emptyTitle": "Aucun projet disponible",
       "emptyDescription": "Aucun projet n’est hébergé par votre organisation active ou ne lui est affecté.",
       "relationship": "Relation avec le projet",

@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Lista de proyectos",
-      "archiveFilter": "Estado de archivo",
-      "archive": {
-        "active": "Activos",
-        "archived": "Archivados",
-        "all": "Todos"
-      },
-      "settlementFilter": "Liquidación",
-      "settlement": {
-        "all": "Todas",
+      "statusFilter": "Estado",
+      "status": {
         "open": "Liquidación pendiente",
-        "ready": "Listo para archivar"
+        "ready": "Listo para archivar",
+        "archived": "Archivados"
       },
+      "statusAll": "Todos",
+      "statusOpenFirst": "Primero abiertos",
+      "statusArchivedFirst": "Primero archivados",
       "emptyTitle": "No hay proyectos disponibles",
       "emptyDescription": "Ningún proyecto está alojado por tu organización activa ni asignado a ella.",
       "relationship": "Relación con el proyecto",

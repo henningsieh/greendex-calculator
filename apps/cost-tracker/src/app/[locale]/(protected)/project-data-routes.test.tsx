@@ -320,8 +320,9 @@ describe("Cost Tracker Project data routes", () => {
       "hosted",
       expect.objectContaining({
         pageSize: 25,
+        status: ["open", "ready"],
         sort: [
-          { field: "settlement", direction: "asc" },
+          { field: "status", direction: "asc" },
           { field: "startDate", direction: "asc" },
         ],
       }),
@@ -369,8 +370,9 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "partner",
       expect.objectContaining({
+        status: ["open", "ready"],
         sort: [
-          { field: "settlement", direction: "asc" },
+          { field: "status", direction: "asc" },
           { field: "startDate", direction: "asc" },
         ],
       }),

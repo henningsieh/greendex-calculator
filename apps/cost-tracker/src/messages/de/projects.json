@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Projektliste",
-      "archiveFilter": "Archivstatus",
-      "archive": {
-        "active": "Aktiv",
-        "archived": "Archiviert",
-        "all": "Alle"
-      },
-      "settlementFilter": "Abrechnung",
-      "settlement": {
-        "all": "Alle",
+      "statusFilter": "Status",
+      "status": {
         "open": "Abrechnung offen",
-        "ready": "Bereit zum Archivieren"
+        "ready": "Bereit zum Archivieren",
+        "archived": "Archiviert"
       },
+      "statusAll": "Alle",
+      "statusOpenFirst": "Offen zuerst",
+      "statusArchivedFirst": "Archiviert zuerst",
       "emptyTitle": "Keine Projekte verfügbar",
       "emptyDescription": "Keine Projekte werden von deiner aktiven Organisation gehostet oder ihr zugewiesen.",
       "relationship": "Projektbeziehung",

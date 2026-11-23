@@ -42,6 +42,7 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0026](0026-own-date-presentation-in-one-formatter.md) | One Date Presenter, and Locale Codes That Are Full BCP-47 Tags | accepted | |
 | [0027](0027-archive-settled-cost-tracker-projects.md) | Archive Settled Cost Tracker Projects Instead of Completing the Project | accepted | 0011, Project completion only |
 | [0028](0028-scope-project-lifecycle-permissions-by-application.md) | Scope Project lifecycle permissions by application | accepted | 0020 and 0027, lifecycle permission wiring only |
+| [0029](0029-one-status-facet-for-cost-tracker-project-lists.md) | One Status facet for Cost Tracker Project lists | accepted | |
 
 [ADR-0023](0023-keep-known-email-participant-entry-app-owned.md) supersedes ADR-0005's known-email delivery mechanism only, affirming ADR-0013's app-owned Participant Invitations and #263's test governance. All other ADR-0005 requirements remain accepted.
 
@@ -50,6 +51,8 @@ ADR-0022 preserves the original shared-auth decision body from `1bd184f8` (forme
 [ADR-0019](0019-require-organization-country-and-synchronize-role-values.md) requires Organization country and synchronizes the shared role values. It supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes.
 
 ADR-0003 is superseded by ADR-0006, ADR-0007, and ADR-0011 together. ADR-0002 is superseded in part by ADR-0005.
+
+ADR-0029 collapses the Project-list Archive and Settlement filters into one derived Status facet and removes the old URL parameters. It does not alter ADR-0011's settled rule, ADR-0027's archive decision or ADR-0028's lifecycle permissions.
 
 ADR-0027 supersedes ADR-0011's separate Project-completion action and its availability rule only. Claim-owned progress, separate approval/payment and the rejection of manual Project-wide Claim phases remain accepted. Cost Tracker archive/reopen is implemented.
 

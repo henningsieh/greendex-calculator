@@ -3,12 +3,16 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
-import { ProjectSortOrderSchema } from "@/features/projects/validation-schemas";
+import {
+  normalizeProjectStatuses,
+  ProjectSortOrderSchema,
+  type ProjectStatus,
+} from "@/features/projects/validation-schemas";
 
 const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
 
 const CursorSchema = z.object({
-  version: z.literal(4),
+  version: z.literal(5),
   direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
   id: z.string().min(1).max(128),
@@ -16,7 +20,7 @@ const CursorSchema = z.object({
     .array(
       z.discriminatedUnion("field", [
         z.object({
-          field: z.literal("settlement"),
+          field: z.literal("status"),
           value: z.number().int().min(0).max(2),
         }),
         // Names are unbounded in the shared Project model. Resolve the name
@@ -37,8 +41,7 @@ export function getProjectListFingerprint(input: {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
-  archive?: "active" | "archived" | "all";
-  settlement?: "all" | "open" | "ready";
+  status?: readonly ProjectStatus[];
   sort: z.infer<typeof ProjectSortOrderSchema>;
   pageSize: 25 | 50 | 100;
   partnerOrganizationIds?: string[];
@@ -50,8 +53,7 @@ export function getProjectListFingerprint(input: {
         search: input.search,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString(),
-        archive: input.archive ?? "active",
-        settlement: input.settlement ?? "all",
+        status: normalizeProjectStatuses(input.status ?? []),
         sort: input.sort,
         pageSize: input.pageSize,
         partnerOrganizationIds: [...(input.partnerOrganizationIds ?? [])].sort(),
@@ -80,7 +82,7 @@ export function decodeProjectListCursor(
     const version = CursorVersionSchema.safeParse(payload);
 
     if (!version.success) return { status: "invalid" };
-    if (version.data.version !== 4) return { status: "unsupported-version" };
+    if (version.data.version !== 5) return { status: "unsupported-version" };
 
     const cursor = CursorSchema.safeParse(payload);
     if (!cursor.success || cursor.data.fingerprint !== fingerprint) {

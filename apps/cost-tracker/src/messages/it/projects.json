@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Elenco dei progetti",
-      "archiveFilter": "Stato di archiviazione",
-      "archive": {
-        "active": "Attivi",
-        "archived": "Archiviati",
-        "all": "Tutti"
-      },
-      "settlementFilter": "Liquidazione",
-      "settlement": {
-        "all": "Tutti",
+      "statusFilter": "Stato",
+      "status": {
         "open": "Liquidazione aperta",
-        "ready": "Pronti per l’archiviazione"
+        "ready": "Pronti per l’archiviazione",
+        "archived": "Archiviati"
       },
+      "statusAll": "Tutti",
+      "statusOpenFirst": "Prima gli aperti",
+      "statusArchivedFirst": "Prima gli archiviati",
       "emptyTitle": "Nessun progetto disponibile",
       "emptyDescription": "Nessun progetto è ospitato dalla tua organizzazione attiva o a essa assegnato.",
       "relationship": "Relazione con il progetto",

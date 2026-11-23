@@ -43,6 +43,8 @@ Participant-only Memberships are read-only for Project management: neither the U
 
 See the [generated Project lifecycle](project-lifecycle.generated.md). Settlement is derived, not stored: an active Project with any missing or unsettled Claim has settlement open, and an active Project with no blockers is ready to archive. An archived Project shows Archived instead of either readiness label.
 
+The Project-list **Status** facet is the same projection viewed as one partition: `archived`, `ready` or `open`. It is a read-only view over the Project archive flag and the Claim settled rule, not a fourth state machine. The Status column, multi-select filter and sort all use the ordered definition `open` → `ready` → `archived`; archivedness masks the readiness labels. [ADR-0029](../../../docs/adr/0029-one-status-facet-for-cost-tracker-project-lists.md) records why the former separate Archive and Settlement filters were merged.
+
 [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) establishes archive and reopening for Cost Tracker. [#416](https://github.com/henningsieh/greendex-calculator/issues/416) records the implementation and subsequent setup-link closure decision.
 
 - A Project has zero or more Project Partnerships, each with at most one Claim. A Claim is settled when paid or rejected. Approved unpaid Claims are not settled. No additional Claim-close action or status follows payment or rejection.
@@ -62,4 +64,4 @@ See the [generated Project lifecycle](project-lifecycle.generated.md). Settlemen
 - Archive uses the existing reusable [confirmation dialog](confirm-dialog.md) as a destructive action. Explain that data becomes read-only, the Project leaves the default active list, and only authorized Users may reopen it. Cancellation changes nothing.
 - Actions unavailable because of archive remain visible and disabled, with an independent explanation that works by keyboard and touch. The assigned Partner Organizations card is the deliberate exception: its Invite/Assign controls are replaced by an Archived badge, as accepted in the partnership UI redesign. The card's records remain readable.
 - Never mention the Calculator app in Cost Tracker user-facing archive/reopen text. Cross-application separation is an engineering rule, not UI copy.
-- Archived Projects remain reachable through the Project-list archive filter and their authorized detail views. See [Projects](projects/README.md) for derived settlement filters and sorting.
+- Archived Projects remain reachable through the Project-list Status filter (Archived) and their authorized detail views. See [Projects](projects/README.md) for the derived Status facet and sorting.

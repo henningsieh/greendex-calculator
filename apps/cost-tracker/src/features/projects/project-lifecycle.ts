@@ -1,7 +1,6 @@
-import {
-  isSettledClaimStatus,
-  type ClaimStatus,
-} from "@/features/claims/claim-lifecycle";
+import type { ClaimStatus } from "@/features/claims/claim-lifecycle";
+import { isSettledClaimStatus } from "@/features/claims/claim-lifecycle";
+import type { ProjectStatus } from "@/features/projects/validation-schemas";
 
 export const projectTransitions = {
   archive: { from: "active", to: "archived", guard: "settled" },
@@ -11,10 +10,10 @@ export const projectTransitions = {
 export type ProjectState = "active" | "archived";
 export type ProjectAction = keyof typeof projectTransitions;
 
-export function projectSettlement(
+export function projectStatus(
   archived: boolean,
   statuses: readonly (ClaimStatus | null | undefined)[],
-): "archived" | "open" | "ready" {
+): ProjectStatus {
   if (archived) return "archived";
   return statuses.every(isSettledClaimStatus) ? "ready" : "open";
 }
@@ -40,14 +39,14 @@ export function projectLifecycleCapabilities(input: {
   canArchive: boolean;
   canReopen: boolean;
 }) {
-  const settlement = projectSettlement(input.archived, input.statuses);
+  const status = projectStatus(input.archived, input.statuses);
   const state = input.archived ? "archived" : "active";
   return {
-    settlement,
+    status,
     canArchive:
       input.canArchive &&
       evaluateProjectTransition(state, "archive", {
-        settled: settlement === "ready",
+        settled: status === "ready",
       }).kind === "transition",
     canReopen:
       input.canReopen &&

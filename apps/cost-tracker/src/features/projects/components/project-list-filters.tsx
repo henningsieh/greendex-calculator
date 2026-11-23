@@ -4,6 +4,14 @@ import { useTranslations } from "@greendex/i18n/client";
 import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,12 +31,13 @@ import {
 } from "@/features/projects/components/project-list-filtering";
 import { ProjectListPartnerFilter } from "@/features/projects/components/project-list-partner-filter";
 import {
-  PROJECT_ARCHIVE_FILTERS,
+  isDefaultProjectStatusSelection,
   PROJECT_PAGE_SIZES,
-  PROJECT_SETTLEMENT_FILTERS,
+  PROJECT_STATUSES,
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
+import { normalizeProjectStatuses } from "@/features/projects/validation-schemas";
 
 /**
  * Filter controls above the Suspense boundary: search, selects, and date
@@ -81,12 +90,15 @@ export function ProjectListFilters({
     label: String(value),
   }));
   const hiddenFilterCount = [
-    state.archive !== "active",
-    state.settlement !== "all",
+    !isDefaultProjectStatusSelection(state.status),
     Boolean(state.dateFrom),
     Boolean(state.dateTo),
     state.partnerOrganizationIds.length > 0,
   ].filter(Boolean).length;
+  const statusSummary =
+    state.status.length === 0 || state.status.length === PROJECT_STATUSES.length
+      ? t("statusAll")
+      : state.status.map((status) => t(`status.${status}`)).join(", ");
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">
@@ -144,79 +156,70 @@ export function ProjectListFilters({
             data-open={filtersOpen}
             id="project-filter-more-body"
           >
-            <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="project-archive">{t("archiveFilter")}</Label>
-              <Select
-                items={PROJECT_ARCHIVE_FILTERS.map((value) => ({
-                  value,
-                  label: t(`archive.${value}`),
-                }))}
-                value={state.archive}
-                onValueChange={(value) => {
-                  const archive = PROJECT_ARCHIVE_FILTERS.find(
-                    (item) => item === value,
-                  );
-                  if (archive) void setUrlState({ archive, cursor: null });
-                }}
+            <div className="flex min-w-0 flex-col gap-2 @4xl/content:col-span-2">
+              <Label
+                htmlFor="project-status-filter-trigger"
+                id="project-status-filter-label"
               >
-                <SelectTrigger
-                  id="project-archive"
-                  data-testid="project-archive-filter"
-                  className="w-full"
+                {t("statusFilter")}
+              </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      id="project-status-filter-trigger"
+                      type="button"
+                      aria-labelledby="project-status-filter-label"
+                      data-testid="project-status-filter"
+                      className="flex h-10 w-full min-w-0 items-center justify-between gap-1.5 rounded-xl border border-input bg-input/30 px-3 py-2 text-base font-normal whitespace-nowrap transition-[color,box-shadow,background-color] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
+                    />
+                  }
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {PROJECT_ARCHIVE_FILTERS.map((value) => (
-                      <SelectItem
-                        key={value}
-                        value={value}
-                        data-testid={`project-archive-${value}`}
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {statusSummary}
+                  </span>
+                  {state.status.length > 0 && (
+                    <span className="shrink-0 text-muted-foreground tabular-nums">
+                      {state.status.length}
+                    </span>
+                  )}
+                  <ChevronDownIcon
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 text-muted-foreground"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuGroup>
+                    {PROJECT_STATUSES.map((status) => (
+                      <DropdownMenuCheckboxItem
+                        key={status}
+                        data-testid={`project-status-${status}`}
+                        checked={state.status.includes(status)}
+                        closeOnClick={false}
+                        onCheckedChange={(checked) => {
+                          const nextStatus = checked
+                            ? normalizeProjectStatuses([...state.status, status])
+                            : state.status.filter((value) => value !== status);
+                          void setUrlState({
+                            status: nextStatus,
+                            cursor: null,
+                          });
+                        }}
                       >
-                        {t(`archive.${value}`)}
-                      </SelectItem>
+                        {t(`status.${status}`)}
+                      </DropdownMenuCheckboxItem>
                     ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="project-settlement">{t("settlementFilter")}</Label>
-              <Select
-                items={PROJECT_SETTLEMENT_FILTERS.map((value) => ({
-                  value,
-                  label: t(`settlement.${value}`),
-                }))}
-                value={state.settlement}
-                onValueChange={(value) => {
-                  const settlement = PROJECT_SETTLEMENT_FILTERS.find(
-                    (item) => item === value,
-                  );
-                  if (settlement) void setUrlState({ settlement, cursor: null });
-                }}
-              >
-                <SelectTrigger
-                  id="project-settlement"
-                  data-testid="project-settlement-filter"
-                  className="w-full"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {PROJECT_SETTLEMENT_FILTERS.map((value) => (
-                      <SelectItem
-                        key={value}
-                        value={value}
-                        data-testid={`project-settlement-${value}`}
-                      >
-                        {t(`settlement.${value}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                    <DropdownMenuItem
+                      data-testid="project-status-all"
+                      onClick={() =>
+                        void setUrlState({ status: [], cursor: null })
+                      }
+                    >
+                      {t("statusAll")}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="flex min-w-0 flex-col gap-2">
               <Label htmlFor="project-page-size">{t("perPage")}</Label>

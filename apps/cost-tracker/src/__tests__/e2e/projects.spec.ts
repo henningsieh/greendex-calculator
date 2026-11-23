@@ -31,7 +31,7 @@ test.describe("Cost Tracker Project production path", () => {
     await fixture.teardown();
   });
 
-  test("shows the same settlement badge in the Project table, card header and details", async ({
+  test("shows the same status badge in the Project table, card header and details", async ({
     page,
   }) => {
     const [project] = await db
@@ -42,30 +42,109 @@ test.describe("Cost Tracker Project production path", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/projects?search=${encodeURIComponent(project.name)}`);
     const badge = page
-      .locator(`[data-project-id="${fixture.projectId}"] [data-settlement]`)
+      .locator(`[data-project-id="${fixture.projectId}"] [data-status]`)
       .filter({ visible: true });
     await expect(badge).toBeVisible();
-    const settlement = await badge.getAttribute("data-settlement");
-    if (!settlement) throw new Error("Project fixture has no settlement status");
+    const status = await badge.getAttribute("data-status");
+    if (!status) throw new Error("Project fixture has no list status");
     const variant = await badge.getAttribute("data-variant");
-    if (!variant) throw new Error("Project settlement has no badge variant");
+    if (!variant) throw new Error("Project status has no badge variant");
     await page.setViewportSize({ width: 390, height: 900 });
     const card = page.locator(`article[data-project-id="${fixture.projectId}"]`);
     const title = card.getByTestId(`project-link-${fixture.projectId}-card`);
-    const cardBadge = card.getByTestId("project-workspace-settlement");
+    const cardBadge = card.getByTestId("project-status");
     await expect(cardBadge).toBeVisible();
-    await expect(cardBadge).toHaveAttribute("data-settlement", settlement);
+    await expect(cardBadge).toHaveAttribute("data-status", status);
     await expect(cardBadge).toHaveAttribute("data-variant", variant);
     const titleBox = await title.boundingBox();
     const badgeBox = await cardBadge.boundingBox();
     if (!titleBox || !badgeBox) throw new Error("Card header is not visible");
     expect(badgeBox.x).toBeGreaterThan(titleBox.x);
     expect(Math.abs(badgeBox.y - titleBox.y)).toBeLessThan(5);
-    await expect(card.locator("dl [data-settlement]")).toHaveCount(0);
+    await expect(card.locator("dl [data-status]")).toHaveCount(0);
     await page.goto(`/projects/${fixture.projectId}`);
-    const detailBadge = page.getByTestId("project-workspace-settlement");
-    await expect(detailBadge).toHaveAttribute("data-settlement", settlement);
+    const detailBadge = page.getByTestId("project-status");
+    await expect(detailBadge).toHaveAttribute("data-status", status);
     await expect(detailBadge).toHaveAttribute("data-variant", variant);
+  });
+
+  test("filters by one Status facet, keeps the selection in the URL and opens an archived Project read-only", async ({
+    page,
+  }) => {
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, fixture.projectId));
+    if (!project) throw new Error("Project fixture is missing");
+    const prefix = `Status facet ${randomUUID()}`;
+    const archivedId = randomUUID();
+    await db.insert(projectsTable).values({
+      id: archivedId,
+      organizationId: project.organizationId,
+      name: `${prefix} Archived`,
+      startDate: new Date("2026-01-01T00:00:00.000Z"),
+      endDate: new Date("2026-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE",
+      costTrackerArchived: true,
+    });
+    try {
+      await page.goto(`/projects?search=${encodeURIComponent(prefix)}`);
+      await expect(page.getByTestId("project-list")).toHaveAttribute(
+        "data-hydrated",
+        "true",
+      );
+      await expect(page.locator("[data-filtered-project-count]")).toHaveAttribute(
+        "data-filtered-project-count",
+        "0",
+      );
+
+      await page.getByTestId("project-status-filter").click();
+      const archivedOption = page.getByTestId("project-status-archived");
+      await expect(archivedOption).toHaveAttribute("aria-checked", "false");
+      await archivedOption.click();
+      await expect
+        .poll(() => new URL(page.url()).searchParams.getAll("status"))
+        .toEqual(["open", "ready", "archived"]);
+      await expect(
+        page
+          .locator(`a[href$="/projects/${archivedId}"]`)
+          .filter({ visible: true }),
+      ).toBeVisible();
+      await expect(page.locator("[data-filtered-project-count]")).toHaveAttribute(
+        "data-filtered-project-count",
+        "1",
+      );
+
+      await page.getByTestId("project-status-all").click();
+      await expect
+        .poll(() => new URL(page.url()).searchParams.get("status"))
+        .toBe("");
+      await page.reload();
+      await expect(page.getByTestId("project-list")).toHaveAttribute(
+        "data-hydrated",
+        "true",
+      );
+      await expect(
+        page
+          .locator(`a[href$="/projects/${archivedId}"]`)
+          .filter({ visible: true }),
+      ).toBeVisible();
+
+      await page
+        .locator(`a[href$="/projects/${archivedId}"]`)
+        .filter({ visible: true })
+        .click();
+      await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+        "data-archived",
+        "true",
+      );
+      await expect(
+        page.getByTestId("project-workspace").getByTestId("project-status"),
+      ).toHaveAttribute("data-status", "archived");
+    } finally {
+      await db.delete(projectsTable).where(eq(projectsTable.id, archivedId));
+    }
   });
 
   test("sorts tied Projects and keeps them usable across viewport sizes", async ({
@@ -89,7 +168,7 @@ test.describe("Cost Tracker Project production path", () => {
     try {
       await db.insert(projectsTable).values([...rows].reverse());
       const sort = [
-        { field: "settlement", direction: "asc" },
+        { field: "status", direction: "asc" },
         { field: "startDate", direction: "desc" },
         { field: "endDate", direction: "desc" },
         { field: "name", direction: "asc" },
@@ -106,7 +185,7 @@ test.describe("Cost Tracker Project production path", () => {
       });
       const sortControls = [
         page.getByTestId("sort-project-name"),
-        page.getByTestId("sort-project-settlement"),
+        page.getByTestId("sort-project-status"),
         page.getByTestId("sort-project-start"),
         page.getByTestId("sort-project-end"),
         page.getByTestId("project-sort-menu"),
@@ -143,7 +222,7 @@ test.describe("Cost Tracker Project production path", () => {
         (url) =>
           url.searchParams.get("sort") ===
           JSON.stringify([
-            { field: "settlement", direction: "asc" },
+            { field: "status", direction: "asc" },
             { field: "startDate", direction: "desc" },
             { field: "endDate", direction: "asc" },
             { field: "name", direction: "asc" },
@@ -158,7 +237,7 @@ test.describe("Cost Tracker Project production path", () => {
       await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
       await expect(page.getByTestId("project-sort-menu")).toBeEnabled();
       await page.getByTestId("project-sort-menu").click();
-      for (const field of ["settlement", "startDate", "endDate", "name"]) {
+      for (const field of ["status", "startDate", "endDate", "name"]) {
         await expect(
           page.getByTestId(`project-sort-direction-${field}`),
         ).toBeEnabled();
@@ -166,7 +245,7 @@ test.describe("Cost Tracker Project production path", () => {
           page.getByTestId(`project-sort-remove-${field}`),
         ).toBeEnabled();
       }
-      await expect(page.getByTestId("project-sort-up-settlement")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-up-status")).toBeDisabled();
       await expect(page.getByTestId("project-sort-down-name")).toBeDisabled();
       await expect(page.getByTestId("project-sort-add")).toBeDisabled();
       await expect(page.getByTestId("project-sort-reset")).toBeEnabled();

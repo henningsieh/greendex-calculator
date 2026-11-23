@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { renderWithMessages } from "@/__tests__/render-with-messages";
 import {
   ProjectArchiveBadge,
-  ProjectSettlementBadge,
+  ProjectStatusBadge,
 } from "@/features/projects/components/project-status-badge";
 
 describe("Project status badges", () => {
@@ -13,10 +13,14 @@ describe("Project status badges", () => {
     ["ready", "status-success"],
     ["archived", "secondary"],
   ] as const)("renders %s", (status, variant) => {
-    renderWithMessages(<ProjectSettlementBadge status={status} />);
-    expect(screen.getByTestId("project-workspace-settlement")).toHaveAttribute(
+    renderWithMessages(<ProjectStatusBadge status={status} />);
+    expect(screen.getByTestId("project-status")).toHaveAttribute(
       "data-variant",
       variant,
+    );
+    expect(screen.getByTestId("project-status")).toHaveAttribute(
+      "data-status",
+      status,
     );
   });
 
@@ -24,7 +28,7 @@ describe("Project status badges", () => {
     renderWithMessages(
       <>
         <ProjectArchiveBadge status="archived" />
-        <ProjectSettlementBadge status="archived" />
+        <ProjectStatusBadge status="archived" />
       </>,
     );
     expect(screen.getByTestId("project-archived-status")).toHaveAttribute(

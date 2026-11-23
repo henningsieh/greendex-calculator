@@ -50,10 +50,23 @@ export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   });
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
-export const PROJECT_ARCHIVE_FILTERS = ["active", "archived", "all"] as const;
-export const PROJECT_SETTLEMENT_FILTERS = ["all", "open", "ready"] as const;
+/**
+ * One ordered status definition for the list column, filter options and sort
+ * rank. The index is the sort rank; add a value here before deriving it.
+ */
+export const PROJECT_STATUSES = ["open", "ready", "archived"] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+/** Canonical, order-insensitive form shared by URL state, procedures and cursors. */
+export function normalizeProjectStatuses(
+  statuses: readonly ProjectStatus[],
+): ProjectStatus[] {
+  const selected = new Set<ProjectStatus>(statuses);
+  return PROJECT_STATUSES.filter((status) => selected.has(status));
+}
+
 export const PROJECT_SORT_FIELDS = [
-  "settlement",
+  "status",
   "name",
   "startDate",
   "endDate",
@@ -71,7 +84,7 @@ export const ProjectSortOrderSchema = z
       new Set(criteria.map(({ field }) => field)).size === criteria.length,
   );
 export const DEFAULT_PROJECT_SORT: z.infer<typeof ProjectSortOrderSchema> = [
-  { field: "settlement", direction: "asc" },
+  { field: "status", direction: "asc" },
   { field: "startDate", direction: "asc" },
 ];
 export const PROJECT_PAGE_SIZES = [25, 50, 100] as const;
@@ -87,8 +100,10 @@ const ProjectListInputBaseSchema = z
       .optional(),
     dateFrom: z.date().optional(),
     dateTo: z.date().optional(),
-    archive: z.enum(PROJECT_ARCHIVE_FILTERS).default("active"),
-    settlement: z.enum(PROJECT_SETTLEMENT_FILTERS).default("all"),
+    status: z
+      .array(z.enum(PROJECT_STATUSES))
+      .default([])
+      .transform(normalizeProjectStatuses),
     sort: ProjectSortOrderSchema.default(DEFAULT_PROJECT_SORT),
     cursor: z.string().min(1).max(2048).optional(),
     pageSize: z.union([
@@ -124,7 +139,7 @@ export const ProjectListRowSchema = projectColumns
     location: true,
     country: true,
   })
-  .extend({ settlement: z.enum(["open", "ready", "archived"]) });
+  .extend({ status: z.enum(PROJECT_STATUSES) });
 
 const ProjectListMetricsSchema = z.object({
   projectCount: z.number().int().nonnegative(),

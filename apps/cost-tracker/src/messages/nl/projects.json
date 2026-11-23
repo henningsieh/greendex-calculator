@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Projectlijst",
-      "archiveFilter": "Archiefstatus",
-      "archive": {
-        "active": "Actief",
-        "archived": "Gearchiveerd",
-        "all": "Alle"
-      },
-      "settlementFilter": "Afrekening",
-      "settlement": {
-        "all": "Alle",
+      "statusFilter": "Status",
+      "status": {
         "open": "Afrekening open",
-        "ready": "Klaar om te archiveren"
+        "ready": "Klaar om te archiveren",
+        "archived": "Gearchiveerd"
       },
+      "statusAll": "Alle",
+      "statusOpenFirst": "Open eerst",
+      "statusArchivedFirst": "Gearchiveerd eerst",
       "emptyTitle": "Geen projecten beschikbaar",
       "emptyDescription": "Er worden geen projecten gehost door of toegewezen aan je actieve organisatie.",
       "relationship": "Projectrelatie",

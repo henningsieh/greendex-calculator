@@ -20,18 +20,15 @@
     },
     "list": {
       "label": "Seznam projektov",
-      "archiveFilter": "Stanje arhiviranja",
-      "archive": {
-        "active": "Aktiven",
-        "archived": "Arhiviran",
-        "all": "Vsi"
-      },
-      "settlementFilter": "Poravnava",
-      "settlement": {
-        "all": "Vsi",
+      "statusFilter": "Stanje",
+      "status": {
         "open": "Odprta poravnava",
-        "ready": "Pripravljeno za arhiviranje"
+        "ready": "Pripravljeno za arhiviranje",
+        "archived": "Arhiviran"
       },
+      "statusAll": "Vsi",
+      "statusOpenFirst": "Najprej odprti",
+      "statusArchivedFirst": "Najprej arhivirani",
       "emptyTitle": "Ni projektov na voljo",
       "emptyDescription": "Aktivni organizaciji ni dodeljen noben gostujoči projekt.",
       "relationship": "Vrsta povezave s projektom",

@@ -46,6 +46,8 @@ import {
   HostedProjectListSchema,
   PartnerProjectListInputSchema,
   PartnerProjectListSchema,
+  PROJECT_STATUSES,
+  type ProjectStatus,
 } from "@/features/projects/validation-schemas";
 import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import {
@@ -81,10 +83,24 @@ function getProjectBlockers() {
     );
 }
 
-function getSettlementRank() {
-  return sql<number>`case when ${projectsTable.costTrackerArchived} then 2 when ${exists(getProjectBlockers())} then 0 else 1 end`.mapWith(
-    Number,
+function getProjectStatusConditions(): Record<ProjectStatus, SQL> {
+  const active = eq(projectsTable.costTrackerArchived, false);
+  return {
+    open: allOf(active, exists(getProjectBlockers())),
+    ready: allOf(active, notExists(getProjectBlockers())),
+    archived: eq(projectsTable.costTrackerArchived, true),
+  };
+}
+
+function getProjectStatusRank() {
+  const conditions = getProjectStatusConditions();
+  const rankCases = sql.join(
+    PROJECT_STATUSES.map(
+      (status, index) => sql`when ${conditions[status]} then ${index}`,
+    ),
+    sql` `,
   );
+  return sql<number>`case ${rankCases} end`.mapWith(Number);
 }
 
 function getProjectFilters(input: ProjectListInput): SQL[] {
@@ -99,17 +115,9 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
   if (input.dateFrom) filters.push(gte(projectsTable.endDate, input.dateFrom));
   if (input.dateTo) filters.push(lte(projectsTable.startDate, input.dateTo));
 
-  if (input.archive !== "all") {
-    filters.push(
-      eq(projectsTable.costTrackerArchived, input.archive === "archived"),
-    );
-  }
-  if (input.settlement !== "all") {
-    const blockers = getProjectBlockers();
-    filters.push(eq(projectsTable.costTrackerArchived, false));
-    filters.push(
-      input.settlement === "open" ? exists(blockers) : notExists(blockers),
-    );
+  if (input.status.length > 0) {
+    const conditions = getProjectStatusConditions();
+    filters.push(anyOf(...input.status.map((status) => conditions[status])));
   }
 
   return filters;
@@ -119,7 +127,7 @@ type ProjectCursorDirection = ProjectListCursor["direction"];
 type ProjectListCursorRow = Pick<
   typeof projectsTable.$inferSelect,
   "endDate" | "id" | "startDate" | "name"
-> & { settlementRank: number };
+> & { statusRank: number };
 
 function allOf(...conditions: SQL[]): SQL {
   const condition = and(...conditions);
@@ -134,11 +142,11 @@ function anyOf(...conditions: SQL[]): SQL {
 }
 
 const PROJECT_SORT_DESCRIPTORS = {
-  settlement: {
-    getExpression: getSettlementRank,
+  status: {
+    getExpression: getProjectStatusRank,
     value: (row: ProjectListCursorRow) => ({
-      field: "settlement" as const,
-      value: row.settlementRank,
+      field: "status" as const,
+      value: row.statusRank,
     }),
   },
   name: {
@@ -233,7 +241,7 @@ function getProjectRowSelection() {
     endDate: projectsTable.endDate,
     location: projectsTable.location,
     country: projectsTable.country,
-    settlementRank: getSettlementRank(),
+    statusRank: getProjectStatusRank(),
   };
 }
 
@@ -322,7 +330,7 @@ function finalizeProjectListPage<T extends ProjectListCursorRow>(
     row: ProjectListCursorRow,
   ) =>
     encodeProjectListCursor({
-      version: 4,
+      version: 5,
       direction,
       fingerprint,
       id: row.id,
@@ -332,14 +340,9 @@ function finalizeProjectListPage<T extends ProjectListCursorRow>(
     });
 
   return {
-    rows: rows.map(({ settlementRank: rank, ...row }) => ({
+    rows: rows.map(({ statusRank: rank, ...row }) => ({
       ...row,
-      settlement:
-        rank === 0
-          ? ("open" as const)
-          : rank === 1
-            ? ("ready" as const)
-            : ("archived" as const),
+      status: PROJECT_STATUSES[rank]!,
     })),
     previousCursor:
       hasPrevious && firstRow ? createCursor("previous", firstRow) : undefined,

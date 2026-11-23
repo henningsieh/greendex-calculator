@@ -20,7 +20,7 @@ describe("Project list URL state", () => {
       loadProjectListSearchParams({ sort: JSON.stringify([order[0], order[0]]) })
         .sort,
     ).toEqual([
-      { field: "settlement", direction: "asc" },
+      { field: "status", direction: "asc" },
       { field: "startDate", direction: "asc" },
     ]);
   });
@@ -30,16 +30,41 @@ describe("Project list URL state", () => {
       search: "",
       dateFrom: null,
       dateTo: null,
-      archive: "active",
-      settlement: "all",
+      status: ["open", "ready"],
       partnerOrganizationIds: [],
       sort: [
-        { field: "settlement", direction: "asc" },
+        { field: "status", direction: "asc" },
         { field: "startDate", direction: "asc" },
       ],
       cursor: "",
       pageSize: 25,
     });
+  });
+
+  it("parses a repeated Status parameter in canonical tuple order", () => {
+    expect(
+      normalizeProjectListState(
+        loadProjectListSearchParams({
+          status: ["archived", "open", "ready"],
+        }),
+      ).status,
+    ).toEqual(["open", "ready", "archived"]);
+    expect(
+      normalizeProjectListState(
+        loadProjectListSearchParams({ status: "archived" }),
+      ).status,
+    ).toEqual(["archived"]);
+  });
+
+  it("keeps an explicit empty Status as no constraint and defaults unknown values", () => {
+    expect(
+      normalizeProjectListState(loadProjectListSearchParams({ status: "" }))
+        .status,
+    ).toEqual([]);
+    expect(
+      normalizeProjectListState(loadProjectListSearchParams({ status: "bogus" }))
+        .status,
+    ).toEqual(["open", "ready"]);
   });
 
   it("ignores the removed window filter and falls back from the old sort", () => {
@@ -54,11 +79,10 @@ describe("Project list URL state", () => {
       search: "",
       dateFrom: null,
       dateTo: null,
-      archive: "active",
-      settlement: "all",
+      status: ["open", "ready"],
       partnerOrganizationIds: [],
       sort: [
-        { field: "settlement", direction: "asc" },
+        { field: "status", direction: "asc" },
         { field: "startDate", direction: "asc" },
       ],
       cursor: "",
@@ -73,8 +97,7 @@ describe("Project list URL state", () => {
         search: "  CLIMATE  ",
         dateFrom: new Date("2026-06-30T00:00:00.000Z"),
         dateTo: new Date("2026-06-01T00:00:00.000Z"),
-        archive: "archived",
-        settlement: "ready",
+        status: ["archived", "ready"],
         partnerOrganizationIds: ["partner-2", "", "partner-1", "partner-2"],
         sort: [{ field: "startDate", direction: "desc" }],
         cursor: "opaque",
@@ -85,8 +108,7 @@ describe("Project list URL state", () => {
       search: "climate",
       dateFrom: undefined,
       dateTo: undefined,
-      archive: "archived",
-      settlement: "ready",
+      status: ["ready", "archived"],
       partnerOrganizationIds: ["partner-1", "partner-2"],
       sort: [{ field: "startDate", direction: "desc" }],
       cursor: "opaque",
@@ -100,8 +122,7 @@ describe("Project list URL state", () => {
         scope: "partner",
         search: undefined,
         partnerOrganizationIds: [],
-        archive: "active",
-        settlement: "all",
+        status: ["open", "ready"],
         sort: [{ field: "startDate", direction: "asc" }],
         cursor: "stale-partner-cursor",
         pageSize: 25,
@@ -115,8 +136,7 @@ describe("Project list URL state", () => {
         scope: null,
         search: undefined,
         partnerOrganizationIds: [],
-        archive: "active",
-        settlement: "all",
+        status: ["open", "ready"],
         sort: [{ field: "startDate", direction: "asc" }],
         cursor: undefined,
         pageSize: 25,
@@ -131,8 +151,7 @@ describe("Project list URL state", () => {
       search: "climate",
       dateFrom: new Date("2026-01-01T00:00:00.000Z"),
       dateTo: new Date("2026-12-31T00:00:00.000Z"),
-      archive: "archived" as const,
-      settlement: "ready" as const,
+      status: ["ready", "archived"] as ("open" | "ready" | "archived")[],
       partnerOrganizationIds: ["partner-1"],
       sort: [{ field: "startDate" as const, direction: "desc" as const }],
       cursor: "opaque",
@@ -147,8 +166,7 @@ describe("Project list URL state", () => {
           search: "climate",
           dateFrom: state.dateFrom,
           dateTo: state.dateTo,
-          archive: "archived",
-          settlement: "ready",
+          status: ["ready", "archived"],
           partnerOrganizationIds: ["partner-1"],
           sort: [{ field: "startDate", direction: "desc" }],
           cursor: "opaque",
@@ -171,8 +189,7 @@ describe("Project list URL state", () => {
           search: "climate",
           dateFrom: state.dateFrom,
           dateTo: state.dateTo,
-          archive: "archived",
-          settlement: "ready",
+          status: ["ready", "archived"],
           sort: [{ field: "startDate", direction: "desc" }],
           cursor: "opaque",
           pageSize: 50,
@@ -187,8 +204,7 @@ describe("Project list URL state", () => {
       search: " ab ",
       dateFrom: null,
       dateTo: null,
-      archive: "active",
-      settlement: "all",
+      status: ["open", "ready"],
       partnerOrganizationIds: [],
       sort: [{ field: "startDate", direction: "asc" }],
       cursor: "",

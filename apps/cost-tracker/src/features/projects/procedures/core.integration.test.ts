@@ -34,12 +34,13 @@ vi.mock("server-only", () => ({}));
 
 import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { resolveRelationship } from "@/features/projects/procedures/core";
+import { projectStatus } from "@/features/projects/project-lifecycle";
 import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerProjects.
 describe("projects procedures", () => {
-  it("orders and traverses isolated mixed settlement Projects globally", async () => {
+  it("orders and traverses isolated mixed-status Projects globally", async () => {
     const actor = randomUUID();
     const host = randomUUID();
     const partner = randomUUID();
@@ -143,7 +144,7 @@ describe("projects procedures", () => {
         { field: "startDate" as const, direction: "desc" as const },
         { field: "endDate" as const, direction: "desc" as const },
         { field: "name" as const, direction: "asc" as const },
-        { field: "settlement" as const, direction: "desc" as const },
+        { field: "status" as const, direction: "desc" as const },
       ];
       for (const scope of ["hosted", "partner"] as const) {
         useSession(scope === "hosted" ? host : partner);
@@ -173,7 +174,11 @@ describe("projects procedures", () => {
                     return a.id.localeCompare(b.id);
                   })
                   .map((row) => row.id);
-          const input = { pageSize: 25 as const, archive: "all" as const, sort };
+          const input = {
+            pageSize: 25 as const,
+            status: [] as ("open" | "ready" | "archived")[],
+            sort,
+          };
           const list = (cursor?: string) =>
             scope === "hosted"
               ? client.projects.listHosted({ ...input, cursor })
@@ -198,8 +203,7 @@ describe("projects procedures", () => {
       useSession(host);
       const ready = await client.projects.listHosted({
         pageSize: 25,
-        archive: "all",
-        settlement: "ready",
+        status: ["ready"],
       });
       expect(ready.metrics.filtered.projectCount).toBe(12);
       expect(ready.rows.map((row) => row.id).sort()).toEqual(
@@ -208,27 +212,47 @@ describe("projects procedures", () => {
           .map((row) => row.id)
           .sort(),
       );
-      const impossible = await client.projects.listHosted({
+      const active = await client.projects.listHosted({
         pageSize: 25,
-        archive: "archived",
-        settlement: "ready",
+        status: ["open", "ready"],
       });
-      expect(impossible.metrics.filtered.projectCount).toBe(0);
+      expect(active.metrics.filtered.projectCount).toBe(24);
+      expect(active.rows.map((row) => row.id)).not.toContain(
+        rows.find((row) => row.rank === 2)!.id,
+      );
+      const archived = await client.projects.listHosted({
+        pageSize: 25,
+        status: ["archived"],
+      });
+      expect(archived.metrics.filtered.projectCount).toBe(9);
+      expect(archived.rows.map((row) => row.id).sort()).toEqual(
+        rows
+          .filter((row) => row.rank === 2)
+          .map((row) => row.id)
+          .sort(),
+      );
       const first = await client.projects.listHosted({
         pageSize: 25,
-        archive: "all",
+        status: [],
       });
       await expect(
         client.projects.listHosted({
           pageSize: 25,
-          archive: "all",
+          status: [],
           sort: customSort,
+          cursor: first.nextCursor,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(
+        client.projects.listHosted({
+          pageSize: 25,
+          status: ["archived"],
           cursor: first.nextCursor,
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       const nameInput = {
         pageSize: 25 as const,
-        archive: "all" as const,
+        status: [] as ("open" | "ready" | "archived")[],
         sort: [{ field: "name" as const, direction: "asc" as const }],
       };
       const hostedNamePage = await client.projects.listHosted(nameInput);
@@ -359,7 +383,7 @@ describe("projects procedures", () => {
       useScenario("empty");
     });
 
-    it("intersects archive and settlement filters over missing, mixed and settled Claims", async () => {
+    it("filters the one Status facet over missing, mixed and settled Claims", async () => {
       useScenario("terminal");
       await db
         .update(projectsTable)
@@ -370,33 +394,72 @@ describe("projects procedures", () => {
       await db.delete(partnerships).where(eq(partnerships.projectId, emptyId));
       const mixedId = readinessProjectIds[1]!;
       const missingId = readinessProjectIds[2]!;
-      const open = await client.projects.listHosted({
-        pageSize: 100,
-        archive: "all",
-        settlement: "open",
-      });
-      const ready = await client.projects.listHosted({
-        pageSize: 100,
-        archive: "all",
-        settlement: "ready",
-      });
-      const archived = await client.projects.listHosted({
-        pageSize: 100,
-        archive: "archived",
-      });
-      const contradictory = await client.projects.listHosted({
-        pageSize: 100,
-        archive: "archived",
-        settlement: "ready",
-      });
+
+      // The SQL predicate must select exactly the rows the TypeScript
+      // projection predicts from each Project's machine facts.
+      const facts = await db
+        .select({
+          archived: projectsTable.costTrackerArchived,
+          claimStatus: claimsTable.status,
+          id: projectsTable.id,
+          partnershipId: partnerships.id,
+        })
+        .from(projectsTable)
+        .leftJoin(partnerships, eq(partnerships.projectId, projectsTable.id))
+        .leftJoin(claimsTable, eq(claimsTable.partnershipId, partnerships.id))
+        .where(eq(projectsTable.organizationId, host));
+      const statusesById = new Map<
+        string,
+        { archived: boolean; statuses: (typeof facts)[number]["claimStatus"][] }
+      >();
+      for (const fact of facts) {
+        const entry = statusesById.get(fact.id) ?? {
+          archived: fact.archived,
+          statuses: [],
+        };
+        // A left join without a Partnership is not a missing Claim; it means
+        // the Project has nothing to settle and therefore projects as ready.
+        if (fact.partnershipId) entry.statuses.push(fact.claimStatus);
+        statusesById.set(fact.id, entry);
+      }
+      const expected = {
+        archived: [] as string[],
+        open: [] as string[],
+        ready: [] as string[],
+      };
+      for (const [id, fact] of statusesById) {
+        expected[projectStatus(fact.archived, fact.statuses)].push(id);
+      }
+
+      const list = (status: ("open" | "ready" | "archived")[]) =>
+        client.projects.listHosted({ pageSize: 100, status });
+      const open = await list(["open"]);
+      const ready = await list(["ready"]);
+      const archived = await list(["archived"]);
+      const active = await list(["open", "ready"]);
+      const all = await list([]);
+
+      for (const [status, ids] of Object.entries(expected) as [
+        "open" | "ready" | "archived",
+        string[],
+      ][]) {
+        const result = await list([status]);
+        expect(result.rows.map((row) => row.id).sort()).toEqual(ids.sort());
+        expect(result.metrics.filtered.projectCount).toBe(ids.length);
+      }
       expect(open.rows.map((row) => row.id)).toEqual(
         expect.arrayContaining([mixedId, missingId]),
       );
       expect(ready.rows.map((row) => row.id)).toContain(emptyId);
       expect(ready.rows.map((row) => row.id)).not.toContain(archivedId);
       expect(archived.rows.map((row) => row.id)).toContain(archivedId);
-      expect(contradictory.rows).toEqual([]);
-      expect(contradictory.metrics.filtered.projectCount).toBe(0);
+      expect(active.rows.map((row) => row.id).sort()).toEqual(
+        [...expected.open, ...expected.ready].sort(),
+      );
+      expect(all.rows.map((row) => row.id).sort()).toEqual(
+        [...statusesById.keys()].sort(),
+      );
+      expect(all.metrics.filtered.projectCount).toBe(statusesById.size);
     });
     afterEach(async () => {
       for (const id of readinessProjectIds)
@@ -805,7 +868,10 @@ describe("projects procedures", () => {
             ),
           );
       const quotaBefore = await quotaRows();
-      const result = await client.projects.listHosted({ pageSize: 25 });
+      const result = await client.projects.listHosted({
+        pageSize: 25,
+        status: ["open", "ready"],
+      });
 
       expect(result.scope).toBe("hosted");
       expect(result.rows).toHaveLength(25);
@@ -815,13 +881,12 @@ describe("projects procedures", () => {
         partnerOrganizationCount: 2,
       });
       expect(result.metrics.filtered).toEqual(result.metrics.whole);
-      const settlementPriority = { open: 0, ready: 1, archived: 2 };
+      const statusPriority = { open: 0, ready: 1, archived: 2 };
       for (const [index, row] of result.rows.entries()) {
         const previous = result.rows[index - 1];
         if (!previous) continue;
         const stateDifference =
-          settlementPriority[row.settlement] -
-          settlementPriority[previous.settlement];
+          statusPriority[row.status] - statusPriority[previous.status];
         expect(stateDifference).toBeGreaterThanOrEqual(0);
         if (stateDifference === 0)
           expect(row.startDate.getTime()).toBeGreaterThanOrEqual(
@@ -830,7 +895,10 @@ describe("projects procedures", () => {
       }
       expect(result.rows[0]).not.toHaveProperty("organizationId");
 
-      const largerPage = await client.projects.listHosted({ pageSize: 50 });
+      const largerPage = await client.projects.listHosted({
+        pageSize: 50,
+        status: ["open", "ready"],
+      });
       expect(largerPage.metrics).toEqual(result.metrics);
       expect(quotaMocks.enforceListingLimit).toHaveBeenCalledWith(
         { userId: userId, organizationId: hostId },
@@ -852,7 +920,7 @@ describe("projects procedures", () => {
       ],
       [
         [
-          { field: "settlement" as const, direction: "asc" as const },
+          { field: "status" as const, direction: "asc" as const },
           { field: "startDate" as const, direction: "desc" as const },
         ],
       ],
@@ -1400,7 +1468,10 @@ describe("projects procedures", () => {
     });
 
     it("lists exactly the assigned Hosted Project", async () => {
-      const result = await client.projects.listHosted({ pageSize: 25 });
+      const result = await client.projects.listHosted({
+        pageSize: 25,
+        status: ["open", "ready"],
+      });
 
       expect(result.scope).toBe("hosted");
       expect(result.rows.map((row) => row.id)).toEqual([assignedProject]);
@@ -1511,7 +1582,7 @@ describe("projects procedures", () => {
       });
     });
 
-    it("keeps archived assigned Projects discoverable through archive filters", async () => {
+    it("keeps archived assigned Projects discoverable through the Status filter", async () => {
       await db
         .update(projectsTable)
         .set({ costTrackerArchived: true })
@@ -1521,14 +1592,21 @@ describe("projects procedures", () => {
           hosted: true,
           partner: false,
         });
-        const active = await client.projects.listHosted({ pageSize: 25 });
+        const active = await client.projects.listHosted({
+          pageSize: 25,
+          status: ["open", "ready"],
+        });
         expect(active.rows).toEqual([]);
         expect(active.metrics.whole.projectCount).toBe(1);
         expect(active.metrics.filtered.projectCount).toBe(0);
-        for (const archive of ["archived", "all"] as const) {
+        for (const status of [["archived"], []] as (
+          | "open"
+          | "ready"
+          | "archived"
+        )[][]) {
           const result = await client.projects.listHosted({
             pageSize: 25,
-            archive,
+            status,
           });
           expect(result.rows.map(({ id }) => id)).toEqual([assignedProject]);
           expect(result.metrics.whole.projectCount).toBe(1);
@@ -1545,7 +1623,10 @@ describe("projects procedures", () => {
     it("keeps Owner Hosted results identical with full read permission", async () => {
       authMocks.hasPermission.mockResolvedValue({ success: true });
       usePrincipal(owner);
-      const result = await client.projects.listHosted({ pageSize: 25 });
+      const result = await client.projects.listHosted({
+        pageSize: 25,
+        status: ["open", "ready"],
+      });
 
       expect(result.scope).toBe("hosted");
       expect(result.rows.map((row) => row.id).sort()).toEqual(

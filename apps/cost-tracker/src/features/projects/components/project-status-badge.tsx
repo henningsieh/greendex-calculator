@@ -5,28 +5,26 @@ import type { ComponentProps } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import type {
-  projectSettlement,
+  projectStatus,
   ProjectState,
 } from "@/features/projects/project-lifecycle";
 
-type Settlement = ReturnType<typeof projectSettlement>;
+type ProjectListStatus = ReturnType<typeof projectStatus>;
 const variants = {
   open: "status-attention",
   ready: "status-success",
   archived: "secondary",
-} satisfies Record<Settlement, ComponentProps<typeof Badge>["variant"]>;
+} satisfies Record<ProjectListStatus, ComponentProps<typeof Badge>["variant"]>;
 
-export function ProjectSettlementBadge({ status }: { status: Settlement }) {
+export function ProjectStatusBadge({ status }: { status: ProjectListStatus }) {
   const t = useTranslations("projects");
   return (
     <Badge
       variant={variants[status]}
-      data-settlement={status}
-      data-testid="project-workspace-settlement"
+      data-status={status}
+      data-testid="project-status"
     >
-      {status === "archived"
-        ? t("workspace.archived")
-        : t(`list.settlement.${status}`)}
+      {t(`list.status.${status}`)}
     </Badge>
   );
 }

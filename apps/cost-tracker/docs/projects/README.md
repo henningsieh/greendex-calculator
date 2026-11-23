@@ -2,7 +2,7 @@
 
 Cost Tracker extends the shared [Project model](../../../../docs/projects/model.md) with Project Partnerships and Claim workflows. Project identity, Project Participation identity, and shared permissions remain repository-level concerns.
 
-**Status:** [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) tracks the implemented delivery package and its final release acceptance. Archive/reopen belongs to [#416](https://github.com/henningsieh/greendex-calculator/issues/416), settlement filters and table controls to [#332](https://github.com/henningsieh/greendex-calculator/issues/332), Claim naming to [#418](https://github.com/henningsieh/greendex-calculator/issues/418), and UI cookies to [#415](https://github.com/henningsieh/greendex-calculator/issues/415). The list uses the settlement-first order described below.
+**Status:** [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) tracks the implemented delivery package and its final release acceptance. Archive/reopen belongs to [#416](https://github.com/henningsieh/greendex-calculator/issues/416), list status and table controls to [#332](https://github.com/henningsieh/greendex-calculator/issues/332) and [#437](https://github.com/henningsieh/greendex-calculator/issues/437), Claim naming to [#418](https://github.com/henningsieh/greendex-calculator/issues/418), and UI cookies to [#415](https://github.com/henningsieh/greendex-calculator/issues/415). The list uses the Status-first order described below.
 
 ## Lifecycle authorization
 
@@ -38,13 +38,15 @@ The Project detail's Partner projection does not expose financial data, Proof Do
 
 ## Approved list behavior
 
-- Archive filter: **active / archived / all**, default **active**, in both authorized Hosted and Partner scopes.
-- Derived settlement filters: **Abrechnung offen** (settlement open) means an active Project has at least one Partnership without a paid or rejected Claim, including a missing Claim. **Bereit zum Archivieren** (ready to archive) means an active Project has no such blocker. Zero Partnerships also qualifies.
-- An archived Project has archive state, not ready-to-archive state. Filters combine by intersection; contradictory choices return an empty result, not a silently adjusted filter.
+- One Status facet in both authorized Hosted and Partner scopes, with three mutually exclusive values: **Settlement open**, **Ready to archive** and **Archived**. The table column, filter options and sort use the same ordered definition (`open` → `ready` → `archived`).
+- Status is a derived, read-only projection, not a fourth machine. An archived Project is **Archived**. An active Project is **Ready to archive** when every Project Partnership has a settled Claim (paid or rejected); zero Partnerships qualifies. An active Project with any missing or unsettled Claim is **Settlement open**. Archivedness masks the readiness labels.
+- The Status filter is multi-select. Its default selection is **Settlement open + Ready to archive**, which is the previous active-only view; selecting **Archived** is the archive shortcut. Selecting every value behaves like no constraint, and an empty selection means no status constraint, so a cleared filter never dead-ends on an empty list.
+- “Clear filters” restores the default Status selection, not the unfiltered register.
+- Contradictory filter combinations are unrepresentable because archivedness is now a Status value rather than an adjacent axis.
 - No hidden age threshold, automatic archive or “recently closed” rule. Project date-overlap filters remain explicit and separate from sorting.
-- Individual Claim-status filters/sorts are not part of this Project-list package. A Project may have several Claims; this list uses their derived settlement state rather than pretending it has one Claim status.
-- Default multi-sort: **settlement open → ready to archive → archived**, then **Project start date ascending** within each state. The archive filter still determines which states are included. A stable Project-ID tie-break makes cursor traversal deterministic.
-- Start date and end date are separate data columns with ascending/descending header sorting. Other appropriate data columns, including name and settlement state, support sorting; action-only columns do not pretend to be data.
+- Individual Claim-status filters/sorts are not part of this Project-list package. A Project may have several Claims; this list uses their derived Status rather than pretending it has one Claim status.
+- Default multi-sort: **Status ascending (Settlement open → Ready to archive → Archived)**, then **Project start date ascending** within each Status. Ascending Status therefore means “open first”; the header and sort summary announce that outcome instead of bare ascending/descending words, while `aria-sort` keeps its standard values. A stable Project-ID tie-break makes cursor traversal deterministic.
+- Start date and end date are separate data columns with ascending/descending header sorting. Other appropriate data columns, including name and Status, support sorting; action-only columns do not pretend to be data.
 - Multiple ordered sort criteria are supported, with visible priority/direction and discoverable add/remove/reorder controls usable by keyboard and touch. A reset restores the default sort; Shift-click is not the only access path.
 - Users may show/hide columns and restore defaults. Column visibility is personal to the authenticated User on the current browser/device. The central UI-cookie factory owns persistence together with Sidebar preferences, using separate cookies for the two settings. Cookie names/defaults/validation are not hidden in components. Authentication cookies are out of scope.
 
@@ -52,7 +54,7 @@ The Project detail's Partner projection does not expose financial data, Proof Do
 
 The result table uses TanStack Table v9 controlled sorting and visibility state. Sortable headers show direction and priority; the sorting menu supports adding, reordering, removing and resetting criteria. A column menu restores personal visibility preferences. TanStack supplies headless table logic; the visual controls use the shared UI components.
 
-The shared nuqs URL contract owns scope, normalized name search, archive/settlement filters, overlap dates, Partner filters, ordered allowlisted sorts, cursor and page size. Shared links carry filters/sorts, not another User's column preferences. The procedures own filtering, sorting, exact metrics and cursor pagination across the entire authorized filtered result. TanStack renders the returned page with controlled state, not client row stages that reorder/filter just one page. Query keys/cursor fingerprints include the complete ordered state; changing filters/sorts resets the cursor.
+The shared nuqs URL contract owns scope, normalized name search, the repeated `status` selection, overlap dates, Partner filters, ordered allowlisted sorts, cursor and page size. The old `archive` and `settlement` parameters are removed without compatibility handling. Shared links carry filters/sorts, not another User's column preferences. The procedures own filtering, sorting, exact metrics and cursor pagination across the entire authorized filtered result. TanStack renders the returned page with controlled state, not client row stages that reorder/filter just one page. Query keys/cursor fingerprints include the complete ordered state; changing filters/sorts resets the cursor.
 
 The former Cost Submission Window was a read-only legacy flag, not a Claim gate.
 
@@ -66,3 +68,4 @@ Existing-Organization discovery requires a directory disclosure policy; the mana
 - [Shared Project permissions](../../../../docs/projects/permissions.md)
 - [ADR-0001](../../../../docs/adr/0001-model-project-organizations-and-participation.md)
 - [ADR-0003](../../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md)
+- [ADR-0029](../../../../docs/adr/0029-one-status-facet-for-cost-tracker-project-lists.md)

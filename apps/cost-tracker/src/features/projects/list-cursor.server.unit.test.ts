@@ -12,6 +12,7 @@ import {
 const fingerprintInput = {
   scope: "hosted" as const,
   search: "climate",
+  status: ["open", "ready"] as const,
   sort: [{ field: "startDate" as const, direction: "asc" as const }],
   pageSize: 25 as const,
   partnerOrganizationIds: ["partner-2", "partner-1"],
@@ -19,7 +20,7 @@ const fingerprintInput = {
 
 function buildCursor(fingerprint: string): ProjectListCursor {
   return {
-    version: 4,
+    version: 5,
     direction: "next",
     fingerprint,
     id: "project-1",
@@ -42,28 +43,29 @@ describe("project list cursor", () => {
     ).not.toBe(fingerprint);
   });
 
-  it("ignores partner filter order in the fingerprint", () => {
+  it("ignores filter order in the fingerprint", () => {
     expect(
       getProjectListFingerprint({
         ...fingerprintInput,
+        status: ["ready", "open"],
         partnerOrganizationIds: ["partner-1", "partner-2"],
       }),
     ).toBe(getProjectListFingerprint(fingerprintInput));
   });
 
-  it("rejects a cursor after either aggregate filter changes", () => {
+  it("rejects a cursor after the Status selection changes", () => {
     const fingerprint = getProjectListFingerprint(fingerprintInput);
     const encoded = encodeProjectListCursor(buildCursor(fingerprint));
     const archived = getProjectListFingerprint({
       ...fingerprintInput,
-      archive: "archived",
+      status: ["archived"],
     });
-    const ready = getProjectListFingerprint({
+    const all = getProjectListFingerprint({
       ...fingerprintInput,
-      settlement: "ready",
+      status: [],
     });
     expect(decodeProjectListCursor(encoded, archived).status).toBe("invalid");
-    expect(decodeProjectListCursor(encoded, ready).status).toBe("invalid");
+    expect(decodeProjectListCursor(encoded, all).status).toBe("invalid");
   });
 
   it("rejects cursors when priority or direction changes", () => {
@@ -73,7 +75,7 @@ describe("project list cursor", () => {
     ];
     const fingerprint = getProjectListFingerprint({ ...fingerprintInput, sort });
     const cursor: ProjectListCursor = {
-      version: 4,
+      version: 5,
       direction: "next",
       fingerprint,
       id: "project-1",
@@ -136,7 +138,7 @@ describe("project list cursor", () => {
     );
     expect(
       decodeProjectListCursor(
-        Buffer.from(JSON.stringify({ version: 4 }), "utf8").toString("base64url"),
+        Buffer.from(JSON.stringify({ version: 5 }), "utf8").toString("base64url"),
         fingerprint,
       ).status,
     ).toBe("invalid");
@@ -145,7 +147,7 @@ describe("project list cursor", () => {
   it("ignores cursors from an older format version", () => {
     const fingerprint = getProjectListFingerprint(fingerprintInput);
     const legacy = Buffer.from(
-      JSON.stringify({ version: 1, id: "project-1" }),
+      JSON.stringify({ version: 4, id: "project-1" }),
       "utf8",
     ).toString("base64url");
 

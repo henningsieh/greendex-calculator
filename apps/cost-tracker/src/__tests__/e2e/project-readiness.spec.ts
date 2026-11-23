@@ -268,9 +268,10 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
     await expect(page.getByTestId("archive-project")).toHaveCount(0);
-    await expect(
-      page.getByTestId("project-workspace-settlement"),
-    ).toHaveAttribute("data-settlement", "open");
+    await expect(page.getByTestId("project-status")).toHaveAttribute(
+      "data-status",
+      "open",
+    );
 
     // E owns another Project with the same Partner Organization B. Its editable
     // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
