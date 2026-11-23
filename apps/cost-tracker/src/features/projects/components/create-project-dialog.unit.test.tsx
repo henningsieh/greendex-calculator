@@ -84,6 +84,11 @@ describe("New project dialog", { timeout: 60_000 }, () => {
       screen.getByRole("combobox", { name: messages.projects.create.country }),
     );
     await user.click(await screen.findByRole("option", { name: countryName }));
+    expect(screen.getByTestId("new-project-country")).toHaveAttribute(
+      "aria-invalid",
+      "false",
+    );
+    expect(screen.queryByTestId("new-project-country-error")).toBeNull();
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
       expect(screen.getByTestId("new-project-end")).toHaveAttribute(
@@ -118,6 +123,12 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     await screen.findAllByRole("option");
     expect(screen.queryAllByRole("option", { selected: true })).toHaveLength(0);
     await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.getByTestId("new-project-country")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      ),
+    );
     expect(mocks.create).toHaveBeenCalledWith({
       name: "Workshop",
       startDate: new Date("2027-04-03T00:00:00.000Z"),

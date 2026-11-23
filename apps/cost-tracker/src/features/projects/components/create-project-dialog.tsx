@@ -88,6 +88,7 @@ export function CreateProjectDialog() {
     register,
     control,
     handleSubmit,
+    trigger,
     formState: { errors, isSubmitting },
     clearErrors,
     reset,
@@ -256,7 +257,10 @@ export function CreateProjectDialog() {
                         data-testid="new-project-country"
                         disabled={isSubmitting}
                         id="new-project-country"
-                        onBlur={field.onBlur}
+                        onClose={(reason) => {
+                          if (reason === "itemPress" || field.value) return;
+                          void trigger("country");
+                        }}
                         onValueChange={field.onChange}
                         value={field.value ?? ""}
                       />

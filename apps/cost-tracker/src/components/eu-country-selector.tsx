@@ -35,6 +35,8 @@ type EUCountrySelectorProps = Pick<
   disabled?: boolean;
   optional?: boolean;
   name?: string;
+  /** Called when the popover closes; carries the Base UI close reason. */
+  onClose?: (reason: string) => void;
   "data-testid"?: string;
 };
 
@@ -56,6 +58,7 @@ export function EUCountrySelector({
   optional = false,
   variant = "default",
   name,
+  onClose,
   ...props
 }: EUCountrySelectorProps & { variant?: "default" | "field" }) {
   const locale = useLocale();
@@ -79,6 +82,9 @@ export function EUCountrySelector({
       disabled={disabled}
       required={!optional}
       name={name}
+      onOpenChange={(open, details) => {
+        if (!open) onClose?.(details.reason);
+      }}
     >
       <ComboboxTrigger
         render={<Button variant={variant === "field" ? "field" : "outline"} />}
