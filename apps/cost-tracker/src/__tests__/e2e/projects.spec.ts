@@ -142,6 +142,9 @@ test.describe("Cost Tracker Project production path", () => {
       await expect(
         page.getByTestId("project-workspace").getByTestId("project-status"),
       ).toHaveAttribute("data-status", "archived");
+      // Read-only: an archived Project offers no partnership creation controls.
+      await expect(page.getByTestId("partnership-actions-menu")).toHaveCount(0);
+      await expect(page.getByTestId("assign-partnership-link")).toHaveCount(0);
     } finally {
       await db.delete(projectsTable).where(eq(projectsTable.id, archivedId));
     }
