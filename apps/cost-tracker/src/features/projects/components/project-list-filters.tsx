@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { fromDateInputValue, toDateInputValue } from "@greendex/i18n/datetime";
 import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 
@@ -289,13 +290,11 @@ export function ProjectListFilters({
                 onChange={(event) =>
                   updateProjectFilter(
                     PROJECT_FILTER_IDS.dateFrom,
-                    event.target.value
-                      ? new Date(`${event.target.value}T00:00:00.000Z`)
-                      : null,
+                    fromDateInputValue(event.target.value) ?? null,
                   )
                 }
                 type="date"
-                value={state.dateFrom?.toISOString().slice(0, 10) ?? ""}
+                value={toDateInputValue(state.dateFrom)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -306,13 +305,11 @@ export function ProjectListFilters({
                 onChange={(event) =>
                   updateProjectFilter(
                     PROJECT_FILTER_IDS.dateTo,
-                    event.target.value
-                      ? new Date(`${event.target.value}T00:00:00.000Z`)
-                      : null,
+                    fromDateInputValue(event.target.value) ?? null,
                   )
                 }
                 type="date"
-                value={state.dateTo?.toISOString().slice(0, 10) ?? ""}
+                value={toDateInputValue(state.dateTo)}
               />
             </div>
           </div>

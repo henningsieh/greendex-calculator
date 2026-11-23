@@ -1,6 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "@greendex/i18n/client";
+import {
+  fromDateInputValue,
+  spanInDays,
+  toDateInputValue,
+} from "@greendex/i18n/datetime";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarRangeIcon, LoaderCircleIcon } from "lucide-react";
@@ -43,23 +48,6 @@ import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
 type Details = z.input<typeof ProjectCreateInputSchema>;
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/** Dates travel as UTC midnights; the native date field needs the plain day. */
-function dateInputValue(value: unknown): string {
-  return value instanceof Date && !Number.isNaN(value.getTime())
-    ? value.toISOString().slice(0, 10)
-    : "";
-}
-
-function dateFromInput(value: string): Date | undefined {
-  return value ? new Date(`${value}T00:00:00.000Z`) : undefined;
-}
-
-function spanInDays(start: Date, end: Date): number {
-  return Math.round((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
-}
 
 export function CreateProjectDialog() {
   const router = useRouter();
@@ -300,10 +288,10 @@ export function CreateProjectDialog() {
                         lang={locale}
                         onBlur={field.onBlur}
                         onChange={(event) =>
-                          field.onChange(dateFromInput(event.target.value))
+                          field.onChange(fromDateInputValue(event.target.value))
                         }
                         type="date"
-                        value={dateInputValue(field.value)}
+                        value={toDateInputValue(field.value)}
                       />
                     )}
                   />
@@ -336,13 +324,13 @@ export function CreateProjectDialog() {
                         data-testid="new-project-end"
                         id="new-project-end"
                         lang={locale}
-                        min={dateInputValue(startDate) || undefined}
+                        min={toDateInputValue(startDate) || undefined}
                         onBlur={field.onBlur}
                         onChange={(event) =>
-                          field.onChange(dateFromInput(event.target.value))
+                          field.onChange(fromDateInputValue(event.target.value))
                         }
                         type="date"
-                        value={dateInputValue(field.value)}
+                        value={toDateInputValue(field.value)}
                       />
                     )}
                   />
