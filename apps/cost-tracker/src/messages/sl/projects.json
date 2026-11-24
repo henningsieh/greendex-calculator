@@ -99,6 +99,7 @@
       "clearFilters": "Počisti filtre",
       "project": "Projekt",
       "location": "Lokacija",
+      "country": "Država",
       "participants": "Udeležbe",
       "refreshing": "Osveževanje projektov…",
       "updatedAt": "Posodobljeno ob {time} UTC",

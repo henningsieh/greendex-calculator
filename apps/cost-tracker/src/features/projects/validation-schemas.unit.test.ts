@@ -34,6 +34,12 @@ describe("Project sort order", () => {
     ).toBe(false);
     expect(ProjectSortOrderSchema.safeParse([]).success).toBe(false);
   });
+
+  it("accepts the country column as a sort field", () => {
+    expect(
+      ProjectSortOrderSchema.parse([{ field: "country", direction: "asc" }]),
+    ).toEqual([{ field: "country", direction: "asc" }]);
+  });
 });
 
 function validCreateInput() {

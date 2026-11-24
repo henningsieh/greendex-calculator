@@ -29,6 +29,7 @@ import {
 import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
+import { CountryValue } from "@/components/country-value";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -339,10 +340,23 @@ export function ResolvedProjectListResults({
         id: "location",
         enableSorting: false,
         header: t("location"),
-        cell: ({ row }) =>
-          [row.original.location, row.original.country]
-            .filter(Boolean)
-            .join(", "),
+        cell: ({ row }) => row.original.location,
+      },
+      {
+        accessorKey: "country",
+        header: ({ column }) => (
+          <SortHeader
+            label={t("country")}
+            direction={column.getIsSorted()}
+            priority={column.getSortIndex()}
+            testId="sort-project-country"
+            disabled={!isHydrated}
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc", true)
+            }
+          />
+        ),
+        cell: ({ row }) => <CountryValue code={row.original.country} />,
       },
       // The Hosting Participant view is a Hosting read (ADR-0016), so Partner rows
       // never link to it; their Partnership workspace keeps its own entry.
@@ -426,6 +440,7 @@ export function ResolvedProjectListResults({
     status: t("statusFilter"),
     startDate: t("startDate"),
     endDate: t("endDate"),
+    country: t("country"),
   };
   const sortDirectionLabel = (criterion: { id: string; desc: boolean }) =>
     criterion.id === "status"
@@ -438,12 +453,13 @@ export function ResolvedProjectListResults({
   // Fixed table layout: each data column owns a share, so a long Project name
   // can only truncate instead of widening the register past the card. The
   // shares hold at the narrowest desktop container (56rem), where every label
-  // and sorting badge still fits.
+  // and sorting badge still fits; the country share carries a flag tile.
   const columnWidths: Record<string, string> = {
     status: "w-[16%]",
-    startDate: "w-[16%]",
-    endDate: "w-[15%]",
-    location: "w-[15%]",
+    startDate: "w-[12%]",
+    endDate: "w-[12%]",
+    location: "w-[12%]",
+    country: "w-[16%]",
     participants: "w-[16%]",
   };
   const cellLabels: Record<string, string> = {
@@ -451,6 +467,7 @@ export function ResolvedProjectListResults({
     startDate: t("startDate"),
     endDate: t("endDate"),
     location: t("location"),
+    country: t("country"),
   };
   const hasActiveFilters = Boolean(
     state.search ||

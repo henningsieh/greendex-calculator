@@ -122,6 +122,7 @@ export const PROJECT_SORT_FIELDS = [
   "name",
   "startDate",
   "endDate",
+  "country",
 ] as const;
 export const ProjectSortCriterionSchema = z.object({
   field: z.enum(PROJECT_SORT_FIELDS),

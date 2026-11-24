@@ -99,6 +99,7 @@
       "clearFilters": "Filters wissen",
       "project": "Project",
       "location": "Locatie",
+      "country": "Land",
       "participants": "Deelnames",
       "refreshing": "Projecten vernieuwen…",
       "updatedAt": "Bijgewerkt om {time} UTC",

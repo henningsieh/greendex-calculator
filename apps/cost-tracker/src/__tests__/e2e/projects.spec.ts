@@ -175,6 +175,9 @@ test.describe("Cost Tracker Project production path", () => {
         { field: "startDate", direction: "desc" },
         { field: "endDate", direction: "desc" },
         { field: "name", direction: "asc" },
+        // Every fixture row shares this country, so it only exercises the
+        // fifth criterion slot without changing the expected order.
+        { field: "country", direction: "asc" },
       ];
       let releaseScripts = () => {};
       const scriptsReleased = new Promise<void>((resolve) => {
@@ -229,6 +232,7 @@ test.describe("Cost Tracker Project production path", () => {
             { field: "startDate", direction: "desc" },
             { field: "endDate", direction: "asc" },
             { field: "name", direction: "asc" },
+            { field: "country", direction: "asc" },
           ]),
       );
       await assertOrder([4, 5, 6, 7, 0, 1, 2, 3]);
@@ -240,7 +244,7 @@ test.describe("Cost Tracker Project production path", () => {
       await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
       await expect(page.getByTestId("project-sort-menu")).toBeEnabled();
       await page.getByTestId("project-sort-menu").click();
-      for (const field of ["status", "startDate", "endDate", "name"]) {
+      for (const field of ["status", "startDate", "endDate", "name", "country"]) {
         await expect(
           page.getByTestId(`project-sort-direction-${field}`),
         ).toBeEnabled();
@@ -249,7 +253,8 @@ test.describe("Cost Tracker Project production path", () => {
         ).toBeEnabled();
       }
       await expect(page.getByTestId("project-sort-up-status")).toBeDisabled();
-      await expect(page.getByTestId("project-sort-down-name")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-down-country")).toBeDisabled();
+      // Five sortable fields are all in use, so no further rule can be added.
       await expect(page.getByTestId("project-sort-add")).toBeDisabled();
       await expect(page.getByTestId("project-sort-reset")).toBeEnabled();
       await page.keyboard.press("Escape");

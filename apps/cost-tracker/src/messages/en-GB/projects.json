@@ -99,6 +99,7 @@
       "clearFilters": "Clear filters",
       "project": "Project",
       "location": "Location",
+      "country": "Country",
       "participants": "Participations",
       "refreshing": "Refreshing Projects…",
       "updatedAt": "Updated {time} UTC",

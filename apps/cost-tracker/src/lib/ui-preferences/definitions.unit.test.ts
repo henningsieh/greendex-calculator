@@ -18,6 +18,9 @@ describe("UI preference cookie definitions", () => {
     expect(preference.parse(preference.serialize({ location: false }))).toEqual({
       location: false,
     });
+    expect(preference.parse(preference.serialize({ country: false }))).toEqual({
+      country: false,
+    });
     expect(preference.parse('[1,["unknown"]]')).toEqual({});
     expect(preference.parse('[2,["location"]]')).toEqual({});
     expect(preference.parse("{")).toEqual({});

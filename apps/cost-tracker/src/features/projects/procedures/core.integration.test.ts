@@ -64,7 +64,7 @@ describe("projects procedures", () => {
       startDate: new Date(Date.UTC(2026, 0, 1 + (index % 4))),
       endDate: new Date(Date.UTC(2026, 1, 1 + (Math.floor(index / 8) % 2))),
       location: "Berlin",
-      country: "DE" as const,
+      country: (["AT", "DE", "FR"] as const)[index % 3],
       organizationId: host,
       costTrackerArchived: index >= 24,
       rank: index < 12 ? 0 : index < 24 ? 1 : 2,
@@ -138,6 +138,12 @@ describe("projects procedures", () => {
         { field: "name" as const, direction: "desc" as const },
         { field: "startDate" as const, direction: "desc" as const },
       ];
+      // Country sorts by the stored ISO code, so the page order is the same in
+      // every locale.
+      const countrySort = [
+        { field: "country" as const, direction: "desc" as const },
+        { field: "startDate" as const, direction: "asc" as const },
+      ];
       // The first 24 rows include pairs tied through three keys. The fourth
       // key must decide their order rather than the final ID tie-break.
       const deepSort = [
@@ -151,6 +157,7 @@ describe("projects procedures", () => {
         for (const sort of [
           undefined,
           customSort,
+          countrySort,
           ...[2, 3, 4].map((depth) => deepSort.slice(0, depth)),
         ]) {
           const expected = !sort
@@ -167,7 +174,9 @@ describe("projects procedures", () => {
                             ? a.endDate.getTime() - b.endDate.getTime()
                             : field === "name"
                               ? a.name.localeCompare(b.name)
-                              : a.rank - b.rank;
+                              : field === "country"
+                                ? a.country.localeCompare(b.country)
+                                : a.rank - b.rank;
                       if (difference)
                         return direction === "asc" ? difference : -difference;
                     }
@@ -279,7 +288,9 @@ describe("projects procedures", () => {
       await db.delete(organization).where(eq(organization.id, partner));
       await db.delete(user).where(eq(user.id, actor));
     }
-  });
+    // Two cursor pages plus the invalid-cursor checks in both scopes exceed the
+    // default 5s budget once every sort case is traversed.
+  }, 20_000);
   describe("derived readiness and completion", () => {
     let actor = SEED_IDS.user.readinessActor;
     const host = SEED_IDS.organization.readinessHost;

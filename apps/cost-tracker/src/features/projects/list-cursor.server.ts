@@ -6,6 +6,7 @@ import { z } from "zod";
 import { PROJECT_CURSOR_VERSION } from "@/features/projects/list-cursor-version";
 import {
   canonicalProjectStatuses,
+  PROJECT_SORT_FIELDS,
   ProjectSortOrderSchema,
   type ProjectStatus,
 } from "@/features/projects/validation-schemas";
@@ -29,10 +30,13 @@ const CursorSchema = z.object({
         z.object({ field: z.literal("name") }),
         z.object({ field: z.literal("startDate"), value: z.iso.datetime() }),
         z.object({ field: z.literal("endDate"), value: z.iso.datetime() }),
+        // The stored ISO country code, not its localized label: the page after
+        // this cursor must keep the same order in every locale.
+        z.object({ field: z.literal("country"), value: z.string().length(2) }),
       ]),
     )
     .min(1)
-    .max(4),
+    .max(PROJECT_SORT_FIELDS.length),
 });
 
 export type ProjectListCursor = z.infer<typeof CursorSchema>;
