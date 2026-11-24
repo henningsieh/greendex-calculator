@@ -30,7 +30,9 @@ describe("getEUCountryOptions", () => {
     ).toBe("Germany");
   });
   it("keeps ISO codes selectable when DisplayNames is unavailable", () => {
-    vi.spyOn(Intl, "DisplayNames").mockImplementation(() => {
+    // DisplayNames is constructed with `new`, so the mock must be a function
+    // form; an arrow has no construct behaviour and leaks a Vitest warning.
+    vi.spyOn(Intl, "DisplayNames").mockImplementation(function () {
       throw new Error("Unavailable");
     });
     expect(

@@ -140,7 +140,7 @@ function SortHeader({
       data-testid={testId}
       disabled={disabled}
       onClick={() => onSort(nextSort(currentSort, field))}
-      size="sm"
+      size="xs"
       type="button"
       variant="ghost"
     >
@@ -408,7 +408,7 @@ export function ClaimReviewQueue() {
               search: null,
             });
           }}
-          size="sm"
+          size="xs"
           type="button"
           variant="outline"
         >
@@ -460,7 +460,7 @@ export function ClaimReviewQueue() {
           aria-label={t("refresh")}
           disabled={isFetching}
           onClick={() => void refetch()}
-          size="sm"
+          size="xs"
           type="button"
           variant="outline"
         >
@@ -575,7 +575,7 @@ export function ClaimReviewQueue() {
             </div>
           </div>
 
-          <div className="grid gap-3 @4xl/content:hidden">
+          <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
             {data.rows.map((row) => (
               <article
                 className="rounded-xl border bg-card px-4 py-3.5"

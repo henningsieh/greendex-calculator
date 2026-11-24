@@ -99,6 +99,7 @@
       "clearFilters": "Filter zurücksetzen",
       "project": "Projekt",
       "location": "Ort",
+      "country": "Land",
       "participants": "Teilnahmen",
       "refreshing": "Projekte werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",

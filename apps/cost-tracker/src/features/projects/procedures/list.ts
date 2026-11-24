@@ -126,7 +126,7 @@ function getProjectFilters(input: ProjectListInput): SQL[] {
 type ProjectCursorDirection = ProjectListCursor["direction"];
 type ProjectListCursorRow = Pick<
   typeof projectsTable.$inferSelect,
-  "endDate" | "id" | "startDate" | "name"
+  "country" | "endDate" | "id" | "startDate" | "name"
 > & { statusRank: number };
 
 function allOf(...conditions: SQL[]): SQL {
@@ -169,6 +169,15 @@ const PROJECT_SORT_DESCRIPTORS = {
       value: row.endDate.toISOString(),
     }),
   },
+  // Country orders by the stored ISO code, so paging stays language-neutral
+  // and a locale switch cannot reshuffle a cursor page.
+  country: {
+    getExpression: () => projectsTable.country,
+    value: (row: ProjectListCursorRow) => ({
+      field: "country" as const,
+      value: row.country,
+    }),
+  },
 };
 
 function getOrder(
@@ -209,7 +218,9 @@ function getCursorFilter(
           ? sql.param(new Date(value.value), projectsTable.startDate)
           : value.field === "endDate"
             ? sql.param(new Date(value.value), projectsTable.endDate)
-            : value.value;
+            : value.field === "country"
+              ? sql.param(value.value, projectsTable.country)
+              : value.value;
     const forward =
       (criterion.direction === "asc") === (cursor.direction === "next");
     alternatives.push(

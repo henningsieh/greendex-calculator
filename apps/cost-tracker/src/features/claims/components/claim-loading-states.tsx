@@ -88,7 +88,7 @@ export function ClaimReviewQueueSkeleton() {
             ))}
           </div>
         </div>
-        <div className="grid gap-3 @4xl/content:hidden">
+        <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
           {Array.from({ length: 3 }, (_, index) => (
             <div className="rounded-xl border bg-card p-4" key={index}>
               <Skeleton className="h-5 w-48 max-w-full" />

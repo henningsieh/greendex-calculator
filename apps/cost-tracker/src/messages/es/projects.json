@@ -99,6 +99,7 @@
       "clearFilters": "Quitar filtros",
       "project": "Proyecto",
       "location": "Ubicación",
+      "country": "País",
       "participants": "Participaciones",
       "refreshing": "Actualizando proyectos…",
       "updatedAt": "Actualizado a las {time} UTC",
