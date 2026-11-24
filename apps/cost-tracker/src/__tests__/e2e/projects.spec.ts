@@ -480,16 +480,11 @@ test.describe("Cost Tracker Project production path", () => {
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     const edited = `${distinctive.slice(0, 2)}X${distinctive.slice(2)}`;
-    // Wait for the list request the edit triggers, not only the URL write.
-    const editedResponse = page.waitForResponse(
-      (response) =>
-        isRPCRequest(response.url()) &&
-        (response.request().postData() ?? "").includes(
-          `"search":"${edited.toLowerCase()}"`,
-        ),
-    );
     await page.keyboard.type("X");
-    await editedResponse;
+    // Wait for the settled list the edit produces, not only for the request:
+    // the fixture no longer matches the edited term, so its disappearance is
+    // the render that the caret must survive.
+    await expect(projectLink).toHaveCount(0);
     expect(
       await search.evaluate((element: HTMLInputElement) => ({
         focused: document.activeElement === element,
