@@ -132,6 +132,7 @@ export function CreateProjectDialog() {
       <DialogContent
         closeLabel={t("close")}
         data-testid="create-project-dialog"
+        initialFocus={false}
         variant="form"
       >
         <DialogHeader variant="form">
