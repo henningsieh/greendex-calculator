@@ -935,6 +935,25 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         )
         .map(({ id }) => id),
     );
+    // Own fixture: this test must not depend on a Project created by an earlier
+    // test, so a single-test run (or --grep) stays meaningful.
+    const [hostingOrganization] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, fixture.organizationName));
+    if (!hostingOrganization)
+      throw new Error("Hosting fixture Organization is missing");
+    const projectName = `Existing ownership ${randomUUID()}`;
+    await db.insert(projectsTable).values({
+      id: randomUUID(),
+      organizationId: hostingOrganization.id,
+      name: projectName,
+      startDate: new Date("2026-01-01T00:00:00.000Z"),
+      endDate: new Date("2026-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE",
+    });
+    ownedProjectNames.push(projectName);
     const unrelatedId = SEED_IDS.organization.entitySearchOrg55;
     const targetId = SEED_IDS.organization.entitySearchOrg56;
     const targetName = "Owned Search 31";
@@ -951,7 +970,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(member)
       .where(eq(member.userId, SEED_IDS.user.entitySearchActor));
     const url = await issueInSetup(
-      fixture.projectNames[0]!,
+      projectName,
       "un3tvw49u59cn2d2a9rop8dl@example.com",
     );
     const page = await context.newPage();
@@ -977,7 +996,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("inspect-setup")).toBeEnabled();
     expect(bindingAttempts).toBe(1);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
+    expect(await partnershipCount(projectName, targetName)).toBe(0);
     await db
       .update(setupLinks)
       .set({ enabled: true })
@@ -994,13 +1013,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       actingSessionSchema.parse(await unchanged.json()).session
         .activeOrganizationId,
     ).toBe(unrelatedId);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
-    await selectAndOpenPartnerProject(
-      page,
-      fixture.projectNames[0]!,
-      targetName,
-      "select",
-    );
+    expect(await partnershipCount(projectName, targetName)).toBe(1);
+    await selectAndOpenPartnerProject(page, projectName, targetName, "select");
     const acting = await context.request.get("/api/auth/get-session");
     expect(
       actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,

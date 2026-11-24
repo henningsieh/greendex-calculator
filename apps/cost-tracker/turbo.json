@@ -10,7 +10,6 @@
         "COST_TRACKER_PORT",
         "DATABASE_URL",
         "GREENDEX_LOCAL_TEST_SERVER",
-        "LOCAL_E2E_AUTH",
         "NODE_ENV"
       ]
     }

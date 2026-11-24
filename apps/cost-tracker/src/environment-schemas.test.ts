@@ -42,7 +42,6 @@ describe("Cost Tracker environment", () => {
   });
 
   it.each([
-    ["LOCAL_E2E_AUTH", "true"],
     ["GREENDEX_LOCAL_TEST_SERVER", "true"],
     ["BETTER_AUTH_SECRET", "short"],
     ["GOOGLE_CLIENT_ID", ""],
@@ -69,13 +68,13 @@ describe("Cost Tracker environment", () => {
   });
 
   it.each([undefined, "0", "1"])(
-    "accepts the explicit local E2E flag %s",
+    "accepts the local test-server flag %s",
     (value) => {
       expect(
         CostTrackerServerEnvironmentSchema.parse({
           ...validServerEnvironment,
-          ...(value === undefined ? {} : { LOCAL_E2E_AUTH: value }),
-        }).LOCAL_E2E_AUTH,
+          ...(value === undefined ? {} : { GREENDEX_LOCAL_TEST_SERVER: value }),
+        }).GREENDEX_LOCAL_TEST_SERVER,
       ).toBe(value);
     },
   );

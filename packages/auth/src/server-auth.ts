@@ -178,7 +178,9 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
       target.username ||
       target.password
     ) {
-      throw new Error("LOCAL_E2E_AUTH requires a loopback HTTP(S) base URL.");
+      throw new Error(
+        "GREENDEX_LOCAL_TEST_SERVER requires a loopback HTTP(S) base URL.",
+      );
     }
   }
 
@@ -186,12 +188,10 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
-    rateLimit: config.localE2EAuth
-      ? {
-          enabled: true,
-          customRules: { "/sign-in/email": { window: 10, max: 30 } },
-        }
-      : undefined,
+    // A loopback test server is not public traffic: suites sign in per actor and
+    // per journey, and the default limiter turns a saturated window into a
+    // missing session cookie, which surfaces far away as a login redirect.
+    rateLimit: config.localE2EAuth ? { enabled: false } : undefined,
     advanced: {
       database: {
         joins: true,

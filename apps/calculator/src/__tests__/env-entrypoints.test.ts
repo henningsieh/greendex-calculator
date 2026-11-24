@@ -331,7 +331,6 @@ describe("environment entrypoints", () => {
       "NEXT_PUBLIC_SOCKET_URL",
       "DATABASE_URL",
       "GREENDEX_LOCAL_TEST_SERVER",
-      "LOCAL_E2E_AUTH",
       "BETTER_AUTH_SECRET",
       "GOOGLE_CLIENT_ID",
       "GOOGLE_CLIENT_SECRET",

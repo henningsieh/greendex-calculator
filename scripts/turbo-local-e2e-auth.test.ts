@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 describe("Turbo local E2E auth forwarding", () => {
-  it("forwards the test-server marker and explicit opt-out to both dev tasks", () => {
+  it("forwards the single test-server marker to both dev tasks", () => {
     const output = execFileSync(
       "pnpm",
       [
@@ -21,7 +21,6 @@ describe("Turbo local E2E auth forwarding", () => {
         env: {
           ...process.env,
           GREENDEX_LOCAL_TEST_SERVER: "1",
-          LOCAL_E2E_AUTH: "0",
         },
         encoding: "utf8",
       },
@@ -37,7 +36,6 @@ describe("Turbo local E2E auth forwarding", () => {
       expect(task?.environmentVariables.configured).toEqual(
         expect.arrayContaining([
           expect.stringMatching(/^GREENDEX_LOCAL_TEST_SERVER=/),
-          expect.stringMatching(/^LOCAL_E2E_AUTH=/),
         ]),
       );
     }
