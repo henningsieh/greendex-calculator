@@ -35,6 +35,7 @@ import {
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
 import { selectCountry } from "./fixtures/country-selector";
+import { pickDate } from "./fixtures/date-picker";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { projectLink, staffRow } from "./fixtures/journey-locators";
@@ -229,8 +230,8 @@ async function createProject(page: Page, name: string) {
   await page.getByTestId("new-project").click();
   const dialog = page.getByTestId("create-project-dialog");
   await dialog.locator("#new-project-name").fill(name);
-  await dialog.locator("#new-project-start").fill("2027-04-01");
-  await dialog.locator("#new-project-end").fill("2027-04-03");
+  await pickDate(page, "new-project-start", "2027-04-01");
+  await pickDate(page, "new-project-end", "2027-04-03");
   await dialog.locator("#new-project-location").fill("Berlin");
   await selectCountry(dialog.locator("#new-project-country"), "DE");
   await dialog.getByTestId("create-project").click();

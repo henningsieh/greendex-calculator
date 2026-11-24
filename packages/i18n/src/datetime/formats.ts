@@ -18,8 +18,12 @@ export const dateFormats = {
   "date.numeric": { day: "2-digit", month: "2-digit", year: "numeric" },
   /** `Dec` — month name without a day. */
   "date.monthShort": { month: "short" },
+  /** `December 2025` — calendar captions. */
+  "date.monthYear": { month: "long", year: "numeric" },
   /** `Sun` — weekday label in a calendar header. */
   "date.weekdayShort": { weekday: "short" },
+  /** `Sunday` — accessible weekday names. */
+  "date.weekdayLong": { weekday: "long" },
   /** `December` — month name without a day. */
   "date.monthLong": { month: "long" },
   /** `28 Dec 2025, 14:30` — audit trails and "last changed" stamps. */

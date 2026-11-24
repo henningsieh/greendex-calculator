@@ -30,6 +30,7 @@ import {
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
 import { selectCountry } from "./fixtures/country-selector";
+import { pickDate } from "./fixtures/date-picker";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -343,8 +344,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await h.getByTestId("new-project").click();
     const dialog = h.getByTestId("create-project-dialog");
     await dialog.locator("#new-project-name").fill(names.project);
-    await dialog.locator("#new-project-start").fill("2027-04-01");
-    await dialog.locator("#new-project-end").fill("2027-04-03");
+    await pickDate(h, "new-project-start", "2027-04-01");
+    await pickDate(h, "new-project-end", "2027-04-03");
     await dialog.locator("#new-project-location").fill("Berlin");
     await selectCountry(dialog.locator("#new-project-country"), "DE");
     await dialog.getByTestId("create-project").click();

@@ -2,7 +2,13 @@
 
 import { describe, expect, it } from "vitest";
 
-import { fromDateInputValue, spanInDays, toDateInputValue } from "./input";
+import {
+  fromCalendarDate,
+  fromDateInputValue,
+  spanInDays,
+  toCalendarDate,
+  toDateInputValue,
+} from "./input";
 
 describe("date input values", () => {
   it("round-trips a UTC midnight without shifting the day", () => {
@@ -30,6 +36,19 @@ describe("date input values", () => {
     expect(fromDateInputValue("")).toBeUndefined();
     expect(fromDateInputValue("03/04/2027")).toBeUndefined();
     expect(fromDateInputValue("2027-02-30")).toBeUndefined();
+  });
+
+  it("adapts a stored UTC midnight to a local calendar day", () => {
+    const calendarDate = toCalendarDate("2027-04-03T00:00:00.000Z");
+    expect(calendarDate?.getFullYear()).toBe(2027);
+    expect(calendarDate?.getMonth()).toBe(3);
+    expect(calendarDate?.getDate()).toBe(3);
+    expect(calendarDate?.getHours()).toBe(0);
+  });
+
+  it("adapts a local calendar selection back to a stored UTC midnight", () => {
+    const stored = fromCalendarDate(new Date(2027, 3, 3));
+    expect(stored?.toISOString()).toBe("2027-04-03T00:00:00.000Z");
   });
 });
 

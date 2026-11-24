@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { fromDateInputValue, toDateInputValue } from "@greendex/i18n/datetime";
 import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 
+import { DatePicker } from "@/components/date-picker";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -284,32 +284,26 @@ export function ProjectListFilters({
           <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 @4xl/content:col-span-2 @4xl/content:col-start-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="project-date-from">{t("activeAfter")}</Label>
-              <Input
+              <DatePicker
                 id="project-date-from"
+                clearable
                 data-testid="project-date-from"
-                onChange={(event) =>
-                  updateProjectFilter(
-                    PROJECT_FILTER_IDS.dateFrom,
-                    fromDateInputValue(event.target.value) ?? null,
-                  )
+                onChange={(date) =>
+                  updateProjectFilter(PROJECT_FILTER_IDS.dateFrom, date ?? null)
                 }
-                type="date"
-                value={toDateInputValue(state.dateFrom)}
+                value={state.dateFrom ?? undefined}
               />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="project-date-to">{t("activeBefore")}</Label>
-              <Input
+              <DatePicker
                 id="project-date-to"
+                clearable
                 data-testid="project-date-to"
-                onChange={(event) =>
-                  updateProjectFilter(
-                    PROJECT_FILTER_IDS.dateTo,
-                    fromDateInputValue(event.target.value) ?? null,
-                  )
+                onChange={(date) =>
+                  updateProjectFilter(PROJECT_FILTER_IDS.dateTo, date ?? null)
                 }
-                type="date"
-                value={toDateInputValue(state.dateTo)}
+                value={state.dateTo ?? undefined}
               />
             </div>
           </div>

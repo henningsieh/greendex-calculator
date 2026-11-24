@@ -269,6 +269,13 @@
       "claimReview": "Revisión de solicitud",
       "hostedProject": "Proyecto alojado",
       "partnerProject": "Proyecto socio"
+    },
+    "datePicker": {
+      "placeholder": "Elige una fecha",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "calendar": "Calendario",
+      "clear": "Borrar"
     }
   }
 }
