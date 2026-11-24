@@ -43,6 +43,7 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0027](0027-archive-settled-cost-tracker-projects.md) | Archive Settled Cost Tracker Projects Instead of Completing the Project | accepted | 0011, Project completion only |
 | [0028](0028-scope-project-lifecycle-permissions-by-application.md) | Scope Project lifecycle permissions by application | accepted | 0020 and 0027, lifecycle permission wiring only |
 | [0029](0029-one-status-facet-for-cost-tracker-project-lists.md) | One Status facet for Cost Tracker Project lists | accepted | |
+| [0030](0030-reserve-upload-quota-before-storage-and-refund-confirmed-failures.md) | Reserve upload quota before storage and refund only confirmed failures | accepted | |
 
 [ADR-0023](0023-keep-known-email-participant-entry-app-owned.md) supersedes ADR-0005's known-email delivery mechanism only, affirming ADR-0013's app-owned Participant Invitations and #263's test governance. All other ADR-0005 requirements remain accepted.
 
