@@ -55,6 +55,20 @@ describe("useDebouncedSearchDraft", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("cancels a pending write when a clear action resets an already-clear URL", () => {
+    const { push, result } = setup("");
+
+    act(() => result.current.onChange("x"));
+    // Clear filters resets other URL state; the search value never changes.
+    act(() => result.current.resetDraft(""));
+
+    expect(result.current.draft).toBe("");
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("keeps newer typing when the previous local push is acknowledged", () => {
     const { push, rerender, result } = setup("");
 

@@ -454,7 +454,11 @@ test.describe("Cost Tracker Project production path", () => {
     const distinctive = fixture.name.slice(-8);
     for (const [index, character] of [...distinctive].entries()) {
       await page.keyboard.type(character);
-      await page.waitForTimeout(350);
+      const typed = distinctive.slice(0, index + 1);
+      // The debounce is observable through the URL; no fixed sleep needed.
+      await expect(page).toHaveURL(
+        (url) => url.searchParams.get("search") === typed,
+      );
       expect(
         await search.evaluate((element: HTMLInputElement) => ({
           focused: document.activeElement === element,
@@ -466,7 +470,7 @@ test.describe("Cost Tracker Project production path", () => {
         focused: true,
         selectionEnd: index + 1,
         selectionStart: index + 1,
-        value: distinctive.slice(0, index + 1),
+        value: typed,
       });
     }
     await expect(projectLink).toBeVisible();
@@ -488,6 +492,14 @@ test.describe("Cost Tracker Project production path", () => {
     await expect(page).toHaveURL(
       (url) => url.searchParams.get("search") === edited,
     );
+    // The caret survives the refresh that the mid-string edit triggered.
+    expect(
+      await search.evaluate((element: HTMLInputElement) => ({
+        focused: document.activeElement === element,
+        selectionStart: element.selectionStart,
+        value: element.value,
+      })),
+    ).toEqual({ focused: true, selectionStart: 3, value: edited });
   });
 
   test("keeps a cleared search cleared when a debounce is pending", async ({
@@ -506,6 +518,8 @@ test.describe("Cost Tracker Project production path", () => {
       .filter({ visible: true })
       .click();
     await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    // Negative observation window: the stale write would land after the
+    // 300 ms debounce, so wait past it before asserting the URL stayed clear.
     await page.waitForTimeout(800);
 
     await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
@@ -515,6 +529,61 @@ test.describe("Cost Tracker Project production path", () => {
         .locator(`a[href$="/projects/${fixture.projectId}"]`)
         .filter({ visible: true }),
     ).toBeVisible();
+  });
+
+  test("cancels a pending search when clearing filters whose URL search is already empty", async ({
+    page,
+  }) => {
+    // The date filter alone empties the register, so Clear filters runs while
+    // the URL search is already "". The pending draft must still be dropped.
+    await page.goto("/projects?dateFrom=2099-01-01");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const search = page.getByTestId("project-search");
+    await search.click();
+    await page.keyboard.type("x");
+
+    await page
+      .getByTestId("project-clear-filters")
+      .filter({ visible: true })
+      .click();
+    await expect(page).toHaveURL(
+      (url) =>
+        !url.searchParams.has("search") && !url.searchParams.has("dateFrom"),
+    );
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL(
+      (url) =>
+        !url.searchParams.has("search") && !url.searchParams.has("dateFrom"),
+    );
+    await expect(search).toHaveValue("");
+  });
+
+  test("keeps browser history navigation ahead of a pending search", async ({
+    page,
+  }) => {
+    await page.goto("/projects");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await page.goto("/projects?search=unmatched-425");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await page.getByTestId("project-search").click();
+    await page.keyboard.type("x");
+
+    await page.goBack();
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(page.getByTestId("project-search")).toHaveValue("");
   });
 
   test("renders protected Project routes through the Cost Tracker router and refreshes Partnerships", async ({

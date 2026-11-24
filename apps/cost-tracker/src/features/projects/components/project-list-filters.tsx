@@ -39,7 +39,6 @@ import {
 } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
 import { canonicalProjectStatuses } from "@/features/projects/validation-schemas";
-import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
 
 /**
  * Filter controls render above the results Suspense boundary, so a result
@@ -47,10 +46,14 @@ import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
  * every control funnels through pushColumnFiltersToUrl.
  */
 export function ProjectListFilters({
+  onSearchChange,
+  searchDraft,
   state,
   urlState,
   setUrlState,
 }: {
+  onSearchChange: (search: string) => void;
+  searchDraft: string;
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
   setUrlState: ProjectListQueryState[1];
@@ -69,12 +72,6 @@ export function ProjectListFilters({
       urlState,
       setUrlState,
     );
-
-  const { draft: searchDraft, onChange: updateSearchDraft } =
-    useDebouncedSearchDraft({
-      urlSearch: urlState.search,
-      push: (search) => updateProjectFilter(PROJECT_FILTER_IDS.name, search),
-    });
 
   // Labels for the trigger: Base UI resolves the displayed label from the
   // `items` prop (docs pattern), not from the mounted item children.
@@ -110,7 +107,7 @@ export function ProjectListFilters({
               value={searchDraft}
               id="project-search"
               data-testid="project-search"
-              onChange={(event) => updateSearchDraft(event.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder={t("searchPlaceholder")}
             />
           </div>

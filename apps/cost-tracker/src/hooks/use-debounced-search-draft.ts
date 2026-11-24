@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const DEFAULT_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Keeps a text input's draft in step with URL-backed search state.
@@ -13,6 +13,10 @@ const DEFAULT_DEBOUNCE_MS = 300;
  * acknowledgement of our own last push is not an external change; it leaves
  * newer typing and its pending write alone.
  *
+ * `resetDraft` exists for a clear action that resets other filters while the
+ * URL search is already empty: the URL search value does not change, so the
+ * effect cannot observe it, and the caller cancels the pending write itself.
+ *
  * The pending callback reads the latest `push` through a ref. A filter change
  * committed during the debounce window therefore contributes its newest
  * state instead of the state captured when the keystroke was typed.
@@ -20,39 +24,43 @@ const DEFAULT_DEBOUNCE_MS = 300;
 export function useDebouncedSearchDraft({
   urlSearch,
   push,
-  delayMs = DEFAULT_DEBOUNCE_MS,
 }: {
   urlSearch: string;
   push: (search: string) => void;
-  delayMs?: number;
 }) {
   const timeout = useRef<number>(undefined);
-  const lastPushed = useRef(urlSearch);
-  const latestPush = useRef(push);
+  const acknowledged = useRef(urlSearch);
+  const pushRef = useRef(push);
   const [draft, setDraft] = useState(urlSearch);
 
   useEffect(() => {
-    latestPush.current = push;
+    pushRef.current = push;
   });
 
   useEffect(() => () => window.clearTimeout(timeout.current), []);
 
+  const resetDraft = useCallback(
+    (search = urlSearch) => {
+      window.clearTimeout(timeout.current);
+      timeout.current = undefined;
+      acknowledged.current = search;
+      setDraft(search);
+    },
+    [urlSearch],
+  );
+
   useEffect(() => {
-    if (urlSearch === lastPushed.current) return;
-    window.clearTimeout(timeout.current);
-    timeout.current = undefined;
-    lastPushed.current = urlSearch;
-    setDraft(urlSearch);
-  }, [urlSearch]);
+    if (urlSearch !== acknowledged.current) resetDraft();
+  }, [resetDraft, urlSearch]);
 
   const onChange = (search: string) => {
     setDraft(search);
     window.clearTimeout(timeout.current);
     timeout.current = window.setTimeout(() => {
-      lastPushed.current = search;
-      latestPush.current(search);
-    }, delayMs);
+      acknowledged.current = search;
+      pushRef.current(search);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
-  return { draft, onChange };
+  return { draft, onChange, resetDraft };
 }

@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
+import {
+  getProjectColumnFilters,
+  PROJECT_FILTER_IDS,
+  pushColumnFiltersToUrl,
+} from "@/features/projects/components/project-list-filtering";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
 import {
   ProjectListMetrics,
@@ -30,6 +35,7 @@ import {
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
+import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
 import type { ProjectVisibility } from "@/lib/ui-preferences/definitions";
 
 interface VisibilityPreference {
@@ -184,6 +190,42 @@ function ResolvedProjectList({
   const updateListState = (patch: Parameters<typeof setUrlState>[0]) =>
     void setUrlState({ ...patch, cursor: null });
 
+  const updateProjectFilter = (
+    id: (typeof PROJECT_FILTER_IDS)[keyof typeof PROJECT_FILTER_IDS],
+    value: unknown,
+  ) =>
+    pushColumnFiltersToUrl(
+      [
+        ...getProjectColumnFilters(urlState).filter((filter) => filter.id !== id),
+        { id, value },
+      ],
+      urlState,
+      setUrlState,
+    );
+
+  const {
+    draft: searchDraft,
+    onChange: updateSearchDraft,
+    resetDraft,
+  } = useDebouncedSearchDraft({
+    urlSearch: urlState.search,
+    push: (search) => updateProjectFilter(PROJECT_FILTER_IDS.name, search),
+  });
+
+  const clearFilters = () => {
+    // The URL search may already be empty; cancel the pending draft here so
+    // Clear filters cannot be undone by the debounce.
+    resetDraft("");
+    void setUrlState({
+      cursor: null,
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: null,
+      search: null,
+      status: null,
+    });
+  };
+
   return (
     <section
       aria-label={t("label")}
@@ -209,13 +251,16 @@ function ResolvedProjectList({
         </Suspense>
       </div>
       <ProjectListFilters
+        onSearchChange={updateSearchDraft}
+        searchDraft={searchDraft}
+        setUrlState={setUrlState}
         state={state}
         urlState={urlState}
-        setUrlState={setUrlState}
       />
       <Suspense fallback={<ProjectResultsSkeleton />}>
         <ResolvedProjectListResults
           key={preference.accountKey}
+          onClearFilters={clearFilters}
           preference={preference}
           scope={scope}
           state={state}

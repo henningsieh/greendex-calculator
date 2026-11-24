@@ -61,7 +61,7 @@
       "schedule": "Schedule",
       "viewParticipants": "Participations",
       "name": "Project name",
-      "searchPlaceholder": "Search at least 3 characters",
+      "searchPlaceholder": "Search projects",
       "sort": "Sort",
       "sortStartEarliest": "Start date, earliest",
       "sortStartLatest": "Start date, latest",

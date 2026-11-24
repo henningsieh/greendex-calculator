@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEARCH_DEBOUNCE_MS } from "@/hooks/use-debounced-search-draft";
 
 interface Entity {
   id: string;
@@ -70,7 +71,7 @@ export function EntityCombobox<T extends Entity>({
           setLoading(false);
         }
       }
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
     return () => {
       active = false;
       clearTimeout(timer);

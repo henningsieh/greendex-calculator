@@ -151,25 +151,22 @@ function SortHeader({
 }
 
 function ClaimQueueFilters({
+  onSearchChange,
   partnerOptions,
+  searchDraft,
   state,
   setUrlState,
-  urlState,
 }: {
+  onSearchChange: (search: string) => void;
   partnerOptions: { id: string; name: string }[];
+  searchDraft: string;
   state: ClaimQueueState;
   setUrlState: ClaimQueueQueryState[1];
-  urlState: ClaimQueueQueryState[0];
 }) {
   const t = useTranslations("claims.queue");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const hiddenFilterCount = Number(Boolean(state.partnerOrganizationId));
-
-  const { draft: searchDraft, onChange: updateSearch } = useDebouncedSearchDraft({
-    urlSearch: urlState.search,
-    push: (search) => void setUrlState({ cursor: null, search }),
-  });
 
   const pageSizeItems = CLAIM_QUEUE_PAGE_SIZES.map((value) => ({
     value: String(value),
@@ -191,7 +188,7 @@ function ClaimQueueFilters({
               className="pl-9"
               id="claim-queue-search"
               data-testid="claim-queue-search"
-              onChange={(event) => updateSearch(event.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder={t("searchPlaceholder")}
               value={searchDraft}
             />
@@ -346,6 +343,14 @@ export function ClaimReviewQueue() {
     shallow: true,
   });
   const state = normalizeClaimQueueState(urlState);
+  const {
+    draft: searchDraft,
+    onChange: updateSearch,
+    resetDraft,
+  } = useDebouncedSearchDraft({
+    urlSearch: urlState.search,
+    push: (search) => void setUrlState({ cursor: null, search }),
+  });
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -393,13 +398,16 @@ export function ClaimReviewQueue() {
       {hasActiveFilters && (
         <Button
           data-testid="claim-queue-clear-filters"
-          onClick={() =>
+          onClick={() => {
+            // The URL search may already be empty; cancel the pending draft
+            // here so Clear filters cannot be undone by the debounce.
+            resetDraft("");
             void setUrlState({
               cursor: null,
               partnerOrganizationId: null,
               search: null,
-            })
-          }
+            });
+          }}
           size="sm"
           type="button"
           variant="outline"
@@ -433,10 +441,11 @@ export function ClaimReviewQueue() {
       </div>
 
       <ClaimQueueFilters
+        onSearchChange={updateSearch}
         partnerOptions={data.partnerOptions}
+        searchDraft={searchDraft}
         setUrlState={setUrlState}
         state={state}
-        urlState={urlState}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
