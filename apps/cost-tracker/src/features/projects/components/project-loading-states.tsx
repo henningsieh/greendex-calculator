@@ -21,17 +21,17 @@ import { cn } from "@/lib/utils";
 function ListToolbarSkeleton() {
   return (
     <div className="flex flex-col gap-2 @4xl/content:flex-row @4xl/content:items-center @4xl/content:justify-between">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Skeleton className="h-7 w-28" data-testid="loading-skeleton" />
+        <Skeleton className="h-7 w-36" data-testid="loading-skeleton" />
+        <Skeleton className="h-7 w-28" data-testid="loading-skeleton" />
+      </div>
+      <div className="flex items-center justify-between gap-x-4 gap-y-1">
         <Skeleton className="h-7 w-56" data-testid="loading-skeleton" />
         <Skeleton
           className="hidden h-4 w-40 @lg/content:block"
           data-testid="loading-skeleton"
         />
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Skeleton className="h-9 w-24" data-testid="loading-skeleton" />
-        <Skeleton className="h-9 w-28" data-testid="loading-skeleton" />
-        <Skeleton className="h-9 w-24" data-testid="loading-skeleton" />
       </div>
     </div>
   );
