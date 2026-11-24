@@ -131,10 +131,15 @@ export function EntityCombobox<T extends Entity>({
             })}
             value={query}
             onValueChange={(next) => {
+              const nextTerm = next.trim();
               setQuery(next);
+              // The search effect keys on the trimmed term, so a whitespace-only
+              // edit would otherwise blank the settled results and leave the
+              // loading state on for a request that never starts.
+              if (nextTerm === term) return;
               setResults([]);
               setError(false);
-              setLoading(next.trim().length > 0 && !!search);
+              setLoading(nextTerm.length > 0 && !!search);
             }}
           />
           <CommandList>

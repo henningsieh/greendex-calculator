@@ -113,6 +113,33 @@ describe("EntityCombobox", () => {
     expect(onChange).toHaveBeenCalledWith("partner-123");
   });
 
+  it("keeps a settled result when a whitespace-only edit leaves the term unchanged", async () => {
+    const user = userEvent.setup();
+    const search = vi
+      .fn()
+      .mockResolvedValue([{ id: "partner-123", name: "Green Partner" }]);
+    render(
+      <EntityCombobox
+        label="Organization"
+        value=""
+        onChange={vi.fn()}
+        search={search}
+      />,
+    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    const input = screen.getByTestId("entity-search");
+    await user.type(input, "partner");
+    await waitFor(() => expect(search).toHaveBeenCalledWith("partner"));
+    expect(await screen.findByRole("option")).toBeTruthy();
+
+    await user.type(input, " ");
+
+    // The trimmed term is unchanged, so the settled result stays and no second
+    // request starts for it.
+    expect(screen.getByRole("option")).toBeTruthy();
+    expect(search).toHaveBeenCalledTimes(1);
+  });
+
   it("supports Participant email searches and preserves the result ID", async () => {
     const user = userEvent.setup();
     const search = vi
