@@ -7,6 +7,7 @@ import { getErrorStatus } from "@/lib/orpc/error-status";
 const mocks = vi.hoisted(() => ({
   scope: vi.fn(),
   consume: vi.fn(),
+  refund: vi.fn(),
   cleanup: vi.fn(),
   limit: vi.fn(),
   returning: vi.fn(),
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/features/quotas/procedures/counters", () => ({
   consumeUploadBytes: mocks.consume,
+  refundUploadBytes: mocks.refund,
   cleanupQuotasBestEffort: mocks.cleanup,
 }));
 vi.mock("server-only", () => ({}));
@@ -85,7 +87,10 @@ const file = () =>
 const errors = createSituationErrors();
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.consume.mockResolvedValue("allowed");
+  mocks.consume.mockResolvedValue({
+    outcome: "allowed",
+    windowStart: new Date(0),
+  });
   mocks.cleanup.mockResolvedValue(undefined);
   mocks.scope.mockResolvedValue({ partnerId: "partner", hostId: "host" });
   mocks.session.mockResolvedValue({
@@ -294,7 +299,7 @@ describe("Proof Document upload outcomes", () => {
     expect(mocks.put).toHaveBeenCalledTimes(1);
   });
   it("denies daily exhaustion without storage or document insertion", async () => {
-    mocks.consume.mockResolvedValue("exhausted");
+    mocks.consume.mockResolvedValue({ outcome: "exhausted" });
     await expect(
       uploadProofDocument({ ...input, file: file() }),
     ).rejects.toMatchObject({

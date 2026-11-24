@@ -20,6 +20,7 @@ import { requirePartnerCoordination } from "@/features/partnerships/procedures/c
 import {
   cleanupQuotasBestEffort,
   consumeUploadBytes,
+  refundUploadBytes,
 } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -239,6 +240,7 @@ export async function uploadProofDocument(input: {
     partnerOrganizationId: scope.partnerId,
   };
   let attemptedReference: string | undefined;
+  let reservation: { bytes: number; windowStart: Date } | undefined;
   try {
     const reserved = await db.transaction(async (tx) => {
       const claim = await lockUploadClaim(tx, claimScope, input.file.size);
@@ -254,13 +256,15 @@ export async function uploadProofDocument(input: {
         partnerOrganizationId: scope.partnerId,
         bytes: bytes.length,
       });
-      if (allowance === "exhausted") return { kind: "exhausted" as const };
+      if (allowance.outcome === "exhausted")
+        return { kind: "exhausted" as const };
       return {
         kind: "reserved" as const,
         claimId: claim.id,
         reference: `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`,
         bytes,
         mediaType: sniffedMediaType,
+        windowStart: allowance.windowStart,
       };
     });
     if (reserved.kind === "exhausted")
@@ -268,6 +272,10 @@ export async function uploadProofDocument(input: {
     // No Claim or Organization quota lock is held during storage. Pending files
     // have no document row, so they cannot be listed, linked or used for submission.
     attemptedReference = reserved.reference;
+    reservation = {
+      bytes: reserved.bytes.length,
+      windowStart: reserved.windowStart,
+    };
     try {
       await putProofFile(reserved.reference, reserved.bytes, reserved.mediaType);
     } catch {
@@ -305,6 +313,27 @@ export async function uploadProofDocument(input: {
           .where(eq(documents.fileReference, attemptedReference))
           .limit(1);
         if (!existing) {
+          // #387: no document row means the reserved bytes were never
+          // published, so refund them before dropping the stored object. A
+          // failed existence check above keeps the charge: only a confirmed
+          // absence of the row authorizes the refund.
+          const failed = reservation;
+          if (failed) {
+            try {
+              await db.transaction((tx) =>
+                refundUploadBytes(tx, {
+                  partnerOrganizationId: scope.partnerId,
+                  bytes: failed.bytes,
+                  windowStart: failed.windowStart,
+                }),
+              );
+            } catch {
+              console.error(
+                "[Proof upload] Quota refund failed",
+                attemptedReference,
+              );
+            }
+          }
           try {
             await deleteProofFile(attemptedReference);
           } catch {

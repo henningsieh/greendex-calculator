@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   failInsert: false,
   failAfterPut: false,
+  failAfterCommit: false,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
@@ -50,9 +51,11 @@ vi.mock("@greendex/database", async (original) => {
     db: new Proxy(actual.db, {
       get(target, key) {
         if (key === "transaction")
-          return (callback: Parameters<typeof actual.db.transaction>[0]) =>
-            target.transaction(async (tx) => {
-              const result = await callback(
+          return (callback: Parameters<typeof actual.db.transaction>[0]) => {
+            const guarded = (
+              tx: Parameters<Parameters<typeof actual.db.transaction>[0]>[0],
+            ) =>
+              callback(
                 new Proxy(tx, {
                   get(transaction, property) {
                     if (property === "insert" && mocks.failInsert)
@@ -72,10 +75,24 @@ vi.mock("@greendex/database", async (original) => {
                   },
                 }),
               );
-              if (mocks.failAfterPut && mocks.put.mock.calls.length > 0)
+            if (mocks.failAfterCommit)
+              return target
+                .transaction((tx) => guarded(tx))
+                .then((result) => {
+                  if (mocks.put.mock.calls.length > 0)
+                    throw new Error("commit acknowledged after connection loss");
+                  return result;
+                });
+            return target.transaction(async (tx) => {
+              const result = await guarded(tx);
+              if (mocks.failAfterPut && mocks.put.mock.calls.length > 0) {
+                // One-shot: the compensating refund opens its own transaction.
+                mocks.failAfterPut = false;
                 await tx.execute(sql`select 1 / 0`);
+              }
               return result;
             });
+          };
         if (key === "execute")
           return ownedCleanup(mocks.cleanupExecutor ?? target, [partner, other])
             .execute;
@@ -90,7 +107,10 @@ import { linkDocument } from "@/features/claims/procedures/costs";
 import { uploadProofDocument } from "@/features/claims/procedures/documents";
 import { list } from "@/features/claims/procedures/documents";
 import { submit } from "@/features/claims/procedures/submission";
-import { DAILY_UPLOAD_BYTES } from "@/features/quotas/procedures/counters";
+import {
+  DAILY_UPLOAD_BYTES,
+  refundUploadBytes,
+} from "@/features/quotas/procedures/counters";
 
 const prefix = `upload-quota-${randomUUID()}`;
 const actorId = `${prefix}-actor`;
@@ -180,6 +200,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   mocks.failInsert = false;
   mocks.failAfterPut = false;
+  mocks.failAfterCommit = false;
   mocks.delete.mockReset().mockResolvedValue(undefined);
   mocks.put.mockReset().mockResolvedValue(undefined);
   mocks.session.mockResolvedValue({
@@ -288,13 +309,14 @@ describe("Proof upload Organization daily consumption", () => {
     expect((await quotaRows())[0].used).toBe(524288000n);
     expect(mocks.put).toHaveBeenCalledTimes(1);
   });
-  it("keeps the committed usage but removes the document after storage failure", async () => {
+  it("refunds the reservation and removes the document after storage failure", async () => {
+    await seed(4);
     mocks.put.mockRejectedValueOnce(new Error("storage unavailable"));
     await expect(upload()).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       data: { reason: "PROOF_UPLOAD_FAILED" },
     });
-    expect((await quotaRows())[0].used).toBe(6n);
+    expect((await quotaRows())[0].used).toBe(4n);
     expect(
       await db
         .select()
@@ -304,11 +326,12 @@ describe("Proof upload Organization daily consumption", () => {
     expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
   });
   it("removes the stored object if database finalization rolls back after PUT", async () => {
+    await seed(4);
     mocks.failAfterPut = true;
     await expect(upload()).rejects.toMatchObject({ cause: { code: "22012" } });
     expect(mocks.put).toHaveBeenCalledOnce();
     expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
-    expect((await quotaRows())[0].used).toBe(6n);
+    expect((await quotaRows())[0].used).toBe(4n);
     expect(
       await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
     ).toEqual([]);
@@ -370,6 +393,7 @@ describe("Proof upload Organization daily consumption", () => {
       },
     ]);
     expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
+    expect((await quotaRows())[0].used).toBe(0n);
     expect(
       await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
     ).toEqual([]);
@@ -418,7 +442,7 @@ describe("Proof upload Organization daily consumption", () => {
       await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
     ).toHaveLength(25);
     expect(mocks.delete).toHaveBeenCalledOnce();
-    expect((await quotaRows())[0].used).toBe(12n);
+    expect((await quotaRows())[0].used).toBe(6n);
   });
   it("never exposes a pending proof to concurrent linking and submission when storage fails", async () => {
     const client = createRouterClient(
@@ -485,11 +509,11 @@ describe("Proof upload Organization daily consumption", () => {
         .status,
     ).toBe("in_preparation");
   });
-  it("removes the stored file and retains attempted bytes when document insertion fails", async () => {
+  it("refunds the reserved bytes when document insertion fails", async () => {
     await seed(0);
     mocks.failInsert = true;
     await expect(upload()).rejects.toMatchObject({ cause: { code: "22012" } });
-    expect((await quotaRows())[0].used).toBe(6n);
+    expect((await quotaRows())[0].used).toBe(0n);
     expect(
       await db
         .select()
@@ -498,6 +522,46 @@ describe("Proof upload Organization daily consumption", () => {
     ).toEqual([]);
     expect(mocks.put).toHaveBeenCalledOnce();
     expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
+  });
+  it("keeps the charge when an ambiguous commit leaves the document row behind", async () => {
+    mocks.failAfterCommit = true;
+    await expect(upload()).rejects.toThrow(
+      "commit acknowledged after connection loss",
+    );
+    expect(mocks.put).toHaveBeenCalledOnce();
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(
+      await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
+    ).toHaveLength(1);
+    expect((await quotaRows())[0].used).toBe(6n);
+  });
+  it("does not refund into a rolled-over UTC window", async () => {
+    const start = new Date(Math.floor(Date.now() / 86400000) * 86400000);
+    await seed(6);
+    await db.transaction((tx) =>
+      refundUploadBytes(tx, {
+        partnerOrganizationId: partner,
+        bytes: 6,
+        windowStart: new Date(start.getTime() - 86400000),
+      }),
+    );
+    expect((await quotaRows())[0].used).toBe(6n);
+  });
+  it("keeps usage at zero under concurrent refunds", async () => {
+    const start = new Date(Math.floor(Date.now() / 86400000) * 86400000);
+    await seed(6);
+    await Promise.all(
+      Array.from({ length: 6 }, () =>
+        db.transaction((tx) =>
+          refundUploadBytes(tx, {
+            partnerOrganizationId: partner,
+            bytes: 6,
+            windowStart: start,
+          }),
+        ),
+      ),
+    );
+    expect((await quotaRows())[0].used).toBe(0n);
   });
   it("returns a safe HTTP 429 body with no usage or principal identifiers", async () => {
     await seed(DAILY_UPLOAD_BYTES);
