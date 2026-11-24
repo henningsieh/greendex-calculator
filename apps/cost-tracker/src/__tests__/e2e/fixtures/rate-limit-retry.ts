@@ -56,7 +56,7 @@ export async function postSignInWithRateLimitRetry(
       continue;
     }
 
-    if (response.ok()) {
+    if (status >= 200 && status < 300) {
       const { cookies } = await request.storageState();
       if (!cookies.some(({ name }) => name.includes("session_token"))) {
         const body = await response.text().catch(() => "");
