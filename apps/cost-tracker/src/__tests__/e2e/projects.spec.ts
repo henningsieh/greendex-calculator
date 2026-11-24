@@ -479,8 +479,17 @@ test.describe("Cost Tracker Project production path", () => {
     await page.keyboard.press("Home");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
-    await page.keyboard.type("X");
     const edited = `${distinctive.slice(0, 2)}X${distinctive.slice(2)}`;
+    // Wait for the list request the edit triggers, not only the URL write.
+    const editedResponse = page.waitForResponse(
+      (response) =>
+        isRPCRequest(response.url()) &&
+        (response.request().postData() ?? "").includes(
+          `"search":"${edited.toLowerCase()}"`,
+        ),
+    );
+    await page.keyboard.type("X");
+    await editedResponse;
     expect(
       await search.evaluate((element: HTMLInputElement) => ({
         focused: document.activeElement === element,
@@ -568,22 +577,22 @@ test.describe("Cost Tracker Project production path", () => {
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await page.goto("/projects?search=unmatched-425");
-    await expect(
-      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
-    ).toBeVisible();
-    await page.getByTestId("project-search").click();
-    await page.keyboard.type("x");
+    const search = page.getByTestId("project-search");
+    await search.click();
+    // Commit one search so its pushState creates a same-document history entry.
+    await page.keyboard.type("unmatched-425");
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("search") === "unmatched-425",
+    );
 
+    // A pending edit must not survive the popstate.
+    await page.keyboard.type("x");
     await page.goBack();
     await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
     await page.waitForTimeout(800);
 
     await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
-    await expect(
-      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
-    ).toBeVisible();
-    await expect(page.getByTestId("project-search")).toHaveValue("");
+    await expect(search).toHaveValue("");
   });
 
   test("renders protected Project routes through the Cost Tracker router and refreshes Partnerships", async ({
