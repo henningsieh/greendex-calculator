@@ -515,7 +515,7 @@ export function ResolvedProjectListResults({
               }
             >
               <ArrowDownUpIcon data-icon="inline-start" />
-              <span className="hidden @lg/content:inline">{t("sort")}</span>
+              <span className="sr-only @lg/content:not-sr-only">{t("sort")}</span>
               <span className="ml-1 rounded-sm border border-border bg-muted px-1 py-0.5 font-mono tabular-nums">
                 {sorting.length}
               </span>
@@ -691,7 +691,9 @@ export function ResolvedProjectListResults({
               }
             >
               <Columns3Icon data-icon="inline-start" />
-              <span className="hidden @lg/content:inline">{t("columns")}</span>
+              <span className="sr-only @lg/content:not-sr-only">
+                {t("columns")}
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
@@ -735,7 +737,9 @@ export function ResolvedProjectListResults({
               aria-hidden="true"
               className={isFetching ? "motion-safe:animate-spin" : undefined}
             />
-            <span className="hidden @lg/content:inline">{t("refresh")}</span>
+            <span className="sr-only @lg/content:not-sr-only">
+              {t("refresh")}
+            </span>
           </Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
