@@ -201,12 +201,14 @@ export function ProjectListMetrics({
 }
 
 export function ResolvedProjectListResults({
+  onClearFilters,
   preference,
   scope,
   state,
   urlState,
   setUrlState,
 }: {
+  onClearFilters: () => void;
   preference: { accountKey: string; visibility: ProjectVisibility };
   scope: "hosted" | "partner";
   state: ProjectListState;
@@ -463,16 +465,8 @@ export function ResolvedProjectListResults({
       <span>{t("noMatch")}</span>
       {hasActiveFilters && (
         <Button
-          onClick={() =>
-            void setUrlState({
-              cursor: null,
-              dateFrom: null,
-              dateTo: null,
-              partnerOrganizationIds: null,
-              search: null,
-              status: null,
-            })
-          }
+          data-testid="project-clear-filters"
+          onClick={onClearFilters}
           size="sm"
           type="button"
           variant="outline"

@@ -66,9 +66,16 @@ describe("entity picker procedures", () => {
       { id: partner, name: "Partner" },
     ]);
     expect(await client.organizations.search({ search: "%_" })).toEqual([]);
-    await expect(
-      client.organizations.search({ search: "p" }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // One character is accepted and matches; the directory cap still applies.
+    const oneCharacterOrganizations = await client.organizations.search({
+      search: "p",
+    });
+    expect(oneCharacterOrganizations.length).toBeGreaterThan(0);
+    expect(
+      oneCharacterOrganizations.every(({ id, name }) =>
+        `${id} ${name}`.toLowerCase().includes("p"),
+      ),
+    ).toBe(true);
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await expect(
       client.organizations.search({ search: "Part" }),
@@ -117,7 +124,7 @@ describe("entity picker procedures", () => {
     ).toBe(true);
   });
 
-  it("searches only owned Organizations by name or ID and enforces min 2", async () => {
+  it("searches only owned Organizations by name or ID from one character", async () => {
     expect(await client.organizations.listMine({ search: partner })).toEqual([
       { id: partner, name: "Partner" },
     ]);
@@ -126,9 +133,9 @@ describe("entity picker procedures", () => {
     ]);
     expect(await client.organizations.listMine({ search: foreign })).toEqual([]);
     expect(await client.organizations.listMine({ search: "%_" })).toEqual([]);
-    await expect(
-      client.organizations.listMine({ search: "p" }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await client.organizations.listMine({ search: "p" })).toEqual(
+      expect.arrayContaining([{ id: partner, name: "Partner" }]),
+    );
     authMocks.getSession.mockResolvedValue(null);
     await expect(
       client.organizations.listMine({ search: partner }),
@@ -286,9 +293,8 @@ describe("entity picker procedures", () => {
     session(host, scenario.unassignedCoordinatorUserId);
     expect(await client.projects.searchHosted({ search: "" })).toEqual([]);
     session(host, scenario.coordinatorUserId);
-    await expect(
-      client.projects.searchHosted({ search: "x" }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // A single character reaches the scoped query instead of being rejected.
+    expect(await client.projects.searchHosted({ search: "x" })).toEqual([]);
     session(foreign);
     await expect(
       client.projects.searchHosted({ search: "Picker " }),

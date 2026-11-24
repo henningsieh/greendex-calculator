@@ -1061,6 +1061,19 @@ describe("projects procedures", () => {
         partnerOrganizationIds: [secondPartnerId, unrelatedId],
       });
       expect(largerPage.metrics).toEqual(result.metrics);
+
+      // Filtering starts at the first non-empty character, matching the
+      // client normalization that no longer drops short terms.
+      const oneCharacter = await client.projects.listHosted({
+        pageSize: 25,
+        search: "a",
+      });
+      expect(oneCharacter.rows.map((project) => project.id)).toContain(alphaId);
+      const twoCharacters = await client.projects.listHosted({
+        pageSize: 25,
+        search: "al",
+      });
+      expect(twoCharacters.rows.map((project) => project.id)).toContain(alphaId);
     });
 
     it("rejects malformed list input", async () => {
@@ -1068,7 +1081,10 @@ describe("projects procedures", () => {
         client.projects.listHosted({ pageSize: 10 as never }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
-        client.projects.listHosted({ pageSize: 25, search: "ab" }),
+        client.projects.listHosted({
+          pageSize: 25,
+          search: "x".repeat(121),
+        }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
         client.projects.listHosted({

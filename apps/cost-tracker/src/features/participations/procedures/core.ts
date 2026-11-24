@@ -270,7 +270,7 @@ export function createParticipationProcedures(
     });
 
   const searchOnboarded = authorized
-    .input(scopeInput.extend({ search: z.string().trim().min(2).max(128) }))
+    .input(scopeInput.extend({ search: z.string().trim().min(1).max(128) }))
     .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
     .meta(
       openapi({

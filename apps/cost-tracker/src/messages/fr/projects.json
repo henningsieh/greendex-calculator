@@ -61,7 +61,7 @@
       "schedule": "Calendrier",
       "viewParticipants": "Participations",
       "name": "Nom du projet",
-      "searchPlaceholder": "Saisissez au moins 3 caractères",
+      "searchPlaceholder": "Rechercher des projets",
       "sort": "Trier",
       "sortStartEarliest": "Date de début, la plus ancienne",
       "sortStartLatest": "Date de début, la plus récente",

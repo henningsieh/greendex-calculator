@@ -16,8 +16,6 @@ import {
 } from "@/features/claims/queue-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
-const MINIMUM_SEARCH_LENGTH = 3;
-
 export const claimQueueParsers = {
   search: parseAsString.withDefault(""),
   partnerOrganizationId: parseAsString,
@@ -44,7 +42,8 @@ export function normalizeClaimQueueState(
 ): ClaimQueueState {
   const search = state.search.trim().toLocaleLowerCase("en");
   return {
-    search: search.length >= MINIMUM_SEARCH_LENGTH ? search : undefined,
+    // Any non-empty term filters; whitespace-only resets the constraint.
+    search: search || undefined,
     partnerOrganizationId: state.partnerOrganizationId?.trim() || undefined,
     sort: state.sort,
     cursor: state.cursor || undefined,

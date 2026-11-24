@@ -16,7 +16,7 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,7 @@ import {
   type ClaimQueuePageSize,
   type ClaimQueueSort,
 } from "@/features/claims/queue-schemas";
+import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -150,41 +151,22 @@ function SortHeader({
 }
 
 function ClaimQueueFilters({
+  onSearchChange,
   partnerOptions,
+  searchDraft,
   state,
   setUrlState,
-  urlState,
 }: {
+  onSearchChange: (search: string) => void;
   partnerOptions: { id: string; name: string }[];
+  searchDraft: string;
   state: ClaimQueueState;
   setUrlState: ClaimQueueQueryState[1];
-  urlState: ClaimQueueQueryState[0];
 }) {
   const t = useTranslations("claims.queue");
-  const searchTimeout = useRef<number>(undefined);
-  const pushedSearch = useRef(urlState.search);
-  const [searchDraft, setSearchDraft] = useState(urlState.search);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
-
-  useEffect(() => {
-    if (urlState.search !== pushedSearch.current) {
-      pushedSearch.current = urlState.search;
-      setSearchDraft(urlState.search);
-    }
-  }, [urlState.search]);
-
   const hiddenFilterCount = Number(Boolean(state.partnerOrganizationId));
-
-  const updateSearch = (search: string) => {
-    setSearchDraft(search);
-    window.clearTimeout(searchTimeout.current);
-    searchTimeout.current = window.setTimeout(() => {
-      pushedSearch.current = search;
-      void setUrlState({ cursor: null, search });
-    }, 300);
-  };
 
   const pageSizeItems = CLAIM_QUEUE_PAGE_SIZES.map((value) => ({
     value: String(value),
@@ -206,7 +188,7 @@ function ClaimQueueFilters({
               className="pl-9"
               id="claim-queue-search"
               data-testid="claim-queue-search"
-              onChange={(event) => updateSearch(event.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder={t("searchPlaceholder")}
               value={searchDraft}
             />
@@ -361,6 +343,14 @@ export function ClaimReviewQueue() {
     shallow: true,
   });
   const state = normalizeClaimQueueState(urlState);
+  const {
+    draft: searchDraft,
+    onChange: updateSearch,
+    resetDraft,
+  } = useDebouncedSearchDraft({
+    urlSearch: urlState.search,
+    push: (search) => void setUrlState({ cursor: null, search }),
+  });
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -408,13 +398,16 @@ export function ClaimReviewQueue() {
       {hasActiveFilters && (
         <Button
           data-testid="claim-queue-clear-filters"
-          onClick={() =>
+          onClick={() => {
+            // The URL search may already be empty; cancel the pending draft
+            // here so Clear filters cannot be undone by the debounce.
+            resetDraft("");
             void setUrlState({
               cursor: null,
               partnerOrganizationId: null,
               search: null,
-            })
-          }
+            });
+          }}
           size="sm"
           type="button"
           variant="outline"
@@ -448,10 +441,11 @@ export function ClaimReviewQueue() {
       </div>
 
       <ClaimQueueFilters
+        onSearchChange={updateSearch}
         partnerOptions={data.partnerOptions}
+        searchDraft={searchDraft}
         setUrlState={setUrlState}
         state={state}
-        urlState={urlState}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">

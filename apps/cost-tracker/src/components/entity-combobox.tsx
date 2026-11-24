@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEARCH_DEBOUNCE_MS } from "@/hooks/use-debounced-search-draft";
 
 interface Entity {
   id: string;
@@ -54,7 +55,7 @@ export function EntityCombobox<T extends Entity>({
   const searchByLabel = searchBy ?? t("combobox.defaultSearchBy");
 
   useEffect(() => {
-    if (!open || !search || term.length < 2) return;
+    if (!open || !search || !term) return;
     let active = true;
     const timer = setTimeout(async () => {
       try {
@@ -70,7 +71,7 @@ export function EntityCombobox<T extends Entity>({
           setLoading(false);
         }
       }
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
     return () => {
       active = false;
       clearTimeout(timer);
@@ -81,7 +82,7 @@ export function EntityCombobox<T extends Entity>({
     `${item.name} ${item.id}`.toLowerCase().includes(term.toLowerCase()),
   );
   const options =
-    term.length >= 2 && search
+    term && search
       ? results
       : search
         ? filteredPreload.slice(0, 20)
@@ -130,10 +131,15 @@ export function EntityCombobox<T extends Entity>({
             })}
             value={query}
             onValueChange={(next) => {
+              const nextTerm = next.trim();
               setQuery(next);
+              // The search effect keys on the trimmed term, so a whitespace-only
+              // edit would otherwise blank the settled results and leave the
+              // loading state on for a request that never starts.
+              if (nextTerm === term) return;
               setResults([]);
               setError(false);
-              setLoading(next.trim().length >= 2 && !!search);
+              setLoading(nextTerm.length > 0 && !!search);
             }}
           />
           <CommandList>
