@@ -132,7 +132,16 @@ export function CreateProjectDialog() {
       <DialogContent
         closeLabel={t("close")}
         data-testid="create-project-dialog"
-        initialFocus={false}
+        // Focus the dialog itself, not the first field: the Name input must not
+        // grab focus on open, while keyboard and screen-reader users still land
+        // inside the dialog. Touch keeps Base UI's own behaviour.
+        initialFocus={(openType) =>
+          openType === "touch"
+            ? true
+            : document.querySelector<HTMLElement>(
+                '[data-testid="create-project-dialog"]',
+              )
+        }
         variant="form"
       >
         <DialogHeader variant="form">
