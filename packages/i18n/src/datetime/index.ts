@@ -7,4 +7,10 @@ export {
   type RelativeTimeUnit,
 } from "./format";
 export { dateFormats, type DateFormatName } from "./formats";
-export { fromDateInputValue, spanInDays, toDateInputValue } from "./input";
+export {
+  fromCalendarDate,
+  fromDateInputValue,
+  spanInDays,
+  toCalendarDate,
+  toDateInputValue,
+} from "./input";

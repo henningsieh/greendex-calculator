@@ -1,11 +1,7 @@
 "use client";
 
-import { useLocale, useTranslations } from "@greendex/i18n/client";
-import {
-  fromDateInputValue,
-  spanInDays,
-  toDateInputValue,
-} from "@greendex/i18n/datetime";
+import { useTranslations } from "@greendex/i18n/client";
+import { spanInDays } from "@greendex/i18n/datetime";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarRangeIcon, LoaderCircleIcon } from "lucide-react";
@@ -14,6 +10,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { projectPath } from "@/app/paths";
+import { DatePicker } from "@/components/date-picker";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Button } from "@/components/ui/button";
@@ -54,7 +51,6 @@ export function CreateProjectDialog() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const t = useTranslations("projects.create");
-  const locale = useLocale();
   const dateFormat = useDateFormat();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<React.ReactNode>(null);
@@ -266,7 +262,7 @@ export function CreateProjectDialog() {
               </div>
 
               <Separator />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={!!errors.startDate}>
                   <FieldLabel htmlFor="new-project-start">
                     <span>{t("startDate")}</span>
@@ -278,7 +274,7 @@ export function CreateProjectDialog() {
                     control={control}
                     name="startDate"
                     render={({ field, fieldState }) => (
-                      <Input
+                      <DatePicker
                         ref={field.ref}
                         aria-describedby={
                           fieldState.error ? "new-project-start-error" : undefined
@@ -286,14 +282,10 @@ export function CreateProjectDialog() {
                         aria-invalid={fieldState.invalid}
                         aria-required="true"
                         data-testid="new-project-start"
+                        disabled={isSubmitting}
                         id="new-project-start"
-                        lang={locale}
-                        onBlur={field.onBlur}
-                        onChange={(event) =>
-                          field.onChange(fromDateInputValue(event.target.value))
-                        }
-                        type="date"
-                        value={toDateInputValue(field.value)}
+                        onChange={field.onChange}
+                        value={field.value}
                       />
                     )}
                   />
@@ -316,7 +308,7 @@ export function CreateProjectDialog() {
                     control={control}
                     name="endDate"
                     render={({ field, fieldState }) => (
-                      <Input
+                      <DatePicker
                         ref={field.ref}
                         aria-describedby={
                           fieldState.error ? "new-project-end-error" : undefined
@@ -324,15 +316,11 @@ export function CreateProjectDialog() {
                         aria-invalid={fieldState.invalid}
                         aria-required="true"
                         data-testid="new-project-end"
+                        disabled={isSubmitting}
                         id="new-project-end"
-                        lang={locale}
-                        min={toDateInputValue(startDate) || undefined}
-                        onBlur={field.onBlur}
-                        onChange={(event) =>
-                          field.onChange(fromDateInputValue(event.target.value))
-                        }
-                        type="date"
-                        value={toDateInputValue(field.value)}
+                        minDate={startDate}
+                        onChange={field.onChange}
+                        value={field.value}
                       />
                     )}
                   />

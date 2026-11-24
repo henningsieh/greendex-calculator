@@ -269,6 +269,13 @@
       "claimReview": "Antragsprüfung",
       "hostedProject": "Gehostetes Projekt",
       "partnerProject": "Partnerprojekt"
+    },
+    "datePicker": {
+      "placeholder": "Datum wählen",
+      "previousMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat",
+      "calendar": "Kalender",
+      "clear": "Zurücksetzen"
     }
   }
 }

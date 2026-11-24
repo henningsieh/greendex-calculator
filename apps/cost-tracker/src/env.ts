@@ -10,7 +10,6 @@ export const env = createEnv({
   server: CostTrackerServerEnvironmentSchema.shape,
   client: CostTrackerClientEnvironmentSchema.shape,
   runtimeEnv: {
-    LOCAL_E2E_AUTH: process.env.LOCAL_E2E_AUTH,
     GREENDEX_LOCAL_TEST_SERVER: process.env.GREENDEX_LOCAL_TEST_SERVER,
     DATABASE_URL: process.env.DATABASE_URL,
     TEST_RUN_ID: process.env.TEST_RUN_ID,

@@ -269,6 +269,13 @@
       "claimReview": "Vérification de la demande",
       "hostedProject": "Projet hébergé",
       "partnerProject": "Projet partenaire"
+    },
+    "datePicker": {
+      "placeholder": "Choisir une date",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "calendar": "Calendrier",
+      "clear": "Effacer"
     }
   }
 }

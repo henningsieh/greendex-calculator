@@ -269,6 +269,13 @@
       "claimReview": "Claim review",
       "hostedProject": "Hosted Project",
       "partnerProject": "Partner Project"
+    },
+    "datePicker": {
+      "placeholder": "Pick a date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "calendar": "Calendar",
+      "clear": "Clear"
     }
   }
 }

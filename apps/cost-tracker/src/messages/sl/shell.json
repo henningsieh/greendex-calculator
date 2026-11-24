@@ -269,6 +269,13 @@
       "claimReview": "Pregled zahtevka",
       "hostedProject": "Gostovani projekt",
       "partnerProject": "Partnerski projekt"
+    },
+    "datePicker": {
+      "placeholder": "Izberite datum",
+      "previousMonth": "Prejšnji mesec",
+      "nextMonth": "Naslednji mesec",
+      "calendar": "Koledar",
+      "clear": "Počisti"
     }
   }
 }

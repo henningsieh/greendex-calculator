@@ -54,6 +54,7 @@
     "next-themes": "catalog:",
     "nuqs": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "^10.0.2",
     "react-dom": "catalog:",
     "react-error-boundary": "catalog:",
     "react-hook-form": "catalog:",

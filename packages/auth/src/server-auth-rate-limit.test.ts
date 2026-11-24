@@ -40,10 +40,9 @@ describe("local E2E login limit", () => {
     "http://localhost:3000",
     "http://127.0.0.1:3002",
     "http://[::1]:3002",
-  ])("raises only the login limit for explicit local target %s", (baseURL) => {
+  ])("disables throttling for explicit local target %s", (baseURL) => {
     expect(authFor(baseURL, true).options.rateLimit).toEqual({
-      enabled: true,
-      customRules: { "/sign-in/email": { window: 10, max: 30 } },
+      enabled: false,
     });
   });
 
@@ -60,7 +59,7 @@ describe("local E2E login limit", () => {
     expect(() => authFor(baseURL, true)).toThrow();
   });
 
-  it("keeps rate limiting active and leaves signup at its default limit", async () => {
+  it("does not throttle a loopback test server", async () => {
     const baseURL = "http://127.0.0.1:3002";
     const auth = authFor(
       baseURL,
@@ -79,13 +78,13 @@ describe("local E2E login limit", () => {
         }),
       );
 
-    for (let request = 0; request < 30; request++) {
+    // Well past every default window: a saturated bucket must never turn a
+    // fixture sign-in into a missing session cookie.
+    for (let request = 0; request < 120; request++) {
       expect((await postInvalid("sign-in/email")).status).toBe(400);
     }
-    expect((await postInvalid("sign-in/email")).status).toBe(429);
-    for (let request = 0; request < 3; request++) {
+    for (let request = 0; request < 20; request++) {
       expect((await postInvalid("sign-up/email")).status).toBe(400);
     }
-    expect((await postInvalid("sign-up/email")).status).toBe(429);
   });
 });

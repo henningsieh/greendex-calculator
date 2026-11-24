@@ -17,7 +17,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@greendex/config": "workspace:*"
+    "@greendex/config": "workspace:*",
+    "temporal-polyfill": "^1.0.8"
   },
   "devDependencies": {
     "@types/react": "catalog:",

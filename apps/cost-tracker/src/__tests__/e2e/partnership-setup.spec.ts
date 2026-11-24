@@ -35,6 +35,7 @@ import {
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
 import { selectCountry } from "./fixtures/country-selector";
+import { pickDate } from "./fixtures/date-picker";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { projectLink, staffRow } from "./fixtures/journey-locators";
@@ -229,8 +230,8 @@ async function createProject(page: Page, name: string) {
   await page.getByTestId("new-project").click();
   const dialog = page.getByTestId("create-project-dialog");
   await dialog.locator("#new-project-name").fill(name);
-  await dialog.locator("#new-project-start").fill("2027-04-01");
-  await dialog.locator("#new-project-end").fill("2027-04-03");
+  await pickDate(page, "new-project-start", "2027-04-01");
+  await pickDate(page, "new-project-end", "2027-04-03");
   await dialog.locator("#new-project-location").fill("Berlin");
   await selectCountry(dialog.locator("#new-project-country"), "DE");
   await dialog.getByTestId("create-project").click();
@@ -935,6 +936,25 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         )
         .map(({ id }) => id),
     );
+    // Own fixture: this test must not depend on a Project created by an earlier
+    // test, so a single-test run (or --grep) stays meaningful.
+    const [hostingOrganization] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, fixture.organizationName));
+    if (!hostingOrganization)
+      throw new Error("Hosting fixture Organization is missing");
+    const projectName = `Existing ownership ${randomUUID()}`;
+    await db.insert(projectsTable).values({
+      id: randomUUID(),
+      organizationId: hostingOrganization.id,
+      name: projectName,
+      startDate: new Date("2026-01-01T00:00:00.000Z"),
+      endDate: new Date("2026-01-02T00:00:00.000Z"),
+      location: "Berlin",
+      country: "DE",
+    });
+    ownedProjectNames.push(projectName);
     const unrelatedId = SEED_IDS.organization.entitySearchOrg55;
     const targetId = SEED_IDS.organization.entitySearchOrg56;
     const targetName = "Owned Search 31";
@@ -951,7 +971,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(member)
       .where(eq(member.userId, SEED_IDS.user.entitySearchActor));
     const url = await issueInSetup(
-      fixture.projectNames[0]!,
+      projectName,
       "un3tvw49u59cn2d2a9rop8dl@example.com",
     );
     const page = await context.newPage();
@@ -977,7 +997,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("inspect-setup")).toBeEnabled();
     expect(bindingAttempts).toBe(1);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
+    expect(await partnershipCount(projectName, targetName)).toBe(0);
     await db
       .update(setupLinks)
       .set({ enabled: true })
@@ -994,13 +1014,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       actingSessionSchema.parse(await unchanged.json()).session
         .activeOrganizationId,
     ).toBe(unrelatedId);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
-    await selectAndOpenPartnerProject(
-      page,
-      fixture.projectNames[0]!,
-      targetName,
-      "select",
-    );
+    expect(await partnershipCount(projectName, targetName)).toBe(1);
+    await selectAndOpenPartnerProject(page, projectName, targetName, "select");
     const acting = await context.request.get("/api/auth/get-session");
     expect(
       actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,

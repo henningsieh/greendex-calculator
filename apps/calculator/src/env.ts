@@ -70,7 +70,6 @@ export const env = createEnv({
     NEXT_PUBLIC_SOCKET_URL: z.url(),
   },
   runtimeEnv: {
-    LOCAL_E2E_AUTH: process.env.LOCAL_E2E_AUTH,
     GREENDEX_LOCAL_TEST_SERVER: process.env.GREENDEX_LOCAL_TEST_SERVER,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,

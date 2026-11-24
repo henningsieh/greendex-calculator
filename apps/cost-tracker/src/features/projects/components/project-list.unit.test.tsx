@@ -110,6 +110,18 @@ function renderList(withCreation = false) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent: () => false,
+      }) satisfies Partial<MediaQueryList>,
+  );
   mocks.canCreate = false;
   mocks.state.scope = null;
   mocks.state.search = "";
@@ -276,9 +288,8 @@ describe("Project list", { timeout: 20_000 }, () => {
     renderList();
     await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
 
-    fireEvent.change(screen.getByTestId("project-date-from"), {
-      target: { value: "" },
-    });
+    await userEvent.click(screen.getByTestId("project-date-from"));
+    await userEvent.click(screen.getByTestId("project-date-from-clear"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
       dateFrom: null,
@@ -287,9 +298,8 @@ describe("Project list", { timeout: 20_000 }, () => {
       search: "",
     });
 
-    fireEvent.change(screen.getByTestId("project-date-to"), {
-      target: { value: "" },
-    });
+    await userEvent.click(screen.getByTestId("project-date-to"));
+    await userEvent.click(screen.getByTestId("project-date-to-clear"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
       dateFrom: mocks.state.dateFrom,
