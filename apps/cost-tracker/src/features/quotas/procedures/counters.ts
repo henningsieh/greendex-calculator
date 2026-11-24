@@ -19,8 +19,15 @@ type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Principal =
   | { kind: "upload_bytes"; organizationId: string; userKey: "" }
   | { kind: "listing_calls"; organizationId: string; userKey: string };
+export type QuotaConsumption =
+  | { outcome: "allowed"; windowStart: Date }
+  | { outcome: "exhausted" };
 
-async function consume(tx: Transaction, principal: Principal, amount: number) {
+async function consume(
+  tx: Transaction,
+  principal: Principal,
+  amount: number,
+): Promise<QuotaConsumption> {
   const key = and(
     eq(counters.kind, principal.kind),
     eq(counters.organizationId, principal.organizationId),
@@ -63,9 +70,17 @@ async function consume(tx: Transaction, principal: Principal, amount: number) {
     from candidate
     where kind = ${principal.kind} and organization_id = ${principal.organizationId} and user_key = ${principal.userKey}
       and (candidate.start > window_start or used <= ${limit - amount})
-    returning used
+    returning used, window_start
   `);
-  return result.rows.length > 0 ? "allowed" : "exhausted";
+  const row = result.rows[0] as { window_start: Date | string } | undefined;
+  if (!row) return { outcome: "exhausted" };
+  return {
+    outcome: "allowed",
+    windowStart:
+      row.window_start instanceof Date
+        ? row.window_start
+        : new Date(String(row.window_start)),
+  };
 }
 
 export function consumeUploadBytes(
@@ -81,6 +96,24 @@ export function consumeUploadBytes(
     },
     input.bytes,
   );
+}
+
+/**
+ * #387: reverse an upload reservation after publication definitively failed.
+ * The window guard makes a rolled-over UTC day a no-op, and GREATEST keeps
+ * concurrent refunds from driving usage negative.
+ */
+export async function refundUploadBytes(
+  tx: Transaction,
+  input: { partnerOrganizationId: string; bytes: number; windowStart: Date },
+) {
+  await tx.execute(sql`
+    update ${counters} set used = greatest(0, used - ${input.bytes})
+    where kind = 'upload_bytes'
+      and organization_id = ${input.partnerOrganizationId}
+      and user_key = ''
+      and window_start = ${input.windowStart}
+  `);
 }
 
 export async function enforceListingLimit(
@@ -99,7 +132,8 @@ export async function enforceListingLimit(
     ),
   );
   await cleanupQuotasBestEffort();
-  if (outcome === "exhausted") throw createSituationErrors(errors).rateLimited();
+  if (outcome.outcome === "exhausted")
+    throw createSituationErrors(errors).rateLimited();
 }
 
 export async function deleteExpiredQuotaRows(

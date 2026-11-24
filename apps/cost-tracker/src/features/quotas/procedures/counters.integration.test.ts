@@ -99,10 +99,12 @@ async function seed(
     ),
   });
 }
-const upload = (bytes: number) =>
-  db.transaction((tx) =>
-    consumeUploadBytes(tx, { partnerOrganizationId: organizationId, bytes }),
-  );
+const upload = async (bytes: number) =>
+  (
+    await db.transaction((tx) =>
+      consumeUploadBytes(tx, { partnerOrganizationId: organizationId, bytes }),
+    )
+  ).outcome;
 const rows = () => db.select().from(counters).where(owned);
 const listing = () => enforceListingLimit(principal, {});
 
@@ -234,7 +236,7 @@ describe("PostgreSQL principal quotas", () => {
             partnerOrganizationId: organizationId,
             bytes: 6,
           }),
-        ).toBe("allowed");
+        ).toMatchObject({ outcome: "allowed" });
         throw new Error("simulated document failure");
       }),
     ).rejects.toThrow("simulated document failure");
@@ -312,7 +314,7 @@ describe("PostgreSQL principal quotas", () => {
       release();
     }
     await blocker;
-    expect(await waiter).toBe("allowed");
+    expect(await waiter).toMatchObject({ outcome: "allowed" });
     const [row] = await rows();
     expect(row.used).toBe(6n);
     expect(row.windowStart.toISOString()).toBe("2026-11-04T00:00:00.000Z");
@@ -324,13 +326,18 @@ describe("PostgreSQL principal quotas", () => {
       DAILY_UPLOAD_BYTES,
       new Date("2026-11-03T00:00:00Z"),
     );
-    const consumeAt = (instant: string) =>
-      db.transaction((tx) =>
-        consumeUploadBytes(
-          controlledClock(tx, () => instant),
-          { partnerOrganizationId: organizationId, bytes: 6 },
-        ),
-      );
+    const consumeAt = async (instant: string) =>
+      (
+        await db.transaction((tx) =>
+          consumeUploadBytes(
+            controlledClock(tx, () => instant),
+            {
+              partnerOrganizationId: organizationId,
+              bytes: 6,
+            },
+          ),
+        )
+      ).outcome;
     expect(await consumeAt("2026-11-03T23:59:59.999Z")).toBe("exhausted");
     expect(await consumeAt("2026-11-04T00:00:00Z")).toBe("allowed");
     expect(await consumeAt("2026-11-03T23:59:59Z")).toBe("allowed");
@@ -460,7 +467,7 @@ describe("PostgreSQL principal quotas", () => {
         { partnerOrganizationId: organizationId, bytes: 6 },
       ),
     );
-    expect(result).toBe("allowed");
+    expect(result.outcome).toBe("allowed");
     expect(attempts).toBe(2);
     expect((await rows())[0].used).toBe(6n);
   });
