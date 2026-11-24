@@ -1,7 +1,13 @@
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+
 // jsdom ships no `window.matchMedia`. Components that read the viewport
-// (`useIsMobile`, the sidebar, the project dialog) call it during mount, so
-// every jsdom test needs it — a per-file stub only covers the files that
-// remember to add one.
+// (`useIsMobile`, the sidebar, the project dialog) call it during mount, so the
+// stub belongs here rather than in the files that remembered to add one.
+//
+// `.tsx` suites may opt into the node environment (`@vitest-environment node`)
+// and still share this setup file, so the stub is guarded.
 const matchMediaStub = (query: string) =>
   ({
     matches: false,
@@ -12,13 +18,9 @@ const matchMediaStub = (query: string) =>
     dispatchEvent: () => false,
   }) satisfies Partial<MediaQueryList>;
 
-if (!window.matchMedia) {
+if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = matchMediaStub as unknown as typeof window.matchMedia;
 }
-
-import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
