@@ -10,7 +10,7 @@ import { z } from "zod";
 import { OrganizationOptionSchema } from "@/features/organizations/validation-schemas";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
-const searchInput = z.object({ search: z.string().trim().min(2).max(128) });
+const searchInput = z.object({ search: z.string().trim().min(1).max(128) });
 const options = z.array(OrganizationOptionSchema).max(20);
 const OWNED_SEARCH_PAGE_SIZE = 100;
 const partnershipCreation = authorized.use(

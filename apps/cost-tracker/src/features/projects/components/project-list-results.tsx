@@ -463,6 +463,7 @@ export function ResolvedProjectListResults({
       <span>{t("noMatch")}</span>
       {hasActiveFilters && (
         <Button
+          data-testid="project-clear-filters"
           onClick={() =>
             void setUrlState({
               cursor: null,

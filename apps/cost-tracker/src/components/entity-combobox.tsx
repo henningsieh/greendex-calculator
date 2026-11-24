@@ -54,7 +54,7 @@ export function EntityCombobox<T extends Entity>({
   const searchByLabel = searchBy ?? t("combobox.defaultSearchBy");
 
   useEffect(() => {
-    if (!open || !search || term.length < 2) return;
+    if (!open || !search || !term) return;
     let active = true;
     const timer = setTimeout(async () => {
       try {
@@ -81,7 +81,7 @@ export function EntityCombobox<T extends Entity>({
     `${item.name} ${item.id}`.toLowerCase().includes(term.toLowerCase()),
   );
   const options =
-    term.length >= 2 && search
+    term && search
       ? results
       : search
         ? filteredPreload.slice(0, 20)
@@ -133,7 +133,7 @@ export function EntityCombobox<T extends Entity>({
               setQuery(next);
               setResults([]);
               setError(false);
-              setLoading(next.trim().length >= 2 && !!search);
+              setLoading(next.trim().length > 0 && !!search);
             }}
           />
           <CommandList>

@@ -426,6 +426,97 @@ test.describe("Cost Tracker Project production path", () => {
     ).toBeVisible();
   });
 
+  test("filters from the first character and keeps focus, caret and draft through result refreshes", async ({
+    page,
+  }) => {
+    await page.goto("/projects");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const projectLink = page
+      .locator(`a[href$="/projects/${fixture.projectId}"]`)
+      .filter({ visible: true });
+    const search = page.getByTestId("project-search");
+    await search.click();
+
+    // A single character reaches the server; no two-/three-character gate.
+    const oneCharacterRequest = page.waitForRequest(
+      (request) =>
+        isRPCRequest(request.url()) &&
+        (request.postData() ?? "").includes('"search":"q"'),
+    );
+    await page.keyboard.type("q");
+    await oneCharacterRequest;
+    await expect(projectLink).toHaveCount(0);
+
+    await page.keyboard.press("ControlOrMeta+A");
+    await page.keyboard.press("Backspace");
+    const distinctive = fixture.name.slice(-8);
+    for (const [index, character] of [...distinctive].entries()) {
+      await page.keyboard.type(character);
+      await page.waitForTimeout(350);
+      expect(
+        await search.evaluate((element: HTMLInputElement) => ({
+          focused: document.activeElement === element,
+          selectionEnd: element.selectionEnd,
+          selectionStart: element.selectionStart,
+          value: element.value,
+        })),
+      ).toEqual({
+        focused: true,
+        selectionEnd: index + 1,
+        selectionStart: index + 1,
+        value: distinctive.slice(0, index + 1),
+      });
+    }
+    await expect(projectLink).toBeVisible();
+
+    // Edit inside the term: focus and the caret survive the result refresh.
+    await page.keyboard.press("Home");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.type("X");
+    const edited = `${distinctive.slice(0, 2)}X${distinctive.slice(2)}`;
+    expect(
+      await search.evaluate((element: HTMLInputElement) => ({
+        focused: document.activeElement === element,
+        selectionStart: element.selectionStart,
+        value: element.value,
+      })),
+    ).toEqual({ focused: true, selectionStart: 3, value: edited });
+    // The URL keeps the typed case; the query layer lowercases for matching.
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("search") === edited,
+    );
+  });
+
+  test("keeps a cleared search cleared when a debounce is pending", async ({
+    page,
+  }) => {
+    await page.goto(`/projects?search=${encodeURIComponent("unmatched-425")}`);
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const search = page.getByTestId("project-search");
+    await search.click();
+    await page.keyboard.type("x");
+
+    await page
+      .getByTestId("project-clear-filters")
+      .filter({ visible: true })
+      .click();
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await expect(search).toHaveValue("");
+    await expect(
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
+    ).toBeVisible();
+  });
+
   test("renders protected Project routes through the Cost Tracker router and refreshes Partnerships", async ({
     page,
   }) => {

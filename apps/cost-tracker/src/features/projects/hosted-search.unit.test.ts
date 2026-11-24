@@ -9,6 +9,7 @@ it("pins hosted search normalization and limits", () => {
   for (const [input, output] of [
     ["", ""],
     ["  ", ""],
+    [" x ", "x"],
     [" ab ", "ab"],
     ["x".repeat(128), "x".repeat(128)],
   ]) {
@@ -17,7 +18,6 @@ it("pins hosted search normalization and limits", () => {
     ).toEqual({ search: output });
   }
   for (const [input, message] of [
-    [" x ", "Invalid input"],
     ["x".repeat(129), "Too big: expected string to have <=128 characters"],
   ]) {
     const result = HostedProjectSearchInputSchema.safeParse({ search: input });

@@ -13,11 +13,7 @@ const projectColumns = createSelectSchema(projectsTable);
 const organizationColumns = createSelectSchema(organization);
 
 export const HostedProjectSearchInputSchema = z.object({
-  search: z
-    .string()
-    .trim()
-    .max(128)
-    .refine((value) => value.length !== 1),
+  search: z.string().trim().max(128),
 });
 
 export const HostedProjectOptionSchema = projectColumns.pick({
@@ -150,7 +146,6 @@ const ProjectListInputBaseSchema = z
     search: z
       .string()
       .trim()
-      .min(3)
       .max(120)
       .transform((value) => value.toLocaleLowerCase("en"))
       .optional(),

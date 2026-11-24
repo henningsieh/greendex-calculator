@@ -16,7 +16,7 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,7 @@ import {
   type ClaimQueuePageSize,
   type ClaimQueueSort,
 } from "@/features/claims/queue-schemas";
+import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -161,30 +162,14 @@ function ClaimQueueFilters({
   urlState: ClaimQueueQueryState[0];
 }) {
   const t = useTranslations("claims.queue");
-  const searchTimeout = useRef<number>(undefined);
-  const pushedSearch = useRef(urlState.search);
-  const [searchDraft, setSearchDraft] = useState(urlState.search);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
-
-  useEffect(() => {
-    if (urlState.search !== pushedSearch.current) {
-      pushedSearch.current = urlState.search;
-      setSearchDraft(urlState.search);
-    }
-  }, [urlState.search]);
 
   const hiddenFilterCount = Number(Boolean(state.partnerOrganizationId));
 
-  const updateSearch = (search: string) => {
-    setSearchDraft(search);
-    window.clearTimeout(searchTimeout.current);
-    searchTimeout.current = window.setTimeout(() => {
-      pushedSearch.current = search;
-      void setUrlState({ cursor: null, search });
-    }, 300);
-  };
+  const { draft: searchDraft, onChange: updateSearch } = useDebouncedSearchDraft({
+    urlSearch: urlState.search,
+    push: (search) => void setUrlState({ cursor: null, search }),
+  });
 
   const pageSizeItems = CLAIM_QUEUE_PAGE_SIZES.map((value) => ({
     value: String(value),

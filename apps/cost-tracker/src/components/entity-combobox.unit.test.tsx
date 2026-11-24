@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -86,7 +86,7 @@ describe("EntityCombobox", () => {
     expect(screen.getByRole("option")).toHaveAttribute("data-entity-id", "id-24");
   }, 15_000);
 
-  it("preloads names, stores IDs, and searches name or ID after two characters", async () => {
+  it("preloads names, stores IDs, and searches name or ID from the first character", async () => {
     const user = userEvent.setup();
     const search = vi
       .fn()
@@ -105,7 +105,7 @@ describe("EntityCombobox", () => {
     expect(screen.getByRole("option")).toBeTruthy();
     const input = screen.getByTestId("entity-search");
     await user.type(input, "p");
-    expect(search).not.toHaveBeenCalled();
+    await waitFor(() => expect(search).toHaveBeenCalledWith("p"));
     await user.type(input, "artner-123");
     expect(await screen.findByRole("option")).toBeTruthy();
     expect(search).toHaveBeenCalledWith("partner-123");
