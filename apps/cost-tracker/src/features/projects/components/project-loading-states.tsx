@@ -115,7 +115,7 @@ function TableSkeleton({ rows = 6 }: { rows?: number }) {
  */
 function CardsSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid gap-3 @4xl/content:hidden">
+    <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
       {Array.from({ length: count }, (_, index) => (
         <div className="rounded-xl border bg-card px-4 py-3.5" key={index}>
           <div className="flex items-start justify-between gap-3">

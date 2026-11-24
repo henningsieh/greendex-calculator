@@ -843,7 +843,7 @@ export function ResolvedProjectListResults({
       </div>
 
       {/* Below xl: one card per Project. */}
-      <div className="grid gap-3 @4xl/content:hidden">
+      <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
         {rows.length === 0 ? (
           <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
         ) : (

@@ -575,7 +575,7 @@ export function ClaimReviewQueue() {
             </div>
           </div>
 
-          <div className="grid gap-3 @4xl/content:hidden">
+          <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
             {data.rows.map((row) => (
               <article
                 className="rounded-xl border bg-card px-4 py-3.5"
