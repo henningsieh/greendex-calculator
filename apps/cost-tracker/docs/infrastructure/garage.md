@@ -56,11 +56,13 @@ Application procedures enforce these source-defined limits independently of the 
 
 The daily upload allowance is reserved, not charged on success: bytes are
 committed inside the transaction that locks the Claim and sniffs the file type,
-before object storage is called. If storage or publication definitively fails
-and no document row references the attempted object, the reservation is
-refunded against the UTC window that was charged; a window that has rolled over
-makes the refund a no-op. An ambiguous commit whose document row exists keeps
-the charge, and deleting a persisted Proof Document never refunds consumption.
+before object storage is called. If storage or publication definitively fails,
+the reservation is refunded best-effort against the UTC window that was charged,
+but only after an existence check confirms that no document row references the
+attempted object; a failed refund leaves the charge in place, and a window that
+has rolled over makes the refund a no-op. An ambiguous commit whose document row
+exists keeps the charge, and deleting a persisted Proof Document never refunds
+consumption.
 [ADR-0030](../../../../docs/adr/0030-reserve-upload-quota-before-storage-and-refund-confirmed-failures.md)
 records the decision and the rejected alternatives. The listing allowance is
 shared by `projects.listHosted`, `projects.listPartner`,

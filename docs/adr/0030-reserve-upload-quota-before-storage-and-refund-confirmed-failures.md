@@ -17,9 +17,9 @@ A Partner Organization's daily Proof Document allowance is a shared PostgreSQL c
     and user_key = '' and window_start = $windowStart
   ```
 
-  The `window_start` predicate makes a rollout into a new UTC day a no-op, and `GREATEST(0, …)` keeps concurrent refunds from driving usage negative.
+  The `window_start` predicate makes a rollover into a new UTC day a no-op, and `GREATEST(0, …)` keeps concurrent refunds from driving usage negative.
 - The refund runs only in the compensating catch path and only after an existence query confirms that no document row references the attempted storage reference. If that existence check fails, the charge is kept: an ambiguous commit may have persisted the document, so the charge may correspond to real bytes.
-- The refund is best effort. A refund failure is logged and never masks the original upload or finalization error.
+- The refund is best effort. A refund failure is logged and never masks the original upload or finalization error; the charge stays in place and is not retried by this path.
 - The reservation point, limits, and windows are unchanged. A persisted document that is later deleted still does not refund consumption; only a publication that definitively produced no row is reversed.
 
 ## Alternatives
@@ -32,7 +32,8 @@ A Partner Organization's daily Proof Document allowance is a shared PostgreSQL c
 
 ## Consequences
 
-- A failed storage PUT or a failed finalization leaves the Organization's allowance at its pre-attempt value and leaves no document row.
+- A failed storage PUT or a definitively failed finalization refunds the reservation only after the existence check confirms that no document row exists, and then only best-effort: the allowance returns to its pre-attempt value when the refund succeeds, and a failed refund leaves the charge in place.
+- An ambiguous finalization error may leave a committed document row and its charge in place. Keeping the charge is deliberate: the row corresponds to persisted bytes, and the existence check is what separates this case from a clean failure.
 - A refund whose reserved window has rolled over is dropped rather than credited to the new day; the old window's charge remains historical and its counter row may later be removed by expiry cleanup, which makes any late refund a no-op by the same predicate.
 - During the storage call the reservation is charged while no row exists. That state is intentional and invisible to listing, linking, and submission because those read document rows.
 - Tests cover storage failure, finalization failure, the per-Claim capacity race, ambiguous commits with an existing row, UTC rollover, and concurrent refunds.
