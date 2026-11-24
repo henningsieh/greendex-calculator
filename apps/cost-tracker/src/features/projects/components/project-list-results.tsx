@@ -490,46 +490,6 @@ export function ResolvedProjectListResults({
       data-filtered-project-count={filtered.projectCount}
     >
       <div className="flex flex-col gap-2 @4xl/content:flex-row @4xl/content:items-center @4xl/content:justify-between">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-          <ol
-            className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
-            aria-label={t("sortOrder")}
-          >
-            {sorting.map((criterion, index) => (
-              <li className="inline-flex items-center" key={criterion.id}>
-                {index + 1}. {sortLabels[criterion.id]}{" "}
-                {criterion.desc ? "↓" : "↑"}
-                <span className="sr-only">{sortDirectionLabel(criterion)}</span>
-                <Button
-                  aria-label={t("removeSort", {
-                    field: sortLabels[criterion.id] ?? criterion.id,
-                  })}
-                  className="text-muted-foreground"
-                  data-testid={`sort-summary-remove-${criterion.id}`}
-                  disabled={sorting.length === 1}
-                  onClick={() =>
-                    table.setSorting(sorting.filter((_, i) => i !== index))
-                  }
-                  size="icon-xs"
-                  type="button"
-                  variant="ghost"
-                >
-                  <XIcon aria-hidden="true" />
-                </Button>
-              </li>
-            ))}
-          </ol>
-          <p
-            className="hidden text-xs text-muted-foreground @lg/content:block"
-            aria-live="polite"
-          >
-            {isFetching
-              ? t("refreshing")
-              : t("updatedAt", {
-                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
-                })}
-          </p>
-        </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Popover>
             <PopoverTrigger
@@ -537,14 +497,17 @@ export function ResolvedProjectListResults({
               render={
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   variant="outline"
                   data-testid="project-sort-menu"
                 />
               }
             >
               <ArrowDownUpIcon data-icon="inline-start" />
-              {t("sort")} <span className="tabular-nums">{sorting.length}</span>
+              <span className="hidden @lg/content:inline">{t("sort")}</span>
+              <span className="ml-1 rounded-sm border border-border bg-muted px-1 py-0.5 font-mono tabular-nums">
+                {sorting.length}
+              </span>
             </PopoverTrigger>
             <PopoverContent
               align="end"
@@ -710,14 +673,14 @@ export function ResolvedProjectListResults({
               render={
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   variant="outline"
                   data-testid="project-columns-menu"
                 />
               }
             >
               <Columns3Icon data-icon="inline-start" />
-              {t("columns")}
+              <span className="hidden @lg/content:inline">{t("columns")}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
@@ -753,7 +716,7 @@ export function ResolvedProjectListResults({
             aria-label={t("refresh")}
             disabled={isFetching}
             onClick={() => void refetch()}
-            size="sm"
+            size="xs"
             type="button"
             variant="outline"
           >
@@ -763,6 +726,46 @@ export function ResolvedProjectListResults({
             />
             <span className="hidden @lg/content:inline">{t("refresh")}</span>
           </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <ol
+            className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"
+            aria-label={t("sortOrder")}
+          >
+            {sorting.map((criterion, index) => (
+              <li className="inline-flex items-center" key={criterion.id}>
+                {index + 1}. {sortLabels[criterion.id]}{" "}
+                {criterion.desc ? "↓" : "↑"}
+                <span className="sr-only">{sortDirectionLabel(criterion)}</span>
+                <Button
+                  aria-label={t("removeSort", {
+                    field: sortLabels[criterion.id] ?? criterion.id,
+                  })}
+                  className="text-muted-foreground"
+                  data-testid={`sort-summary-remove-${criterion.id}`}
+                  disabled={sorting.length === 1}
+                  onClick={() =>
+                    table.setSorting(sorting.filter((_, i) => i !== index))
+                  }
+                  size="icon-xs"
+                  type="button"
+                  variant="ghost"
+                >
+                  <XIcon aria-hidden="true" />
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <p
+            className="hidden text-xs text-muted-foreground @lg/content:block"
+            aria-live="polite"
+          >
+            {isFetching
+              ? t("refreshing")
+              : t("updatedAt", {
+                  time: dateFormat.format(dataUpdatedAt, "time.seconds"),
+                })}
+          </p>
         </div>
       </div>
 

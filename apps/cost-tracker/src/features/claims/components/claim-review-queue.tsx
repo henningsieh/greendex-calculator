@@ -139,7 +139,7 @@ function SortHeader({
       data-testid={testId}
       disabled={disabled}
       onClick={() => onSort(nextSort(currentSort, field))}
-      size="sm"
+      size="xs"
       type="button"
       variant="ghost"
     >
@@ -415,7 +415,7 @@ export function ClaimReviewQueue() {
               search: null,
             })
           }
-          size="sm"
+          size="xs"
           type="button"
           variant="outline"
         >
@@ -466,7 +466,7 @@ export function ClaimReviewQueue() {
           aria-label={t("refresh")}
           disabled={isFetching}
           onClick={() => void refetch()}
-          size="sm"
+          size="xs"
           type="button"
           variant="outline"
         >
