@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
 
@@ -206,6 +207,7 @@ export function ProjectPartnershipManager({
                       <Link
                         className="block wrap-break-word underline-offset-4 hover:underline hover:decoration-brand hover:decoration-2"
                         href={projectPath(group.projectId)}
+                        transitionTypes={[viewTransitionType.forward]}
                       >
                         {group.projectName}
                       </Link>
@@ -252,6 +254,7 @@ export function ProjectPartnershipManager({
                               size: "sm",
                             })}
                             href={partnershipPath(partnership.id)}
+                            transitionTypes={[viewTransitionType.forward]}
                           >
                             <EyeIcon aria-hidden="true" />
                             {t("manager.viewDetails")}

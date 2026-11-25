@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { Link, usePathname } from "@/lib/i18n/routing";
+import { persistentViewTransitionName } from "@/lib/view-transitions";
 
 interface SidebarNavItem {
   href: AppRoute;
@@ -134,7 +135,12 @@ export function AppSidebar({
     : [];
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      style={{
+        viewTransitionName: persistentViewTransitionName.appSidebar,
+      }}
+    >
       <SidebarHeader>
         {showOrganizationSwitcher && activeOrganizationId ? (
           <SidebarMenu>

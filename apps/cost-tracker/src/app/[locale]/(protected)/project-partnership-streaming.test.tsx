@@ -344,7 +344,7 @@ it("degrades the review context instead of failing the page when refused", async
 });
 
 it.each(routes)(
-  "$path streams matching cards before request data resolves",
+  "$path streams a loading skeleton before request data resolves",
   async ({ Page, heading, label, content }) => {
     let resolveData!: (value: undefined) => void;
     const data = new Promise<undefined>((resolve) => {
@@ -357,7 +357,13 @@ it.each(routes)(
       destination.setEncoding("utf8");
       destination.on("data", (chunk: string) => {
         html += chunk;
-        if (html.includes(label)) resolve();
+        // View-transition markers split the shell into more chunks than the
+        // bare page did, so wait for the skeleton instead of assuming it
+        // shares a chunk with the loading label. Data stays unresolved until
+        // the assertions below run, so this still proves the shell streams
+        // before request data.
+        if (html.includes(label) && html.includes('data-slot="skeleton"'))
+          resolve();
       });
     });
     const complete = new Promise<void>((resolve) =>
@@ -386,7 +392,7 @@ it.each(routes)(
     try {
       await shell;
       if (heading) expect(html).toContain(`>${heading}</h1>`);
-      expect(html).toContain('data-slot="card"');
+      expect(html).toContain('data-slot="skeleton"');
       expect(html).not.toContain(content);
     } finally {
       resolveData(undefined);

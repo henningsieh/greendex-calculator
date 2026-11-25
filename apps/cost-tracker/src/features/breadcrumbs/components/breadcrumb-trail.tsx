@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Link } from "@/lib/i18n/routing";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 interface BreadcrumbTrailItem {
   label: string;
@@ -60,7 +61,13 @@ export default function BreadcrumbTrail({
                 <BreadcrumbItem className="max-w-full min-w-0">
                   {item.href ? (
                     <BreadcrumbLink
-                      render={<Link href={item.href} data-testid={item.testId} />}
+                      render={
+                        <Link
+                          href={item.href}
+                          data-testid={item.testId}
+                          transitionTypes={[viewTransitionType.back]}
+                        />
+                      }
                     >
                       {item.label}
                     </BreadcrumbLink>

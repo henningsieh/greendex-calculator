@@ -4,6 +4,11 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import {
+  RouteTransition,
+  SuspenseFallback,
+  SuspenseReveal,
+} from "@/components/view-transition-boundaries";
 import { ClaimReview } from "@/features/claims/components/claim-review";
 import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -92,19 +97,29 @@ export default async function ClaimReviewPage({
   const t = await getTranslations("claims.review");
 
   return (
-    <div className="space-y-6">
-      <ProtectedPageHeader
-        description={
-          <Suspense fallback={t("contextLoading")}>
-            <ReviewContext params={params} />
-          </Suspense>
-        }
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-      />
-      <Suspense fallback={<ClaimReviewLoading />}>
-        <ClaimReviewSection params={params} />
-      </Suspense>
-    </div>
+    <RouteTransition>
+      <div className="space-y-6">
+        <ProtectedPageHeader
+          description={
+            <Suspense fallback={t("contextLoading")}>
+              <ReviewContext params={params} />
+            </Suspense>
+          }
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+        />
+        <Suspense
+          fallback={
+            <SuspenseFallback>
+              <ClaimReviewLoading />
+            </SuspenseFallback>
+          }
+        >
+          <SuspenseReveal>
+            <ClaimReviewSection params={params} />
+          </SuspenseReveal>
+        </Suspense>
+      </div>
+    </RouteTransition>
   );
 }

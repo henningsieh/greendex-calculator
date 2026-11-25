@@ -13,6 +13,7 @@ import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
+import { persistentViewTransitionName } from "@/lib/view-transitions";
 
 const toast = ToastPrimitive.createToastManager();
 
@@ -35,6 +36,9 @@ function ToastViewport({
         className,
       )}
       data-slot="toast-viewport"
+      style={{
+        viewTransitionName: persistentViewTransitionName.toastViewport,
+      }}
       {...props}
     />
   );

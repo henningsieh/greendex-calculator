@@ -3,6 +3,11 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
+import {
+  RouteTransition,
+  SuspenseFallback,
+  SuspenseReveal,
+} from "@/components/view-transition-boundaries";
 import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
 import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
 import { ParticipantPageHeader } from "@/features/participations/components/participant-page-header";
@@ -18,21 +23,31 @@ export default async function ParticipantDetailsPage({
   const t = await getTranslations("participations.app");
 
   return (
-    <div className="space-y-8">
-      <Suspense
-        fallback={
-          <ProtectedPageHeader
-            eyebrow={t("eyebrow")}
-            title={t("participantDetails")}
-            description={t("participantDetailsDescription")}
-          />
-        }
-      >
-        <ParticipantPageHeader params={params} />
-      </Suspense>
-      <Suspense fallback={<ParticipantDetailsSkeleton />}>
-        <ParticipantDetailsSection params={params} />
-      </Suspense>
-    </div>
+    <RouteTransition>
+      <div className="space-y-8">
+        <Suspense
+          fallback={
+            <ProtectedPageHeader
+              eyebrow={t("eyebrow")}
+              title={t("participantDetails")}
+              description={t("participantDetailsDescription")}
+            />
+          }
+        >
+          <ParticipantPageHeader params={params} />
+        </Suspense>
+        <Suspense
+          fallback={
+            <SuspenseFallback>
+              <ParticipantDetailsSkeleton />
+            </SuspenseFallback>
+          }
+        >
+          <SuspenseReveal>
+            <ParticipantDetailsSection params={params} />
+          </SuspenseReveal>
+        </Suspense>
+      </div>
+    </RouteTransition>
   );
 }

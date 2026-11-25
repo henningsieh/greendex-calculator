@@ -77,6 +77,7 @@ import {
   type ProjectVisibility,
 } from "@/lib/ui-preferences/definitions";
 import { cn } from "@/lib/utils";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -274,6 +275,7 @@ export function ResolvedProjectListResults({
             title={row.original.name}
             href={projectPath(row.original.id)}
             data-testid={`project-link-${row.original.id}`}
+            transitionTypes={[viewTransitionType.forward]}
           >
             {row.original.name}
           </Link>
@@ -895,6 +897,7 @@ export function ResolvedProjectListResults({
                     className="block wrap-anywhere link-prose"
                     data-testid={`project-link-${row.original.id}-card`}
                     href={projectPath(row.original.id)}
+                    transitionTypes={[viewTransitionType.forward]}
                   >
                     {row.original.name}
                   </Link>

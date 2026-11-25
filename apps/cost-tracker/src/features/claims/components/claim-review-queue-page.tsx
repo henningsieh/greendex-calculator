@@ -4,6 +4,11 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import {
+  RouteTransition,
+  SuspenseFallback,
+  SuspenseReveal,
+} from "@/components/view-transition-boundaries";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import {
@@ -55,15 +60,25 @@ export default async function ClaimReviewQueuePage(
   const t = await getTranslations("claims.queue");
 
   return (
-    <div className="min-w-0">
-      <ProtectedPageHeader
-        description={t("description")}
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-      />
-      <Suspense fallback={<ClaimReviewQueueLoading />}>
-        <ClaimReviewQueueSection searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <RouteTransition>
+      <div className="min-w-0">
+        <ProtectedPageHeader
+          description={t("description")}
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+        />
+        <Suspense
+          fallback={
+            <SuspenseFallback>
+              <ClaimReviewQueueLoading />
+            </SuspenseFallback>
+          }
+        >
+          <SuspenseReveal>
+            <ClaimReviewQueueSection searchParams={searchParams} />
+          </SuspenseReveal>
+        </Suspense>
+      </div>
+    </RouteTransition>
   );
 }

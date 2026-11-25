@@ -31,6 +31,7 @@ export function ButtonLink({
   href,
   icon,
   testId,
+  transitionTypes,
 }: {
   children: ReactNode;
   className?: string;
@@ -40,6 +41,8 @@ export function ButtonLink({
   /** Leading entity icon; the trailing arrow is supplied here. */
   icon?: ReactNode;
   testId?: string;
+  /** Navigation direction for the route transition; see `view-transitions.ts`. */
+  transitionTypes?: string[];
 }) {
   return (
     <Link
@@ -52,6 +55,7 @@ export function ButtonLink({
       )}
       data-testid={testId}
       href={href}
+      transitionTypes={transitionTypes}
     >
       {icon}
       {children}

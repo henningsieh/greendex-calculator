@@ -20,6 +20,7 @@ import { resolveStaffOrganizationContext } from "@/features/organizations/staff-
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession } from "@/lib/session";
 import { readSidebarPreference } from "@/lib/ui-preferences/server";
+import { persistentViewTransitionName } from "@/lib/view-transitions";
 
 export async function ProtectedShell({
   children,
@@ -86,7 +87,12 @@ export async function ProtectedShell({
         staffOrganizations={context.memberships}
       />
       <div className="min-h-svh w-full min-w-0 bg-muted/35">
-        <header className="border-b bg-background">
+        <header
+          className="border-b bg-background"
+          style={{
+            viewTransitionName: persistentViewTransitionName.appHeader,
+          }}
+        >
           <div className="flex items-start gap-1">
             <div className="min-w-0 flex-1">
               <AppNavigation
