@@ -20,7 +20,15 @@
       "action": "Actie",
       "allocationAmount": "Bedrag (EUR)",
       "allocationPercentage": "Percentage",
-      "allocationEqual": "Gelijk"
+      "allocationEqual": "Gelijk",
+      "claimAmount": "Vergoedingsbedrag",
+      "participants": "{count, plural, =1 {1 deelnemer} other {# deelnemers}}",
+      "fullyAllocated": "elke euro toegewezen",
+      "receipts": "{count, plural, =1 {1 bewijsdocument} other {# bewijsdocumenten}}",
+      "receiptMissing": "Nog geen bewijsdocument",
+      "equalShareDetail": "Gelijk · {amount} per persoon",
+      "percentageShareDetail": "Aandeel {percentage} %",
+      "amountShareDetail": "Aandeel van {amount}"
     },
     "queue": {
       "eyebrow": "Werkruimte",
@@ -154,7 +162,17 @@
       "confirmDescription": "Stuur de declaratie naar de organiserende organisatie ter beoordeling. Je kunt de declaratie of de uitbetalingsrekening pas wijzigen als die organisatie om een correctie vraagt.",
       "confirm": "Indiening bevestigen",
       "cancel": "Annuleren",
-      "unavailable": "Niet beschikbaar totdat de controlelijst is geslaagd"
+      "unavailable": "Niet beschikbaar totdat de controlelijst is geslaagd",
+      "done": "Gedaan",
+      "open": "Open",
+      "readyToSubmit": "Klaar om in te dienen",
+      "inProgress": "In behandeling",
+      "item": {
+        "payoutAccount": "Uitbetalingsrekening geselecteerd",
+        "entries": "Reiskostenposten vastgelegd",
+        "proofDocuments": "Een bewijsdocument bij elke post",
+        "journeys": "Deelnemersreizen compleet"
+      }
     },
     "workspace": {
       "noClaim": "Geen declaratie",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Beoordeling van declaratie"
+    },
+    "transport": {
+      "boat": "Boot",
+      "bus": "Bus",
+      "train": "Trein",
+      "car": "Auto",
+      "electricCar": "Elektrische auto",
+      "plane": "Vliegtuig"
     }
   }
 }

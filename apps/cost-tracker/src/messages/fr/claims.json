@@ -20,7 +20,15 @@
       "action": "Action",
       "allocationAmount": "Montant (EUR)",
       "allocationPercentage": "Pourcentage",
-      "allocationEqual": "À parts égales"
+      "allocationEqual": "À parts égales",
+      "claimAmount": "Montant du remboursement",
+      "participants": "{count, plural, =1 {1 participant} other {# participants}}",
+      "fullyAllocated": "chaque euro réparti",
+      "receipts": "{count, plural, =1 {1 justificatif} other {# justificatifs}}",
+      "receiptMissing": "Aucun justificatif pour l’instant",
+      "equalShareDetail": "À parts égales · {amount} chacun",
+      "percentageShareDetail": "Part de {percentage} %",
+      "amountShareDetail": "Part de {amount}"
     },
     "queue": {
       "eyebrow": "Espace de travail",
@@ -154,7 +162,17 @@
       "confirmDescription": "Envoyez la demande à l’organisation d’accueil pour vérification. Vous ne pourrez la modifier ou changer le compte de versement que si elle demande une correction.",
       "confirm": "Confirmer la soumission",
       "cancel": "Annuler",
-      "unavailable": "Indisponible tant que la liste de contrôle n’est pas validée"
+      "unavailable": "Indisponible tant que la liste de contrôle n’est pas validée",
+      "done": "Fait",
+      "open": "À faire",
+      "readyToSubmit": "Prêt à soumettre",
+      "inProgress": "En cours",
+      "item": {
+        "payoutAccount": "Compte de versement sélectionné",
+        "entries": "Lignes de frais de voyage enregistrées",
+        "proofDocuments": "Un justificatif pour chaque ligne",
+        "journeys": "Voyages des participants complets"
+      }
     },
     "workspace": {
       "noClaim": "Aucune demande",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Vérification de la demande"
+    },
+    "transport": {
+      "boat": "Bateau",
+      "bus": "Bus",
+      "train": "Train",
+      "car": "Voiture",
+      "electricCar": "Voiture électrique",
+      "plane": "Avion"
     }
   }
 }

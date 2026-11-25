@@ -20,7 +20,15 @@
       "action": "Action",
       "allocationAmount": "Amount (EUR)",
       "allocationPercentage": "Percentage",
-      "allocationEqual": "Equal"
+      "allocationEqual": "Equal",
+      "claimAmount": "Claim amount",
+      "participants": "{count, plural, =1 {1 participant} other {# participants}}",
+      "fullyAllocated": "every euro allocated",
+      "receipts": "{count, plural, =1 {1 receipt} other {# receipts}}",
+      "receiptMissing": "No receipt yet",
+      "equalShareDetail": "Equal share · {amount} each",
+      "percentageShareDetail": "{percentage}% share",
+      "amountShareDetail": "{amount} share"
     },
     "queue": {
       "eyebrow": "Workspace",
@@ -154,7 +162,17 @@
       "confirmDescription": "Send this claim to the hosting organisation for review. You can only edit the claim or change its payout account if they ask for a correction.",
       "confirm": "Confirm submission",
       "cancel": "Cancel",
-      "unavailable": "Not available until the checklist passes"
+      "unavailable": "Not available until the checklist passes",
+      "done": "Done",
+      "open": "Open",
+      "readyToSubmit": "Ready for submission",
+      "inProgress": "In progress",
+      "item": {
+        "payoutAccount": "Payout Account selected",
+        "entries": "Travel Cost Entries recorded",
+        "proofDocuments": "A Proof Document on every cost",
+        "journeys": "Participant Journeys complete"
+      }
     },
     "workspace": {
       "noClaim": "No Claim",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Claim review"
+    },
+    "transport": {
+      "boat": "Boat",
+      "bus": "Bus",
+      "train": "Train",
+      "car": "Car",
+      "electricCar": "Electric car",
+      "plane": "Plane"
     }
   }
 }
