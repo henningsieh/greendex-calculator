@@ -20,15 +20,15 @@ const QUEUE_COLUMN_WIDTHS = [
 export function ClaimReviewQueueLoadingContent() {
   return (
     <section className="mt-6 flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="flex h-10 flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <Skeleton
           className="h-7 w-48 max-w-full"
           data-testid="loading-skeleton"
         />
         <div className="flex flex-wrap gap-x-6 gap-y-1">
-          <Skeleton className="h-6 w-24" data-testid="loading-skeleton" />
-          <Skeleton className="h-6 w-24" data-testid="loading-skeleton" />
-          <Skeleton className="h-6 w-24" data-testid="loading-skeleton" />
+          <Skeleton className="h-6 w-34" data-testid="loading-skeleton" />
+          <Skeleton className="h-6 w-20" data-testid="loading-skeleton" />
+          <Skeleton className="h-6 w-46" data-testid="loading-skeleton" />
         </div>
       </div>
 
