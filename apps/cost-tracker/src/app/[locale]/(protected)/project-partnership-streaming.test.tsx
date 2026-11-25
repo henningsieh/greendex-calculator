@@ -161,6 +161,7 @@ const routes = [
     heading: "Claim",
     label: "Loading Claim workspace",
     content: "Resolved Claim workspace",
+    staticHeader: true,
   },
   {
     path: "/[locale]/claims",
@@ -168,6 +169,7 @@ const routes = [
     heading: "Claims",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
+    staticHeader: true,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/claim/review",
@@ -175,6 +177,7 @@ const routes = [
     heading: "Claim review",
     label: "Loading Claim review",
     content: "Resolved Claim review",
+    staticHeader: false,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants",
@@ -182,6 +185,7 @@ const routes = [
     heading: "Participations",
     label: "Loading Participations",
     content: "Resolved Participations",
+    staticHeader: false,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants/[participationId]",
@@ -189,6 +193,7 @@ const routes = [
     heading: "Participation details",
     label: "Loading Participation details",
     content: "Resolved Participant details",
+    staticHeader: false,
   },
   {
     path: "/[locale]/projects/[id]/participants",
@@ -196,6 +201,7 @@ const routes = [
     heading: "Participations",
     label: "Loading Participations",
     content: "Resolved Hosted report",
+    staticHeader: true,
   },
   {
     path: "/[locale]/partner-organizations",
@@ -203,12 +209,14 @@ const routes = [
     heading: "Partners",
     label: "Loading Project Partnerships",
     content: "Resolved Partnerships",
+    staticHeader: true,
   },
   {
     path: "/[locale]/projects/[id]",
     Page: LocalizedProjectPage,
     label: "Loading Project workspace",
     content: "Resolved Project workspace",
+    staticHeader: false,
   },
 ];
 
@@ -343,7 +351,7 @@ it("degrades the review context instead of failing the page when refused", async
   expect(errors).toEqual([]);
 });
 
-it.each(routes)(
+it.each(routes.filter(({ staticHeader }) => staticHeader))(
   "$path streams a loading skeleton before request data resolves",
   async ({ Page, heading, label, content }) => {
     let resolveData!: (value: undefined) => void;
@@ -542,11 +550,51 @@ it("Participant personal page requires a session, not active Organization Member
   expect(mocks.membership).not.toHaveBeenCalled();
 });
 
+const dataHeaderRoutes = routes.filter(({ staticHeader }) => !staticHeader);
+
+it.each(dataHeaderRoutes)(
+  "$path waits for page data before committing its header",
+  async ({ Page, content }) => {
+    let resolveQuery!: (value: undefined) => void;
+    const pending = new Promise<undefined>((resolve) => {
+      resolveQuery = resolve;
+    });
+    mocks.query.mockReturnValue(pending);
+    const destination = new PassThrough();
+    let html = "";
+    destination.setEncoding("utf8");
+    destination.on("data", (chunk: string) => {
+      html += chunk;
+    });
+    const complete = new Promise<void>((resolve) =>
+      destination.on("end", resolve),
+    );
+    const { pipe } = renderToPipeableStream(
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        <Page
+          params={Promise.resolve({
+            id: "partnership-1",
+            partnershipId: "partnership-1",
+            participationId: "participation-1",
+          })}
+        />
+      </NextIntlClientProvider>,
+      { onShellReady: () => pipe(destination) },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(html).not.toContain(content);
+    resolveQuery(undefined);
+    await complete;
+    expect(html).toContain(content);
+  },
+);
+
 it.each(
   routes.filter(({ path }) => /\[[^\]]+\]/.test(path.replace("/[locale]", ""))),
 )(
-  "$path streams the shell without resolving route identity",
-  async ({ Page, label, content }) => {
+  "$path waits for route identity before committing",
+  async ({ Page, content }) => {
+    mocks.query.mockResolvedValue(undefined);
     let resolveParams!: (value: {
       id: string;
       partnershipId: string;
@@ -559,41 +607,29 @@ it.each(
     }>((resolve) => {
       resolveParams = resolve;
     });
-    mocks.query.mockResolvedValue(undefined);
     const destination = new PassThrough();
     let html = "";
-    const shell = new Promise<void>((resolve) => {
-      destination.setEncoding("utf8");
-      destination.on("data", (chunk: string) => {
-        html += chunk;
-        if (html.includes(label)) resolve();
-      });
+    destination.setEncoding("utf8");
+    destination.on("data", (chunk: string) => {
+      html += chunk;
     });
     const complete = new Promise<void>((resolve) =>
       destination.on("end", resolve),
     );
     const { pipe } = renderToPipeableStream(
       <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
-        <div>
-          <Page params={params} />
-        </div>
+        <Page params={params} />
       </NextIntlClientProvider>,
-      {
-        onShellReady: () => pipe(destination),
-      },
+      { onShellReady: () => pipe(destination) },
     );
-    try {
-      await shell;
-      expect(mocks.query).not.toHaveBeenCalled();
-      expect(html).not.toContain(content);
-    } finally {
-      resolveParams({
-        id: "partnership-1",
-        partnershipId: "partnership-1",
-        participationId: "participation-1",
-      });
-      await complete;
-    }
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(html).not.toContain(content);
+    resolveParams({
+      id: "partnership-1",
+      partnershipId: "partnership-1",
+      participationId: "participation-1",
+    });
+    await complete;
     expect(html).toContain(content);
     expect(mocks.query).toHaveBeenCalled();
   },

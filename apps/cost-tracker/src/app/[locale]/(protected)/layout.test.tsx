@@ -125,7 +125,9 @@ describe("ProtectedLayout Organization context", () => {
     });
 
     const html = renderToStaticMarkup(
-      await ProtectedShell({ children: <p>child</p> }),
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        {await ProtectedShell({ children: <p>child</p> })}
+      </NextIntlClientProvider>,
     );
 
     expect(mocks.connection).toHaveBeenCalledOnce();
@@ -149,7 +151,9 @@ describe("ProtectedLayout Organization context", () => {
     });
 
     const html = renderToStaticMarkup(
-      await ProtectedShell({ children: <p>child</p> }),
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        {await ProtectedShell({ children: <p>child</p> })}
+      </NextIntlClientProvider>,
     );
 
     expect(html).toContain("Select Organization recovery");
@@ -164,7 +168,9 @@ describe("ProtectedLayout Organization context", () => {
     ]);
 
     const html = renderToStaticMarkup(
-      await ProtectedShell({ children: <p>child</p> }),
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        {await ProtectedShell({ children: <p>child</p> })}
+      </NextIntlClientProvider>,
     );
 
     expect(html).toContain("Staff shell; switcher shown for org-a");
@@ -178,7 +184,9 @@ describe("ProtectedLayout Organization context", () => {
     mocks.listMemberships.mockResolvedValue([participantMembership]);
 
     const html = renderToStaticMarkup(
-      await ProtectedShell({ children: <p>child</p> }),
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        {await ProtectedShell({ children: <p>child</p> })}
+      </NextIntlClientProvider>,
     );
 
     expect(html).toContain("Staff shell; switcher hidden for org-b");

@@ -1,8 +1,6 @@
-import { getTranslations } from "@greendex/i18n/server";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
 import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
@@ -16,22 +14,11 @@ export default async function ParticipantDetailsPage({
 }) {
   await connection();
   if (!(await hasOrganizationMembership())) return null;
-  const t = await getTranslations("participations.app");
 
   return (
     <RouteTransition>
       <div className="space-y-8">
-        <Suspense
-          fallback={
-            <ProtectedPageHeader
-              eyebrow={t("eyebrow")}
-              title={t("participantDetails")}
-              description={t("participantDetailsDescription")}
-            />
-          }
-        >
-          <ParticipantPageHeader params={params} />
-        </Suspense>
+        {await ParticipantPageHeader({ params })}
         <Suspense fallback={<ParticipantDetailsSkeleton />}>
           <ParticipantDetailsSection params={params} />
         </Suspense>

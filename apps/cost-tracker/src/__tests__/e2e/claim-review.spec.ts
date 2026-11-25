@@ -626,10 +626,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBe(`/partnerships/${ids.partnerships[0]}/claim/review`);
     const header = host.locator("main header");
     await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
-    // Breadcrumbs render in the shell header, above the main content.
-    // Two renders exist while the slot transition settles: one hidden sibling.
+    // Breadcrumbs render in the shell header, above the main content. The
+    // client derives one trail from the pathname; no slot fallback is kept.
     const breadcrumb = host.locator('[data-slot="breadcrumb"]:visible');
-    // Next keeps the previous slot render as a hidden sibling; assert the visible one.
     await expect(breadcrumb.locator('[aria-current="page"]:visible')).toHaveCount(
       1,
     );

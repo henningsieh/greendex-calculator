@@ -96,11 +96,7 @@ export default async function ClaimReviewPage({
     <RouteTransition>
       <div className="space-y-6">
         <ProtectedPageHeader
-          description={
-            <Suspense fallback={t("contextLoading")}>
-              <ReviewContext params={params} />
-            </Suspense>
-          }
+          description={await ReviewContext({ params })}
           eyebrow={t("eyebrow")}
           title={t("title")}
         />

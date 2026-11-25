@@ -21,6 +21,7 @@ import type { UserSummary } from "@/features/authentication/types";
 import { usePathname } from "@/lib/i18n/routing";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 interface AccountMenuProps extends UserSummary {
   compact?: boolean;
@@ -139,6 +140,7 @@ export function AccountMenu({
                 <Link
                   aria-current={active ? "page" : undefined}
                   href="/user-settings"
+                  transitionTypes={[viewTransitionType.forward]}
                 />
               }
             >

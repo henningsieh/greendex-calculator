@@ -1,8 +1,6 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
 
 import { RouteTransition } from "@/components/view-transition-boundaries";
-import { OrganizationPageSkeleton } from "@/features/organizations/components/organization-loading-states";
 import { OrganizationPageSection } from "@/features/organizations/components/organization-page-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
@@ -15,9 +13,7 @@ export default async function OrganizationPage() {
   return (
     <RouteTransition>
       <div>
-        <Suspense fallback={<OrganizationPageSkeleton />}>
-          <OrganizationPageSection />
-        </Suspense>
+        <OrganizationPageSection />
       </div>
     </RouteTransition>
   );

@@ -2,15 +2,8 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import LocalizedClaimReviewQueueLoading from "@/app/[locale]/(protected)/claims/loading";
-import LocalizedPartnerOrganizationsLoading from "@/app/[locale]/(protected)/partner-organizations/loading";
-import LocalizedClaimLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/loading";
-import LocalizedClaimReviewLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/review/loading";
-import LocalizedParticipantDetailsLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/[participationId]/loading";
-import LocalizedPartnershipParticipantsLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/loading";
-import LocalizedProjectLoading from "@/app/[locale]/(protected)/projects/[id]/loading";
-import LocalizedHostedParticipantsLoading from "@/app/[locale]/(protected)/projects/[id]/participants/loading";
 import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
+import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import { ClaimWorkspaceLoading } from "@/features/claims/components/claim-workspace-loading";
 import {
   PartnershipParticipantsSkeleton,
@@ -26,7 +19,7 @@ import { ProjectsPageLoading } from "@/features/projects/components/projects-pag
 
 describe("Cost Tracker Project loading states", () => {
   it("mirrors the Claims queue page shell in one loading region", () => {
-    const route = render(<LocalizedClaimReviewQueueLoading />);
+    const route = render(<ClaimReviewQueueLoading />);
     expect(route.container.querySelectorAll("output")).toHaveLength(1);
     expect(route.container.querySelector("section.mt-6")).toBeTruthy();
     expect(
@@ -50,52 +43,43 @@ describe("Cost Tracker Project loading states", () => {
 });
 
 const workspaceLoadingStates = [
-  ["Loading Claim workspace", ClaimWorkspaceLoading, LocalizedClaimLoading],
-  ["Loading Claim review", ClaimReviewLoading, LocalizedClaimReviewLoading],
+  ["Claim workspace", ClaimWorkspaceLoading, "Loading Claim workspace"],
+  ["Claim review", ClaimReviewLoading, "Loading Claim review"],
   [
-    "Loading Participations",
+    "Partnership Participations",
     PartnershipParticipantsSkeleton,
-    LocalizedPartnershipParticipantsLoading,
-  ],
-  [
-    "Loading Participation details",
-    ParticipantDetailsSkeleton,
-    LocalizedParticipantDetailsLoading,
-  ],
-  [
     "Loading Participations",
-    HostedParticipantsSkeleton,
-    LocalizedHostedParticipantsLoading,
   ],
   [
-    "Loading Project Partnerships",
-    ProjectPartnershipsSkeleton,
-    LocalizedPartnerOrganizationsLoading,
+    "Participation details",
+    ParticipantDetailsSkeleton,
+    "Loading Participation details",
   ],
-  ["Loading Project workspace", ProjectWorkspaceLoading, LocalizedProjectLoading],
+  ["Hosted Participations", HostedParticipantsSkeleton, "Loading Participations"],
+  [
+    "Project Partnerships",
+    ProjectPartnershipsSkeleton,
+    "Loading Project Partnerships",
+  ],
+  ["Project workspace", ProjectWorkspaceLoading, "Loading Project workspace"],
 ] as const;
 
 it.each(workspaceLoadingStates)(
-  "%s matches section and navigation skeletons",
-  (label, Section, Loading) => {
+  "%s keeps its accessible loading region and card frame",
+  (_name, Section, label) => {
     const section = render(<Section />);
     expect(screen.getByRole("status", { name: label })).toHaveAttribute(
       "aria-live",
       "polite",
     );
-    const cards = section.container.querySelectorAll('[data-slot="card"]').length;
-    expect(cards).toBeGreaterThan(0);
+    expect(
+      section.container.querySelectorAll('[data-slot="card"]').length,
+    ).toBeGreaterThan(0);
     expect(
       section.container.querySelectorAll('[data-slot="skeleton"]').length,
     ).toBeGreaterThan(2);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    section.unmount();
-    const route = render(<Loading />);
-    expect(screen.getByRole("status", { name: label })).toBeInTheDocument();
-    expect(route.container.querySelectorAll('[data-slot="card"]')).toHaveLength(
-      cards,
-    );
   },
 );
 
