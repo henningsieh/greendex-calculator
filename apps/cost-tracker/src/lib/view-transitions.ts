@@ -17,10 +17,6 @@ export const viewTransitionType = {
 export const viewTransitionClass = {
   navForward: "vt-nav-forward",
   navBack: "vt-nav-back",
-  fadeIn: "vt-fade-in",
-  fadeOut: "vt-fade-out",
-  slideUp: "vt-slide-up",
-  slideDown: "vt-slide-down",
 } as const;
 
 /**

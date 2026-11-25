@@ -4,11 +4,7 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
 import { ClaimWorkspaceLoading } from "@/features/claims/components/claim-workspace-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -65,16 +61,8 @@ export default async function ClaimPage({
     <RouteTransition>
       <div className="space-y-8">
         <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Suspense
-          fallback={
-            <SuspenseFallback>
-              <ClaimWorkspaceLoading />
-            </SuspenseFallback>
-          }
-        >
-          <SuspenseReveal>
-            <ClaimWorkspaceSection params={params} />
-          </SuspenseReveal>
+        <Suspense fallback={<ClaimWorkspaceLoading />}>
+          <ClaimWorkspaceSection params={params} />
         </Suspense>
       </div>
     </RouteTransition>

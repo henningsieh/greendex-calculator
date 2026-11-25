@@ -5,11 +5,7 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { PartnerGuideDialog } from "@/features/partnerships/components/partner-guide-dialog";
 import { PartnerOrganizationsTabs } from "@/features/partnerships/components/partner-organizations-tabs";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
@@ -56,16 +52,8 @@ export default async function PartnerOrganizationsPage() {
 
           {canCreateProjectPartnership ? (
             <div className="mt-8 flex flex-wrap items-center justify-between gap-2">
-              <Suspense
-                fallback={
-                  <SuspenseFallback>
-                    <ProjectOptionsLoading />
-                  </SuspenseFallback>
-                }
-              >
-                <SuspenseReveal>
-                  <PartnershipActionsSection />
-                </SuspenseReveal>
+              <Suspense fallback={<ProjectOptionsLoading />}>
+                <PartnershipActionsSection />
               </Suspense>
               <PartnerGuideDialog />
             </div>
@@ -78,18 +66,10 @@ export default async function PartnerOrganizationsPage() {
           <PartnerOrganizationsTabs
             showInvitations={canCreateProjectPartnership}
             partnerships={
-              <Suspense
-                fallback={
-                  <SuspenseFallback>
-                    <ProjectPartnershipsSkeleton />
-                  </SuspenseFallback>
-                }
-              >
-                <SuspenseReveal>
-                  <ProjectPartnershipSection
-                    canAssign={canCreateProjectPartnership}
-                  />
-                </SuspenseReveal>
+              <Suspense fallback={<ProjectPartnershipsSkeleton />}>
+                <ProjectPartnershipSection
+                  canAssign={canCreateProjectPartnership}
+                />
               </Suspense>
             }
             invitations={canCreateProjectPartnership && <SetupLinkList />}

@@ -3,11 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
 import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
 import { ParticipantPageHeader } from "@/features/participations/components/participant-page-header";
@@ -36,16 +32,8 @@ export default async function ParticipantDetailsPage({
         >
           <ParticipantPageHeader params={params} />
         </Suspense>
-        <Suspense
-          fallback={
-            <SuspenseFallback>
-              <ParticipantDetailsSkeleton />
-            </SuspenseFallback>
-          }
-        >
-          <SuspenseReveal>
-            <ParticipantDetailsSection params={params} />
-          </SuspenseReveal>
+        <Suspense fallback={<ParticipantDetailsSkeleton />}>
+          <ParticipantDetailsSection params={params} />
         </Suspense>
       </div>
     </RouteTransition>

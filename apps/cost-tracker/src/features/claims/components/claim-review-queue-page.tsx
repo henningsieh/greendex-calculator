@@ -4,11 +4,7 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import {
@@ -67,16 +63,8 @@ export default async function ClaimReviewQueuePage(
           eyebrow={t("eyebrow")}
           title={t("title")}
         />
-        <Suspense
-          fallback={
-            <SuspenseFallback>
-              <ClaimReviewQueueLoading />
-            </SuspenseFallback>
-          }
-        >
-          <SuspenseReveal>
-            <ClaimReviewQueueSection searchParams={searchParams} />
-          </SuspenseReveal>
+        <Suspense fallback={<ClaimReviewQueueLoading />}>
+          <ClaimReviewQueueSection searchParams={searchParams} />
         </Suspense>
       </div>
     </RouteTransition>

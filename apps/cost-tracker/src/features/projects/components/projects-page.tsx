@@ -4,11 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectListLoading } from "@/features/projects/components/project-list-loading";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
@@ -47,16 +43,8 @@ export default async function ProjectsPage(
           rightButton={canCreate ? <CreateProjectDialog /> : undefined}
         />
 
-        <Suspense
-          fallback={
-            <SuspenseFallback>
-              <ProjectListLoading />
-            </SuspenseFallback>
-          }
-        >
-          <SuspenseReveal>
-            <ProjectListSection searchParams={searchParams} />
-          </SuspenseReveal>
+        <Suspense fallback={<ProjectListLoading />}>
+          <ProjectListSection searchParams={searchParams} />
         </Suspense>
       </div>
     </RouteTransition>

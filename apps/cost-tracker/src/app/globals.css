@@ -474,94 +474,63 @@
 }
 
 /* ── View transitions ──────────────────────────────────────────────────
-   Tailwind cannot express `::view-transition-*`: those pseudo-elements hang
-   off the document's transition pseudo-tree, not off the element carrying the
-   class. So element names use arbitrary-property utilities at the call site
-   (`[view-transition-name:app-header]`), and only the document-level motion
-   recipes live here. Class names and transition types come from
-   `src/lib/view-transitions.ts`; do not inline new ones at a call site. */
+   One route boundary, enter-only. A streaming app replaces the outgoing page
+   with a loading boundary in the same commit, so animating the exit would
+   move a page that is already gone. Untyped arrivals stay silent; only a
+   typed navigation with ready destination content slides the new page in.
+
+   `::view-transition-*` hangs off the document's transition pseudo-tree, not
+   off the element carrying the class, so these rules cannot be Tailwind
+   utilities. Element names come from `src/lib/view-transitions.ts`. */
 @theme {
-  --vt-duration-exit: 150ms;
-  --vt-duration-enter: 210ms;
-  --vt-duration-move: 400ms;
+  --vt-duration-route: 220ms;
 }
 
-@keyframes vt-fade {
+@keyframes vt-route-in-right {
   from {
-    opacity: 0;
+    translate: 24px;
+    opacity: 0.7;
   }
   to {
+    translate: 0;
     opacity: 1;
   }
 }
 
-@keyframes vt-slide-x {
+@keyframes vt-route-in-left {
   from {
-    translate: var(--vt-slide-offset);
+    translate: -24px;
+    opacity: 0.7;
   }
   to {
     translate: 0;
+    opacity: 1;
   }
 }
 
-@keyframes vt-slide-y {
-  from {
-    transform: translateY(var(--vt-slide-y-offset, 10px));
-  }
-  to {
-    transform: translateY(0);
-  }
+/* Live root: unnamed content swaps instantly, so skeleton handoffs never
+   crossfade the whole document. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
 }
 
-/* Lateral routes and untyped navigation: crisp cross-fade only. */
-::view-transition-old(.vt-fade-out) {
-  animation: var(--vt-duration-exit) ease-in vt-fade reverse;
-}
-::view-transition-new(.vt-fade-in) {
-  animation: var(--vt-duration-enter) ease-out var(--vt-duration-exit) both
-    vt-fade;
-}
-
-/* Hierarchical routes: forward enters from the right, back from the left. */
-::view-transition-old(.vt-nav-forward) {
-  --vt-slide-offset: -60px;
-  animation:
-    var(--vt-duration-exit) ease-in both vt-fade reverse,
-    var(--vt-duration-move) ease-in-out both vt-slide-x reverse;
+/* The outgoing named page is hidden at once; it was either replaced by a
+   skeleton or by the incoming page in the same transition. */
+::view-transition-old(.vt-nav-forward),
+::view-transition-old(.vt-nav-back) {
+  display: none;
 }
 ::view-transition-new(.vt-nav-forward) {
-  --vt-slide-offset: 60px;
-  animation:
-    var(--vt-duration-enter) ease-out var(--vt-duration-exit) both vt-fade,
-    var(--vt-duration-move) ease-in-out both vt-slide-x;
-}
-::view-transition-old(.vt-nav-back) {
-  --vt-slide-offset: 60px;
-  animation:
-    var(--vt-duration-exit) ease-in both vt-fade reverse,
-    var(--vt-duration-move) ease-in-out both vt-slide-x reverse;
+  animation: var(--vt-duration-route) ease-out both vt-route-in-right;
 }
 ::view-transition-new(.vt-nav-back) {
-  --vt-slide-offset: -60px;
-  animation:
-    var(--vt-duration-enter) ease-out var(--vt-duration-exit) both vt-fade,
-    var(--vt-duration-move) ease-in-out both vt-slide-x;
+  animation: var(--vt-duration-route) ease-out both vt-route-in-left;
 }
 
-/* Suspense handoff: the skeleton leaves downward, content arrives upward. */
-::view-transition-old(.vt-slide-down) {
-  animation:
-    var(--vt-duration-exit) ease-out both vt-fade reverse,
-    var(--vt-duration-exit) ease-out both vt-slide-y reverse;
-}
-::view-transition-new(.vt-slide-up) {
-  animation:
-    var(--vt-duration-enter) ease-in var(--vt-duration-exit) both vt-fade,
-    var(--vt-duration-move) ease-in both vt-slide-y;
-}
-
-/* Persistent chrome: named, pinned, and layered above page content. The
-   toast viewport sits highest so a toast is never captured mid-navigation. */
+/* Persistent chrome: named, pinned, layered above page content. */
 ::view-transition-group(app-header),
 ::view-transition-group(app-sidebar) {
   animation: none;

@@ -1,11 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import {
-  RouteTransition,
-  SuspenseFallback,
-  SuspenseReveal,
-} from "@/components/view-transition-boundaries";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ProjectWorkspaceLoading } from "@/features/projects/components/project-workspace-loading";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -21,16 +17,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   return (
     <RouteTransition>
       <div>
-        <Suspense
-          fallback={
-            <SuspenseFallback>
-              <ProjectWorkspaceLoading />
-            </SuspenseFallback>
-          }
-        >
-          <SuspenseReveal>
-            <ProjectWorkspaceSection params={params} />
-          </SuspenseReveal>
+        <Suspense fallback={<ProjectWorkspaceLoading />}>
+          <ProjectWorkspaceSection params={params} />
         </Suspense>
       </div>
     </RouteTransition>
