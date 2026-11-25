@@ -60,22 +60,7 @@
         "description": "Erasmus-Reisekosten abrechnen ohne Tabellenkrampf. Ticket fotografieren, Kosten teilen, Antrag einreichen — jede Zahl bleibt bis zum Beleg nachvollziehbar.",
         "start": "Kosten erfassen",
         "seeHow": "So funktioniert es",
-        "trustLine": "Kostenlos starten · Keine Kreditkarte · Demodaten unten"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Ausgezahlt",
-          "detail": "berechnet · nicht bearbeitbar"
-        },
-        "documented": {
-          "label": "Dokumentiert",
-          "detail": "keine offenen Lücken"
-        },
-        "avgReview": {
-          "label": "Ø Prüfzeit",
-          "detail": "Hosting-Prüfung",
-          "unit": "Std."
-        }
+        "trustLine": "Exakte Beträge · keine manuell erfassten Summen · Demodaten unten"
       },
       "process": {
         "title": "Ein Antrag. Null Rückfragen.",
@@ -92,13 +77,6 @@
           "title": "Aufteilen",
           "description": "Ordne die Kosten den beteiligten Personen zu."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Auszahlungskonto · Green Routes e.V.",
-        "train": "Zug · 428,60 € · Beleg verknüpft",
-        "bus": "Bus · 86,40 € · Beleg verknüpft",
-        "openUpload": "Nahverkehrstickets · Upload offen",
-        "status": "515,00 € bereit zur Einreichung"
       },
       "values": {
         "proof": {
@@ -122,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Klare Nachweise für gemeinsames Reisen."
       },
-      "journey": {
+      "sample": {
+        "caption": "Beispiel-Erstattung · Beispieldaten",
         "project": "Frühlingsworkshop",
-        "subtitle": "Reisekostenverlauf",
-        "train": {
-          "title": "Zug nach Utrecht",
-          "detail": "Berlin · 2 Teilnehmende"
-        },
-        "receipt": {
-          "title": "Beleg angehängt",
-          "detail": "bahn-ticket.pdf",
-          "status": "Bereit"
-        },
-        "allocation": {
-          "title": "Kosten aufgeteilt",
-          "detail": "Gleicher Anteil"
-        },
-        "submissionComplete": "Einreichung abgeschlossen"
+        "partner": "Green Routes e.V.",
+        "train": "Berlin → Utrecht · 2 Reisende",
+        "bus": "Nahverkehr · 2 Reisende",
+        "total": "2 Teilnehmende · 2 Belege verknüpft",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Zug und Bus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlin ↔ Utrecht · 2 Reisende"
       }
     },
     "designSystem": {

@@ -60,22 +60,7 @@
         "description": "Settle Erasmus travel costs without the spreadsheet struggle. Snap a photo of the ticket, share the cost, file the claim — every number stays traceable to its receipt.",
         "start": "Start tracking costs",
         "seeHow": "See how it works",
-        "trustLine": "Free to start · No credit card · Demo data below"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Disbursed",
-          "detail": "calculated · not editable"
-        },
-        "documented": {
-          "label": "Documented",
-          "detail": "zero open gaps"
-        },
-        "avgReview": {
-          "label": "Avg. review time",
-          "detail": "hosting review",
-          "unit": "h"
-        }
+        "trustLine": "Exact amounts · no hand-entered totals · demo figures below"
       },
       "process": {
         "title": "One claim. Zero follow-up questions.",
@@ -92,13 +77,6 @@
           "title": "Allocate",
           "description": "Assign the cost to the participants it covered."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Payout account · Green Routes e.V.",
-        "train": "Train · €428.60 · receipt linked",
-        "bus": "Bus · €86.40 · receipt linked",
-        "openUpload": "Local bus tickets · upload open",
-        "status": "€515.00 ready for submission"
       },
       "values": {
         "proof": {
@@ -122,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Clear records for shared travel."
       },
-      "journey": {
+      "sample": {
+        "caption": "Example Claim · sample figures",
         "project": "Spring workshop",
-        "subtitle": "Travel cost trail",
-        "train": {
-          "title": "Train to Utrecht",
-          "detail": "Berlin · 2 participants"
-        },
-        "receipt": {
-          "title": "Receipt attached",
-          "detail": "bahn-ticket.pdf",
-          "status": "Ready"
-        },
-        "allocation": {
-          "title": "Cost allocated",
-          "detail": "Equal share"
-        },
-        "submissionComplete": "Submission complete"
+        "partner": "Green Routes e.V.",
+        "train": "Berlin → Utrecht · 2 travellers",
+        "bus": "Local transfers · 2 travellers",
+        "total": "2 participants · 2 receipts linked",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Train and bus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlin ↔ Utrecht · 2 travellers"
       }
     },
     "designSystem": {

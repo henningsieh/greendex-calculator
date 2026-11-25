@@ -60,22 +60,7 @@
         "description": "Rendiconta i costi di viaggio Erasmus senza sudare sui fogli di calcolo. Fotografa il biglietto, condividi il costo, presenta la richiesta: ogni cifra resta collegata alla sua ricevuta.",
         "start": "Inizia a registrare i costi",
         "seeHow": "Scopri come funziona",
-        "trustLine": "Gratis per iniziare · Nessuna carta di credito · Dati demo qui sotto"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Erogato",
-          "detail": "calcolato · non modificabile"
-        },
-        "documented": {
-          "label": "Documentato",
-          "detail": "nessuna lacuna aperta"
-        },
-        "avgReview": {
-          "label": "Tempo medio di verifica",
-          "detail": "verifica dell’organizzazione ospitante",
-          "unit": "h"
-        }
+        "trustLine": "Importi esatti · nessun totale inserito a mano · dati di esempio sotto"
       },
       "process": {
         "title": "Una richiesta. Zero domande di approfondimento.",
@@ -92,13 +77,6 @@
           "title": "Ripartisci",
           "description": "Assegna il costo ai partecipanti che ha coperto."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Conto di pagamento · Green Routes e.V.",
-        "train": "Treno · €428,60 · ricevuta collegata",
-        "bus": "Autobus · €86,40 · ricevuta collegata",
-        "openUpload": "Biglietti del trasporto locale · caricamento aperto",
-        "status": "€515,00 pronti per l’invio"
       },
       "values": {
         "proof": {
@@ -122,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Registri chiari per i viaggi condivisi."
       },
-      "journey": {
+      "sample": {
+        "caption": "Rimborso di esempio · dati di esempio",
         "project": "Workshop di primavera",
-        "subtitle": "Traccia dei costi di viaggio",
-        "train": {
-          "title": "Treno per Utrecht",
-          "detail": "Berlino · 2 partecipanti"
-        },
-        "receipt": {
-          "title": "Ricevuta allegata",
-          "detail": "bahn-ticket.pdf",
-          "status": "Pronta"
-        },
-        "allocation": {
-          "title": "Costo ripartito",
-          "detail": "Quota uguale"
-        },
-        "submissionComplete": "Invio completato"
+        "partner": "Green Routes e.V.",
+        "train": "Berlino → Utrecht · 2 viaggiatori",
+        "bus": "Trasferimenti locali · 2 viaggiatori",
+        "total": "2 partecipanti · 2 giustificativi collegati",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Treno e autobus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlino ↔ Utrecht · 2 viaggiatori"
       }
     },
     "designSystem": {

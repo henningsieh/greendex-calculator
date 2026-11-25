@@ -1,58 +1,70 @@
 import { getTranslations } from "@greendex/i18n/server";
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  FileCheck2Icon,
-  SplitIcon,
-  TrainFrontIcon,
-} from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 
 import { Aura } from "@/components/brand/aura";
 import { LandingCtaButton } from "@/components/brand/landing-cta-button";
-import {
-  StatCell,
-  StatDetail,
-  StatGrid,
-  StatLabel,
-  StatNumber,
-} from "@/components/brand/stat-grid";
-import {
-  TerminalCard,
-  TerminalDots,
-  TerminalStatus,
-} from "@/components/brand/terminal-card";
 import { LanguageSelector } from "@/components/language-selector";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
+import { ClaimCalculation } from "@/features/claims/components/claim-calculation";
+import type { ClaimCostRecord } from "@/features/claims/components/claim-cost-records";
+import { ClaimCostRecords } from "@/features/claims/components/claim-cost-records";
+import { ClaimBandHeader } from "@/features/claims/components/claim-document";
+import type { ClaimReadinessItem } from "@/features/claims/components/claim-readiness";
+import { ClaimReadiness } from "@/features/claims/components/claim-readiness";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
-const journeySteps = [
-  {
-    icon: TrainFrontIcon,
-    titleKey: "landing.journey.train.title",
-    detailKey: "landing.journey.train.detail",
-    amount: "€142.80",
-  },
-  {
-    icon: FileCheck2Icon,
-    titleKey: "landing.journey.receipt.title",
-    detailKey: "landing.journey.receipt.detail",
-    statusKey: "landing.journey.receipt.status",
-  },
-  {
-    icon: SplitIcon,
-    titleKey: "landing.journey.allocation.title",
-    detailKey: "landing.journey.allocation.detail",
-    amount: "€71.40",
-  },
-] as const;
+/* One sample Claim carries every figure on this page, so the arithmetic the
+   visitor reads is the arithmetic the workspace would store. Development data:
+   no live Claim exists. */
+const sample = {
+  participants: 2,
+  trainEur: "428.60",
+  busEur: "86.40",
+  totalEur: "515.00",
+} as const;
 
 export default async function LandingPage() {
   const t = await getTranslations("shell");
+
+  const sampleCosts: ClaimCostRecord[] = [
+    {
+      id: "train",
+      transportProfile: "train",
+      detail: t("landing.sample.train"),
+      participants: sample.participants,
+      amountEur: sample.trainEur,
+      receipts: 1,
+      allocation: "equal",
+    },
+    {
+      id: "bus",
+      transportProfile: "bus",
+      detail: t("landing.sample.bus"),
+      participants: sample.participants,
+      amountEur: sample.busEur,
+      receipts: 1,
+      allocation: "equal",
+    },
+  ];
+
+  const readiness: ClaimReadinessItem[] = [
+    {
+      key: "payoutAccount",
+      passed: true,
+      detail: t("landing.sample.checkPayout"),
+    },
+    { key: "entries", passed: true, detail: t("landing.sample.checkEntries") },
+    {
+      key: "proofDocuments",
+      passed: true,
+      detail: t("landing.sample.checkProofs"),
+    },
+    { key: "journeys", passed: true, detail: t("landing.sample.checkJourneys") },
+  ];
 
   return (
     <main className="min-h-svh overflow-hidden">
@@ -91,20 +103,13 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      <section className="relative mx-auto grid w-full max-w-7xl items-start gap-x-12 gap-y-10 px-5 pt-8 pb-20 sm:px-8 sm:pt-12 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:px-10 lg:pt-14 lg:pb-28">
+      <section className="relative mx-auto grid w-full max-w-7xl items-start gap-x-12 gap-y-10 px-5 pt-8 pb-20 sm:px-8 sm:pt-12 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:px-10 lg:pt-12 lg:pb-28">
         <Aura className="absolute -top-32 left-1/2 h-72 w-180 -translate-x-1/2" />
         <div className="relative lg:col-span-2">
-          <Badge variant="ember-pill">
-            <span
-              aria-hidden="true"
-              className="size-1.5 rounded-full bg-primary"
-            />
-            {t("brand.edition")}
-          </Badge>
           {/* Each phrase keeps its own line so a longer locale wraps inside the
               phrase instead of stranding a word alone. Hyphenation is the last
               resort for words a display size cannot fit (fr, es, nl). */}
-          <h1 className="mt-6 type-ember-display hyphens-auto max-lg:text-[clamp(2.5rem,11vw,3.5rem)]">
+          <h1 className="type-ember-display hyphens-auto max-lg:text-[clamp(2.5rem,11vw,3.5rem)]">
             <span className="block">{t("landing.hero.titleLead")}</span>
             <span className="ember-headline-accent block text-primary">
               {t("landing.hero.titleAccent")}
@@ -133,36 +138,49 @@ export default async function LandingPage() {
           </p>
         </div>
 
-        <JourneyLedger />
+        {/* The Claim document the rest of the page reads from: the same card
+            anatomy the protected workspace will use, with sample figures. */}
+        {/* eslint-disable-next-line shadcn/no-restyle -- A Claim document is one card whose band header must bleed to its edges; Card's own rhythm would inset the band into a nested-card look. */}
+        <Card className="mx-auto w-full max-w-lg gap-0 py-0 lg:mr-0">
+          <ClaimBandHeader
+            status="in_preparation"
+            subtitle={t("landing.sample.partner")}
+            title={t("landing.sample.project")}
+          />
+          <ClaimCostRecords
+            rows={sampleCosts}
+            total={{
+              amountEur: sample.totalEur,
+              participants: sample.participants,
+            }}
+          />
+        </Card>
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
-        <StatGrid>
-          <StatCell hero>
-            <StatNumber>
-              515<span className="text-[32px] text-primary">€</span>
-            </StatNumber>
-            <StatLabel>{t("landing.stats.disbursed.label")}</StatLabel>
-            <StatDetail>{t("landing.stats.disbursed.detail")}</StatDetail>
-          </StatCell>
-          <StatCell>
-            <StatNumber>
-              100<span className="text-[32px] text-primary">%</span>
-            </StatNumber>
-            <StatLabel>{t("landing.stats.documented.label")}</StatLabel>
-            <StatDetail>{t("landing.stats.documented.detail")}</StatDetail>
-          </StatCell>
-          <StatCell>
-            <StatNumber>
-              48
-              <span className="text-[32px] text-primary">
-                {t("landing.stats.avgReview.unit")}
-              </span>
-            </StatNumber>
-            <StatLabel>{t("landing.stats.avgReview.label")}</StatLabel>
-            <StatDetail>{t("landing.stats.avgReview.detail")}</StatDetail>
-          </StatCell>
-        </StatGrid>
+        <ClaimCalculation
+          addends={[
+            {
+              id: "train",
+              transportProfile: "train",
+              detail: t("landing.sample.train"),
+              amountEur: sample.trainEur,
+            },
+            {
+              id: "bus",
+              transportProfile: "bus",
+              detail: t("landing.sample.bus"),
+              amountEur: sample.busEur,
+            },
+          ]}
+          total={{
+            detail: t("landing.sample.total"),
+            amountEur: sample.totalEur,
+          }}
+        />
+        <p className="mt-3 font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+          {t("landing.sample.caption")}
+        </p>
       </section>
 
       <section
@@ -194,27 +212,7 @@ export default async function LandingPage() {
             />
           </ol>
         </div>
-        <TerminalCard className="p-5 lg:sticky lg:top-24">
-          <TerminalDots />
-          <div className="mt-4 flex flex-col gap-1">
-            <p>
-              <span className="text-brand">✓</span>{" "}
-              {t("landing.terminal.payoutAccount")}
-            </p>
-            <p>
-              <span className="text-brand">✓</span> {t("landing.terminal.train")}
-            </p>
-            <p>
-              <span className="text-brand">✓</span> {t("landing.terminal.bus")}
-            </p>
-            <p>
-              <span className="text-term-muted/70">◌</span>{" "}
-              {t("landing.terminal.openUpload")}
-            </p>
-          </div>
-          <Separator className="my-4" />
-          <TerminalStatus>{t("landing.terminal.status")}</TerminalStatus>
-        </TerminalCard>
+        <ClaimReadiness items={readiness} />
       </section>
 
       <section className="border-y bg-card/60">
@@ -258,67 +256,6 @@ export default async function LandingPage() {
         </div>
       </footer>
     </main>
-  );
-}
-
-async function JourneyLedger() {
-  const t = await getTranslations("shell");
-
-  return (
-    <div className="relative mx-auto w-full max-w-lg lg:mr-0">
-      <div className="absolute -inset-10 -z-10 rounded-full bg-accent/35 blur-3xl" />
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-[0_24px_70px_-45px_color-mix(in_oklch,var(--foreground),transparent_55%)]">
-        <div className="flex items-center justify-between border-b px-6 py-5">
-          <div>
-            <p className="font-heading font-semibold">
-              {t("landing.journey.project")}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {t("landing.journey.subtitle")}
-            </p>
-          </div>
-        </div>
-        <div className="px-6 py-2">
-          {journeySteps.map((step, index) => {
-            const Icon = step.icon;
-
-            return (
-              <div
-                className="relative grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-5"
-                key={step.titleKey}
-              >
-                {index < journeySteps.length - 1 && (
-                  <span className="absolute top-10 left-5 h-20 w-px bg-border" />
-                )}
-                <span className="relative flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-                  <Icon aria-hidden="true" className="size-4" />
-                </span>
-                <div>
-                  <p className="font-medium">{t(step.titleKey)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {t(step.detailKey)}
-                  </p>
-                </div>
-                <p className="font-heading text-sm font-semibold tabular-nums">
-                  {"amount" in step ? step.amount : t(step.statusKey)}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex items-center justify-between bg-primary px-6 py-5 text-primary-foreground">
-          <div className="flex items-center gap-3">
-            <CheckIcon aria-hidden="true" className="size-4" />
-            <span className="text-sm font-medium">
-              {t("landing.journey.submissionComplete")}
-            </span>
-          </div>
-          <span className="font-heading text-lg font-semibold tabular-nums">
-            €142.80
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }
 

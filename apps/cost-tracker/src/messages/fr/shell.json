@@ -60,22 +60,7 @@
         "description": "Réglez les frais de voyage Erasmus sans vous battre avec les tableurs. Photographiez le billet, répartissez le coût, déposez la demande : chaque montant reste lié à son justificatif.",
         "start": "Commencer le suivi des coûts",
         "seeHow": "Voir comment cela fonctionne",
-        "trustLine": "Gratuit pour commencer · Sans carte bancaire · Données de démonstration ci-dessous"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Versé",
-          "detail": "calculé · non modifiable"
-        },
-        "documented": {
-          "label": "Documenté",
-          "detail": "aucun manque en suspens"
-        },
-        "avgReview": {
-          "label": "Délai moyen de vérification",
-          "detail": "vérification par l’organisation d’accueil",
-          "unit": "h"
-        }
+        "trustLine": "Montants exacts · aucun total saisi à la main · données d’exemple ci-dessous"
       },
       "process": {
         "title": "Une demande. Zéro question de suivi.",
@@ -92,13 +77,6 @@
           "title": "Répartir",
           "description": "Affectez le coût aux participants qu’il couvre."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Compte de versement · Green Routes e.V.",
-        "train": "Train · 428,60 € · justificatif lié",
-        "bus": "Bus · 86,40 € · justificatif lié",
-        "openUpload": "Billets de bus locaux · téléversement en cours",
-        "status": "515,00 € prêts à être soumis"
       },
       "values": {
         "proof": {
@@ -122,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Des dossiers clairs pour les voyages partagés."
       },
-      "journey": {
+      "sample": {
+        "caption": "Remboursement d’exemple · données d’exemple",
         "project": "Atelier de printemps",
-        "subtitle": "Suivi des frais de voyage",
-        "train": {
-          "title": "Train pour Utrecht",
-          "detail": "Berlin · 2 participants"
-        },
-        "receipt": {
-          "title": "Justificatif joint",
-          "detail": "bahn-ticket.pdf",
-          "status": "Prêt"
-        },
-        "allocation": {
-          "title": "Coût réparti",
-          "detail": "Part égale"
-        },
-        "submissionComplete": "Soumission terminée"
+        "partner": "Green Routes e.V.",
+        "train": "Berlin → Utrecht · 2 voyageurs",
+        "bus": "Trajets locaux · 2 voyageurs",
+        "total": "2 participants · 2 justificatifs liés",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Train et bus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlin ↔ Utrecht · 2 voyageurs"
       }
     },
     "designSystem": {

@@ -60,22 +60,7 @@
         "description": "Poravnajte potne stroške Erasmus brez preglavic s preglednicami. Fotografirajte vozovnico, razdelite strošek, oddajte zahtevek — vsaka številka ostane sledljiva do svojega dokazila.",
         "start": "Začnite spremljati stroške",
         "seeHow": "Oglejte si, kako deluje",
-        "trustLine": "Brezplačen začetek · Kreditna kartica ni potrebna · Spodaj so demo podatki"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Izplačano",
-          "detail": "izračunano · ni urejljivo"
-        },
-        "documented": {
-          "label": "Dokumentirano",
-          "detail": "brez odprtih vrzeli"
-        },
-        "avgReview": {
-          "label": "Povprečni čas pregleda",
-          "detail": "pregled gostiteljske organizacije",
-          "unit": "h"
-        }
+        "trustLine": "Natančni zneski · brez ročnih seštevkov · vzorčni podatki spodaj"
       },
       "process": {
         "title": "En zahtevek. Nič dodatnih vprašanj.",
@@ -92,13 +77,6 @@
           "title": "Razporedite",
           "description": "Dodelite strošek udeležencem, ki jih je pokrival."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Račun za izplačilo · Green Routes e.V.",
-        "train": "Vlak · 428,60 € · dokazilo povezano",
-        "bus": "Avtobus · 86,40 € · dokazilo povezano",
-        "openUpload": "Lokalne avtobusne vozovnice · nalaganje odprto",
-        "status": "515,00 € pripravljeno za oddajo"
       },
       "values": {
         "proof": {
@@ -122,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Jasni zapisi za skupna potovanja."
       },
-      "journey": {
+      "sample": {
+        "caption": "Primer povračila · vzorčni podatki",
         "project": "Pomladna delavnica",
-        "subtitle": "Sled potnih stroškov",
-        "train": {
-          "title": "Vlak do Utrechta",
-          "detail": "Berlin · 2 udeleženca"
-        },
-        "receipt": {
-          "title": "Priloženo dokazilo",
-          "detail": "bahn-ticket.pdf",
-          "status": "Pripravljeno"
-        },
-        "allocation": {
-          "title": "Strošek razporejen",
-          "detail": "Enak delež"
-        },
-        "submissionComplete": "Oddaja dokončana"
+        "partner": "Green Routes e.V.",
+        "train": "Berlin → Utrecht · 2 potnika",
+        "bus": "Lokalni prevozi · 2 potnika",
+        "total": "2 udeleženca · 2 dokazili povezani",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Vlak in avtobus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlin ↔ Utrecht · 2 potnika"
       }
     },
     "designSystem": {
