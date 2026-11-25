@@ -28,7 +28,7 @@ function FilterFieldSkeleton({ wide = false }: { wide?: boolean }) {
  * div, so only the real elements reproduce it. The pair is inert (a skeleton
  * must not toggle) and carries the same accessible name as the real control.
  */
-export function FiltersSkeleton() {
+export function ProjectListFiltersLoading() {
   const t = useTranslations("projects.list");
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4">

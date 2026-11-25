@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectWorkspaceLoading } from "@/features/projects/components/project-workspace-loading";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
@@ -15,7 +15,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <div>
-      <Suspense fallback={<ProjectWorkspaceSkeleton />}>
+      <Suspense fallback={<ProjectWorkspaceLoading />}>
         <ProjectWorkspaceSection params={params} />
       </Suspense>
     </div>

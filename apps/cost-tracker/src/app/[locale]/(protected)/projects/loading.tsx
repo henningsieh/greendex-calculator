@@ -1,5 +1,5 @@
-import { ProjectsSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectsPageLoading } from "@/features/projects/components/projects-page-loading";
 
 export default function Loading() {
-  return <ProjectsSkeleton />;
+  return <ProjectsPageLoading />;
 }

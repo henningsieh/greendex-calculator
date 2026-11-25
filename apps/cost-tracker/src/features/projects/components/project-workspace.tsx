@@ -34,10 +34,8 @@ import {
 } from "@/features/partnerships/components/partnership-actions";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { ProjectLifecycleActions } from "@/features/projects/components/project-lifecycle-actions";
-import {
-  ProjectMetrics,
-  StatsSkeletonGrid,
-} from "@/features/projects/components/project-loading-states";
+import { ProjectMetrics } from "@/features/projects/components/project-metrics";
+import { ProjectMetricsLoading } from "@/features/projects/components/project-metrics-loading";
 import {
   ProjectArchiveBadge,
   ProjectStatusBadge,
@@ -425,7 +423,7 @@ export function ProjectWorkspace({
           )}
         </ProjectMetrics>
       ) : (
-        <StatsSkeletonGrid
+        <ProjectMetricsLoading
           columns={isHosted ? "three" : "two"}
           label={t("details")}
           testId="stats-loading"

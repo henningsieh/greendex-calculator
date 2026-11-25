@@ -24,7 +24,7 @@ import {
   ProjectListMetrics,
   ResolvedProjectListResults,
 } from "@/features/projects/components/project-list-results";
-import { ProjectResultsSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectListResultsLoading } from "@/features/projects/components/project-list-results-loading";
 import { ProjectScopeTabs } from "@/features/projects/components/project-scope-tabs";
 import { getProjectAvailableScopesQueryOptions } from "@/features/projects/list-query-options";
 import {
@@ -257,7 +257,7 @@ function ResolvedProjectList({
         state={state}
         urlState={urlState}
       />
-      <Suspense fallback={<ProjectResultsSkeleton />}>
+      <Suspense fallback={<ProjectListResultsLoading />}>
         <ResolvedProjectListResults
           key={preference.accountKey}
           onClearFilters={clearFilters}

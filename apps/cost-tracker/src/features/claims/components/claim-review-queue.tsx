@@ -45,8 +45,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
+import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import {
   claimQueueParsers,
@@ -95,7 +95,7 @@ function nextSort(current: ClaimQueueSort, field: SortField): ClaimQueueSort {
 
 function QueueMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-baseline gap-2 text-sm">
+    <div className="flex items-baseline gap-2 text-base">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="font-semibold tabular-nums">{value}</dd>
     </div>
@@ -363,7 +363,7 @@ export function ClaimReviewQueue() {
       refetchOnMount: "always",
       staleTime: 0,
     });
-  if (!data) return <ClaimReviewQueueSkeleton />;
+  if (!data) return <ClaimReviewQueueLoading />;
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
   const hasActiveFilters = Boolean(state.search || state.partnerOrganizationId);
@@ -425,8 +425,12 @@ export function ClaimReviewQueue() {
       data-hydrated={isHydrated ? "true" : undefined}
       data-testid="review-queue"
     >
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <h2 className="text-lg font-semibold">{t("sectionTitle")}</h2>
+      {/* Same rhythm as the Projects list: one 40px row, `text-sm` labels,
+          metrics on the trailing edge. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <h2 className="flex h-10 items-center text-base font-semibold">
+          {t("sectionTitle")}
+        </h2>
         <dl className="flex flex-wrap gap-x-6 gap-y-1">
           <QueueMetric label={claimLabel} value={filtered.claimCount} />
           <QueueMetric

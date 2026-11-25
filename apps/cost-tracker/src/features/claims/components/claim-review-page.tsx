@@ -4,8 +4,8 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import { ClaimReviewSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReview } from "@/features/claims/components/claim-review";
+import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -102,7 +102,7 @@ export default async function ClaimReviewPage({
         eyebrow={t("eyebrow")}
         title={t("title")}
       />
-      <Suspense fallback={<ClaimReviewSkeleton />}>
+      <Suspense fallback={<ClaimReviewLoading />}>
         <ClaimReviewSection params={params} />
       </Suspense>
     </div>

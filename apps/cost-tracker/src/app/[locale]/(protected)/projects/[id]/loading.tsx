@@ -1,5 +1,5 @@
-import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectWorkspaceLoading } from "@/features/projects/components/project-workspace-loading";
 
 export default function Loading() {
-  return <ProjectWorkspaceSkeleton />;
+  return <ProjectWorkspaceLoading />;
 }

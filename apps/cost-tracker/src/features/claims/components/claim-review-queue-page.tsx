@@ -4,8 +4,8 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
+import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import {
   getClaimQueueQueryOptions,
   loadClaimQueueSearchParams,
@@ -61,7 +61,7 @@ export default async function ClaimReviewQueuePage(
         eyebrow={t("eyebrow")}
         title={t("title")}
       />
-      <Suspense fallback={<ClaimReviewQueueSkeleton />}>
+      <Suspense fallback={<ClaimReviewQueueLoading />}>
         <ClaimReviewQueueSection searchParams={searchParams} />
       </Suspense>
     </div>

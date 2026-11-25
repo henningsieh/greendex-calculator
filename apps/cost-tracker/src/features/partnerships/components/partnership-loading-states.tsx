@@ -3,8 +3,8 @@
 import { useTranslations } from "@greendex/i18n/client";
 
 import {
-  CardSkeleton,
-  HeaderSkeleton,
+  CardLoading,
+  ProtectedPageHeaderLoading,
   LoadingRegion,
 } from "@/components/loading-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ export function PartnerOrganizationsSkeleton() {
   const t = useTranslations("partnerships.loading");
   return (
     <LoadingRegion label={t("partnerOrganizations")}>
-      <HeaderSkeleton />
+      <ProtectedPageHeaderLoading />
       <div className="mt-10 grid gap-px rounded-2xl border p-px sm:grid-cols-2">
         {Array.from({ length: 4 }, (_, index) => (
           <div className="flex flex-col gap-5 p-6" key={index}>
@@ -33,9 +33,9 @@ export function ProjectPartnershipsSkeleton() {
     <LoadingRegion label={t("projectPartnerships")}>
       <div className="mt-10 flex flex-col gap-4">
         <Skeleton className="h-8 w-72 max-w-full" />
-        <CardSkeleton rows={1} />
-        <CardSkeleton rows={1} />
-        <CardSkeleton rows={1} />
+        <CardLoading rows={1} />
+        <CardLoading rows={1} />
+        <CardLoading rows={1} />
       </div>
     </LoadingRegion>
   );
