@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "Het proces",
         "title": "Eén declaratie. Nul vervolgvragen.",
         "description": "De werkruimte controleert alles voordat je indient: uitbetalingsrekening, kostenposten, bewijsdocumentkoppelingen, vastgelegde financieringstarieven. Wat ontbreekt, verschijnt als controlelijst — niet als e-mail drie weken later.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratis starten",
         "title": "Klaar voor je volgende declaratie?",
         "description": "Upload de foto. Deel de kosten. Krijg het geld terug."
       },

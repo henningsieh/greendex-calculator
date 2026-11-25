@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "El proceso",
         "title": "Una solicitud. Cero preguntas posteriores.",
         "description": "El espacio de trabajo lo comprueba todo antes de que envíes: cuenta de abono, apuntes de coste, enlaces a justificantes y tipos de financiación congelados. Lo que falte aparece en una lista de comprobación, no en un correo tres semanas después.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratis para empezar",
         "title": "¿Listo para tu próxima solicitud?",
         "description": "Sube la foto. Reparte el coste. Recupera el dinero."
       },

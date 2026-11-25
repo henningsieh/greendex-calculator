@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "Il processo",
         "title": "Una richiesta. Zero domande di approfondimento.",
         "description": "L’area di lavoro controlla tutto prima dell’invio: conto di pagamento, voci di costo, collegamenti alle ricevute, tassi di finanziamento fissati. Ciò che manca appare come lista di controllo, non come un’email tre settimane dopo.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratis per iniziare",
         "title": "Pronto per la prossima richiesta di rimborso?",
         "description": "Carica la foto. Condividi il costo. Recupera il denaro."
       },

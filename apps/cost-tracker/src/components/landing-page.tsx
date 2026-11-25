@@ -7,7 +7,6 @@ import {
   TrainFrontIcon,
 } from "lucide-react";
 
-import { AppNavigation } from "@/components/app-navigation";
 import { Aura } from "@/components/brand/aura";
 import { LandingCtaButton } from "@/components/brand/landing-cta-button";
 import {
@@ -22,6 +21,9 @@ import {
   TerminalDots,
   TerminalStatus,
 } from "@/components/brand/terminal-card";
+import { LanguageSelector } from "@/components/language-selector";
+import { SiteBrand } from "@/components/site-brand";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -54,33 +56,44 @@ export default async function LandingPage() {
 
   return (
     <main className="min-h-svh overflow-hidden">
-      <header>
-        <AppNavigation
-          actions={
-            <>
-              <Link
-                className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-                href="/login"
-              >
-                {t("common.signIn")}
-              </Link>
-              <Link
-                className={cn(
-                  buttonVariants({ size: "sm" }),
-                  "hidden sm:inline-flex",
-                )}
-                href="/register"
-              >
-                {t("landing.createAccount")}
-              </Link>
-            </>
-          }
-        />
+      {/* The marketing header carries its own composition: the brand and one
+          entry action at every width, the preference controls from sm up. */}
+      <header className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div className="flex min-h-18 flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
+          <SiteBrand />
+          <nav
+            aria-label={t("landing.accountNav")}
+            className="ml-auto flex items-center gap-1.5 sm:gap-2"
+          >
+            <div className="hidden sm:flex">
+              <ThemeSwitcher />
+            </div>
+            <LanguageSelector />
+            <Link
+              className={cn(
+                buttonVariants({ size: "sm", variant: "outline" }),
+                "px-3 sm:px-4",
+              )}
+              href="/login"
+            >
+              {t("common.signIn")}
+            </Link>
+            <Link
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "hidden sm:inline-flex",
+              )}
+              href="/register"
+            >
+              {t("landing.createAccount")}
+            </Link>
+          </nav>
+        </div>
       </header>
 
-      <section className="relative mx-auto grid w-full max-w-7xl items-center gap-16 px-5 pt-10 pb-20 sm:px-8 sm:pt-14 lg:grid-cols-[1.04fr_0.96fr] lg:px-10 lg:pt-16 lg:pb-28">
+      <section className="relative mx-auto grid w-full max-w-7xl items-start gap-x-12 gap-y-10 px-5 pt-8 pb-20 sm:px-8 sm:pt-12 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:px-10 lg:pt-14 lg:pb-28">
         <Aura className="absolute -top-32 left-1/2 h-72 w-180 -translate-x-1/2" />
-        <div className="relative max-w-2xl">
+        <div className="relative lg:col-span-2">
           <Badge variant="ember-pill">
             <span
               aria-hidden="true"
@@ -88,13 +101,19 @@ export default async function LandingPage() {
             />
             {t("brand.edition")}
           </Badge>
-          <h1 className="mt-6 type-ember-display">
-            {t("landing.hero.titleLead")}{" "}
-            <span className="ember-headline-accent text-primary">
+          {/* Each phrase keeps its own line so a longer locale wraps inside the
+              phrase instead of stranding a word alone. Hyphenation is the last
+              resort for words a display size cannot fit (fr, es, nl). */}
+          <h1 className="mt-6 type-ember-display hyphens-auto max-lg:text-[clamp(2.5rem,11vw,3.5rem)]">
+            <span className="block">{t("landing.hero.titleLead")}</span>
+            <span className="ember-headline-accent block text-primary">
               {t("landing.hero.titleAccent")}
             </span>
           </h1>
-          <p className="mt-7 max-w-xl text-lg/8 text-muted-foreground sm:text-xl">
+        </div>
+
+        <div className="relative max-w-xl">
+          <p className="text-lg/8 text-muted-foreground sm:text-xl">
             {t("landing.hero.description")}
           </p>
           <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
@@ -109,7 +128,7 @@ export default async function LandingPage() {
               {t("landing.hero.seeHow")}
             </Link>
           </div>
-          <p className="mt-5 font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase">
+          <p className="mt-5 max-w-[20rem] font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase sm:max-w-none">
             {t("landing.hero.trustLine")}
           </p>
         </div>
@@ -151,14 +170,13 @@ export default async function LandingPage() {
         id="how-it-works"
       >
         <div>
-          <p className="type-ember-eyebrow">{t("landing.process.eyebrow")}</p>
-          <h2 className="mt-4 max-w-md text-3xl sm:text-4xl">
+          <h2 className="max-w-md text-3xl sm:text-4xl">
             {t("landing.process.title")}
           </h2>
           <p className="mt-5 max-w-prose leading-7 text-muted-foreground">
             {t("landing.process.description")}
           </p>
-          <ol className="mt-8 grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3">
+          <ol className="mt-8 grid gap-px overflow-hidden rounded-2xl border bg-border">
             <ProcessStep
               description={t("landing.process.record.description")}
               number="1"
@@ -180,18 +198,17 @@ export default async function LandingPage() {
           <TerminalDots />
           <div className="mt-4 flex flex-col gap-1">
             <p>
-              <span className="text-primary">✓</span>{" "}
+              <span className="text-brand">✓</span>{" "}
               {t("landing.terminal.payoutAccount")}
             </p>
             <p>
-              <span className="text-primary">✓</span>{" "}
-              {t("landing.terminal.train")}
+              <span className="text-brand">✓</span> {t("landing.terminal.train")}
             </p>
             <p>
-              <span className="text-primary">✓</span> {t("landing.terminal.bus")}
+              <span className="text-brand">✓</span> {t("landing.terminal.bus")}
             </p>
             <p>
-              <span className="text-muted-foreground/70">◌</span>{" "}
+              <span className="text-term-muted/70">◌</span>{" "}
               {t("landing.terminal.openUpload")}
             </p>
           </div>
@@ -218,8 +235,7 @@ export default async function LandingPage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-28">
-        <p className="type-ember-eyebrow">{t("landing.cta.eyebrow")}</p>
-        <h2 className="mx-auto mt-4 max-w-2xl text-3xl text-balance sm:text-5xl">
+        <h2 className="mx-auto max-w-2xl text-3xl text-balance sm:text-5xl">
           {t("landing.cta.title")}
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
@@ -234,9 +250,11 @@ export default async function LandingPage() {
       </section>
 
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-          <p>{t("landing.footer.product")}</p>
-          <p>{t("landing.footer.tagline")}</p>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
+          <SiteBrand />
+          <p className="text-sm text-muted-foreground">
+            {t("landing.footer.tagline")}
+          </p>
         </div>
       </footer>
     </main>
@@ -249,7 +267,7 @@ async function JourneyLedger() {
   return (
     <div className="relative mx-auto w-full max-w-lg lg:mr-0">
       <div className="absolute -inset-10 -z-10 rounded-full bg-accent/35 blur-3xl" />
-      <div className="overflow-hidden rounded-3xl border bg-card shadow-[0_24px_70px_-45px_color-mix(in_oklch,var(--foreground),transparent_55%)]">
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-[0_24px_70px_-45px_color-mix(in_oklch,var(--foreground),transparent_55%)]">
         <div className="flex items-center justify-between border-b px-6 py-5">
           <div>
             <p className="font-heading font-semibold">
@@ -270,9 +288,9 @@ async function JourneyLedger() {
                 key={step.titleKey}
               >
                 {index < journeySteps.length - 1 && (
-                  <span className="absolute top-12 left-5 h-10 w-px bg-border" />
+                  <span className="absolute top-10 left-5 h-20 w-px bg-border" />
                 )}
-                <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                <span className="relative flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
                   <Icon aria-hidden="true" className="size-4" />
                 </span>
                 <div>
@@ -281,7 +299,7 @@ async function JourneyLedger() {
                     {t(step.detailKey)}
                   </p>
                 </div>
-                <p className="font-heading text-sm font-semibold">
+                <p className="font-heading text-sm font-semibold tabular-nums">
                   {"amount" in step ? step.amount : t(step.statusKey)}
                 </p>
               </div>
@@ -295,7 +313,9 @@ async function JourneyLedger() {
               {t("landing.journey.submissionComplete")}
             </span>
           </div>
-          <span className="font-heading text-lg font-semibold">€142.80</span>
+          <span className="font-heading text-lg font-semibold tabular-nums">
+            €142.80
+          </span>
         </div>
       </div>
     </div>
@@ -326,12 +346,14 @@ interface ProcessStepProps {
 
 function ProcessStep({ description, number, title }: ProcessStepProps) {
   return (
-    <li className="bg-card p-6 sm:min-h-52">
-      <span className="flex size-8 items-center justify-center rounded-full bg-secondary font-heading text-sm font-semibold text-secondary-foreground">
+    <li className="flex gap-4 bg-card p-5">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary font-heading text-xs font-semibold text-secondary-foreground">
         {number}
       </span>
-      <h3 className="mt-10 text-xl">{title}</h3>
-      <p className="mt-2 leading-7 text-muted-foreground">{description}</p>
+      <div className="min-w-0">
+        <h3 className="text-lg">{title}</h3>
+        <p className="mt-1 text-sm/6 text-muted-foreground">{description}</p>
+      </div>
     </li>
   );
 }

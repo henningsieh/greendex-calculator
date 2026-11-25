@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "Postopek",
         "title": "En zahtevek. Nič dodatnih vprašanj.",
         "description": "Delovni prostor pred oddajo preveri vse: račun za izplačilo, postavke stroškov, povezave do dokazil in zamrznjene stopnje financiranja. Kar manjka, se pokaže kot kontrolni seznam — ne kot e-pošta tri tedne pozneje.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Brezplačen začetek",
         "title": "Pripravljeni na naslednji zahtevek?",
         "description": "Naložite fotografijo. Razdelite strošek. Dobite denar nazaj."
       },

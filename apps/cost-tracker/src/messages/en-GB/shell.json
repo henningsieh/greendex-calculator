@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "The process",
         "title": "One claim. Zero follow-up questions.",
         "description": "The workspace checks everything before you submit: payout account, cost entries, receipt links, frozen funding rates. What is missing shows up as a checklist — not as an email three weeks later.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Free to start",
         "title": "Ready for your next claim?",
         "description": "Upload the photo. Share the cost. Get the money back."
       },

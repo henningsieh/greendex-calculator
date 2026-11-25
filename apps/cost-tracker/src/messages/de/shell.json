@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "Der Ablauf",
         "title": "Ein Antrag. Null Rückfragen.",
         "description": "Der Arbeitsbereich prüft alles vor dem Einreichen: Auszahlungskonto, Kostenpositionen, Belegverknüpfungen, eingefrorene Fördersätze. Was fehlt, erscheint als Checkliste — nicht als E-Mail drei Wochen später.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Kostenlos starten",
         "title": "Bereit für den nächsten Antrag?",
         "description": "Foto hochladen. Kosten teilen. Geld zurückbekommen."
       },

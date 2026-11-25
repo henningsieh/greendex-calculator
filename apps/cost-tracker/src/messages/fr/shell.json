@@ -78,7 +78,6 @@
         }
       },
       "process": {
-        "eyebrow": "Le processus",
         "title": "Une demande. Zéro question de suivi.",
         "description": "L’espace de travail vérifie tout avant la soumission : compte de versement, lignes de frais, liens vers les justificatifs, taux de financement figés. Ce qui manque apparaît dans une liste de contrôle, et non dans un e-mail trois semaines plus tard.",
         "record": {
@@ -116,7 +115,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratuit pour commencer",
         "title": "Prêt pour votre prochaine demande ?",
         "description": "Téléversez la photo. Répartissez le coût. Récupérez l’argent."
       },
