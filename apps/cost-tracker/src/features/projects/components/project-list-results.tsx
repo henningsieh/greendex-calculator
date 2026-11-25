@@ -148,7 +148,7 @@ function SortHeader({
 
 function ListMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-baseline gap-2 text-sm">
+    <div className="flex items-baseline gap-2 text-base">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="font-semibold tabular-nums">{value}</dd>
     </div>

@@ -1,16 +1,10 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 
-import {
-  CardSkeleton,
-  HeaderSkeleton,
-  LoadingRegion,
-} from "@/components/loading-skeletons";
+import { LoadingRegion } from "@/components/loading-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FiltersSkeleton } from "@/features/projects/components/project-filter-skeleton";
-import { TabsMetricsSkeleton } from "@/features/projects/components/project-tabs-skeleton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,9 +42,9 @@ const TABLE_SKELETON_COLUMNS = [
 
 /**
  * Desktop register: header row (h-12 + border, sort buttons are min-h-9 so
- * h-5 bars) and body rows (p-3 cells of text-xs = 40px, h-4 bars) inside the
- * same rounded card. Column shares mirror the fixed table layout; partner
- * scope renders one column fewer, which only changes width, not height.
+ * h-5 bars) and body rows (p-3 cells of text-xs) inside the same rounded card.
+ * Column shares mirror the fixed table layout; partner scope renders one
+ * column fewer, which only changes width, not height.
  */
 function TableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
@@ -159,170 +153,28 @@ function ListFooterSkeleton() {
   );
 }
 
-/** Plain results body: toolbar, register, cards and footer. The section
- * wrappers below supply the single accessible loading region. */
-function ProjectResultsContent() {
+/**
+ * Results-only fallback for the client boundary inside the resolved list.
+ * Tabs and filters stay mounted (and keep focus) while the register below
+ * reloads, so only the toolbar, register and footer are sketched.
+ */
+export function ProjectListResultsLoadingContent() {
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-3">
       <ListToolbarSkeleton />
       <TableSkeleton />
       <CardsSkeleton />
       <ListFooterSkeleton />
-    </>
+    </div>
   );
 }
 
-/**
- * Route-level fallback (projects/loading.tsx): header sketch plus the full
- * list section, mirroring the streamed page shell.
- */
-export function ProjectsSkeleton() {
-  const t = useTranslations("projects.loading");
-  return (
-    <LoadingRegion label={t("projects")}>
-      <HeaderSkeleton
-        rightButton={
-          <Skeleton className="h-10 w-40" data-testid="loading-skeleton" />
-        }
-      />
-      <div className="mt-6 flex min-w-0 flex-col gap-4">
-        <TabsMetricsSkeleton />
-        <FiltersSkeleton />
-        {/* The resolved list wraps its results in this gap-3 column; the
-            skeleton must too, or every gap below the filters grows to the
-            section's gap-4. */}
-        <div className="flex min-w-0 flex-col gap-3">
-          <ProjectResultsContent />
-        </div>
-      </div>
-    </LoadingRegion>
-  );
-}
-
-/**
- * List-only fallback for the inner Suspense boundary on the Projects page.
- * The page shell already renders the real header, so only the section below
- * it is sketched, with the same mt-6 rhythm as the resolved list.
- */
-export function ProjectListSkeleton() {
+/** Boundary fallback for the register inside the resolved list. */
+export function ProjectListResultsLoading() {
   const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("list")}>
-      <div className="mt-6 flex min-w-0 flex-col gap-4">
-        <TabsMetricsSkeleton />
-        <FiltersSkeleton />
-        <div className="flex min-w-0 flex-col gap-3">
-          <ProjectResultsContent />
-        </div>
-      </div>
-    </LoadingRegion>
-  );
-}
-
-/**
- * Results-only fallback for the client boundary inside the resolved list.
- * Tabs and filters stay mounted (and keep focus) while the table below
- * reloads, so only toolbar, register and footer are sketched, with no outer
- * margin of their own.
- */
-export function ProjectResultsSkeleton() {
-  const t = useTranslations("projects.loading");
-  return (
-    <LoadingRegion label={t("list")}>
-      <div className="flex min-w-0 flex-col gap-3">
-        <ProjectResultsContent />
-      </div>
-    </LoadingRegion>
-  );
-}
-
-/** Shared layout for resolved metrics and their loading placeholders. */
-export function ProjectMetrics({
-  columns,
-  children,
-  ...props
-}: {
-  columns: "two" | "three";
-  children: ReactNode;
-  "aria-busy"?: boolean;
-  "aria-label"?: string;
-  "data-testid"?: string;
-}) {
-  return (
-    <dl
-      className={cn(
-        "grid divide-x rounded-xl border bg-card",
-        columns === "three" ? "grid-cols-3" : "grid-cols-2",
-      )}
-      {...props}
-    >
-      {children}
-    </dl>
-  );
-}
-
-export function StatsSkeletonGrid({
-  columns = "three",
-  label,
-  testId,
-}: {
-  columns?: "two" | "three";
-  label?: string;
-  testId?: string;
-}) {
-  const slots = columns === "three" ? ["a", "b", "c"] : ["a", "b"];
-  return (
-    <ProjectMetrics
-      aria-busy={true}
-      aria-label={label}
-      columns={columns}
-      data-testid={testId}
-    >
-      {slots.map((slot) => (
-        <div
-          key={slot}
-          className="row-span-3 grid min-w-0 grid-rows-subgrid p-3 sm:px-5"
-        >
-          <dt aria-hidden="true">
-            <Skeleton
-              className="h-5 w-24 max-w-full"
-              data-testid="loading-skeleton"
-            />
-          </dt>
-          <dd aria-hidden="true">
-            <Skeleton className="mt-1 h-8 w-6" data-testid="loading-skeleton" />
-          </dd>
-          <dd aria-hidden="true">
-            <Skeleton
-              className="h-5 w-32 max-w-full"
-              data-testid="loading-skeleton"
-            />
-          </dd>
-        </div>
-      ))}
-    </ProjectMetrics>
-  );
-}
-
-export function ProjectWorkspaceSkeleton() {
-  const t = useTranslations("projects.loading");
-  return (
-    <LoadingRegion label={t("workspace")}>
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-28" data-testid="loading-skeleton" />
-          <Skeleton
-            className="h-9 w-96 max-w-full"
-            data-testid="loading-skeleton"
-          />
-        </div>
-        <div className="flex flex-wrap gap-x-8 gap-y-3">
-          <Skeleton className="h-9 w-40" data-testid="loading-skeleton" />
-          <Skeleton className="h-9 w-24" data-testid="loading-skeleton" />
-        </div>
-        <StatsSkeletonGrid />
-        <CardSkeleton rows={1} />
-      </div>
+      <ProjectListResultsLoadingContent />
     </LoadingRegion>
   );
 }

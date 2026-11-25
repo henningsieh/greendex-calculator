@@ -45,7 +45,7 @@ export function ProjectScopeTabs({
           >
             <TabsTrigger
               data-testid="project-scope-hosted"
-              variant="line"
+              variant="line-base"
               disabled={!availableScopes.hosted && availableScopes.partner}
               value="hosted"
             >
@@ -70,7 +70,7 @@ export function ProjectScopeTabs({
           >
             <TabsTrigger
               data-testid="project-scope-partner"
-              variant="line"
+              variant="line-base"
               disabled={!availableScopes.partner}
               value="partner"
             >

@@ -2,7 +2,10 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { HeaderSkeleton, LoadingRegion } from "@/components/loading-skeletons";
+import {
+  ProtectedPageHeaderLoading,
+  LoadingRegion,
+} from "@/components/loading-skeletons";
 import { SiteBrand } from "@/components/site-brand";
 import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +17,7 @@ export function ProtectedPageSkeleton() {
 
   return (
     <LoadingRegion label={t("loading")}>
-      <HeaderSkeleton />
+      <ProtectedPageHeaderLoading />
     </LoadingRegion>
   );
 }
@@ -111,7 +114,7 @@ export function ProtectedShellSkeleton({
             <BreadcrumbTrailFallback />
           </header>
           <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
-            <HeaderSkeleton />
+            <ProtectedPageHeaderLoading />
           </main>
         </LoadingRegion>
       </div>

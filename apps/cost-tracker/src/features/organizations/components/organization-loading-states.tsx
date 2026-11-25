@@ -3,8 +3,8 @@
 import { useTranslations } from "@greendex/i18n/client";
 
 import {
-  CardSkeleton,
-  HeaderSkeleton,
+  CardLoading,
+  ProtectedPageHeaderLoading,
   LoadingRegion,
 } from "@/components/loading-skeletons";
 
@@ -13,9 +13,9 @@ export function OrganizationPageSkeleton() {
   return (
     <LoadingRegion label={t("label")}>
       <div className="flex flex-col gap-8">
-        <HeaderSkeleton />
-        <CardSkeleton rows={2} />
-        <CardSkeleton />
+        <ProtectedPageHeaderLoading />
+        <CardLoading rows={2} />
+        <CardLoading />
       </div>
     </LoadingRegion>
   );

@@ -32,7 +32,7 @@ export function LoadingRegion({
  * The geometry matters: this skeleton is the shell's own `main` fallback, so
  * a mismatched height makes the page jump when the route's header replaces it.
  */
-export function HeaderSkeleton({
+export function ProtectedPageHeaderLoading({
   rightButton,
 }: {
   /** Trailing action slot, mirroring `ProtectedPageHeader`'s `rightButton`. */
@@ -66,7 +66,7 @@ export function HeaderSkeleton({
   );
 }
 
-export function CardSkeleton({
+export function CardLoading({
   variant = "default",
   rows = 3,
 }: {
@@ -93,14 +93,14 @@ export function CardSkeleton({
 }
 
 /** Navigation fallback adds the header absent from an inner section fallback. */
-export function ProjectDataPageSkeleton({
+export function ProjectDataPageLoading({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-8">
-      <HeaderSkeleton />
+      <ProtectedPageHeaderLoading />
       {children}
     </div>
   );

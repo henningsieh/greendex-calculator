@@ -5,8 +5,8 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
+import { ProjectListLoading } from "@/features/projects/components/project-list-loading";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
-import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -41,7 +41,7 @@ export default async function ProjectsPage(
         rightButton={canCreate ? <CreateProjectDialog /> : undefined}
       />
 
-      <Suspense fallback={<ProjectListSkeleton />}>
+      <Suspense fallback={<ProjectListLoading />}>
         <ProjectListSection searchParams={searchParams} />
       </Suspense>
     </div>

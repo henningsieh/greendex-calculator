@@ -4,8 +4,8 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import { ClaimWorkspaceSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
+import { ClaimWorkspaceLoading } from "@/features/claims/components/claim-workspace-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -59,7 +59,7 @@ export default async function ClaimPage({
   return (
     <div className="space-y-8">
       <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <Suspense fallback={<ClaimWorkspaceSkeleton />}>
+      <Suspense fallback={<ClaimWorkspaceLoading />}>
         <ClaimWorkspaceSection params={params} />
       </Suspense>
     </div>

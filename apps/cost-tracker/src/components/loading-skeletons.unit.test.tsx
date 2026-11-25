@@ -10,11 +10,8 @@ import LocalizedParticipantDetailsLoading from "@/app/[locale]/(protected)/partn
 import LocalizedPartnershipParticipantsLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/loading";
 import LocalizedProjectLoading from "@/app/[locale]/(protected)/projects/[id]/loading";
 import LocalizedHostedParticipantsLoading from "@/app/[locale]/(protected)/projects/[id]/participants/loading";
-import {
-  ClaimWorkspaceSkeleton,
-  ClaimReviewSkeleton,
-  ClaimReviewQueueSkeleton,
-} from "@/features/claims/components/claim-loading-states";
+import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
+import { ClaimWorkspaceLoading } from "@/features/claims/components/claim-workspace-loading";
 import {
   PartnershipParticipantsSkeleton,
   ParticipantDetailsSkeleton,
@@ -24,14 +21,21 @@ import {
   ProjectPartnershipsSkeleton,
   PartnerOrganizationsSkeleton,
 } from "@/features/partnerships/components/partnership-loading-states";
-import {
-  ProjectWorkspaceSkeleton,
-  ProjectsSkeleton,
-} from "@/features/projects/components/project-loading-states";
+import { ProjectWorkspaceLoading } from "@/features/projects/components/project-workspace-loading";
+import { ProjectsPageLoading } from "@/features/projects/components/projects-page-loading";
 
 describe("Cost Tracker Project loading states", () => {
+  it("mirrors the Claims queue page shell in one loading region", () => {
+    const route = render(<LocalizedClaimReviewQueueLoading />);
+    expect(route.container.querySelectorAll("output")).toHaveLength(1);
+    expect(route.container.querySelector("section.mt-6")).toBeTruthy();
+    expect(
+      route.container.querySelectorAll('[data-slot="skeleton"]').length,
+    ).toBeGreaterThan(2);
+  });
+
   it.each([
-    ["Projects", <ProjectsSkeleton key="projects" />, "Loading Projects"],
+    ["Projects", <ProjectsPageLoading key="projects" />, "Loading Projects"],
     [
       "Partners",
       <PartnerOrganizationsSkeleton key="partner-organizations" />,
@@ -46,13 +50,8 @@ describe("Cost Tracker Project loading states", () => {
 });
 
 const workspaceLoadingStates = [
-  ["Loading Claim workspace", ClaimWorkspaceSkeleton, LocalizedClaimLoading],
-  ["Loading Claim review", ClaimReviewSkeleton, LocalizedClaimReviewLoading],
-  [
-    "Loading submitted Claims",
-    ClaimReviewQueueSkeleton,
-    LocalizedClaimReviewQueueLoading,
-  ],
+  ["Loading Claim workspace", ClaimWorkspaceLoading, LocalizedClaimLoading],
+  ["Loading Claim review", ClaimReviewLoading, LocalizedClaimReviewLoading],
   [
     "Loading Participations",
     PartnershipParticipantsSkeleton,
@@ -73,11 +72,7 @@ const workspaceLoadingStates = [
     ProjectPartnershipsSkeleton,
     LocalizedPartnerOrganizationsLoading,
   ],
-  [
-    "Loading Project workspace",
-    ProjectWorkspaceSkeleton,
-    LocalizedProjectLoading,
-  ],
+  ["Loading Project workspace", ProjectWorkspaceLoading, LocalizedProjectLoading],
 ] as const;
 
 it.each(workspaceLoadingStates)(
@@ -105,7 +100,7 @@ it.each(workspaceLoadingStates)(
 );
 
 it("includes the Claim document and decision sections", () => {
-  const { container } = render(<ClaimReviewSkeleton />);
+  const { container } = render(<ClaimReviewLoading />);
   expect(container.querySelector('[data-variant="claim-band"]')).toBeTruthy();
   expect(container.querySelector('[data-variant="document"]')).toBeTruthy();
   expect(container.querySelector('[data-variant="action"]')).toBeTruthy();

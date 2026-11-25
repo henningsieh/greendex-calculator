@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, symlinkSync } from "node:fs";
+import { existsSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const [root, snapshot] = process.argv.slice(2);
@@ -73,6 +73,26 @@ function stageIfChanged(file, before) {
     { cwd: root, input: after },
   );
   git("update-index", "--cacheinfo", `${mode},${hash.toString().trim()},${file}`);
+
+  // The hook formats a snapshot of the index, so a fix landed in the commit
+  // while the working tree kept the pre-fix content: commit and `git status`
+  // disagreed until the next manual format. Carry the fix into the working tree
+  // too, but only when that file is still exactly the staged content, so edits
+  // the user has not staged are never overwritten.
+  const worktreeFile = path.join(root, file);
+  try {
+    const worktree = readFileSync(worktreeFile);
+    if (worktree.equals(before)) {
+      writeFileSync(worktreeFile, after);
+    } else {
+      process.stderr.write(
+        `pre-commit: ${file} has unstaged edits; the formatted version is staged only. ` +
+          "Run the formatter again to align the working tree.\n",
+      );
+    }
+  } catch {
+    // Missing worktree file (deleted during the commit): nothing to align.
+  }
 }
 
 function isRegularIndexFile(file) {

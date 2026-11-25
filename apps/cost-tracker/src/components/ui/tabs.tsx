@@ -80,6 +80,10 @@ const tabsTriggerVariants = cva(
       variant: {
         default: "",
         line: "py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0",
+        // Same line chrome at 16px, for surfaces whose section heading uses
+        // `text-base` (the Project scope tabs).
+        "line-base":
+          "py-4 text-base tracking-normal normal-case sm:flex-none sm:px-0",
         // Stronger than the base dark:data-active:border-input rule by
         // construction (extra attribute): wins regardless of file order.
         brand: "[&[data-variant='brand']]:aria-selected:border-brand",
