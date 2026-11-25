@@ -29,6 +29,7 @@ import {
 import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
+import { CountryValue } from "@/components/country-value";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -201,12 +202,14 @@ export function ProjectListMetrics({
 }
 
 export function ResolvedProjectListResults({
+  onClearFilters,
   preference,
   scope,
   state,
   urlState,
   setUrlState,
 }: {
+  onClearFilters: () => void;
   preference: { accountKey: string; visibility: ProjectVisibility };
   scope: "hosted" | "partner";
   state: ProjectListState;
@@ -337,10 +340,23 @@ export function ResolvedProjectListResults({
         id: "location",
         enableSorting: false,
         header: t("location"),
-        cell: ({ row }) =>
-          [row.original.location, row.original.country]
-            .filter(Boolean)
-            .join(", "),
+        cell: ({ row }) => row.original.location,
+      },
+      {
+        accessorKey: "country",
+        header: ({ column }) => (
+          <SortHeader
+            label={t("country")}
+            direction={column.getIsSorted()}
+            priority={column.getSortIndex()}
+            testId="sort-project-country"
+            disabled={!isHydrated}
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc", true)
+            }
+          />
+        ),
+        cell: ({ row }) => <CountryValue code={row.original.country} />,
       },
       // The Hosting Participant view is a Hosting read (ADR-0016), so Partner rows
       // never link to it; their Partnership workspace keeps its own entry.
@@ -424,6 +440,7 @@ export function ResolvedProjectListResults({
     status: t("statusFilter"),
     startDate: t("startDate"),
     endDate: t("endDate"),
+    country: t("country"),
   };
   const sortDirectionLabel = (criterion: { id: string; desc: boolean }) =>
     criterion.id === "status"
@@ -436,12 +453,13 @@ export function ResolvedProjectListResults({
   // Fixed table layout: each data column owns a share, so a long Project name
   // can only truncate instead of widening the register past the card. The
   // shares hold at the narrowest desktop container (56rem), where every label
-  // and sorting badge still fits.
+  // and sorting badge still fits; the country share carries a flag tile.
   const columnWidths: Record<string, string> = {
     status: "w-[16%]",
-    startDate: "w-[16%]",
-    endDate: "w-[15%]",
-    location: "w-[15%]",
+    startDate: "w-[12%]",
+    endDate: "w-[12%]",
+    location: "w-[12%]",
+    country: "w-[16%]",
     participants: "w-[16%]",
   };
   const cellLabels: Record<string, string> = {
@@ -449,6 +467,7 @@ export function ResolvedProjectListResults({
     startDate: t("startDate"),
     endDate: t("endDate"),
     location: t("location"),
+    country: t("country"),
   };
   const hasActiveFilters = Boolean(
     state.search ||
@@ -463,16 +482,8 @@ export function ResolvedProjectListResults({
       <span>{t("noMatch")}</span>
       {hasActiveFilters && (
         <Button
-          onClick={() =>
-            void setUrlState({
-              cursor: null,
-              dateFrom: null,
-              dateTo: null,
-              partnerOrganizationIds: null,
-              search: null,
-              status: null,
-            })
-          }
+          data-testid="project-clear-filters"
+          onClick={onClearFilters}
           size="sm"
           type="button"
           variant="outline"
@@ -504,7 +515,7 @@ export function ResolvedProjectListResults({
               }
             >
               <ArrowDownUpIcon data-icon="inline-start" />
-              <span className="hidden @lg/content:inline">{t("sort")}</span>
+              <span className="sr-only @lg/content:not-sr-only">{t("sort")}</span>
               <span className="ml-1 rounded-sm border border-border bg-muted px-1 py-0.5 font-mono tabular-nums">
                 {sorting.length}
               </span>
@@ -680,7 +691,9 @@ export function ResolvedProjectListResults({
               }
             >
               <Columns3Icon data-icon="inline-start" />
-              <span className="hidden @lg/content:inline">{t("columns")}</span>
+              <span className="sr-only @lg/content:not-sr-only">
+                {t("columns")}
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
@@ -724,7 +737,9 @@ export function ResolvedProjectListResults({
               aria-hidden="true"
               className={isFetching ? "motion-safe:animate-spin" : undefined}
             />
-            <span className="hidden @lg/content:inline">{t("refresh")}</span>
+            <span className="sr-only @lg/content:not-sr-only">
+              {t("refresh")}
+            </span>
           </Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -849,7 +864,7 @@ export function ResolvedProjectListResults({
       </div>
 
       {/* Below xl: one card per Project. */}
-      <div className="grid gap-3 @4xl/content:hidden">
+      <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
         {rows.length === 0 ? (
           <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
         ) : (

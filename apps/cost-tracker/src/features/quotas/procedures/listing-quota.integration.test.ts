@@ -201,7 +201,7 @@ describe("shared listing procedure budget", () => {
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
     });
     await expect(
-      client.projects.searchHosted({ search: "x" }),
+      client.projects.searchHosted({ search: "x".repeat(129) }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.projects.listHosted({ pageSize: 25, cursor: "not-a-cursor" }),

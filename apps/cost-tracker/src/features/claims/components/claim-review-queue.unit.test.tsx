@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { Suspense } from "react";
@@ -27,17 +27,24 @@ const fixtures = vi.hoisted(() => {
     },
     partnerOptions: [{ id: "partner-a", name: "Partner A" }],
   };
-  return { data, query: vi.fn<() => Promise<typeof data>>() };
+  return {
+    data,
+    inputs: [] as { search?: string }[],
+    query: vi.fn<() => Promise<typeof data>>(),
+  };
 });
 
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
     claims: {
       listReviewQueue: {
-        queryOptions: ({ input }: { input: { search?: string } }) => ({
-          queryKey: ["claims", "review-queue", input],
-          queryFn: fixtures.query,
-        }),
+        queryOptions: ({ input }: { input: { search?: string } }) => {
+          fixtures.inputs.push(input);
+          return {
+            queryKey: ["claims", "review-queue", input],
+            queryFn: fixtures.query,
+          };
+        },
       },
     },
   },
@@ -71,6 +78,19 @@ describe("Host submitted Claim queue", () => {
     projectCount: 0,
     partnerOrganizationCount: 0,
   };
+
+  it("requests the queue from the first typed character", async () => {
+    fixtures.query.mockReset().mockResolvedValue(fixtures.data);
+    fixtures.inputs.length = 0;
+    renderQueue();
+
+    await screen.findByTestId("review-queue");
+    await userEvent.type(screen.getByTestId("claim-queue-search"), "c");
+
+    await waitFor(() =>
+      expect(fixtures.inputs.some((input) => input.search === "c")).toBe(true),
+    );
+  });
 
   it("renders submitted Claims with a direct review link", async () => {
     fixtures.query.mockReset().mockResolvedValue(fixtures.data);

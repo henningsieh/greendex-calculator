@@ -40,7 +40,6 @@ export const DEFAULT_PROJECT_STATUS_SELECTION: readonly ProjectStatus[] = [
 ];
 
 const MAX_PARTNER_FILTERS = 20;
-const MINIMUM_SEARCH_LENGTH = 3;
 
 export const projectListParsers = {
   scope: parseAsStringLiteral(PROJECT_LIST_SCOPES),
@@ -101,10 +100,8 @@ export function normalizeProjectListState(
 
   return {
     scope: state.scope,
-    search:
-      normalizedSearch.length >= MINIMUM_SEARCH_LENGTH
-        ? normalizedSearch
-        : undefined,
+    // Any non-empty term filters; whitespace-only resets the constraint.
+    search: normalizedSearch || undefined,
     dateFrom: hasValidDateRange && state.dateFrom ? state.dateFrom : undefined,
     dateTo: hasValidDateRange && state.dateTo ? state.dateTo : undefined,
     status: canonicalProjectStatuses(state.status),

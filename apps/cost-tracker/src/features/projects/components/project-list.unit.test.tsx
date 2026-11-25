@@ -215,6 +215,39 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(card?.querySelector("dl [data-status]")).toBeNull();
   });
 
+  it("renders the Project country as a sortable table column", async () => {
+    renderList();
+    await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
+
+    expect(screen.getByTestId("project-column-header-country")).toBeVisible();
+    expect(
+      screen
+        .getByTestId("project-link-project-1")
+        .closest("tr")
+        ?.querySelector('[data-country="DE"]'),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("sort-project-country"));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: [
+        { field: "startDate", direction: "asc" },
+        { field: "country", direction: "asc" },
+      ],
+    });
+  });
+
+  it("renders the Project country as a card field with its flag", async () => {
+    renderList();
+    const title = await screen.findByTestId("project-link-project-1-card");
+    const flag = title
+      .closest("article")
+      ?.querySelector('dl [data-country="DE"]');
+
+    expect(flag).toBeTruthy();
+    expect(flag?.querySelector("svg")).toBeTruthy();
+  });
+
   it("links to the Project without carrying list state", async () => {
     renderList();
 

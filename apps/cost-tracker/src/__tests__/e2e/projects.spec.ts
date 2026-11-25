@@ -175,6 +175,9 @@ test.describe("Cost Tracker Project production path", () => {
         { field: "startDate", direction: "desc" },
         { field: "endDate", direction: "desc" },
         { field: "name", direction: "asc" },
+        // Every fixture row shares this country, so it only exercises the
+        // fifth criterion slot without changing the expected order.
+        { field: "country", direction: "asc" },
       ];
       let releaseScripts = () => {};
       const scriptsReleased = new Promise<void>((resolve) => {
@@ -229,6 +232,7 @@ test.describe("Cost Tracker Project production path", () => {
             { field: "startDate", direction: "desc" },
             { field: "endDate", direction: "asc" },
             { field: "name", direction: "asc" },
+            { field: "country", direction: "asc" },
           ]),
       );
       await assertOrder([4, 5, 6, 7, 0, 1, 2, 3]);
@@ -240,7 +244,7 @@ test.describe("Cost Tracker Project production path", () => {
       await assertOrder([1, 0, 3, 2, 5, 4, 7, 6]);
       await expect(page.getByTestId("project-sort-menu")).toBeEnabled();
       await page.getByTestId("project-sort-menu").click();
-      for (const field of ["status", "startDate", "endDate", "name"]) {
+      for (const field of ["status", "startDate", "endDate", "name", "country"]) {
         await expect(
           page.getByTestId(`project-sort-direction-${field}`),
         ).toBeEnabled();
@@ -249,7 +253,8 @@ test.describe("Cost Tracker Project production path", () => {
         ).toBeEnabled();
       }
       await expect(page.getByTestId("project-sort-up-status")).toBeDisabled();
-      await expect(page.getByTestId("project-sort-down-name")).toBeDisabled();
+      await expect(page.getByTestId("project-sort-down-country")).toBeDisabled();
+      // Five sortable fields are all in use, so no further rule can be added.
       await expect(page.getByTestId("project-sort-add")).toBeDisabled();
       await expect(page.getByTestId("project-sort-reset")).toBeEnabled();
       await page.keyboard.press("Escape");
@@ -424,6 +429,170 @@ test.describe("Cost Tracker Project production path", () => {
         .locator(`a[href$="/projects/${fixture.projectId}"]`)
         .filter({ visible: true }),
     ).toBeVisible();
+  });
+
+  test("filters from the first character and keeps focus, caret and draft through result refreshes", async ({
+    page,
+  }) => {
+    await page.goto("/projects");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const projectLink = page
+      .locator(`a[href$="/projects/${fixture.projectId}"]`)
+      .filter({ visible: true });
+    const search = page.getByTestId("project-search");
+    await search.click();
+
+    // A single character reaches the server; no two-/three-character gate.
+    const oneCharacterRequest = page.waitForRequest(
+      (request) =>
+        isRPCRequest(request.url()) &&
+        (request.postData() ?? "").includes('"search":"q"'),
+    );
+    await page.keyboard.type("q");
+    await oneCharacterRequest;
+    await expect(projectLink).toHaveCount(0);
+
+    await page.keyboard.press("ControlOrMeta+A");
+    await page.keyboard.press("Backspace");
+    const distinctive = fixture.name.slice(-8);
+    for (const [index, character] of [...distinctive].entries()) {
+      await page.keyboard.type(character);
+      const typed = distinctive.slice(0, index + 1);
+      // The debounce is observable through the URL; no fixed sleep needed.
+      await expect(page).toHaveURL(
+        (url) => url.searchParams.get("search") === typed,
+      );
+      expect(
+        await search.evaluate((element: HTMLInputElement) => ({
+          focused: document.activeElement === element,
+          selectionEnd: element.selectionEnd,
+          selectionStart: element.selectionStart,
+          value: element.value,
+        })),
+      ).toEqual({
+        focused: true,
+        selectionEnd: index + 1,
+        selectionStart: index + 1,
+        value: typed,
+      });
+    }
+    await expect(projectLink).toBeVisible();
+
+    // Edit inside the term: focus and the caret survive the result refresh.
+    await page.keyboard.press("Home");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    const edited = `${distinctive.slice(0, 2)}X${distinctive.slice(2)}`;
+    await page.keyboard.type("X");
+    // Wait for the settled list the edit produces, not only for the request:
+    // the fixture no longer matches the edited term, so its disappearance is
+    // the render that the caret must survive.
+    await expect(projectLink).toHaveCount(0);
+    expect(
+      await search.evaluate((element: HTMLInputElement) => ({
+        focused: document.activeElement === element,
+        selectionStart: element.selectionStart,
+        value: element.value,
+      })),
+    ).toEqual({ focused: true, selectionStart: 3, value: edited });
+    // The URL keeps the typed case; the query layer lowercases for matching.
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("search") === edited,
+    );
+    // The caret survives the refresh that the mid-string edit triggered.
+    expect(
+      await search.evaluate((element: HTMLInputElement) => ({
+        focused: document.activeElement === element,
+        selectionStart: element.selectionStart,
+        value: element.value,
+      })),
+    ).toEqual({ focused: true, selectionStart: 3, value: edited });
+  });
+
+  test("keeps a cleared search cleared when a debounce is pending", async ({
+    page,
+  }) => {
+    await page.goto(`/projects?search=${encodeURIComponent("unmatched-425")}`);
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const search = page.getByTestId("project-search");
+    await search.click();
+    await page.keyboard.type("x");
+
+    await page
+      .getByTestId("project-clear-filters")
+      .filter({ visible: true })
+      .click();
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    // Negative observation window: the stale write would land after the
+    // 300 ms debounce, so wait past it before asserting the URL stayed clear.
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await expect(search).toHaveValue("");
+    await expect(
+      page
+        .locator(`a[href$="/projects/${fixture.projectId}"]`)
+        .filter({ visible: true }),
+    ).toBeVisible();
+  });
+
+  test("cancels a pending search when clearing filters whose URL search is already empty", async ({
+    page,
+  }) => {
+    // The date filter alone empties the register, so Clear filters runs while
+    // the URL search is already "". The pending draft must still be dropped.
+    await page.goto("/projects?dateFrom=2099-01-01");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const search = page.getByTestId("project-search");
+    await search.click();
+    await page.keyboard.type("x");
+
+    await page
+      .getByTestId("project-clear-filters")
+      .filter({ visible: true })
+      .click();
+    await expect(page).toHaveURL(
+      (url) =>
+        !url.searchParams.has("search") && !url.searchParams.has("dateFrom"),
+    );
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL(
+      (url) =>
+        !url.searchParams.has("search") && !url.searchParams.has("dateFrom"),
+    );
+    await expect(search).toHaveValue("");
+  });
+
+  test("keeps browser history navigation ahead of a pending search", async ({
+    page,
+  }) => {
+    await page.goto("/projects");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    const search = page.getByTestId("project-search");
+    await search.click();
+    // Commit one search so its pushState creates a same-document history entry.
+    await page.keyboard.type("unmatched-425");
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("search") === "unmatched-425",
+    );
+
+    // A pending edit must not survive the popstate.
+    await page.keyboard.type("x");
+    await page.goBack();
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await page.waitForTimeout(800);
+
+    await expect(page).toHaveURL((url) => !url.searchParams.has("search"));
+    await expect(search).toHaveValue("");
   });
 
   test("renders protected Project routes through the Cost Tracker router and refreshes Partnerships", async ({

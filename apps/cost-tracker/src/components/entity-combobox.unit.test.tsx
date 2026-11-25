@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -86,7 +86,7 @@ describe("EntityCombobox", () => {
     expect(screen.getByRole("option")).toHaveAttribute("data-entity-id", "id-24");
   }, 15_000);
 
-  it("preloads names, stores IDs, and searches name or ID after two characters", async () => {
+  it("preloads names, stores IDs, and searches name or ID from the first character", async () => {
     const user = userEvent.setup();
     const search = vi
       .fn()
@@ -105,12 +105,39 @@ describe("EntityCombobox", () => {
     expect(screen.getByRole("option")).toBeTruthy();
     const input = screen.getByTestId("entity-search");
     await user.type(input, "p");
-    expect(search).not.toHaveBeenCalled();
+    await waitFor(() => expect(search).toHaveBeenCalledWith("p"));
     await user.type(input, "artner-123");
     expect(await screen.findByRole("option")).toBeTruthy();
     expect(search).toHaveBeenCalledWith("partner-123");
     await user.click(screen.getByRole("option"));
     expect(onChange).toHaveBeenCalledWith("partner-123");
+  });
+
+  it("keeps a settled result when a whitespace-only edit leaves the term unchanged", async () => {
+    const user = userEvent.setup();
+    const search = vi
+      .fn()
+      .mockResolvedValue([{ id: "partner-123", name: "Green Partner" }]);
+    render(
+      <EntityCombobox
+        label="Organization"
+        value=""
+        onChange={vi.fn()}
+        search={search}
+      />,
+    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    const input = screen.getByTestId("entity-search");
+    await user.type(input, "partner");
+    await waitFor(() => expect(search).toHaveBeenCalledWith("partner"));
+    expect(await screen.findByRole("option")).toBeTruthy();
+
+    await user.type(input, " ");
+
+    // The trimmed term is unchanged, so the settled result stays and no second
+    // request starts for it.
+    expect(screen.getByRole("option")).toBeTruthy();
+    expect(search).toHaveBeenCalledTimes(1);
   });
 
   it("supports Participant email searches and preserves the result ID", async () => {

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 
 import { DatePicker } from "@/components/date-picker";
 import {
@@ -41,36 +41,25 @@ import type { ProjectListQueryState } from "@/features/projects/types";
 import { canonicalProjectStatuses } from "@/features/projects/validation-schemas";
 
 /**
- * Filter controls above the Suspense boundary: search, selects, and date
- * inputs stay mounted (and keep focus) while the results below reload.
- * nuqs stays the source of truth; every control funnels through
- * pushColumnFiltersToUrl.
+ * Filter controls render above the results Suspense boundary, so a result
+ * refresh cannot suspend or remount them. nuqs stays the source of truth;
+ * every control funnels through pushColumnFiltersToUrl.
  */
 export function ProjectListFilters({
+  onSearchChange,
+  searchDraft,
   state,
   urlState,
   setUrlState,
 }: {
+  onSearchChange: (search: string) => void;
+  searchDraft: string;
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
   setUrlState: ProjectListQueryState[1];
 }) {
   const t = useTranslations("projects.list");
-  const searchTimeout = useRef<number>(undefined);
-  const pushedSearch = useRef(urlState.search);
-  const [searchDraft, setSearchDraft] = useState(urlState.search);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
-
-  useEffect(() => {
-    // Keep the field in step with back/forward and external resets without
-    // overwriting characters typed since the last debounced URL write.
-    if (urlState.search !== pushedSearch.current) {
-      pushedSearch.current = urlState.search;
-      setSearchDraft(urlState.search);
-    }
-  }, [urlState.search]);
 
   const columnFilters = getProjectColumnFilters(urlState);
 
@@ -118,15 +107,7 @@ export function ProjectListFilters({
               value={searchDraft}
               id="project-search"
               data-testid="project-search"
-              onChange={(event) => {
-                const search = event.target.value;
-                setSearchDraft(search);
-                window.clearTimeout(searchTimeout.current);
-                searchTimeout.current = window.setTimeout(() => {
-                  pushedSearch.current = search;
-                  updateProjectFilter(PROJECT_FILTER_IDS.name, search);
-                }, 300);
-              }}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder={t("searchPlaceholder")}
             />
           </div>

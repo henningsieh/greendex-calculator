@@ -227,7 +227,8 @@ describe("assignment-scoped participation coordination", () => {
     expect(await query(email.toUpperCase())).toEqual(expected);
     expect(await query("CANDIDATE")).toEqual(expected);
     expect(await query("%_")).toEqual([]);
-    await expect(query("c")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // Discovery filters from the first character, like every other search.
+    expect(await query("c")).toEqual(expect.arrayContaining(expected));
     await expect(query("x".repeat(129))).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });

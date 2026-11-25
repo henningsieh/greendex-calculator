@@ -27,10 +27,12 @@ const authMocks = vi.hoisted(() => ({
 }));
 const quotaMocks = vi.hoisted(() => ({
   consumeUploadBytes: vi.fn(),
+  refundUploadBytes: vi.fn(),
   cleanupQuotasBestEffort: vi.fn(),
 }));
 vi.mock("@/features/quotas/procedures/counters", () => ({
   consumeUploadBytes: quotaMocks.consumeUploadBytes,
+  refundUploadBytes: quotaMocks.refundUploadBytes,
   cleanupQuotasBestEffort: quotaMocks.cleanupQuotasBestEffort,
 }));
 vi.mock("@/lib/proof-storage", () => ({
@@ -105,7 +107,10 @@ const quotaRowsForPartner = () =>
 beforeEach(async () => {
   actor = coordinator;
   activeOrg = partner;
-  quotaMocks.consumeUploadBytes.mockReset().mockResolvedValue("allowed");
+  quotaMocks.consumeUploadBytes.mockReset().mockResolvedValue({
+    outcome: "allowed",
+    windowStart: new Date(0),
+  });
   quotaMocks.cleanupQuotasBestEffort.mockReset().mockResolvedValue(undefined);
   await db.delete(entries).where(eq(entries.claimId, ownClaim));
   await db

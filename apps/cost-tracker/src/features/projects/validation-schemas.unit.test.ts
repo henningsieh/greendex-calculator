@@ -34,6 +34,12 @@ describe("Project sort order", () => {
     ).toBe(false);
     expect(ProjectSortOrderSchema.safeParse([]).success).toBe(false);
   });
+
+  it("accepts the country column as a sort field", () => {
+    expect(
+      ProjectSortOrderSchema.parse([{ field: "country", direction: "asc" }]),
+    ).toEqual([{ field: "country", direction: "asc" }]);
+  });
 });
 
 function validCreateInput() {
@@ -158,7 +164,7 @@ describe("Project list input", () => {
     ).toEqual(["open", "ready", "archived"]);
   });
 
-  it("normalizes search to trimmed lowercase and enforces length", () => {
+  it("normalizes search to trimmed lowercase from the first character", () => {
     expect(
       PartnerProjectListInputSchema.parse({
         pageSize: 25,
@@ -166,8 +172,16 @@ describe("Project list input", () => {
       }).search,
     ).toBe("solar");
     expect(
-      PartnerProjectListInputSchema.safeParse({ pageSize: 25, search: "ab" })
-        .success,
+      PartnerProjectListInputSchema.parse({ pageSize: 25, search: " A " }).search,
+    ).toBe("a");
+    expect(
+      PartnerProjectListInputSchema.parse({ pageSize: 25, search: "ab" }).search,
+    ).toBe("ab");
+    expect(
+      PartnerProjectListInputSchema.safeParse({
+        pageSize: 25,
+        search: "x".repeat(121),
+      }).success,
     ).toBe(false);
   });
 

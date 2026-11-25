@@ -222,20 +222,24 @@ describe("Project list URL state", () => {
     ]);
   });
 
-  it("omits search values shorter than three normalized characters", () => {
-    const state = normalizeProjectListState({
-      scope: null,
-      search: " ab ",
-      dateFrom: null,
-      dateTo: null,
-      status: ["open", "ready"],
-      partnerOrganizationIds: [],
-      sort: [{ field: "startDate", direction: "asc" }],
-      cursor: "",
-      pageSize: 25,
-    });
+  it("retains one- and two-character search terms and resets on whitespace", () => {
+    const state = (search: string) =>
+      normalizeProjectListState({
+        scope: null,
+        search,
+        dateFrom: null,
+        dateTo: null,
+        status: ["open", "ready"],
+        partnerOrganizationIds: [],
+        sort: [{ field: "startDate", direction: "asc" }],
+        cursor: "",
+        pageSize: 25,
+      });
 
-    expect(state.search).toBeUndefined();
-    expect(state.cursor).toBeUndefined();
+    expect(state(" A ").search).toBe("a");
+    expect(state(" ab ").search).toBe("ab");
+    expect(state("   ").search).toBeUndefined();
+    expect(state("").search).toBeUndefined();
+    expect(state(" ab ").cursor).toBeUndefined();
   });
 });

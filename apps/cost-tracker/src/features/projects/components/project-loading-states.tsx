@@ -39,9 +39,10 @@ function ListToolbarSkeleton() {
 
 const TABLE_SKELETON_COLUMNS = [
   "w-[16%]",
+  "w-[12%]",
+  "w-[12%]",
+  "w-[12%]",
   "w-[16%]",
-  "w-[15%]",
-  "w-[15%]",
   "w-[16%]",
 ] as const;
 
@@ -110,12 +111,12 @@ function TableSkeleton({ rows = 6 }: { rows?: number }) {
 
 /**
  * Below wide: project cards (rounded-xl, px-4 py-3.5) with title row, a
- * three-row detail grid and a trailing action row. Counts are sketched, so
+ * four-row detail grid and a trailing action row. Counts are sketched, so
  * card-internal height stays approximate while the outer rhythm is exact.
  */
 function CardsSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid gap-3 @4xl/content:hidden">
+    <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
       {Array.from({ length: count }, (_, index) => (
         <div className="rounded-xl border bg-card px-4 py-3.5" key={index}>
           <div className="flex items-start justify-between gap-3">
@@ -126,7 +127,7 @@ function CardsSkeleton({ count = 3 }: { count?: number }) {
             />
           </div>
           <div className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
-            {Array.from({ length: 3 }, (_, detail) => (
+            {Array.from({ length: 4 }, (_, detail) => (
               <Fragment key={detail}>
                 <Skeleton className="h-4 w-16" data-testid="loading-skeleton" />
                 <div className="flex justify-end">

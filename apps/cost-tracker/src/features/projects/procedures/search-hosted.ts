@@ -89,8 +89,8 @@ export const listHostedOptions = authorized
  * Picker search over hosted Projects. Two modes share one endpoint:
  * - Empty search (""): browse preload, newest first — the projects most
  *   likely awaiting a Partner Organization assignment surface on top.
- * - Typed search: server-filtered over the full table, alphabetical, so a
- *   2+ character query reaches any hosted project.
+ * - Typed search: server-filtered over the full table, alphabetical, so the
+ *   first typed character reaches any hosted project.
  * Both modes cap at 20 rows. The cap never blocks assignment (the filter
  * runs before the limit); it only bounds the browse view.
  */
