@@ -48,7 +48,9 @@ export function ThemeSwitcher() {
         }
       >
         <PaletteIcon aria-hidden="true" data-icon="inline-start" />
-        <ChevronDownIcon aria-hidden="true" />
+        {/* Below sm the trigger is icon-only so the landing header keeps its
+            brand and entry action on one line. */}
+        <ChevronDownIcon aria-hidden="true" className="hidden sm:block" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
