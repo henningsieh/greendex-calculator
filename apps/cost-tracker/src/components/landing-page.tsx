@@ -117,11 +117,11 @@ export default async function LandingPage() {
           </h1>
         </div>
 
-        <div className="relative max-w-xl">
+        <div className="relative lg:max-w-xl">
           <p className="text-lg/8 text-muted-foreground sm:text-xl">
             {t("landing.hero.description")}
           </p>
-          <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center">
             <LandingCtaButton href="/register">
               {t("landing.hero.start")}
               <ArrowRightIcon data-icon="inline-end" />
@@ -133,7 +133,7 @@ export default async function LandingPage() {
               {t("landing.hero.seeHow")}
             </Link>
           </div>
-          <p className="mt-5 max-w-[20rem] font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase sm:max-w-none">
+          <p className="my-5 max-w-[20rem] text-center font-mono text-xs tracking-widest text-muted-foreground uppercase sm:max-w-none lg:my-12 lg:tracking-normal">
             {t("landing.hero.trustLine")}
           </p>
         </div>
