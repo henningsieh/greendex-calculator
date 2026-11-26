@@ -6,7 +6,8 @@ import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("@greendex/i18n/server", async () => ({
+vi.mock("@greendex/i18n/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@greendex/i18n/server")>()),
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -46,8 +47,10 @@ it("prefetches the participant snapshot behind the page identity", async () => {
     meta: { costTrackerORPC: true },
   });
   expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-  // The header owns identity only; breadcrumbs render in the shell slot.
-  expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  expect(screen.getByTestId("back-to-participations")).toHaveAttribute(
+    "href",
+    "/en-GB/partnerships/partnership-1/participants",
+  );
 });
 
 it("renders the coordination header without a Partnership lookup", async () => {
@@ -98,7 +101,9 @@ it.each([undefined, "person-1"])(
 
     expect(mocks.query).toHaveBeenCalledTimes(participationId ? 1 : 0);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("back-to-participations"),
+    ).not.toBeInTheDocument();
   },
 );
 

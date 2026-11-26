@@ -467,7 +467,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      await page.locator(`a[href$="${participantsURL}"]`).click();
+      await page.getByTestId("back-to-participations").click();
       await expectPrivateURL(page, new RegExp(`${participantsURL}$`));
       const [savedCountry] = await db
         .select({ country: projectParticipantsTable.country })

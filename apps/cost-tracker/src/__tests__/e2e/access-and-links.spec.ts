@@ -446,7 +446,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ]) {
       await f.goto(route);
       await denied(f);
-      await expect(f.locator('nav[aria-label="breadcrumb"]')).toHaveCount(1);
+      await expect(f.locator('nav[aria-label="breadcrumb"]:visible')).toHaveCount(
+        1,
+      );
       // Text-free: no link to the protected partnership leaks.
       await expect(
         f.locator(
