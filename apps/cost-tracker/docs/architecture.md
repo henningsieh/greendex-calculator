@@ -134,6 +134,7 @@ Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh
 | `participations`         | Participant management, reports, duplicate review, and Participant Journeys                          |
 | `participant-onboarding` | Participant Invitations, Registration Links, required information, Agreement acceptance, and joining |
 | `claims`                 | Claim lifecycle, costs, allocations, documents, payout workflow, submission, review, and payment     |
+| `notifications`          | Persistent notification inbox, event catalog use, unread listing, and read state                     |
 | `user-settings`          | Personal preferences                                                                                 |
 | `breadcrumbs`            | Per-route breadcrumb trails in the App Shell header, their slot boundary, and their labels           |
 

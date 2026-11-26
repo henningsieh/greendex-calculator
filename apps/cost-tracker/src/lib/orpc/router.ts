@@ -38,6 +38,11 @@ import {
   submit,
 } from "@/features/claims/procedures/submission";
 import {
+  listUnread,
+  markAllRead,
+  markRead,
+} from "@/features/notifications/procedures/inbox";
+import {
   searchOrganizations,
   listOrganizationOptions,
   listMyOrganizations,
@@ -104,6 +109,7 @@ export const router = {
     updateUser,
   },
   participantOnboarding,
+  notifications: { listUnread, markRead, markAllRead },
   participations: { ...participations, listOnboardingProgress },
   duplicateReviews,
   claims: {
