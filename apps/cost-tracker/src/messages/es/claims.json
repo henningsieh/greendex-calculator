@@ -20,7 +20,15 @@
       "action": "Acción",
       "allocationAmount": "Importe (EUR)",
       "allocationPercentage": "Porcentaje",
-      "allocationEqual": "A partes iguales"
+      "allocationEqual": "A partes iguales",
+      "claimAmount": "Importe del reembolso",
+      "participants": "{count, plural, =1 {1 participante} other {# participantes}}",
+      "fullyAllocated": "cada euro asignado",
+      "receipts": "{count, plural, =1 {1 justificante} other {# justificantes}}",
+      "receiptMissing": "Sin justificante todavía",
+      "equalShareDetail": "A partes iguales · {amount} cada uno",
+      "percentageShareDetail": "Cuota del {percentage} %",
+      "amountShareDetail": "Cuota de {amount}"
     },
     "queue": {
       "eyebrow": "Espacio de trabajo",
@@ -154,7 +162,17 @@
       "confirmDescription": "Envía la solicitud a la organización anfitriona para que la revise. Solo podrás editarla o cambiar la cuenta de abono si te pide una corrección.",
       "confirm": "Confirmar envío",
       "cancel": "Cancelar",
-      "unavailable": "No disponible hasta que se superen todos los puntos de la lista de comprobación"
+      "unavailable": "No disponible hasta que se superen todos los puntos de la lista de comprobación",
+      "done": "Hecho",
+      "open": "Pendiente",
+      "readyToSubmit": "Listo para enviar",
+      "inProgress": "En curso",
+      "item": {
+        "payoutAccount": "Cuenta de abono seleccionada",
+        "entries": "Apuntes de gastos de viaje registrados",
+        "proofDocuments": "Un justificante en cada apunte",
+        "journeys": "Viajes de participantes completos"
+      }
     },
     "workspace": {
       "noClaim": "Sin solicitud de reembolso",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Revisión de solicitudes de reembolso"
+    },
+    "transport": {
+      "boat": "Barco",
+      "bus": "Autobús",
+      "train": "Tren",
+      "car": "Coche",
+      "electricCar": "Coche eléctrico",
+      "plane": "Avión"
     }
   }
 }

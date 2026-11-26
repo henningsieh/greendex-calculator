@@ -20,7 +20,15 @@
       "action": "Azione",
       "allocationAmount": "Importo (EUR)",
       "allocationPercentage": "Percentuale",
-      "allocationEqual": "In parti uguali"
+      "allocationEqual": "In parti uguali",
+      "claimAmount": "Importo del rimborso",
+      "participants": "{count, plural, =1 {1 partecipante} other {# partecipanti}}",
+      "fullyAllocated": "ogni euro assegnato",
+      "receipts": "{count, plural, =1 {1 giustificativo} other {# giustificativi}}",
+      "receiptMissing": "Nessun giustificativo",
+      "equalShareDetail": "In parti uguali · {amount} a testa",
+      "percentageShareDetail": "Quota {percentage} %",
+      "amountShareDetail": "Quota di {amount}"
     },
     "queue": {
       "eyebrow": "Area di lavoro",
@@ -154,7 +162,17 @@
       "confirmDescription": "Invia la richiesta all’organizzazione ospitante per la verifica. Potrai modificarla o cambiare il conto di pagamento solo se ti chiede una correzione.",
       "confirm": "Conferma invio",
       "cancel": "Annulla",
-      "unavailable": "Disponibile solo quando la lista di controllo è superata"
+      "unavailable": "Disponibile solo quando la lista di controllo è superata",
+      "done": "Fatto",
+      "open": "Da fare",
+      "readyToSubmit": "Pronto per l’invio",
+      "inProgress": "In corso",
+      "item": {
+        "payoutAccount": "Conto di pagamento selezionato",
+        "entries": "Voci di costo di viaggio registrate",
+        "proofDocuments": "Un giustificativo per ogni voce",
+        "journeys": "Viaggi dei partecipanti completi"
+      }
     },
     "workspace": {
       "noClaim": "Nessuna richiesta di rimborso",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Verifica della richiesta di rimborso"
+    },
+    "transport": {
+      "boat": "Barca",
+      "bus": "Autobus",
+      "train": "Treno",
+      "car": "Auto",
+      "electricCar": "Auto elettrica",
+      "plane": "Aereo"
     }
   }
 }

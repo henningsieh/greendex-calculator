@@ -20,7 +20,15 @@
       "action": "Dejanje",
       "allocationAmount": "Znesek (EUR)",
       "allocationPercentage": "Odstotek",
-      "allocationEqual": "Enako"
+      "allocationEqual": "Enako",
+      "claimAmount": "Znesek povračila",
+      "participants": "{count, plural, =1 {1 udeleženec} =2 {2 udeleženca} =3 {3 udeleženci} =4 {4 udeleženci} other {# udeležencev}}",
+      "fullyAllocated": "vsak evro razporejen",
+      "receipts": "{count, plural, =1 {1 dokazilo} =2 {2 dokazili} =3 {3 dokazila} =4 {4 dokazila} other {# dokazil}}",
+      "receiptMissing": "Ni dokazila",
+      "equalShareDetail": "Enako · {amount} na osebo",
+      "percentageShareDetail": "Delež {percentage} %",
+      "amountShareDetail": "Delež {amount}"
     },
     "queue": {
       "eyebrow": "Delovni prostor",
@@ -154,7 +162,17 @@
       "confirmDescription": "Pošljite zahtevek gostiteljski organizaciji v pregled. Zahtevek ali račun za izplačilo lahko spremenite le, če organizacija zahteva popravek.",
       "confirm": "Potrdi oddajo",
       "cancel": "Prekliči",
-      "unavailable": "Ni na voljo, dokler kontrolni seznam ni izpolnjen"
+      "unavailable": "Ni na voljo, dokler kontrolni seznam ni izpolnjen",
+      "done": "Opravljeno",
+      "open": "Odprto",
+      "readyToSubmit": "Pripravljeno za oddajo",
+      "inProgress": "V teku",
+      "item": {
+        "payoutAccount": "Račun za izplačilo izbran",
+        "entries": "Postavke potnih stroškov zabeležene",
+        "proofDocuments": "Dokazilo pri vsaki postavki",
+        "journeys": "Poti udeležencev zaključene"
+      }
     },
     "workspace": {
       "noClaim": "Ni zahtevka",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Pregled zahtevka"
+    },
+    "transport": {
+      "boat": "Čoln",
+      "bus": "Avtobus",
+      "train": "Vlak",
+      "car": "Avto",
+      "electricCar": "Električni avto",
+      "plane": "Letalo"
     }
   }
 }

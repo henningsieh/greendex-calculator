@@ -18,7 +18,10 @@ export function SiteBrand({ className, href = "/" }: SiteBrandProps) {
   return (
     <Link
       data-testid="site-brand"
-      className={cn("inline-flex items-center gap-3", className)}
+      className={cn(
+        "inline-flex items-center gap-3 whitespace-nowrap",
+        className,
+      )}
       href={href}
     >
       <StarWreath data-testid="site-brand-mark" size={34} />
@@ -29,7 +32,9 @@ export function SiteBrand({ className, href = "/" }: SiteBrandProps) {
         >
           {t("name")}
         </span>
-        <span className="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
+        {/* Inherits the lockup's color at reduced opacity so the mark stays
+            legible on any ground it is placed on (page, Erasmus blue panel). */}
+        <span className="font-mono text-xs tracking-[0.18em] uppercase opacity-70">
           {t("product")}
         </span>
       </span>
