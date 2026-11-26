@@ -149,7 +149,20 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
       .filter({ has: cost.locator("svg.lucide-building-2") });
     async function selectCostOrganization(name: string) {
       await costSwitcher.click();
-      await cost.getByRole("menuitem", { name, exact: true }).click();
+      const item = cost.getByRole("menuitem", { name, exact: true });
+      if ((await item.getAttribute("aria-current")) === "true") {
+        await cost.keyboard.press("Escape");
+        return;
+      }
+      const response = cost.waitForResponse(
+        (response) =>
+          response.url().includes("/api/auth/organization/set-active") &&
+          response.request().method() === "POST",
+      );
+      const document = cost.waitForEvent("domcontentloaded");
+      await item.click();
+      expect((await response).ok()).toBe(true);
+      await document;
       await costSwitcher.click();
       await expect(
         cost.getByRole("menuitem", { name, exact: true }),

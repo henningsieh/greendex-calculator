@@ -26,7 +26,7 @@ describe("breadcrumbForPath", () => {
     });
   });
 
-  it("keeps the Project crumb linked on its Participants page", () => {
+  it("keeps the Project crumb as a label on its Participants page", () => {
     expect(breadcrumbForPath("/projects/project-1/participants", t)).toEqual({
       items: [
         {
@@ -34,7 +34,7 @@ describe("breadcrumbForPath", () => {
           href: "/projects",
           testId: "back-to-projects",
         },
-        { label: "crumbs.projectDetails", href: "/projects/project-1" },
+        { label: "crumbs.projectDetails" },
       ],
       current: "crumbs.participants",
     });
@@ -50,7 +50,7 @@ describe("breadcrumbForPath", () => {
           href: "/projects",
           testId: "back-to-projects",
         },
-        { label: "crumbs.partnership", href: "/partnerships/partnership-1" },
+        { label: "crumbs.partnership" },
       ],
       current: "crumbs.claimReview",
     });
@@ -69,10 +69,9 @@ describe("breadcrumbForPath", () => {
           href: "/projects",
           testId: "back-to-projects",
         },
-        { label: "crumbs.partnership", href: "/partnerships/partnership-1" },
+        { label: "crumbs.partnership" },
         {
           label: "crumbs.participants",
-          href: "/partnerships/partnership-1/participants",
         },
       ],
       current: "crumbs.participantDetails",
@@ -86,10 +85,5 @@ describe("breadcrumbForPath", () => {
     ["/user-settings", "crumbs.userSettings"],
   ])("renders %s as a single leaf crumb", (pathname, current) => {
     expect(breadcrumbForPath(pathname, t)).toEqual({ items: [], current });
-  });
-
-  it("decodes a path segment before rebuilding the link", () => {
-    const { items } = breadcrumbForPath("/projects/a%20b/participants", t);
-    expect(items[1]?.href).toBe("/projects/a%20b");
   });
 });

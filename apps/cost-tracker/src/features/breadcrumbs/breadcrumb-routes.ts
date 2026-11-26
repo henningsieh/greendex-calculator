@@ -1,8 +1,3 @@
-import {
-  partnershipParticipantsPath,
-  partnershipPath,
-  projectPath,
-} from "@/app/paths";
 import type { AppHref } from "@/app/routes";
 import type { ShellMessageKey } from "@/features/breadcrumbs/types";
 
@@ -31,16 +26,7 @@ export function breadcrumbForPath(
   pathname: string,
   t: ShellTranslator,
 ): BreadcrumbRoute {
-  const segments = pathname
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => {
-      try {
-        return decodeURIComponent(segment);
-      } catch {
-        return segment;
-      }
-    });
+  const segments = pathname.split("/").filter(Boolean);
 
   const projects: BreadcrumbRouteItem = {
     label: t("nav.projects"),
@@ -55,7 +41,6 @@ export function breadcrumbForPath(
       if (!first) return { items: [], current: t("nav.projects") };
       const project: BreadcrumbRouteItem = {
         label: t("crumbs.projectDetails"),
-        href: projectPath(first),
       };
       if (second === "participants") {
         return {
@@ -69,7 +54,6 @@ export function breadcrumbForPath(
       if (!first) return { items: [projects], current: t("crumbs.partnership") };
       const partnership: BreadcrumbRouteItem = {
         label: t("crumbs.partnership"),
-        href: partnershipPath(first),
       };
       if (second === "claim" && third === "review") {
         return {
@@ -90,7 +74,6 @@ export function breadcrumbForPath(
             partnership,
             {
               label: t("crumbs.participants"),
-              href: partnershipParticipantsPath(first),
             },
           ],
           current: t("crumbs.participantDetails"),

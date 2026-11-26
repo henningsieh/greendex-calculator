@@ -425,6 +425,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toHaveCount(0);
       await expect(
         x.locator(
+          `nav[aria-label="breadcrumb"] a[href*="${projectId}"], nav[aria-label="breadcrumb"] a[href*="${ids.partnership}"]`,
+        ),
+      ).toHaveCount(0);
+      await expect(
+        x.locator(
           '[data-testid="cost-save"], [data-testid="claim-decision-approve"], [data-testid="claim-submit"]',
         ),
       ).toHaveCount(0);
@@ -441,11 +446,15 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ]) {
       await f.goto(route);
       await denied(f);
+      await expect(f.locator('nav[aria-label="breadcrumb"]')).toHaveCount(1);
       // Text-free: no link to the protected partnership leaks.
       await expect(
         f.locator(
           `main a[href*="${ids.partnership}"], [hidden] a[href*="${ids.partnership}"]`,
         ),
+      ).toHaveCount(0);
+      await expect(
+        f.locator(`nav[aria-label="breadcrumb"] a[href*="${ids.partnership}"]`),
       ).toHaveCount(0);
       await expect(
         f.locator(
