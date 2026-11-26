@@ -9,7 +9,8 @@
       "markAllRead": "Mark all as read",
       "claimPaidTitle": "Claim paid",
       "claimPaidDescription": "{amount} was recorded for your Claim.",
-      "openClaim": "Open Claim"
+      "openClaim": "Open Claim",
+      "updateFailed": "Could not save the notification state. Try again."
     },
     "toast": {
       "title": "Claim paid",

@@ -10,6 +10,7 @@ import { createClaimPaidEvent } from "@greendex/notifications";
 import { createRouterClient } from "@orpc/server";
 import { eq, inArray } from "drizzle-orm";
 import {
+  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -30,9 +31,9 @@ import {
 } from "@/features/notifications/procedures/writes";
 import { router } from "@/lib/orpc/router";
 
-const recipient = SEED_IDS.user.claimCoordinator;
-const colleague = SEED_IDS.user.claimOwner;
-const actor = SEED_IDS.user.claimParticipant;
+const recipient = `notification-test-recipient-${randomUUID()}`;
+const colleague = `notification-test-colleague-${randomUUID()}`;
+const actor = `notification-test-actor-${randomUUID()}`;
 const partnerOrganization = SEED_IDS.organization.claimPartner;
 const hostOrganization = SEED_IDS.organization.claimHost;
 
@@ -83,13 +84,10 @@ async function rowsFor(claimId: string) {
 }
 
 async function clearTestNotifications() {
+  if (claimIds.size === 0) return;
   await db
     .delete(notifications)
-    .where(inArray(notifications.recipientUserId, testUserIds));
-  if (claimIds.size > 0)
-    await db
-      .delete(notifications)
-      .where(inArray(notifications.dedupeKey, [...claimIds]));
+    .where(inArray(notifications.dedupeKey, [...claimIds]));
   claimIds.clear();
 }
 
@@ -101,12 +99,19 @@ function signIn(userId: string, activeOrganizationId: string | null) {
 }
 
 beforeAll(async () => {
-  const seeded = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.id, recipient));
-  if (seeded.length === 0)
-    throw new Error("Seed required: run the isolated seeded lifecycle.");
+  await db.insert(users).values(
+    testUserIds.map((id) => ({
+      id,
+      name: `Notification test ${id.slice(-8)}`,
+      email: `${id}@example.org`,
+      emailVerified: true,
+    })),
+  );
+});
+
+afterAll(async () => {
+  await clearTestNotifications();
+  await db.delete(users).where(inArray(users.id, testUserIds));
 });
 
 beforeEach(async () => {
@@ -162,7 +167,11 @@ describe("notification inbox reads", () => {
   it("lists only the caller's unread rows in the active Organization", async () => {
     const mine = await seedNotifications([
       { userId: recipient, organizationId: partnerOrganization },
+    ]);
+    const otherOrganization = await seedNotifications([
       { userId: recipient, organizationId: hostOrganization },
+    ]);
+    const foreign = await seedNotifications([
       { userId: colleague, organizationId: partnerOrganization },
     ]);
     const read = await seedNotifications([
@@ -173,6 +182,10 @@ describe("notification inbox reads", () => {
       .set({ readAt: new Date() })
       .where(eq(notifications.dedupeKey, read.claimId));
 
+    // Both scoped rows exist; only the active Organization's unread row lists.
+    expect(await rowsFor(otherOrganization.claimId)).toHaveLength(1);
+    expect(await rowsFor(foreign.claimId)).toHaveLength(1);
+
     const result = await client.notifications.listUnread({});
 
     expect(result.unreadCount).toBe(1);
@@ -181,6 +194,9 @@ describe("notification inbox reads", () => {
       id: mine.ids[0]?.id,
       event: mine.event,
     });
+    expect(result.items.map((item) => item.event.payload.claimId)).toEqual([
+      mine.claimId,
+    ]);
   });
 
   it("keeps the unread count independent of the page limit", async () => {

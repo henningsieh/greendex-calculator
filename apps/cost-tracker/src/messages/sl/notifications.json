@@ -9,7 +9,8 @@
       "markAllRead": "Označi vse kot prebrano",
       "claimPaidTitle": "Zahtevek plačan",
       "claimPaidDescription": "Za vaš zahtevek je bilo zabeleženih {amount}.",
-      "openClaim": "Odpri zahtevek"
+      "openClaim": "Odpri zahtevek",
+      "updateFailed": "Stanja obvestila ni bilo mogoče shraniti. Poskusite znova."
     },
     "toast": {
       "title": "Zahtevek plačan",

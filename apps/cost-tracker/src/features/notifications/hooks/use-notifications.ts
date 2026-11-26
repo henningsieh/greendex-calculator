@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { toast } from "@/components/ui/toast";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 const unreadQueryKey = orpcQuery.notifications.listUnread.queryKey();
@@ -20,20 +22,28 @@ export function useUnreadNotifications() {
 
 export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
+  const t = useTranslations("notifications");
   return useMutation({
     ...orpcQuery.notifications.markRead.mutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: unreadQueryKey });
+    },
+    onError: () => {
+      toast.add({ title: t("bell.updateFailed"), type: "error" });
     },
   });
 }
 
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
+  const t = useTranslations("notifications");
   return useMutation({
     ...orpcQuery.notifications.markAllRead.mutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: unreadQueryKey });
+    },
+    onError: () => {
+      toast.add({ title: t("bell.updateFailed"), type: "error" });
     },
   });
 }

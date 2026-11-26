@@ -2,7 +2,10 @@ import { createServer } from "node:http";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { createCostTrackerSessionValidator } from "./session-validator";
+import {
+  SessionValidationUnavailableError,
+  createCostTrackerSessionValidator,
+} from "./session-validator";
 
 const origin = "http://localhost:3002";
 
@@ -29,12 +32,13 @@ describe("Cost Tracker session validator", () => {
     );
   });
 
-  it("refuses missing, rejected, malformed, and failed session checks", async () => {
+  it("refuses invalid sessions and marks infrastructure failures retryable", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
       .mockResolvedValueOnce(new Response("null", { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: {} })))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
       .mockRejectedValueOnce(new Error("network down"));
     const validate = createCostTrackerSessionValidator(origin, fetchImpl);
 
@@ -43,7 +47,12 @@ describe("Cost Tracker session validator", () => {
     await expect(validate("cookie")).resolves.toBeNull();
     await expect(validate("cookie")).resolves.toBeNull();
     await expect(validate("cookie")).resolves.toBeNull();
-    await expect(validate("cookie")).resolves.toBeNull();
+    await expect(validate("cookie")).rejects.toBeInstanceOf(
+      SessionValidationUnavailableError,
+    );
+    await expect(validate("cookie")).rejects.toBeInstanceOf(
+      SessionValidationUnavailableError,
+    );
   });
 
   it("validates against a real HTTP session endpoint", async () => {

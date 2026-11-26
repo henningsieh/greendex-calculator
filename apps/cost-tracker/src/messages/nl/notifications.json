@@ -9,7 +9,8 @@
       "markAllRead": "Alles als gelezen markeren",
       "claimPaidTitle": "Declaratie betaald",
       "claimPaidDescription": "{amount} is vastgelegd voor je declaratie.",
-      "openClaim": "Declaratie openen"
+      "openClaim": "Declaratie openen",
+      "updateFailed": "De meldingsstatus kon niet worden opgeslagen. Probeer het opnieuw."
     },
     "toast": {
       "title": "Declaratie betaald",

@@ -9,7 +9,8 @@
       "markAllRead": "Segna tutto come letto",
       "claimPaidTitle": "Rimborso pagato",
       "claimPaidDescription": "{amount} sono stati registrati per la tua richiesta di rimborso.",
-      "openClaim": "Apri la richiesta"
+      "openClaim": "Apri la richiesta",
+      "updateFailed": "Impossibile salvare lo stato della notifica. Riprova."
     },
     "toast": {
       "title": "Rimborso pagato",

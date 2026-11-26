@@ -76,21 +76,20 @@ export function NotificationBell({ realtimeUrl }: { realtimeUrl?: string }) {
         }
       />
       <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+        <div className="px-2 py-1.5">
           <span className="text-sm font-semibold">{t("bell.title")}</span>
-          {count > 0 ? (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => markAllRead.mutate()}
-              disabled={markAllRead.isPending}
-              data-testid="notification-mark-all"
-            >
-              <CheckCheckIcon aria-hidden="true" data-icon="inline-start" />
-              {t("bell.markAllRead")}
-            </Button>
-          ) : null}
         </div>
+        {count > 0 ? (
+          <DropdownMenuItem
+            onClick={() => markAllRead.mutate()}
+            disabled={markAllRead.isPending}
+            closeOnClick={false}
+            data-testid="notification-mark-all"
+          >
+            <CheckCheckIcon aria-hidden="true" />
+            {t("bell.markAllRead")}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         {isPending ? (
           <p

@@ -12,6 +12,10 @@ import { io } from "socket.io-client";
 import { toast } from "@/components/ui/toast";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
+const RECONNECT_MAX_ATTEMPTS = 5;
+
 /**
  * One socket per mounted shell. Payloads are validated before they reach the
  * toast or cache; unknown shapes are ignored. Connect and every pushed event
@@ -26,12 +30,32 @@ export function useNotificationStream(realtimeUrl: string | undefined) {
     if (!realtimeUrl) return;
 
     const socket = io(realtimeUrl, { withCredentials: true });
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAttempt = 0;
+    const scheduleReconnect = () => {
+      if (retryAttempt >= RECONNECT_MAX_ATTEMPTS) return;
+      const delay = Math.min(
+        RECONNECT_BASE_MS * 2 ** retryAttempt,
+        RECONNECT_MAX_MS,
+      );
+      retryAttempt += 1;
+      retryTimer = setTimeout(() => {
+        retryTimer = undefined;
+        socket.connect();
+      }, delay);
+    };
     const refreshUnread = () => {
       void queryClient.invalidateQueries({
         queryKey: orpcQuery.notifications.listUnread.queryKey(),
       });
     };
-    socket.on("connect", refreshUnread);
+    socket.on("connect", () => {
+      retryAttempt = 0;
+      refreshUnread();
+    });
+    socket.on("connect_error", (error: Error) => {
+      if (error.message === "session_unavailable") scheduleReconnect();
+    });
     socket.on(NOTIFICATION_CREATED_EVENT, (payload: unknown) => {
       const parsed = NotificationCreatedSchema.safeParse(payload);
       if (!parsed.success) return;
@@ -51,6 +75,7 @@ export function useNotificationStream(realtimeUrl: string | undefined) {
     });
 
     return () => {
+      if (retryTimer) clearTimeout(retryTimer);
       socket.disconnect();
     };
   }, [format, queryClient, realtimeUrl, t]);

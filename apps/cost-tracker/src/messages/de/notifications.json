@@ -9,7 +9,8 @@
       "markAllRead": "Alle als gelesen markieren",
       "claimPaidTitle": "Erstattung bezahlt",
       "claimPaidDescription": "{amount} wurden für deinen Erstattungsantrag erfasst.",
-      "openClaim": "Erstattungsantrag öffnen"
+      "openClaim": "Erstattungsantrag öffnen",
+      "updateFailed": "Der Benachrichtigungsstatus konnte nicht gespeichert werden. Bitte erneut versuchen."
     },
     "toast": {
       "title": "Erstattung bezahlt",

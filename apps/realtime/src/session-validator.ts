@@ -6,6 +6,14 @@ export type SessionValidator = (
   cookie: string | undefined,
 ) => Promise<SessionIdentity | null>;
 
+/** The auth service could not answer; the caller may retry. */
+export class SessionValidationUnavailableError extends Error {
+  constructor() {
+    super("Session validation is temporarily unavailable.");
+    this.name = "SessionValidationUnavailableError";
+  }
+}
+
 const SessionResponseSchema = z.object({
   user: z.object({ id: z.string().min(1) }),
 });
@@ -23,19 +31,30 @@ export function createCostTrackerSessionValidator(
 ): SessionValidator {
   return async (cookie) => {
     if (!cookie) return null;
+
+    let response: Response;
     try {
-      const response = await fetchImpl(
+      response = await fetchImpl(
         new URL("/api/auth/get-session", costTrackerOrigin),
         {
           headers: { cookie },
           signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
         },
       );
-      if (!response.ok) return null;
-      const parsed = SessionResponseSchema.safeParse(await response.json());
-      return parsed.success ? { userId: parsed.data.user.id } : null;
     } catch {
-      return null;
+      throw new SessionValidationUnavailableError();
     }
+
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) throw new SessionValidationUnavailableError();
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new SessionValidationUnavailableError();
+    }
+    const parsed = SessionResponseSchema.safeParse(body);
+    return parsed.success ? { userId: parsed.data.user.id } : null;
   };
 }

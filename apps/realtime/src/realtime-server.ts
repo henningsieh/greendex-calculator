@@ -150,6 +150,18 @@ export function createRealtimeServer(
   options: RealtimeServerOptions,
 ): RealtimeServer {
   const httpServer = createServer();
+  // Engine.IO captures existing request listeners when it attaches, so the
+  // application handler must exist first. Non-socket requests are delegated to
+  // it; `/socket.io/` never reaches it.
+  let dispatchRequest: (
+    request: IncomingMessage,
+    response: ServerResponse,
+  ) => void = (_request, response) =>
+    sendJson(response, 503, { error: "starting" });
+  httpServer.on("request", (request, response) =>
+    dispatchRequest(request, response),
+  );
+
   const io = new SocketServer<
     ClientToServerEvents,
     ServerToClientEvents,
@@ -160,6 +172,13 @@ export function createRealtimeServer(
       origin: options.corsOrigin,
       methods: ["GET", "POST"],
       credentials: true,
+    },
+    // CORS headers do not reject WebSocket upgrades. A browser page on another
+    // origin must not use a stolen session cookie, so reject a foreign Origin.
+    // Same-origin polling GETs may omit Origin; those are admitted.
+    allowRequest: (request, callback) => {
+      const origin = request.headers.origin;
+      callback(null, origin === undefined || origin === options.corsOrigin);
     },
     pingInterval: 10_000,
     pingTimeout: 5000,
@@ -178,7 +197,8 @@ export function createRealtimeServer(
       socket.data.userId = identity.userId;
       next();
     } catch {
-      next(new Error("unauthorized"));
+      // Infrastructure failure, not an invalid session: the client may retry.
+      next(new Error("session_unavailable"));
     }
   });
 
@@ -187,12 +207,12 @@ export function createRealtimeServer(
     void socket.join(personalRoom(socket.data.userId));
   });
 
-  httpServer.on("request", (request, response) => {
+  dispatchRequest = (request, response) => {
     void handleRequest(request, response, io, options).catch(() => {
       if (!response.headersSent) sendJson(response, 500, { error: "failed" });
       else response.destroy();
     });
-  });
+  };
 
   return {
     async start() {

@@ -9,7 +9,8 @@
       "markAllRead": "Tout marquer comme lu",
       "claimPaidTitle": "Remboursement payé",
       "claimPaidDescription": "{amount} ont été enregistrés pour votre demande de remboursement.",
-      "openClaim": "Ouvrir la demande"
+      "openClaim": "Ouvrir la demande",
+      "updateFailed": "Impossible d’enregistrer l’état de la notification. Réessayez."
     },
     "toast": {
       "title": "Remboursement payé",

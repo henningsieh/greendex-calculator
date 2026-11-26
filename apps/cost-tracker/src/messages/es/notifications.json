@@ -9,7 +9,8 @@
       "markAllRead": "Marcar todo como leído",
       "claimPaidTitle": "Reclamación pagada",
       "claimPaidDescription": "Se registraron {amount} para tu reclamación.",
-      "openClaim": "Abrir reclamación"
+      "openClaim": "Abrir reclamación",
+      "updateFailed": "No se pudo guardar el estado de la notificación. Inténtalo de nuevo."
     },
     "toast": {
       "title": "Reclamación pagada",

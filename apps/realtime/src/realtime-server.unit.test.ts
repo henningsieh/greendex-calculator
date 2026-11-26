@@ -25,24 +25,34 @@ const sessionValidator = async (
   return null;
 };
 
-async function startServer(): Promise<string> {
+async function startServer(
+  validator: (
+    cookie: string | undefined,
+  ) => Promise<SessionIdentity | null> = sessionValidator,
+): Promise<string> {
   server = createRealtimeServer({
     host: "127.0.0.1",
     port: 0,
     corsOrigin,
     emitSecret,
-    sessionValidator,
+    sessionValidator: validator,
   });
   const { port } = await server.start();
   return `http://127.0.0.1:${port}`;
 }
 
-function connect(url: string, cookie?: string): Socket {
+function connect(
+  url: string,
+  cookie?: string,
+  origin: string | null = corsOrigin,
+): Socket {
   const client = createClient(url, {
-    transports: ["websocket"],
     reconnection: false,
     forceNew: true,
-    ...(cookie ? { extraHeaders: { cookie } } : {}),
+    extraHeaders: {
+      ...(origin ? { origin } : {}),
+      ...(cookie ? { cookie } : {}),
+    },
   });
   clients.push(client);
   return client;
@@ -143,6 +153,28 @@ describe("realtime notifications service", () => {
     await expect(
       waitForConnectError(connect(url, "session=unknown")),
     ).resolves.toBe("unauthorized");
+  });
+
+  it("rejects a foreign browser origin before session validation", async () => {
+    const url = await startServer();
+    await expect(
+      waitForConnectError(connect(url, "session=alice", "http://evil.test")),
+    ).resolves.toBeTruthy();
+  });
+
+  it("admits a same-origin request that omits the Origin header", async () => {
+    const url = await startServer();
+    const alice = connect(url, "session=alice", null);
+    await expect(waitForConnect(alice)).resolves.toBeUndefined();
+  });
+
+  it("reports an unavailable session check for a bounded client retry", async () => {
+    const url = await startServer(async () => {
+      throw new Error("auth service down");
+    });
+    await expect(
+      waitForConnectError(connect(url, "session=alice")),
+    ).resolves.toBe("session_unavailable");
   });
 
   it("delivers only to the recipient's personal room", async () => {

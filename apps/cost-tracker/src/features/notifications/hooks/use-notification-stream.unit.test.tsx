@@ -3,7 +3,7 @@ import {
   createClaimPaidEvent,
 } from "@greendex/notifications";
 import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useNotificationStream } from "@/features/notifications/hooks/use-notification-stream";
 
@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   io: vi.fn(),
   on: vi.fn(),
   disconnect: vi.fn(),
+  connect: vi.fn(),
   toastAdd: vi.fn(),
   invalidate: vi.fn(),
 }));
@@ -50,7 +51,15 @@ function handlerFor(event: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.io.mockReturnValue({ on: mocks.on, disconnect: mocks.disconnect });
+  mocks.io.mockReturnValue({
+    on: mocks.on,
+    disconnect: mocks.disconnect,
+    connect: mocks.connect,
+  });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("useNotificationStream", () => {
@@ -73,6 +82,30 @@ describe("useNotificationStream", () => {
 
     view.unmount();
     expect(mocks.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it("retries only a temporarily unavailable session with bounded backoff", async () => {
+    vi.useFakeTimers();
+    const view = renderHook(() => useNotificationStream("http://realtime.test"));
+    const connectError = handlerFor("connect_error") as (error: Error) => void;
+
+    connectError(new Error("unauthorized"));
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(mocks.connect).not.toHaveBeenCalled();
+
+    connectError(new Error("session_unavailable"));
+    await vi.advanceTimersByTimeAsync(999);
+    expect(mocks.connect).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.connect).toHaveBeenCalledOnce();
+
+    connectError(new Error("session_unavailable"));
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(mocks.connect).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.connect).toHaveBeenCalledTimes(2);
+
+    view.unmount();
   });
 
   it("validates pushed events, toasts a paid Claim, and invalidates unread", () => {
