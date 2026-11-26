@@ -118,6 +118,7 @@ export function createParticipationProcedures(
     .input(scopeInput)
     .output(
       z.object({
+        projectId: z.string(),
         projectName: z.string(),
         projectArchived: z.boolean(),
         participations: z.array(participation),
@@ -193,6 +194,7 @@ export function createParticipationProcedures(
           : [],
       );
       return {
+        projectId: scope.projectId,
         projectName: project?.name ?? "",
         projectArchived: scope.projectArchived,
         participations: rows,

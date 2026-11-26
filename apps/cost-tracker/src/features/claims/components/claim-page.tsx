@@ -1,12 +1,10 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { connection } from "next/server";
-import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
-import { ClaimWorkspaceLoading } from "@/features/claims/components/claim-workspace-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -24,6 +22,9 @@ async function ClaimWorkspaceSection({
   const client = getQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
+  const scope = await client
+    .query(orpcQuery.projectPartnerships.getScope.queryOptions(options))
+    .catch(swallowPrefetchError);
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
@@ -36,6 +37,14 @@ async function ClaimWorkspaceSection({
       client.query(orpcQuery.journeys.list.queryOptions(options)),
       client.query(orpcQuery.costs.list.queryOptions(options)),
       client.query(orpcQuery.documents.list.queryOptions(options)),
+      scope?.projectId
+        ? client.query(
+            orpcQuery.projects.get.queryOptions({
+              input: { projectId: scope.projectId },
+              meta: { costTrackerORPC: true },
+            }),
+          )
+        : Promise.resolve(),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
@@ -61,9 +70,7 @@ export default async function ClaimPage({
     <RouteTransition>
       <div className="space-y-8">
         <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Suspense fallback={<ClaimWorkspaceLoading />}>
-          <ClaimWorkspaceSection params={params} />
-        </Suspense>
+        <ClaimWorkspaceSection params={params} />
       </div>
     </RouteTransition>
   );

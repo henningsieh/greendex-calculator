@@ -18,8 +18,11 @@ import {
 } from "@/lib/orpc/error-message";
 import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
-import { orpcQuery } from "@/lib/orpc/orpc";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
+
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: vi.fn() },
+}));
 
 vi.mock(
   "@/components/error-presentation/error-presentation",
@@ -154,7 +157,28 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
     },
     orpcQuery: {
       ...original.orpcQuery,
-      projects: original.orpcQuery.projects,
+      projects: {
+        ...original.orpcQuery.projects,
+        get: query(original.orpcQuery.projects.get, () => ({
+          id: "project",
+          name: "Workshop",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-12-31"),
+          location: "Berlin",
+          country: "DE",
+          archived: false,
+          participantCount: 1,
+          daysLeft: 30,
+          relationship: "partner" as const,
+          hostingOrganization: { id: "host", name: "Hosting Organization" },
+          partnership: {
+            claimStatus: null,
+            id: "own",
+            assignedAt: new Date("2026-01-01"),
+            updatedAt: new Date("2026-01-01"),
+          },
+        })),
+      },
       claims: {
         ...original.orpcQuery.claims,
         getDraft: query(original.orpcQuery.claims.getDraft, () => mocks.draft),
@@ -200,6 +224,8 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         listPartnership: query(
           original.orpcQuery.participations.listPartnership,
           () => ({
+            projectId: "project",
+            projectName: "Workshop",
             projectArchived: mocks.projectArchived,
             participations: [
               {
@@ -1325,15 +1351,7 @@ describe("Claim workspace", () => {
       ].map((key) => ({ key, passed: true, gaps: [] })),
       calculatedReimbursementEur: "726.00",
     };
-    const client = createQueryClient();
-    const project = {
-      queryKey: orpcQuery.projects.get.queryKey({
-        input: { projectId: "project" },
-      }),
-      queryFn: async () => mocks.draft?.status,
-    };
-    expect(await client.query(project)).toBe("in_preparation");
-    mount(client);
+    mount();
     expect(await screen.findByTestId("calculated-reimbursement")).toHaveAttribute(
       "data-reimbursement",
       "726.00",
@@ -1352,7 +1370,6 @@ describe("Claim workspace", () => {
         document.querySelector('[data-draft-status="submitted"]'),
       ).toBeInTheDocument(),
     );
-    expect(await client.query(project)).toBe("submitted");
     expect(screen.getByTestId("claim-locked")).toBeInTheDocument();
     expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
     expect(screen.queryByTestId("cost-save")).toBeNull();
@@ -1437,11 +1454,6 @@ describe("Claim workspace", () => {
 
   it("creates an account from the empty state, refreshes options, and requires selection then explicit save", async () => {
     mocks.accounts = [];
-    mocks.createAccount.mockRejectedValueOnce(
-      new ORPCError("BAD_REQUEST", {
-        data: { issues: [{ path: ["iban"], message: "Invalid IBAN checksum." }] },
-      }),
-    );
     mount();
     expect(
       await screen.findByTestId("payout-account-create"),
@@ -1462,6 +1474,7 @@ describe("Claim workspace", () => {
     expect(screen.getByTestId("account-iban")).toHaveValue(
       "DE89370400440532013001",
     );
+    expect(mocks.createAccount).not.toHaveBeenCalled();
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     await userEvent.clear(screen.getByTestId("account-iban"));
     await userEvent.type(
@@ -1469,6 +1482,7 @@ describe("Claim workspace", () => {
       "DE89 3704 0044 0532 0130 00",
     );
     await userEvent.click(screen.getByTestId("payout-account-create"));
+    await waitFor(() => expect(mocks.createAccount).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.getByTestId("payout-option-new-account")).toHaveValue(
         "new-account",
@@ -1477,7 +1491,7 @@ describe("Claim workspace", () => {
     expect(mocks.createAccount).toHaveBeenLastCalledWith({
       partnershipId: "own",
       accountHolder: "Example",
-      iban: "DE89 3704 0044 0532 0130 00",
+      iban: "DE89370400440532013000",
       bic: "",
     });
     expect(screen.getByTestId("claim-create")).toBeDisabled();

@@ -1,30 +1,31 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { useFormatter } from "@greendex/i18n/client";
+import { CheckIcon, CircleDashedIcon } from "lucide-react";
 
 import {
   ErrorDetail,
   ErrorPresentation,
 } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { claimSubmissionAction } from "@/features/claims/claim-lifecycle";
 import { useClaimSubmission } from "@/features/claims/use-claim-submission";
 import { ChecklistFieldIssueSchema } from "@/lib/orpc/error-contract";
 import type { Outputs } from "@/lib/orpc/router";
+import { cn } from "@/lib/utils";
 
-const labels = {
-  payoutAccount: "Selected Payout Account",
-  entries: "At least one Travel Cost Entry",
-  entryDetails: "Valid transport, exact costs and allocations",
-  proofDocuments: "Proof Documents linked to every cost",
-  participations:
-    "Covered Participations belong to this Partnership and have Journeys",
-  journeys: "Complete Participant Journeys",
-  fundingRules: "Relationship, exact-money and frozen funding rules",
-};
+const itemLabelKeys = {
+  payoutAccount: "item.payoutAccount",
+  entries: "item.entries",
+  entryDetails: "item.entryDetails",
+  proofDocuments: "item.proofDocuments",
+  participations: "item.participations",
+  journeys: "item.journeys",
+  fundingRules: "item.fundingRules",
+} as const;
 
 type Preview = NonNullable<Outputs["claims"]["previewSubmission"]>;
 
@@ -45,6 +46,66 @@ function gapAnchor(path: (string | number)[]) {
   return "claim-costs";
 }
 
+function ChecklistItem({
+  item,
+  label,
+}: {
+  item: Preview["items"][number];
+  label: string;
+}) {
+  const t = useTranslations("claims.submission");
+
+  return (
+    <li className="flex gap-3 py-4" data-state={item.passed ? "passed" : "open"}>
+      <span
+        className={cn(
+          "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
+          item.passed
+            ? "bg-primary/10 text-primary"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
+        {item.passed ? (
+          <CheckIcon aria-hidden="true" className="size-3.5" />
+        ) : (
+          <CircleDashedIcon aria-hidden="true" className="size-3.5" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1 space-y-2">
+        <p className="text-sm font-medium">{label}</p>
+        {item.gaps.map((gap, index) => {
+          const parsed = ChecklistFieldIssueSchema.safeParse(gap);
+          if (!parsed.success)
+            return (
+              <p
+                className="text-sm text-muted-foreground"
+                key={`invalid-${index}`}
+              >
+                <ErrorDetail issue={null} />
+              </p>
+            );
+          const issue = parsed.data;
+          return (
+            <p
+              className="text-sm text-muted-foreground"
+              key={`${issue.path.join(".")}-${issue.id}`}
+            >
+              <ErrorDetail issue={issue} />{" "}
+              <a
+                className="link-prose"
+                data-testid={`submission-gap-${issue.path.join("-")}`}
+                href={`#${gapAnchor(issue.path)}`}
+              >
+                {t("goToGap")}
+              </a>
+            </p>
+          );
+        })}
+      </div>
+    </li>
+  );
+}
+
 export function ClaimSubmission({
   partnershipId,
   preview,
@@ -57,101 +118,99 @@ export function ClaimSubmission({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.submission");
+  const format = useFormatter();
   const { confirming, pending, disabled, failure, open, cancel, submit } =
     useClaimSubmission(partnershipId, action, preview, refresh);
+  const ready = preview.items.every((item) => item.passed);
+  const amount =
+    preview.calculatedReimbursementEur === null
+      ? null
+      : format.number(Number(preview.calculatedReimbursementEur), {
+          style: "currency",
+          currency: "EUR",
+        });
+
   return (
-    <Card variant="action">
+    <Card data-testid="claim-submission">
       <CardHeader>
-        <CardTitle as="h2">{t("title")}</CardTitle>
+        <div className="flex items-start justify-between gap-3">
+          <CardTitle as="h2">{t("title")}</CardTitle>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 text-xs font-medium",
+              ready ? "text-success" : "text-muted-foreground",
+            )}
+          >
+            {ready ? (
+              <CheckIcon aria-hidden="true" className="size-3.5" />
+            ) : (
+              <CircleDashedIcon aria-hidden="true" className="size-3.5" />
+            )}
+            {ready ? t("readyToSubmit") : t("inProgress")}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
+        <div className="rounded-xl bg-muted/50 p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            {t("estimatedReimbursement")}
+          </p>
+          <p
+            className="mt-1 font-mono text-2xl tabular-nums"
+            data-testid="calculated-reimbursement"
+            data-reimbursement={String(preview.calculatedReimbursementEur)}
+          >
+            {amount ?? t("unavailable")}
+          </p>
+          <p className="mt-2 text-xs/relaxed text-muted-foreground">
+            {t("payableHelp")}
+          </p>
+        </div>
         <ul
           aria-label={t("checklistLabel")}
+          className="divide-y divide-border"
           data-testid="submission-checklist"
-          className="space-y-3"
         >
           {preview.items.map((item) => (
-            <li key={item.key}>
-              <p>
-                {item.passed ? (
-                  <Badge variant="status-pass">{t("pass")}</Badge>
-                ) : (
-                  <Badge variant="destructive">{t("fail")}</Badge>
-                )}{" "}
-                {labels[item.key]}
-              </p>
-              {item.gaps.map((gap, index) => {
-                const parsed = ChecklistFieldIssueSchema.safeParse(gap);
-                if (!parsed.success)
-                  return (
-                    <p key={`invalid-${index}`}>
-                      <ErrorDetail issue={null} />
-                    </p>
-                  );
-                const issue = parsed.data;
-                return (
-                  <p key={`${issue.path.join(".")}-${issue.id}`}>
-                    <a
-                      href={`#${gapAnchor(issue.path)}`}
-                      data-testid={`submission-gap-${issue.path.join("-")}`}
-                    >
-                      <ErrorDetail issue={issue} /> {t("goToGap")}
-                    </a>
-                  </p>
-                );
-              })}
-              {item.passed && (
-                <a href={`#${gapAnchor([item.key])}`}>{t("viewSection")}</a>
-              )}
-            </li>
+            <ChecklistItem
+              item={item}
+              key={item.key}
+              label={t(itemLabelKeys[item.key])}
+            />
           ))}
         </ul>
-        <p className="border-t pt-5">
-          {t("estimatedReimbursement")}{" "}
-          {preview.calculatedReimbursementEur === null ? (
-            t("unavailable")
-          ) : (
-            <span
-              className="block font-mono tabular-nums"
-              data-testid="calculated-reimbursement"
-              data-reimbursement={String(preview.calculatedReimbursementEur)}
-            >
-              {preview.calculatedReimbursementEur} {t("currencyEur")}
-            </span>
-          )}{" "}
-          {t("payableHelp")}
-        </p>
         {!confirming ? (
           <Button
-            variant="default"
+            className="w-full"
+            data-testid="claim-submit"
+            disabled={disabled}
+            onClick={open}
             size="lg"
             type="button"
-            disabled={disabled}
-            data-testid="claim-submit"
-            onClick={open}
+            variant="default"
           >
             {t("submit")}
           </Button>
         ) : (
-          <Alert>
+          <Alert role="alert" variant="info">
             <AlertDescription>{t("confirmDescription")}</AlertDescription>
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <Button
-                variant="default"
+                data-testid="claim-submit-confirm"
+                disabled={disabled}
+                onClick={() => void submit()}
                 size="lg"
                 type="button"
-                disabled={disabled}
-                data-testid="claim-submit-confirm"
-                onClick={() => void submit()}
+                variant="default"
               >
                 {t("confirm")}
               </Button>
               <Button
+                disabled={pending}
+                onClick={cancel}
                 size="lg"
                 type="button"
                 variant="outline"
-                disabled={pending}
-                onClick={cancel}
               >
                 {t("cancel")}
               </Button>

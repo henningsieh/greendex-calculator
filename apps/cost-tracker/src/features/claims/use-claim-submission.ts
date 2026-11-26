@@ -1,5 +1,7 @@
+import { useTranslations } from "@greendex/i18n/client";
 import { useRef, useState } from "react";
 
+import { toast } from "@/components/ui/toast";
 import { canSubmitClaim } from "@/features/claims/claim-submission-policy";
 import { orpc } from "@/lib/orpc/orpc";
 
@@ -9,6 +11,7 @@ export function useClaimSubmission(
   preview: Parameters<typeof canSubmitClaim>[1],
   refresh: () => Promise<void>,
 ) {
+  const t = useTranslations("claims.submission");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<{ error: unknown } | null>(null);
@@ -23,9 +26,11 @@ export function useClaimSubmission(
     try {
       await orpc.claims.submit({ partnershipId });
       await refresh();
+      toast.add({ title: t("toast.submitted"), type: "success" });
     } catch (error) {
       setConfirming(false);
       setFailure({ error });
+      toast.add({ title: t("toast.submitFailed"), type: "error" });
       await refresh();
     } finally {
       saving.current = false;

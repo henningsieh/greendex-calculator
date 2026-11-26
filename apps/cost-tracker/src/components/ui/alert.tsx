@@ -14,6 +14,8 @@ const alertVariants = cva(
           "border-primary/25 bg-primary/10 text-foreground after:bg-primary *:data-[slot=alert-description]:text-foreground/80 [&_kbd]:bg-primary/15 [&_kbd]:text-foreground",
         info:
           "border-primary/25 bg-accent text-accent-foreground after:bg-primary *:data-[slot=alert-description]:text-accent-foreground *:[svg]:text-current",
+        success:
+          "border-success/30 bg-success/10 text-foreground after:bg-success *:data-[slot=alert-description]:text-foreground/80 *:[svg]:text-current",
       },
       emphasis: {
         default: "",

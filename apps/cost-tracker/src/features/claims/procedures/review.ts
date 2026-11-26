@@ -175,6 +175,7 @@ export const getReviewDetails = authorized
   .input(ClaimInputSchema)
   .output(
     z.object({
+      projectId: z.string(),
       projectName: z.string(),
       organizationName: z.string(),
       payoutAccount: z
@@ -338,6 +339,7 @@ export const getReviewDetails = authorized
         ])
       : [[], []];
     return {
+      projectId: scope.projectId,
       projectName: claim.projectName,
       organizationName: claim.organizationName,
       payoutAccount: payout[0] ?? null,

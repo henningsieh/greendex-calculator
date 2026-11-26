@@ -146,7 +146,29 @@
       "title": "Vérification de la demande",
       "contextLoading": "Chargement du contexte",
       "contextUnavailable": "Contexte de la demande indisponible",
-      "queueEyebrow": "Espace de travail"
+      "queueEyebrow": "Espace de travail",
+      "payoutTitle": "Compte de paiement",
+      "allocationAmount": "Répartition par montant",
+      "allocationPercentage": "Répartition en pourcentage",
+      "history": {
+        "submitted": "Envoyée",
+        "correction_requested": "Correction demandée",
+        "resubmitted": "Renvoyée",
+        "approved": "Approuvée",
+        "rejected": "Rejetée",
+        "reopened": "Rouverte",
+        "paid": "Payée",
+        "payment_corrected": "Statut de paiement corrigé",
+        "journey_updated": "Trajet corrigé"
+      },
+      "toast": {
+        "requestCorrection": "Correction demandée",
+        "approve": "Demande approuvée",
+        "reject": "Demande rejetée",
+        "reopen": "Demande rouverte",
+        "markPaid": "Paiement enregistré",
+        "correctPayment": "Enregistrement du paiement corrigé"
+      }
     },
     "submission": {
       "title": "Soumission",
@@ -171,7 +193,14 @@
         "payoutAccount": "Compte de versement sélectionné",
         "entries": "Lignes de frais de voyage enregistrées",
         "proofDocuments": "Un justificatif pour chaque ligne",
-        "journeys": "Voyages des participants complets"
+        "journeys": "Voyages des participants complets",
+        "entryDetails": "Le transport, les coûts exacts et les répartitions sont valides",
+        "participations": "Les participations couvertes appartiennent à ce partenariat",
+        "fundingRules": "Les règles de financement du projet sont respectées"
+      },
+      "toast": {
+        "submitted": "Demande envoyée",
+        "submitFailed": "La demande n’a pas pu être envoyée"
       }
     },
     "workspace": {
@@ -240,7 +269,10 @@
         "currencyEur": "EUR",
         "linked": "Lié :",
         "linkLabel": "Lier un justificatif à ce coût",
-        "selectDocument": "Sélectionner un document de la demande"
+        "selectDocument": "Sélectionner un document de la demande",
+        "description": "Téléversez et associez les justificatifs de chaque frais de voyage.",
+        "documentFallback": "Document",
+        "none": "Aucun"
       },
       "payout": {
         "selected": "Compte de versement sélectionné :",
@@ -253,7 +285,14 @@
         "accountHolder": "Titulaire du compte",
         "iban": "IBAN",
         "bic": "BIC (facultatif)",
-        "createClaim": "Créer la demande"
+        "createClaim": "Créer la demande",
+        "errors": {
+          "accountHolderRequired": "Saisissez le titulaire du compte.",
+          "accountHolderTooLong": "Le titulaire est trop long.",
+          "ibanInvalid": "Saisissez un IBAN valide.",
+          "bicInvalid": "Saisissez un BIC valide ou laissez vide.",
+          "server": "Le compte de paiement n’a pas pu être enregistré."
+        }
       },
       "notice": {
         "correctionRequested": "Correction demandée :",
@@ -261,7 +300,9 @@
         "rejected": "Rejetée :",
         "rejectedBody": "Cette demande est verrouillée et non payée. Seul le personnel de l’organisation d’accueil peut la rouvrir ; la réouverture ne déverrouille pas les modifications du partenaire.",
         "approved": "Approuvée · non payée. Le virement intégral n’a pas été enregistré.",
-        "paid": "Payée. Le virement intégral a été enregistré séparément de l’approbation."
+        "paid": "Payée. Le virement intégral a été enregistré séparément de l’approbation.",
+        "approvedTitle": "Approuvée",
+        "paidTitle": "Payée"
       },
       "draft": {
         "title": "Brouillon de demande"
@@ -284,6 +325,25 @@
         "savedClaim": "Demande {status} / enregistrée",
         "noClaim": "Aucune demande créée. Ouvrir cet espace n’enregistre rien.",
         "payable": "Montant à payer calculé : {amount} EUR (calculé par le serveur)."
+      },
+      "setup": {
+        "title": "Configuration de la demande",
+        "description": "Choisissez le compte de paiement avant de créer la demande."
+      },
+      "summary": {
+        "approvedAmount": "Montant approuvé",
+        "estimatedAmount": "Remboursement estimé"
+      },
+      "toast": {
+        "payoutCreated": "Compte de paiement créé",
+        "payoutSelected": "Compte de paiement sélectionné",
+        "claimCreated": "Demande créée",
+        "costSaved": "Frais de voyage enregistré",
+        "journeySaved": "Trajet de participation enregistré",
+        "journeyCorrected": "Trajet de participation corrigé",
+        "proofUploaded": "Justificatif téléversé",
+        "proofLinked": "Justificatif associé",
+        "actionFailed": "L’action a échoué. Réessayez."
       }
     },
     "link": {
@@ -296,6 +356,18 @@
       "car": "Voiture",
       "electricCar": "Voiture électrique",
       "plane": "Avion"
+    },
+    "summary": {
+      "title": "Aperçu de la demande",
+      "partner": "Organisation partenaire",
+      "hosting": "Organisation d’accueil",
+      "schedule": "Période",
+      "payout": "Compte de paiement",
+      "submitted": "Envoyée",
+      "unknown": "Non disponible",
+      "notCalculated": "Pas encore calculé",
+      "noPayout": "Aucun compte de paiement sélectionné",
+      "notSubmitted": "Pas encore envoyée"
     }
   }
 }

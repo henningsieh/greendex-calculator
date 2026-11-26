@@ -673,9 +673,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(review.getByTestId("approved-reimbursement")).toHaveCount(0);
     const cost = review
       .getByTestId("claim-cost-table")
-      .locator(
-        'tbody tr[data-transport-profile="train"][data-amount-eur="100.00"]',
-      );
+      .locator('li[data-transport-profile="train"][data-amount-eur="100.00"]');
     await expect(cost).toBeVisible();
     // Text-free: the allocation share row for the participant renders in the
     // cost row pinned above by transport and amount attributes.
@@ -769,9 +767,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     // Functional state only: 7 items, each carrying the pass badge variant.
     // No visible copy is asserted, so rewording never breaks this.
     await expect(checklist.getByRole("listitem")).toHaveCount(7);
-    await expect(
-      checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
-    ).toHaveCount(7);
+    await expect(checklist.locator('li[data-state="passed"]')).toHaveCount(7);
     await partner.getByTestId("claim-submit").click();
     // Text-free: confirm dialog ready (enabled confirm proves dialog state).
     await expect(partner.getByTestId("claim-submit-confirm")).toBeEnabled();

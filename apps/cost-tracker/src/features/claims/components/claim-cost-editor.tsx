@@ -20,7 +20,8 @@ import {
   FieldError as FormFieldError,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ClaimCostTable } from "@/features/claims/components/claim-document";
+import { toast } from "@/components/ui/toast";
+import { ClaimCostRecords } from "@/features/claims/components/claim-cost-records";
 import { CostSaveInputSchema } from "@/features/claims/cost-validation";
 import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
@@ -121,8 +122,10 @@ export function CostEditor({
         allocations: [],
       });
       await refresh();
+      toast.add({ title: t("toast.costSaved"), type: "success" });
     } catch (error) {
       setServerError(error);
+      toast.add({ title: t("toast.actionFailed"), type: "error" });
       const issues = getORPCErrorPresentation(error).issues ?? [];
       let mapped = false;
       for (const issue of issues) {
@@ -196,19 +199,31 @@ export function CostEditor({
             </EmptyHeader>
           </Empty>
         ) : (
-          <ClaimCostTable
-            actions={editable}
+          <ClaimCostRecords
             rows={entries.map((entry) => ({
               id: entry.id,
               transportProfile: entry.transportProfile,
               amountEur: entry.amountEur,
-              allocationMethod: entry.allocationMethod,
+              participants: entry.allocations.length,
+              receipts: entry.proofDocumentIds.length,
+              allocation: entry.allocationMethod as
+                | "equal"
+                | "amount"
+                | "percentage",
+              allocationDetail:
+                entry.allocationMethod === "equal"
+                  ? undefined
+                  : t(
+                      entry.allocationMethod === "amount"
+                        ? "cost.amount"
+                        : "cost.percentage",
+                    ),
               allocations: (
-                <ul className="space-y-2">
+                <ul className="space-y-1">
                   {entry.allocations.map((share) => (
                     <li
-                      key={share.projectParticipantId}
                       data-amount-eur={share.amountEur}
+                      key={share.projectParticipantId}
                     >
                       {participants.find(
                         (item) => item.id === share.projectParticipantId,
@@ -229,7 +244,7 @@ export function CostEditor({
                 </ul>
               ),
               documents: entry.proofDocumentIds.length ? (
-                <ul className="space-y-2">
+                <ul className="space-y-1">
                   {entry.proofDocumentIds.map((id) => (
                     <li key={id}>
                       {documents.find((document) => document.id === id)
@@ -237,20 +252,19 @@ export function CostEditor({
                     </li>
                   ))}
                 </ul>
-              ) : (
-                "None"
-              ),
+              ) : undefined,
               action: editable ? (
                 <Button
-                  size="lg"
-                  variant="outline"
+                  size="sm"
                   type="button"
+                  variant="outline"
                   onClick={() => edit(entry)}
                 >
                   {t("cost.edit")}
                 </Button>
               ) : undefined,
             }))}
+            testId="claim-cost-table"
           />
         )}
         {editable && (

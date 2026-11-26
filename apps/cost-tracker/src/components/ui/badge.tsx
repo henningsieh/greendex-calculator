@@ -11,6 +11,9 @@ const badgeVariants = cva(
         // Semantic chips carry a fill and a hairline so state reads at a
         // glance; ghost and link stay typographic on purpose.
         "claim-status": "border border-claim-band-foreground px-3 py-1 text-base tracking-normal whitespace-normal text-claim-band-foreground normal-case",
+        // Sentence-case Claim state for light document surfaces: a neutral
+        // chip with a semantic status dot, never a stamped uppercase label.
+        "claim-state": "gap-2 border border-border bg-card px-3 py-1.5 text-sm tracking-normal whitespace-normal text-foreground normal-case",
         default:
           "border border-transparent bg-primary px-2.5 py-1 text-primary-foreground [a]:hover:bg-primary/80",
         secondary:

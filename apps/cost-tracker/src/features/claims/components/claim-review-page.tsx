@@ -1,12 +1,10 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { connection } from "next/server";
-import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimReview } from "@/features/claims/components/claim-review";
-import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -65,12 +63,23 @@ async function ClaimReviewSection({
     input: { partnershipId },
     meta: { costTrackerORPC: true },
   } as const;
+  const scope = await client
+    .query(orpcQuery.projectPartnerships.getScope.queryOptions(options))
+    .catch(swallowPrefetchError);
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
       client.query(orpcQuery.claims.getHistory.queryOptions(options)),
       client.query(orpcQuery.claims.getReviewDetails.queryOptions(options)),
       client.query(orpcQuery.claims.reviewerAccess.queryOptions(options)),
+      scope?.projectId
+        ? client.query(
+            orpcQuery.projects.get.queryOptions({
+              input: { projectId: scope.projectId },
+              meta: { costTrackerORPC: true },
+            }),
+          )
+        : Promise.resolve(),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
@@ -100,9 +109,7 @@ export default async function ClaimReviewPage({
           eyebrow={t("eyebrow")}
           title={t("title")}
         />
-        <Suspense fallback={<ClaimReviewLoading />}>
-          <ClaimReviewSection params={params} />
-        </Suspense>
+        <ClaimReviewSection params={params} />
       </div>
     </RouteTransition>
   );

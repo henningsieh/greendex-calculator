@@ -146,7 +146,29 @@
       "title": "Beoordeling van declaratie",
       "contextLoading": "Context laden",
       "contextUnavailable": "Declaratiecontext niet beschikbaar",
-      "queueEyebrow": "Werkruimte"
+      "queueEyebrow": "Werkruimte",
+      "payoutTitle": "Uitbetalingsrekening",
+      "allocationAmount": "Verdeling per bedrag",
+      "allocationPercentage": "Percentuele verdeling",
+      "history": {
+        "submitted": "Ingediend",
+        "correction_requested": "Correctie aangevraagd",
+        "resubmitted": "Opnieuw ingediend",
+        "approved": "Goedgekeurd",
+        "rejected": "Afgewezen",
+        "reopened": "Heropend",
+        "paid": "Betaald",
+        "payment_corrected": "Betaalstatus gecorrigeerd",
+        "journey_updated": "Reis gecorrigeerd"
+      },
+      "toast": {
+        "requestCorrection": "Correctie aangevraagd",
+        "approve": "Aanvraag goedgekeurd",
+        "reject": "Aanvraag afgewezen",
+        "reopen": "Aanvraag heropend",
+        "markPaid": "Betaling geregistreerd",
+        "correctPayment": "Betalingsregistratie gecorrigeerd"
+      }
     },
     "submission": {
       "title": "Indiening",
@@ -171,7 +193,14 @@
         "payoutAccount": "Uitbetalingsrekening geselecteerd",
         "entries": "Reiskostenposten vastgelegd",
         "proofDocuments": "Een bewijsdocument bij elke post",
-        "journeys": "Deelnemersreizen compleet"
+        "journeys": "Deelnemersreizen compleet",
+        "entryDetails": "Vervoer, exacte kosten en verdelingen zijn geldig",
+        "participations": "Gedekte deelnames horen bij dit partnerschap",
+        "fundingRules": "De financieringsregels van het project zijn voldaan"
+      },
+      "toast": {
+        "submitted": "Aanvraag ingediend",
+        "submitFailed": "Aanvraag kon niet worden ingediend"
       }
     },
     "workspace": {
@@ -240,7 +269,10 @@
         "currencyEur": "EUR",
         "linked": "Gekoppeld:",
         "linkLabel": "Een bewijsdocument aan deze kosten koppelen",
-        "selectDocument": "Selecteer declaratiedocument"
+        "selectDocument": "Selecteer declaratiedocument",
+        "description": "Upload en koppel de bonnen van elke reiskostenpost.",
+        "documentFallback": "Document",
+        "none": "Geen"
       },
       "payout": {
         "selected": "Geselecteerde uitbetalingsrekening:",
@@ -253,7 +285,14 @@
         "accountHolder": "Rekeninghouder",
         "iban": "IBAN",
         "bic": "BIC (optioneel)",
-        "createClaim": "Declaratie aanmaken"
+        "createClaim": "Declaratie aanmaken",
+        "errors": {
+          "accountHolderRequired": "Voer de rekeninghouder in.",
+          "accountHolderTooLong": "De rekeninghouder is te lang.",
+          "ibanInvalid": "Voer een geldig IBAN in.",
+          "bicInvalid": "Voer een geldige BIC in of laat leeg.",
+          "server": "De uitbetalingsrekening kon niet worden opgeslagen."
+        }
       },
       "notice": {
         "correctionRequested": "Correctie gevraagd:",
@@ -261,7 +300,9 @@
         "rejected": "Afgewezen:",
         "rejectedBody": "Deze declaratie is vergrendeld en onbetaald. Alleen medewerkers van de organiserende organisatie kunnen haar heropenen; heropenen ontgrendelt de bewerking door de partner niet.",
         "approved": "Goedgekeurd · onbetaald. De volledige overboeking is nog niet geregistreerd.",
-        "paid": "Betaald. De volledige overboeking is los van de goedkeuring geregistreerd."
+        "paid": "Betaald. De volledige overboeking is los van de goedkeuring geregistreerd.",
+        "approvedTitle": "Goedgekeurd",
+        "paidTitle": "Betaald"
       },
       "draft": {
         "title": "Concept-declaratie"
@@ -284,6 +325,25 @@
         "savedClaim": "Declaratie {status} / opgeslagen",
         "noClaim": "Er is geen declaratie aangemaakt. Het openen van deze werkruimte slaat niets op.",
         "payable": "Berekend uit te betalen: {amount} EUR (door de server berekend)."
+      },
+      "setup": {
+        "title": "Aanvraag instellen",
+        "description": "Kies de uitbetalingsrekening voordat je de aanvraag aanmaakt."
+      },
+      "summary": {
+        "approvedAmount": "Goedgekeurd bedrag",
+        "estimatedAmount": "Geschatte vergoeding"
+      },
+      "toast": {
+        "payoutCreated": "Uitbetalingsrekening aangemaakt",
+        "payoutSelected": "Uitbetalingsrekening geselecteerd",
+        "claimCreated": "Aanvraag aangemaakt",
+        "costSaved": "Reiskostenpost opgeslagen",
+        "journeySaved": "Deelnamereis opgeslagen",
+        "journeyCorrected": "Deelnamereis gecorrigeerd",
+        "proofUploaded": "Bewijsstuk geüpload",
+        "proofLinked": "Bewijsstuk gekoppeld",
+        "actionFailed": "Actie mislukt. Probeer het opnieuw."
       }
     },
     "link": {
@@ -296,6 +356,18 @@
       "car": "Auto",
       "electricCar": "Elektrische auto",
       "plane": "Vliegtuig"
+    },
+    "summary": {
+      "title": "Overzicht van de aanvraag",
+      "partner": "Partnerorganisatie",
+      "hosting": "Gastorganisatie",
+      "schedule": "Periode",
+      "payout": "Uitbetalingsrekening",
+      "submitted": "Ingediend",
+      "unknown": "Niet beschikbaar",
+      "notCalculated": "Nog niet berekend",
+      "noPayout": "Geen uitbetalingsrekening geselecteerd",
+      "notSubmitted": "Nog niet ingediend"
     }
   }
 }

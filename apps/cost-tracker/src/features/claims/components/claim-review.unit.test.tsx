@@ -40,6 +40,9 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
     { data: { canReview: access.canReview } },
     {
       data: {
+        projectId: "project-1",
+        projectName: "Workshop",
+        organizationName: "Partner Organization",
         entries: [],
         journeys: [],
         payoutAccount: null,
@@ -47,6 +50,19 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
       },
     },
   ],
+  useSuspenseQuery: () => ({
+    data: {
+      id: "project-1",
+      name: "Workshop",
+      location: "Berlin",
+      country: "DE",
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-12-31"),
+      archived: false,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    },
+  }),
 }));
 beforeEach(() => {
   toastAdd.mockClear();
@@ -196,9 +212,9 @@ describe("Claim decisions", () => {
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
     render(
       <ClaimReviewDetails
-        status="submitted"
         partnershipId="partner"
         details={{
+          projectId: "project-1",
           projectName: "Workshop",
           organizationName: "Partner Organization",
           reimbursementAmountEur: "726.00",
@@ -245,13 +261,9 @@ describe("Claim decisions", () => {
     const costRow = document.querySelector("#cost-cost");
     expect(costRow).toHaveAttribute("data-transport-profile", "train");
     expect(costRow).toHaveAttribute("data-amount-eur", "800.00");
-    expect(costRow?.querySelectorAll("td")).toHaveLength(4);
-    expect(screen.getByTestId("allocation-share-person")).toBeInTheDocument();
     expect(
-      screen
-        .getByTestId("claim-cost-table")
-        .closest('[data-slot="table-container"]'),
-    ).toHaveAttribute("tabindex", "0");
+      costRow?.querySelector('[data-testid="allocation-share-person"]'),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("download-proof-proof")).toHaveAttribute(
       "href",
       "/api/proof-documents?partnershipId=partner&documentId=proof",

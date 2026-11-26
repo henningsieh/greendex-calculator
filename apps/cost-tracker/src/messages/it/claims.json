@@ -146,7 +146,29 @@
       "title": "Verifica della richiesta di rimborso",
       "contextLoading": "Caricamento del contesto",
       "contextUnavailable": "Contesto della richiesta di rimborso non disponibile",
-      "queueEyebrow": "Area di lavoro"
+      "queueEyebrow": "Area di lavoro",
+      "payoutTitle": "Conto di pagamento",
+      "allocationAmount": "Ripartizione per importo",
+      "allocationPercentage": "Ripartizione percentuale",
+      "history": {
+        "submitted": "Inviata",
+        "correction_requested": "Correzione richiesta",
+        "resubmitted": "Reinviata",
+        "approved": "Approvata",
+        "rejected": "Rifiutata",
+        "reopened": "Riaperta",
+        "paid": "Pagata",
+        "payment_corrected": "Stato del pagamento corretto",
+        "journey_updated": "Viaggio corretto"
+      },
+      "toast": {
+        "requestCorrection": "Correzione richiesta",
+        "approve": "Richiesta approvata",
+        "reject": "Richiesta rifiutata",
+        "reopen": "Richiesta riaperta",
+        "markPaid": "Pagamento registrato",
+        "correctPayment": "Registrazione del pagamento corretta"
+      }
     },
     "submission": {
       "title": "Invio",
@@ -171,7 +193,14 @@
         "payoutAccount": "Conto di pagamento selezionato",
         "entries": "Voci di costo di viaggio registrate",
         "proofDocuments": "Un giustificativo per ogni voce",
-        "journeys": "Viaggi dei partecipanti completi"
+        "journeys": "Viaggi dei partecipanti completi",
+        "entryDetails": "Trasporto, costi esatti e ripartizioni sono validi",
+        "participations": "Le partecipazioni coperte appartengono a questa partnership",
+        "fundingRules": "Le regole di finanziamento del progetto sono soddisfatte"
+      },
+      "toast": {
+        "submitted": "Richiesta inviata",
+        "submitFailed": "Impossibile inviare la richiesta"
       }
     },
     "workspace": {
@@ -240,7 +269,10 @@
         "currencyEur": "EUR",
         "linked": "Collegato:",
         "linkLabel": "Collega un documento giustificativo a questo costo",
-        "selectDocument": "Seleziona documento della richiesta di rimborso"
+        "selectDocument": "Seleziona documento della richiesta di rimborso",
+        "description": "Carica e collega le ricevute di ogni costo di viaggio.",
+        "documentFallback": "Documento",
+        "none": "Nessuno"
       },
       "payout": {
         "selected": "Conto di pagamento selezionato:",
@@ -253,7 +285,14 @@
         "accountHolder": "Intestatario del conto",
         "iban": "IBAN",
         "bic": "BIC (facoltativo)",
-        "createClaim": "Crea richiesta di rimborso"
+        "createClaim": "Crea richiesta di rimborso",
+        "errors": {
+          "accountHolderRequired": "Inserisci l’intestatario del conto.",
+          "accountHolderTooLong": "L’intestatario è troppo lungo.",
+          "ibanInvalid": "Inserisci un IBAN valido.",
+          "bicInvalid": "Inserisci un BIC valido o lascia vuoto.",
+          "server": "Impossibile salvare il conto di pagamento."
+        }
       },
       "notice": {
         "correctionRequested": "Correzione richiesta:",
@@ -261,7 +300,9 @@
         "rejected": "Rifiutata:",
         "rejectedBody": "Questa richiesta di rimborso è bloccata e non pagata. Solo il personale dell’organizzazione ospitante può riaprirla; la riapertura non sblocca le modifiche del partner.",
         "approved": "Approvata · non pagata. Il bonifico completo non è stato registrato.",
-        "paid": "Pagata. Il bonifico completo è stato registrato separatamente dall’approvazione."
+        "paid": "Pagata. Il bonifico completo è stato registrato separatamente dall’approvazione.",
+        "approvedTitle": "Approvata",
+        "paidTitle": "Pagata"
       },
       "draft": {
         "title": "Bozza della richiesta di rimborso"
@@ -284,6 +325,25 @@
         "savedClaim": "Richiesta di rimborso {status} / salvata",
         "noClaim": "Nessuna richiesta di rimborso creata. Aprire quest’area di lavoro non salva nulla.",
         "payable": "Importo da pagare calcolato: {amount} EUR (calcolato dal server)."
+      },
+      "setup": {
+        "title": "Impostazione della richiesta",
+        "description": "Scegli il conto di pagamento prima di creare la richiesta."
+      },
+      "summary": {
+        "approvedAmount": "Importo approvato",
+        "estimatedAmount": "Rimborso stimato"
+      },
+      "toast": {
+        "payoutCreated": "Conto di pagamento creato",
+        "payoutSelected": "Conto di pagamento selezionato",
+        "claimCreated": "Richiesta creata",
+        "costSaved": "Costo di viaggio salvato",
+        "journeySaved": "Viaggio di partecipazione salvato",
+        "journeyCorrected": "Viaggio di partecipazione corretto",
+        "proofUploaded": "Giustificativo caricato",
+        "proofLinked": "Giustificativo collegato",
+        "actionFailed": "Azione non riuscita. Riprova."
       }
     },
     "link": {
@@ -296,6 +356,18 @@
       "car": "Auto",
       "electricCar": "Auto elettrica",
       "plane": "Aereo"
+    },
+    "summary": {
+      "title": "Panoramica della richiesta",
+      "partner": "Organizzazione partner",
+      "hosting": "Organizzazione ospitante",
+      "schedule": "Periodo",
+      "payout": "Conto di pagamento",
+      "submitted": "Inviata",
+      "unknown": "Non disponibile",
+      "notCalculated": "Non ancora calcolato",
+      "noPayout": "Nessun conto di pagamento selezionato",
+      "notSubmitted": "Non ancora inviata"
     }
   }
 }

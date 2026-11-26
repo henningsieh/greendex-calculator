@@ -82,7 +82,10 @@ vi.mock("@/lib/orpc/orpc", () => {
           queryOptions: () => ({ queryKey: ["organization-options"] }),
         },
       },
-      projectPartnerships: { list: { queryOptions } },
+      projectPartnerships: {
+        getScope: { queryOptions },
+        list: { queryOptions },
+      },
     },
   };
 });
@@ -161,7 +164,7 @@ const routes = [
     heading: "Claim",
     label: "Loading Claim workspace",
     content: "Resolved Claim workspace",
-    staticHeader: true,
+    staticHeader: false,
   },
   {
     path: "/[locale]/claims",
@@ -294,7 +297,7 @@ it("prefetches the authorized Claim review snapshot", async () => {
   });
   // Header context + the four section prefetches. The mocked QueryClient does
   // not dedupe by key; the request-scoped client does, so this is a superset.
-  expect(mocks.query).toHaveBeenCalledTimes(5);
+  expect(mocks.query).toHaveBeenCalledTimes(6);
 });
 
 it("renders the authorized review context in the page header", async () => {
