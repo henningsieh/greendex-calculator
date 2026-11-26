@@ -1,7 +1,7 @@
 {
   "notifications": {
     "bell": {
-      "open": "{count, plural, =0 {Notifications, none unread} one {Notifications, # unread} other {Notifications, # unread}}",
+      "open": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
       "title": "Notifications",
       "empty": "No unread notifications",
       "loading": "Loading notifications",

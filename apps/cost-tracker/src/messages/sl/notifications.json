@@ -1,7 +1,7 @@
 {
   "notifications": {
     "bell": {
-      "open": "{count, plural, =0 {Obvestila, ni neprebranih} one {Obvestila, # neprebranih} other {Obvestila, # neprebranih}}",
+      "open": "{count, plural, =0 {Ni neprebranih obvestil} one {# neprebrano obvestilo} other {# neprebranih obvestil}}",
       "title": "Obvestila",
       "empty": "Ni neprebranih obvestil",
       "loading": "Nalaganje obvestil",
