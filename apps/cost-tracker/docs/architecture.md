@@ -108,6 +108,10 @@ the public route segments in one explicit list so a new protected route is gated
 by default. `ProtectedShell` keeps the authoritative `getSession()` check, which
 also covers an expired session whose cookie is still present.
 
+## Notification declarations
+
+`src/lib/orpc/notification-declarations.ts` is the complete inventory of router entries: every action maps to a typed notification intent (event plus recipient resolver) or to explicit `null` when it emits nothing. `router.ts` attaches the inventory through `attachNotificationDeclarations`, and the mapped `NotificationDeclarationTree<typeof router>` type fails type checking when an entry is missing, renamed, or extra. The runtime enforcement test walks the exported router and requires a declaration on every procedure object. `claims.markPaid` is the only v1 emitter (`claim.paid` v1); its recipient resolver runs inside the payment transaction.
+
 ## oRPC error presentation
 
 Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh failures retain cached data and produce a toast. Identical refresh failures—same oRPC status and code, or the same local error type and message—share one toast within a two-second interval; distinct failures remain separately visible.

@@ -97,8 +97,12 @@ import {
   listHostedOptions,
   searchHosted,
 } from "@/features/projects/procedures/search-hosted";
+import {
+  attachNotificationDeclarations,
+  notificationDeclarationTree,
+} from "@/lib/orpc/notification-declarations";
 
-export const router = {
+const routerShape = {
   authentication: {
     createOrganization,
     onboardingNextStep,
@@ -173,6 +177,11 @@ export const router = {
     removePartnerCoordinator,
   },
 };
+
+export const router = attachNotificationDeclarations(
+  routerShape,
+  notificationDeclarationTree,
+);
 
 export type Router = typeof router;
 export type Outputs = InferRouterOutputs<Router>;
