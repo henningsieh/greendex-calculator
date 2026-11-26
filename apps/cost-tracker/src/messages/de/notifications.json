@@ -1,0 +1,19 @@
+{
+  "notifications": {
+    "bell": {
+      "open": "{count, plural, =0 {Benachrichtigungen, keine ungelesen} one {Benachrichtigungen, # ungelesen} other {Benachrichtigungen, # ungelesen}}",
+      "title": "Benachrichtigungen",
+      "empty": "Keine ungelesenen Benachrichtigungen",
+      "loading": "Benachrichtigungen werden geladen",
+      "error": "Benachrichtigungen konnten nicht geladen werden",
+      "markAllRead": "Alle als gelesen markieren",
+      "claimPaidTitle": "Erstattung bezahlt",
+      "claimPaidDescription": "{amount} wurden für deinen Erstattungsantrag erfasst.",
+      "openClaim": "Erstattungsantrag öffnen"
+    },
+    "toast": {
+      "title": "Erstattung bezahlt",
+      "description": "{amount} wurden für deinen Erstattungsantrag erfasst."
+    }
+  }
+}

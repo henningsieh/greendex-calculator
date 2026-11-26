@@ -1,0 +1,19 @@
+{
+  "notifications": {
+    "bell": {
+      "open": "{count, plural, =0 {Notifiche, nessuna da leggere} one {Notifiche, # da leggere} other {Notifiche, # da leggere}}",
+      "title": "Notifiche",
+      "empty": "Nessuna notifica da leggere",
+      "loading": "Caricamento delle notifiche",
+      "error": "Impossibile caricare le notifiche",
+      "markAllRead": "Segna tutto come letto",
+      "claimPaidTitle": "Rimborso pagato",
+      "claimPaidDescription": "{amount} sono stati registrati per la tua richiesta di rimborso.",
+      "openClaim": "Apri la richiesta"
+    },
+    "toast": {
+      "title": "Rimborso pagato",
+      "description": "{amount} sono stati registrati per la tua richiesta di rimborso."
+    }
+  }
+}

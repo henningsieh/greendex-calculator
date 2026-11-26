@@ -822,6 +822,9 @@ importers:
       shadcn:
         specifier: ^4.23.0
         version: 4.23.0(supports-color@10.2.2)
+      socket.io-client:
+        specifier: 'catalog:'
+        version: 4.8.4(supports-color@10.2.2)
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0

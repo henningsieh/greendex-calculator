@@ -34,4 +34,5 @@ export const CostTrackerServerEnvironmentSchema = z.object({
 
 export const CostTrackerClientEnvironmentSchema = z.object({
   NEXT_PUBLIC_BASE_URL: z.url(),
+  NEXT_PUBLIC_REALTIME_URL: z.url().optional(),
 });

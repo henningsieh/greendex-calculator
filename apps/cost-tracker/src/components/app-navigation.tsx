@@ -9,10 +9,12 @@ import { LanguageSelector } from "@/components/language-selector";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import type { UserSummary } from "@/features/authentication/types";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 
 interface AppNavigationProps extends Partial<UserSummary> {
   brandHref?: AppHref;
   actions?: ReactNode;
+  realtimeUrl?: string;
 }
 
 export function AppNavigation({
@@ -20,6 +22,7 @@ export function AppNavigation({
   name,
   brandHref = "/",
   actions,
+  realtimeUrl,
 }: AppNavigationProps) {
   const t = useTranslations("shell");
   const account = email != null && name != null ? { email, name } : null;
@@ -30,6 +33,7 @@ export function AppNavigation({
         <SiteBrand href={brandHref} />
         {account ? (
           <div className="flex items-center gap-2">
+            <NotificationBell realtimeUrl={realtimeUrl} />
             <ThemeSwitcher />
             <LanguageSelector />
             <div className="lg:hidden">

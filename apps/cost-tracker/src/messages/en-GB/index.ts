@@ -3,6 +3,7 @@ import { mergeMessages } from "@/messages/merge";
 import apiErrors from "./apiErrors.json";
 import claims from "./claims.json";
 import common from "./common.json";
+import notifications from "./notifications.json";
 import onboarding from "./onboarding.json";
 import organizations from "./organizations.json";
 import participations from "./participations.json";
@@ -15,6 +16,7 @@ const messages = mergeMessages([
   apiErrors,
   claims,
   common,
+  notifications,
   onboarding,
   organizations,
   participations,

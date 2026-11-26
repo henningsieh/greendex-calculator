@@ -16,6 +16,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { authentication: { signOut: mocks.signOut } },
 }));
 vi.mock("@/components/theme-switcher", () => ({ ThemeSwitcher: () => null }));
+vi.mock("@/features/notifications/components/notification-bell", () => ({
+  NotificationBell: () => null,
+}));
 vi.mock("@/features/organizations/components/organization-switcher", () => ({
   OrganizationSwitcher: () => null,
 }));

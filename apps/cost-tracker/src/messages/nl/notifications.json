@@ -1,0 +1,19 @@
+{
+  "notifications": {
+    "bell": {
+      "open": "{count, plural, =0 {Meldingen, geen ongelezen} one {Meldingen, # ongelezen} other {Meldingen, # ongelezen}}",
+      "title": "Meldingen",
+      "empty": "Geen ongelezen meldingen",
+      "loading": "Meldingen laden",
+      "error": "Meldingen konden niet worden geladen",
+      "markAllRead": "Alles als gelezen markeren",
+      "claimPaidTitle": "Declaratie betaald",
+      "claimPaidDescription": "{amount} is vastgelegd voor je declaratie.",
+      "openClaim": "Declaratie openen"
+    },
+    "toast": {
+      "title": "Declaratie betaald",
+      "description": "{amount} is vastgelegd voor je declaratie."
+    }
+  }
+}

@@ -31,5 +31,6 @@ export const env = createEnv({
     REALTIME_INTERNAL_URL: process.env.REALTIME_INTERNAL_URL,
     REALTIME_EMIT_SECRET: process.env.REALTIME_EMIT_SECRET,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
   },
 });
