@@ -110,7 +110,7 @@ also covers an expired session whose cookie is still present.
 
 ## Notification declarations
 
-`src/lib/orpc/notification-declarations.ts` is the complete inventory of router entries: every action maps to a typed notification intent (event plus recipient resolver) or to explicit `null` when it emits nothing. `router.ts` attaches the inventory through `attachNotificationDeclarations`, and the mapped `NotificationDeclarationTree<typeof router>` type fails type checking when an entry is missing, renamed, or extra. The runtime enforcement test walks the exported router and requires a declaration on every procedure object. `claims.markPaid` is the only v1 emitter (`claim.paid` v1); its recipient resolver runs inside the payment transaction.
+`src/lib/orpc/notification-declarations.ts` is the complete inventory of router entries: every action maps to a typed notification intent (event plus recipient resolver) or to explicit `null` when it emits nothing. `router.ts` attaches the inventory through `attachNotificationDeclarations`, and the mapped `NotificationDeclarationTree<typeof router>` type fails type checking when an entry is missing, renamed, or extra. The runtime enforcement test walks the exported router and requires a declaration on every procedure object. `claims.markPaid` is the only v1 emitter (`claim.paid` v1); its recipient resolver runs inside the payment transaction. After commit, the handler emits best-effort to the separate [Realtime service](../../../realtime/README.md), which validates the Better Auth session on handshake, joins personal user rooms only, and broadcasts validated envelopes. A failed emit leaves the payment and its persisted inbox rows intact.
 
 ## oRPC error presentation
 

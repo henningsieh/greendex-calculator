@@ -327,6 +327,9 @@ async function main(): Promise<void> {
             ),
           );
         }
+        await check("apps/realtime", () =>
+          vitest("apps/realtime", filesFor("apps/realtime")),
+        );
         await check("repository policies/tooling", () =>
           vitest(".", globSync("scripts/**/*.test.ts", { cwd: root }).sort()),
         );

@@ -15,6 +15,7 @@ Use this instruction when placing code, crossing workspace boundaries, or changi
 | Calculator app        | `apps/calculator/src/`        | Carbon-footprint routes, features, adapters, Better Auth wiring, Socket.IO |
 | Cost Tracker app      | `apps/cost-tracker/src/`      | Journey-cost routes and Cost Tracker-owned behavior                        |
 | Documentation app     | `apps/documentation/src/`     | Fumadocs application                                                       |
+| Realtime app          | `apps/realtime/src/`          | Standalone single-instance Socket.IO notification broadcast                |
 | Auth package          | `packages/auth/src/`          | Shared Better Auth client types and utilities                              |
 | Config package        | `packages/config/src/`        | Shared domain and locale configuration                                     |
 | Database package      | `packages/database/src/`      | Drizzle client, schemas, migrations                                        |

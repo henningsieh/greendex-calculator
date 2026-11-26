@@ -17,11 +17,10 @@ export type NotificationRecipient = {
 };
 
 /** Inserted inbox row identity; the emit path needs the target room. */
-export type PersistedNotification = {
-  id: string;
-  recipientUserId: string;
-  createdAt: Date;
-};
+export type PersistedNotification = Pick<
+  typeof notificationsTable.$inferSelect,
+  "id" | "recipientUserId" | "createdAt"
+>;
 
 export type NotificationWrite = {
   event: NotificationEvent;

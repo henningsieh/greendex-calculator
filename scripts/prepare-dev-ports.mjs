@@ -38,6 +38,12 @@ const portConfigurations = [
     isExpectedCommand: (command) => /\bnext(?:\s+dev|-server\b)/.test(command),
   },
   {
+    port: portFromEnvironment("REALTIME_PORT"),
+    workspace: "apps/realtime",
+    isExpectedCommand: (command) =>
+      command.includes("tsx") && command.includes("server.ts"),
+  },
+  {
     port: portFromEnvironment("SOCKET_PORT"),
     workspace: "apps/calculator",
     isExpectedCommand: (command) =>
