@@ -28,6 +28,7 @@
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
     "@greendex/i18n": "workspace:*",
+    "@greendex/notifications": "workspace:*",
     "@hookform/resolvers": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/json-schema": "catalog:",

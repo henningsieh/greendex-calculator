@@ -10,16 +10,17 @@ Use this instruction when placing code, crossing workspace boundaries, or changi
 
 ## Workspace boundaries
 
-| Area              | Source of truth           | Responsibility                                                                |
-| ----------------- | ------------------------- | ----------------------------------------------------------------------------- |
-| Calculator app    | `apps/calculator/src/`    | Carbon-footprint routes, features, adapters, Better Auth wiring, Socket.IO     |
-| Cost Tracker app  | `apps/cost-tracker/src/`  | Journey-cost routes and Cost Tracker-owned behavior                            |
-| Documentation app | `apps/documentation/src/` | Fumadocs application                                                          |
-| Auth package      | `packages/auth/src/`      | Shared Better Auth client types and utilities                                 |
-| Config package    | `packages/config/src/`    | Shared domain and locale configuration                                        |
-| Database package  | `packages/database/src/`  | Drizzle client, schemas, migrations                                           |
-| Email package     | `packages/email/src/`     | Transactional templates, rendering, delivery primitives                       |
-| i18n package      | `packages/i18n/src/`      | next-intl exports and locale messages                                         |
+| Area                  | Source of truth               | Responsibility                                                             |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| Calculator app        | `apps/calculator/src/`        | Carbon-footprint routes, features, adapters, Better Auth wiring, Socket.IO |
+| Cost Tracker app      | `apps/cost-tracker/src/`      | Journey-cost routes and Cost Tracker-owned behavior                        |
+| Documentation app     | `apps/documentation/src/`     | Fumadocs application                                                       |
+| Auth package          | `packages/auth/src/`          | Shared Better Auth client types and utilities                              |
+| Config package        | `packages/config/src/`        | Shared domain and locale configuration                                     |
+| Database package      | `packages/database/src/`      | Drizzle client, schemas, migrations                                        |
+| Email package         | `packages/email/src/`         | Transactional templates, rendering, delivery primitives                    |
+| Notifications catalog | `packages/notifications/src/` | Versioned notification event types, payload schemas, and dedupe keys       |
+| i18n package          | `packages/i18n/src/`          | next-intl exports and locale messages                                      |
 
 Keep environment-specific integration in the consuming app. For example, `apps/calculator/src/lib/email.ts` injects SMTP and application URL configuration into `@greendex/email`. Follow the [Cost Tracker architecture](../../../apps/cost-tracker/docs/architecture.md) when placing Cost Tracker routes, shared UI, features, validation schemas, and integration seams.
 
