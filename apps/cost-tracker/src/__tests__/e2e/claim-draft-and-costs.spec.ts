@@ -136,6 +136,10 @@ async function openPartnership(
   destination: "participants" | "claim",
 ) {
   await page.goto("/projects");
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
   await expect(page.getByTestId("project-scope-partner")).toHaveAttribute(
     "aria-selected",
     "true",

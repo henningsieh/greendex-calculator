@@ -23,13 +23,6 @@ export async function ParticipantPageHeader({
         }),
       );
       participantName = data?.participation.displayName;
-    } else {
-      await client.query(
-        orpcQuery.participations.listPartnership.queryOptions({
-          input: { partnershipId },
-          meta: { costTrackerORPC: true },
-        }),
-      );
     }
   } catch (error) {
     // Presentation refusal, not a data failure: the shell already renders its

@@ -100,6 +100,7 @@
       "historyEmpty": "Nog geen beoordelingsgebeurtenissen.",
       "actor": "Actor:",
       "estimatedReimbursement": "Geschatte vergoeding:",
+      "lastSubmittedAmount": "Laatst ingediend bedrag:",
       "currencyEur": "EUR",
       "approvedAmount": "Goedgekeurd bedrag:",
       "decisionTitle": "Beoordelingsbeslissing",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Registreer de betaling pas nadat je het volledige bedrag van {amount} EUR in één keer hebt overgemaakt. Cost Tracker maakt geen geld over.",
       "confirmReopen": "Heropenen zet de declaratie terug naar beoordeling door de organiserende organisatie en houdt bewerking door de partner vergrendeld. Vraag apart een correctie aan als er wijzigingen nodig zijn.",
-      "confirmApproval": "Keur de declaratie goed voor het getoonde bedrag. Hiermee maak je geen geld over en registreer je geen betaling.",
+      "confirmApproval": "Keur de declaratie goed voor {amount}. Hiermee maak je geen geld over en registreer je geen betaling.",
       "confirmPaymentCorrection": "De declaratie blijft goedgekeurd en staat weer op onbetaald. Hiermee draai je de bankoverschrijving niet terug.",
       "equalShare": "Gelijk aandeel (berekend bij indiening)",
       "title": "Beoordeling van declaratie",
@@ -285,14 +286,7 @@
         "accountHolder": "Rekeninghouder",
         "iban": "IBAN",
         "bic": "BIC (optioneel)",
-        "createClaim": "Declaratie aanmaken",
-        "errors": {
-          "accountHolderRequired": "Voer de rekeninghouder in.",
-          "accountHolderTooLong": "De rekeninghouder is te lang.",
-          "ibanInvalid": "Voer een geldig IBAN in.",
-          "bicInvalid": "Voer een geldige BIC in of laat leeg.",
-          "server": "De uitbetalingsrekening kon niet worden opgeslagen."
-        }
+        "createClaim": "Declaratie aanmaken"
       },
       "notice": {
         "correctionRequested": "Correctie gevraagd:",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Goedgekeurd bedrag",
-        "estimatedAmount": "Geschatte vergoeding"
+        "estimatedAmount": "Geschatte vergoeding",
+        "lastSubmittedAmount": "Laatst ingediend bedrag"
       },
       "toast": {
         "payoutCreated": "Uitbetalingsrekening aangemaakt",

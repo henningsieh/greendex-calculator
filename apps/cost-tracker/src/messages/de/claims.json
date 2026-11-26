@@ -100,6 +100,7 @@
       "historyEmpty": "Noch keine Prüfereignisse.",
       "actor": "Akteur:",
       "estimatedReimbursement": "Voraussichtliche Erstattung:",
+      "lastSubmittedAmount": "Zuletzt eingereichter Betrag:",
       "currencyEur": "EUR",
       "approvedAmount": "Genehmigter Betrag:",
       "decisionTitle": "Prüfentscheidung",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Erfasse die Zahlung erst, wenn du {amount} EUR vollständig in einer einzigen Überweisung gezahlt hast. Cost Tracker überweist kein Geld.",
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
-      "confirmApproval": "Genehmige den Erstattungsantrag über den angezeigten Betrag. Damit überweist oder erfasst du noch keine Zahlung.",
+      "confirmApproval": "Genehmige den Erstattungsantrag über {amount}. Damit überweist oder erfasst du noch keine Zahlung.",
       "confirmPaymentCorrection": "Der Erstattungsantrag bleibt genehmigt und gilt wieder als unbezahlt. Die Überweisung wird dadurch nicht rückgängig gemacht.",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
       "title": "Antragsprüfung",
@@ -285,14 +286,7 @@
         "accountHolder": "Kontoinhaber",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "createClaim": "Erstattungsantrag erstellen",
-        "errors": {
-          "accountHolderRequired": "Gib den Kontoinhaber ein.",
-          "accountHolderTooLong": "Der Kontoinhaber ist zu lang.",
-          "ibanInvalid": "Gib eine gültige IBAN ein.",
-          "bicInvalid": "Gib eine gültige BIC ein oder lasse das Feld leer.",
-          "server": "Das Auszahlungskonto konnte nicht gespeichert werden."
-        }
+        "createClaim": "Erstattungsantrag erstellen"
       },
       "notice": {
         "correctionRequested": "Korrektur angefordert:",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Genehmigter Betrag",
-        "estimatedAmount": "Geschätzte Erstattung"
+        "estimatedAmount": "Geschätzte Erstattung",
+        "lastSubmittedAmount": "Zuletzt eingereichter Betrag"
       },
       "toast": {
         "payoutCreated": "Auszahlungskonto erstellt",

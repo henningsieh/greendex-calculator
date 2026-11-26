@@ -1,6 +1,7 @@
 import { useTranslations } from "@greendex/i18n/client";
-import { useRef, useState } from "react";
+import { createElement, useRef, useState } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { toast } from "@/components/ui/toast";
 import { canSubmitClaim } from "@/features/claims/claim-submission-policy";
 import { orpc } from "@/lib/orpc/orpc";
@@ -14,7 +15,6 @@ export function useClaimSubmission(
   const t = useTranslations("claims.submission");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
   const saving = useRef(false);
   const ready = canSubmitClaim(action, preview);
 
@@ -22,15 +22,16 @@ export function useClaimSubmission(
     if (!ready || !confirming || saving.current) return;
     saving.current = true;
     setPending(true);
-    setFailure(null);
     try {
       await orpc.claims.submit({ partnershipId });
       await refresh();
       toast.add({ title: t("toast.submitted"), type: "success" });
     } catch (error) {
       setConfirming(false);
-      setFailure({ error });
-      toast.add({ title: t("toast.submitFailed"), type: "error" });
+      toast.add({
+        description: createElement(ErrorPresentation, { error }),
+        type: "error",
+      });
       await refresh();
     } finally {
       saving.current = false;
@@ -42,7 +43,6 @@ export function useClaimSubmission(
     confirming,
     pending,
     disabled: !ready || pending,
-    failure,
     open: () => setConfirming(true),
     cancel: () => setConfirming(false),
     submit,

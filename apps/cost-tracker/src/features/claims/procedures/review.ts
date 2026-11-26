@@ -27,6 +27,7 @@ import {
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { equalAllocation } from "@/features/claims/reimbursement";
 import { ClaimInputSchema } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -150,7 +151,14 @@ export const reviewerAccess = authorized
     }),
   )
   .input(ClaimInputSchema)
-  .output(z.object({ canReview: z.boolean(), projectArchived: z.boolean() }))
+  .output(
+    z.object({
+      canReview: z.boolean(),
+      projectArchived: z.boolean(),
+      userId: z.string(),
+      activeOrganizationId: z.string().nullable(),
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
       input.partnershipId,
@@ -161,6 +169,8 @@ export const reviewerAccess = authorized
     return {
       canReview: scope.hostId === context.session.activeOrganizationId,
       projectArchived: scope.projectArchived,
+      userId: context.user.id,
+      activeOrganizationId: context.session.activeOrganizationId ?? null,
     };
   });
 
@@ -178,6 +188,7 @@ export const getReviewDetails = authorized
       projectId: z.string(),
       projectName: z.string(),
       organizationName: z.string(),
+      hostingOrganizationName: z.string(),
       payoutAccount: z
         .object({
           accountHolder: z.string(),
@@ -255,53 +266,59 @@ export const getReviewDetails = authorized
       throw createSituationErrors(errors).internalFailure();
     }
     const reimbursementAmountEur = claim.reimbursementAmountEur;
-    const [payout, costRows, journeyRows] = await Promise.all([
-      db
-        .select({
-          accountHolder: accounts.accountHolder,
-          iban: accounts.iban,
-          bic: accounts.bic,
-        })
-        .from(selections)
-        .innerJoin(
-          accounts,
-          and(
-            eq(accounts.id, selections.payoutAccountId),
-            eq(accounts.organizationId, scope.partnerId),
+    const [payout, costRows, journeyRows, hostingOrganization] =
+      await Promise.all([
+        db
+          .select({
+            accountHolder: accounts.accountHolder,
+            iban: accounts.iban,
+            bic: accounts.bic,
+          })
+          .from(selections)
+          .innerJoin(
+            accounts,
+            and(
+              eq(accounts.id, selections.payoutAccountId),
+              eq(accounts.organizationId, scope.partnerId),
+            ),
+          )
+          .where(eq(selections.partnershipId, input.partnershipId))
+          .limit(1),
+        db
+          .select({
+            id: entries.id,
+            transportProfile: entries.transportProfile,
+            amountEur: entries.amountEur,
+            allocationMethod: entries.allocationMethod,
+          })
+          .from(entries)
+          .where(eq(entries.claimId, claim.id)),
+        db
+          .select({
+            participantId: participants.id,
+            participantName: participants.displayName,
+            origin: journeys.origin,
+            destination: journeys.destination,
+            tripType: journeys.tripType,
+            erasmusDistanceKm: journeys.erasmusDistanceKm,
+          })
+          .from(journeys)
+          .innerJoin(
+            participants,
+            eq(participants.id, journeys.projectParticipantId),
+          )
+          .where(
+            and(
+              eq(participants.projectId, scope.projectId),
+              eq(participants.representedOrganizationId, scope.partnerId),
+            ),
           ),
-        )
-        .where(eq(selections.partnershipId, input.partnershipId))
-        .limit(1),
-      db
-        .select({
-          id: entries.id,
-          transportProfile: entries.transportProfile,
-          amountEur: entries.amountEur,
-          allocationMethod: entries.allocationMethod,
-        })
-        .from(entries)
-        .where(eq(entries.claimId, claim.id)),
-      db
-        .select({
-          participantId: participants.id,
-          participantName: participants.displayName,
-          origin: journeys.origin,
-          destination: journeys.destination,
-          tripType: journeys.tripType,
-          erasmusDistanceKm: journeys.erasmusDistanceKm,
-        })
-        .from(journeys)
-        .innerJoin(
-          participants,
-          eq(participants.id, journeys.projectParticipantId),
-        )
-        .where(
-          and(
-            eq(participants.projectId, scope.projectId),
-            eq(participants.representedOrganizationId, scope.partnerId),
-          ),
-        ),
-    ]);
+        db
+          .select({ name: organization.name })
+          .from(organization)
+          .where(eq(organization.id, scope.hostId))
+          .limit(1),
+      ]);
     const ids = costRows.map((row) => row.id);
     const [shares, evidence] = ids.length
       ? await Promise.all([
@@ -342,6 +359,7 @@ export const getReviewDetails = authorized
       projectId: scope.projectId,
       projectName: claim.projectName,
       organizationName: claim.organizationName,
+      hostingOrganizationName: hostingOrganization[0]?.name ?? "",
       payoutAccount: payout[0] ?? null,
       reimbursementAmountEur,
       journeys: journeyRows,
@@ -349,12 +367,22 @@ export const getReviewDetails = authorized
         ...row,
         allocations: shares
           .filter((share) => share.travelCostEntryId === row.id)
-          .map(({ participantId, participantName, percentage, amountEur }) => ({
-            participantId,
-            participantName,
-            percentage,
-            amountEur,
-          })),
+          .sort((a, b) => a.participantId.localeCompare(b.participantId))
+          .map(
+            (
+              { participantId, participantName, percentage, amountEur },
+              index,
+              covered,
+            ) => ({
+              participantId,
+              participantName,
+              percentage,
+              amountEur:
+                row.allocationMethod === "equal"
+                  ? equalAllocation(row.amountEur, index, covered.length)
+                  : amountEur,
+            }),
+          ),
         documents: evidence
           .filter((document) => document.travelCostEntryId === row.id)
           .map(({ id, originalFileName, mediaType, byteSize }) => ({

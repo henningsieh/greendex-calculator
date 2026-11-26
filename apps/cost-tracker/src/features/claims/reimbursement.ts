@@ -37,6 +37,18 @@ export function euros(cents: bigint): string {
   return `${cents / BigInt(100)}.${String(cents % BigInt(100)).padStart(2, "0")}`;
 }
 
+export function equalAllocation(
+  amountEur: string,
+  index: number,
+  count: number,
+): string {
+  const cents = decimalUnits(amountEur, 2);
+  const divisor = BigInt(count);
+  return euros(
+    cents / divisor + (BigInt(index) < cents % divisor ? BigInt(1) : BigInt(0)),
+  );
+}
+
 /** Each covered Participant is classified by their own approved allocated plane entries. */
 export function deriveReimbursement(
   entries: Entry[],

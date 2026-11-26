@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { RouteTransition } from "@/components/view-transition-boundaries";
@@ -12,7 +11,6 @@ export default async function PartnershipParticipantsPage({
 }: {
   params: Promise<{ partnershipId: string }>;
 }) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   return (

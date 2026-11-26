@@ -3,7 +3,6 @@
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import {
@@ -62,7 +61,6 @@ export function CostEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
-  const [serverError, setServerError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
@@ -107,10 +105,8 @@ export function CostEditor({
             : {}),
       })),
     });
-    setServerError(null);
   }
   const save = handleSubmit(async (values) => {
-    setServerError(null);
     try {
       await orpc.costs.save(values);
       reset({
@@ -124,8 +120,6 @@ export function CostEditor({
       await refresh();
       toast.add({ title: t("toast.costSaved"), type: "success" });
     } catch (error) {
-      setServerError(error);
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
       const issues = getORPCErrorPresentation(error).issues ?? [];
       let mapped = false;
       for (const issue of issues) {
@@ -173,7 +167,12 @@ export function CostEditor({
           mapped = true;
         }
       }
-      if (!mapped) setError("root.server", { type: "server" });
+      if (!mapped) {
+        toast.add({
+          description: <ErrorPresentation error={error} />,
+          type: "error",
+        });
+      }
     }
   });
   const shareTotal =
@@ -271,11 +270,6 @@ export function CostEditor({
           <form onSubmit={save} noValidate>
             <FieldGroup className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full">
               <p>{entryId ? t("copy.editCost") : t("copy.addCost")}</p>
-              {errors.root?.server && (
-                <FormFieldError>
-                  <ErrorPresentation error={serverError} />
-                </FormFieldError>
-              )}
               <Field data-invalid={!!errors.transportProfile}>
                 <FieldLabel htmlFor="cost-profile">
                   {t("cost.transport")}

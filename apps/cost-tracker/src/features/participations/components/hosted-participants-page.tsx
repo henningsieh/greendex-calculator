@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
@@ -13,7 +12,6 @@ export default async function HostedParticipantsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("participations.app");
 

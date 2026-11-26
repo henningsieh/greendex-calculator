@@ -142,6 +142,10 @@
       "networkFailure": "No se puede acceder al servidor o a la red. Comprueba tu conexión y vuelve a intentarlo."
     },
     "details": {
+      "accountHolderRequired": "Introduce el titular de la cuenta.",
+      "accountHolderTooLong": "El titular es demasiado largo.",
+      "ibanInvalid": "Introduce un IBAN válido.",
+      "bicInvalid": "Introduce un BIC válido o déjalo vacío.",
       "emailRequired": "La dirección de correo electrónico es obligatoria.",
       "emailInvalid": "Introduce una dirección de correo electrónico válida.",
       "organizationIdRequired": "El ID de la organización es obligatorio.",

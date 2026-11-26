@@ -100,6 +100,7 @@
       "historyEmpty": "Todavía no hay eventos de revisión.",
       "actor": "Autor:",
       "estimatedReimbursement": "Reembolso estimado:",
+      "lastSubmittedAmount": "Último importe presentado:",
       "currencyEur": "EUR",
       "approvedAmount": "Importe aprobado:",
       "decisionTitle": "Decisión de revisión",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Registra el pago solo después de enviar los {amount} EUR en una sola transferencia bancaria. Cost Tracker no envía el dinero.",
       "confirmReopen": "Reabrir devuelve la solicitud de reembolso a la revisión de la organización anfitriona y mantiene bloqueada la edición del socio. Si necesitas cambios, solicita una corrección por separado.",
-      "confirmApproval": "Aprueba la solicitud por el importe indicado. Esto no envía dinero ni registra un pago.",
+      "confirmApproval": "Aprueba la solicitud por {amount}. Esto no envía dinero ni registra un pago.",
       "confirmPaymentCorrection": "La solicitud sigue aprobada y vuelve a figurar como pendiente de pago. Esto no revierte la transferencia bancaria.",
       "equalShare": "Parte igual (calculada al enviar)",
       "title": "Revisión de la solicitud de reembolso",
@@ -285,14 +286,7 @@
         "accountHolder": "Titular de la cuenta",
         "iban": "IBAN",
         "bic": "BIC (opcional)",
-        "createClaim": "Crear solicitud de reembolso",
-        "errors": {
-          "accountHolderRequired": "Introduce el titular de la cuenta.",
-          "accountHolderTooLong": "El titular es demasiado largo.",
-          "ibanInvalid": "Introduce un IBAN válido.",
-          "bicInvalid": "Introduce un BIC válido o déjalo vacío.",
-          "server": "No se pudo guardar la cuenta de pago."
-        }
+        "createClaim": "Crear solicitud de reembolso"
       },
       "notice": {
         "correctionRequested": "Corrección solicitada:",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Importe aprobado",
-        "estimatedAmount": "Reembolso estimado"
+        "estimatedAmount": "Reembolso estimado",
+        "lastSubmittedAmount": "Último importe presentado"
       },
       "toast": {
         "payoutCreated": "Cuenta de pago creada",

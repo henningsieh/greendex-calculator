@@ -71,7 +71,6 @@ function JourneyCorrection({
       toast.add({ title: t("toast.journeyCorrected"), type: "success" });
     } catch (error) {
       setServerError(error);
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
       const presentation = getORPCErrorPresentation(error);
       let mapped = false;
       for (const issue of presentation.issues ?? []) {
@@ -90,7 +89,11 @@ function JourneyCorrection({
           mapped = true;
         }
       }
-      if (!mapped) setError("root.server", { type: "server" });
+      if (!mapped)
+        toast.add({
+          description: <ErrorPresentation error={error} />,
+          type: "error",
+        });
     }
   });
 
@@ -294,7 +297,6 @@ export function JourneyEditor({
       });
     } catch (error) {
       setServerError(error);
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
       const presentation = getORPCErrorPresentation(error);
       let mapped = false;
       for (const issue of presentation.issues ?? []) {
@@ -323,7 +325,10 @@ export function JourneyEditor({
             { shouldFocus: true },
           );
         } else {
-          setError("root.server", { type: "server" });
+          toast.add({
+            description: <ErrorPresentation error={error} />,
+            type: "error",
+          });
         }
       }
     }

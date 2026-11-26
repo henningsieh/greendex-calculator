@@ -14,6 +14,7 @@ import {
   evaluateClaimTransition,
 } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { PayoutAccountCreateSchema } from "@/features/claims/validation-schemas";
 import {
   ClaimDraftSchema,
   ClaimPartnershipInputSchema,
@@ -30,42 +31,6 @@ const accountSchema = z.object({
   iban: z.string(),
   bic: z.string().nullable(),
 });
-
-const accountHolderSchema = z.string().trim().min(1).max(200);
-const ibanSchema = z
-  .string()
-  .transform((value) => value.replace(/\s/g, "").toUpperCase())
-  .pipe(
-    z
-      .string()
-      .min(15)
-      .max(34)
-      .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/)
-      .refine((iban) => {
-        const rearranged = iban.slice(4) + iban.slice(0, 4);
-        let remainder = 0;
-        for (const character of rearranged) {
-          const digits = /[A-Z]/.test(character)
-            ? String(character.charCodeAt(0) - 55)
-            : character;
-          for (const digit of digits)
-            remainder = (remainder * 10 + Number(digit)) % 97;
-        }
-        return remainder === 1;
-      }, "Invalid IBAN checksum."),
-  );
-const bicSchema = z
-  .string()
-  .trim()
-  .transform((value) => (value === "" ? null : value.toUpperCase()))
-  .pipe(
-    z
-      .string()
-      .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$/)
-      .nullable(),
-  )
-  .optional()
-  .transform((value) => value ?? null);
 
 async function requirePartnerSide(
   partnershipId: string,
@@ -185,10 +150,10 @@ export const listPayoutAccounts = authorized
 /** Create an Organization-owned account without selecting it or starting a Claim. */
 export const createPayoutAccount = authorized
   .input(
-    ClaimPartnershipInputSchema.extend({
-      accountHolder: accountHolderSchema,
-      iban: ibanSchema,
-      bic: bicSchema,
+    ClaimPartnershipInputSchema.extend(PayoutAccountCreateSchema.shape).extend({
+      bic: PayoutAccountCreateSchema.shape.bic
+        .optional()
+        .transform((value) => value || null),
     }),
   )
   .output(accountSchema)

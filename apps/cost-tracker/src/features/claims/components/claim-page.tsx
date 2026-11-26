@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { connection } from "next/server";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
@@ -22,29 +21,27 @@ async function ClaimWorkspaceSection({
   const client = getQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
-  const scope = await client
-    .query(orpcQuery.projectPartnerships.getScope.queryOptions(options))
-    .catch(swallowPrefetchError);
+  const people = client.query(
+    orpcQuery.participations.listPartnership.queryOptions(options),
+  );
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
       client.query(orpcQuery.claims.getHistory.queryOptions(options)),
       client.query(orpcQuery.claims.previewSubmission.queryOptions(options)),
       client.query(orpcQuery.claims.listPayoutAccounts.queryOptions(options)),
-      client.query(
-        orpcQuery.participations.listPartnership.queryOptions(options),
-      ),
+      people,
       client.query(orpcQuery.journeys.list.queryOptions(options)),
       client.query(orpcQuery.costs.list.queryOptions(options)),
       client.query(orpcQuery.documents.list.queryOptions(options)),
-      scope?.projectId
-        ? client.query(
-            orpcQuery.projects.get.queryOptions({
-              input: { projectId: scope.projectId },
-              meta: { costTrackerORPC: true },
-            }),
-          )
-        : Promise.resolve(),
+      people.then((result) =>
+        client.query(
+          orpcQuery.projects.get.queryOptions({
+            input: { projectId: result.projectId },
+            meta: { costTrackerORPC: true },
+          }),
+        ),
+      ),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
@@ -61,16 +58,16 @@ export default async function ClaimPage({
 }: {
   params: Promise<{ partnershipId: string }>;
 }) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
+  const section = ClaimWorkspaceSection({ params });
   const t = await getTranslations("claims.page");
 
   return (
     <RouteTransition>
       <div className="space-y-8">
         <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <ClaimWorkspaceSection params={params} />
+        {await section}
       </div>
     </RouteTransition>
   );

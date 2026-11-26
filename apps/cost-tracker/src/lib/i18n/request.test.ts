@@ -124,7 +124,7 @@ describe("Cost Tracker request catalogue", () => {
         t("review.estimatedReimbursement"),
       );
       expect(t("review.actions.approve")).not.toBe(t("review.actions.markPaid"));
-      expect(t("review.confirmApproval")).not.toBe(
+      expect(t("review.confirmApproval", { amount: "56.00" })).not.toBe(
         t("review.confirmTransfer", { amount: "56.00" }),
       );
       expect(onError).not.toHaveBeenCalled();

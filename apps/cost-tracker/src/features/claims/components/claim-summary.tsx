@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@greendex/i18n/client";
+import { useFormatter, useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 
 import {
@@ -12,21 +12,15 @@ import {
 } from "@/components/ui/card";
 import type { ClaimStatus } from "@/features/claims/claim-lifecycle";
 import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
+import type { Outputs } from "@/lib/orpc/router";
 import { cn } from "@/lib/utils";
 
-interface ClaimSummaryAccount {
-  accountHolder: string;
-  iban: string;
-  bic: string | null;
-}
+type ClaimSummaryAccount = Outputs["claims"]["getReviewDetails"]["payoutAccount"];
 
-export interface ClaimSummaryProject {
-  name: string;
-  location: string;
-  country: string;
-  startDate: Date;
-  endDate: Date;
-}
+export type ClaimSummaryProject = Pick<
+  Outputs["projects"]["get"],
+  "name" | "location" | "country" | "startDate" | "endDate"
+>;
 
 interface ClaimSummaryItemProps {
   label: string;
@@ -83,6 +77,7 @@ export function ClaimSummary({
   submittedAt?: Date | null;
 }) {
   const t = useTranslations("claims.summary");
+  const format = useFormatter();
   const dateFormat = useDateFormat();
 
   return (
@@ -121,7 +116,18 @@ export function ClaimSummary({
           />
           <ClaimSummaryItem
             label={amountLabel}
-            value={amount ?? t("notCalculated")}
+            value={
+              amount ? (
+                <data value={amount}>
+                  {format.number(Number(amount), {
+                    style: "currency",
+                    currency: "EUR",
+                  })}
+                </data>
+              ) : (
+                t("notCalculated")
+              )
+            }
             mono={Boolean(amount)}
           />
           <ClaimSummaryItem

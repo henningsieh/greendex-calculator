@@ -142,6 +142,10 @@
       "networkFailure": "Der Server oder das Netzwerk ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
     },
     "details": {
+      "accountHolderRequired": "Gib den Kontoinhaber ein.",
+      "accountHolderTooLong": "Der Kontoinhaber ist zu lang.",
+      "ibanInvalid": "Gib eine gültige IBAN ein.",
+      "bicInvalid": "Gib eine gültige BIC ein oder lasse das Feld leer.",
       "emailRequired": "Die E-Mail-Adresse ist erforderlich.",
       "emailInvalid": "Gib eine gültige E-Mail-Adresse ein.",
       "organizationIdRequired": "Die Organisations-ID ist erforderlich.",

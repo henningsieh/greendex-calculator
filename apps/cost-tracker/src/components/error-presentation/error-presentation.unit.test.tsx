@@ -123,6 +123,22 @@ describe("shared localized error presentation", () => {
       "Wähle ein Auszahlungskonto des Partners aus.",
     ],
     [
+      "accountHolderRequired",
+      "Enter the account holder.",
+      "Gib den Kontoinhaber ein.",
+    ],
+    [
+      "accountHolderTooLong",
+      "Account holder is too long.",
+      "Der Kontoinhaber ist zu lang.",
+    ],
+    ["ibanInvalid", "Enter a valid IBAN.", "Gib eine gültige IBAN ein."],
+    [
+      "bicInvalid",
+      "Enter a valid BIC or leave it empty.",
+      "Gib eine gültige BIC ein oder lasse das Feld leer.",
+    ],
+    [
       "entryRequired",
       "Add at least one Travel Cost Entry.",
       "Füge mindestens eine Reisekostenposition hinzu.",

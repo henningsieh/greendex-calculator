@@ -104,11 +104,6 @@ export function ClaimCostRecords({
     if (row.allocation === "amount" && row.shareEur !== undefined) {
       return t("document.amountShareDetail", { amount: money(row.shareEur) });
     }
-    if (row.participants > 1) {
-      return t("document.equalShareDetail", {
-        amount: money(Number(row.amountEur) / row.participants),
-      });
-    }
     return t("document.allocationEqual");
   }
 

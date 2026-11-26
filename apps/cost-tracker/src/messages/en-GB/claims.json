@@ -100,6 +100,7 @@
       "historyEmpty": "No review events yet.",
       "actor": "Actor:",
       "estimatedReimbursement": "Estimated reimbursement:",
+      "lastSubmittedAmount": "Last submitted amount:",
       "currencyEur": "EUR",
       "approvedAmount": "Approved amount:",
       "decisionTitle": "Review decision",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Record payment only after sending the full {amount} EUR in one bank transfer. Cost Tracker doesn’t send the money.",
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
-      "confirmApproval": "Approve the claim for the amount shown. This doesn’t send money or record a payment.",
+      "confirmApproval": "Approve the claim for {amount}. This doesn’t send money or record a payment.",
       "confirmPaymentCorrection": "This makes the claim approved but unpaid again. It doesn’t reverse the bank transfer.",
       "equalShare": "Equal share (computed on submission)",
       "title": "Claim review",
@@ -285,14 +286,7 @@
         "accountHolder": "Account holder",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "createClaim": "Create claim",
-        "errors": {
-          "accountHolderRequired": "Enter the account holder.",
-          "accountHolderTooLong": "The account holder is too long.",
-          "ibanInvalid": "Enter a valid IBAN.",
-          "bicInvalid": "Enter a valid BIC or leave it empty.",
-          "server": "The Payout Account could not be saved."
-        }
+        "createClaim": "Create claim"
       },
       "notice": {
         "correctionRequested": "Correction requested:",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Approved amount",
-        "estimatedAmount": "Estimated reimbursement"
+        "estimatedAmount": "Estimated reimbursement",
+        "lastSubmittedAmount": "Last submitted amount"
       },
       "toast": {
         "payoutCreated": "Payout Account created",

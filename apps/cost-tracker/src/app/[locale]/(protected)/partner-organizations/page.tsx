@@ -5,3 +5,5 @@ import PartnerOrganizationsPage from "@/features/partnerships/components/partner
 export default PartnerOrganizationsPage;
 
 export const metadata: Metadata = { title: "Partners" };
+
+export const instant = false;

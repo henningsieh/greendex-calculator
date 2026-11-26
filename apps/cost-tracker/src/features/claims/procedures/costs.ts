@@ -15,7 +15,7 @@ import { z } from "zod";
 import { isPartnerEditLocked } from "@/features/claims/claim-lifecycle";
 import { CostSaveInputSchema } from "@/features/claims/cost-validation";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import { decimalUnits, euros } from "@/features/claims/reimbursement";
+import { equalAllocation } from "@/features/claims/reimbursement";
 import {
   ClaimScopeInputSchema,
   ProofDocumentIdSchema,
@@ -86,19 +86,14 @@ async function readEntries(claimId: string) {
       .sort((a, b) =>
         a.projectParticipantId.localeCompare(b.projectParticipantId),
       );
-    const cents = decimalUnits(row.amountEur, 2);
-    const count = BigInt(covered.length);
     return {
       ...row,
       allocations: covered.map((share, index) => ({
         projectParticipantId: share.projectParticipantId,
         percentage: share.percentage,
         amountEur:
-          row.allocationMethod === "equal" && count > BigInt(0)
-            ? euros(
-                cents / count +
-                  (BigInt(index) < cents % count ? BigInt(1) : BigInt(0)),
-              )
+          row.allocationMethod === "equal"
+            ? equalAllocation(row.amountEur, index, covered.length)
             : share.amountEur,
       })),
       proofDocumentIds: evidence

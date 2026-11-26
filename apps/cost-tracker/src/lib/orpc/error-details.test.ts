@@ -62,6 +62,10 @@ describe("structured error details", () => {
       "organizationIdTooLong",
       "projectIdRequired",
       "projectIdTooLong",
+      "accountHolderRequired",
+      "accountHolderTooLong",
+      "ibanInvalid",
+      "bicInvalid",
     ].includes(issue.id);
     const error = checklist
       ? errors.submissionIncomplete([issue])

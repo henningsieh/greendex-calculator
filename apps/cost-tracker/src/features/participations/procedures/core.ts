@@ -66,6 +66,7 @@ const selected = {
  * evaluates the shared policy with it and authorizes nothing on its own (ADR-0014).
  */
 const scopeContext = z.object({
+  userId: z.string(),
   partnerOrganizationId: z.string(),
   hostOrganizationId: z.string(),
   assignedCoordinator: z.boolean(),
@@ -121,6 +122,7 @@ export function createParticipationProcedures(
         projectId: z.string(),
         projectName: z.string(),
         projectArchived: z.boolean(),
+        organizationNames: z.object({ host: z.string(), partner: z.string() }),
         participations: z.array(participation),
         invitations: z.array(
           z.object({
@@ -149,7 +151,7 @@ export function createParticipationProcedures(
         context.session.activeOrganizationId,
         errors,
       );
-      const [rows, issued, project] = await Promise.all([
+      const [rows, issued, project, organizations] = await Promise.all([
         db
           .select(selected)
           .from(participants)
@@ -174,6 +176,10 @@ export function createParticipationProcedures(
           .where(eq(projects.id, scope.projectId))
           .limit(1)
           .then((found) => found[0]),
+        db
+          .select({ id: organization.id, name: organization.name })
+          .from(organization)
+          .where(inArray(organization.id, [scope.hostId, scope.partnerId])),
       ]);
       // One token table, two flavours: a bound email is an invitation,
       // a null email is a shareable link (pending means open).
@@ -197,10 +203,17 @@ export function createParticipationProcedures(
         projectId: scope.projectId,
         projectName: project?.name ?? "",
         projectArchived: scope.projectArchived,
+        organizationNames: {
+          host:
+            organizations.find((item) => item.id === scope.hostId)?.name ?? "",
+          partner:
+            organizations.find((item) => item.id === scope.partnerId)?.name ?? "",
+        },
         participations: rows,
         invitations,
         registrationLinks,
         entryContext: {
+          userId: context.user.id,
           partnerOrganizationId: scope.partnerId,
           hostOrganizationId: scope.hostId,
           assignedCoordinator: await isPartnerCoordinatorAssigned(
@@ -261,6 +274,7 @@ export function createParticipationProcedures(
         projectArchived: scope.projectArchived,
         participation: details,
         correctionContext: {
+          userId: context.user.id,
           partnerOrganizationId: scope.partnerId,
           hostOrganizationId: scope.hostId,
           assignedCoordinator: await isPartnerCoordinatorAssigned(

@@ -23,6 +23,7 @@ import { toast } from "@/components/ui/toast";
 import {
   claimPanelActions,
   type ClaimPanelAction,
+  type ClaimStatus,
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
 import { ClaimCostRecords } from "@/features/claims/components/claim-cost-records";
@@ -30,6 +31,7 @@ import { PayoutAccountLines } from "@/features/claims/components/claim-document"
 import { ClaimSummary } from "@/features/claims/components/claim-summary";
 import { usePaymentController } from "@/features/claims/payment-controller";
 import type { ClaimDecisionInput } from "@/features/claims/types";
+import { useReadyOrganizationContext } from "@/features/organizations/organization-switch";
 import { authClient } from "@/lib/auth-client";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -141,17 +143,20 @@ function ClaimDecisionSummary({
         {t(`status.${statusKeys[status]}`)}
       </p>
       {amountLabel && amount && (
-        <p
-          className="font-mono text-lg tabular-nums"
-          data-message={amountLabel}
-          data-testid={
-            amountLabel === "approvedAmount"
-              ? "approved-reimbursement"
-              : "estimated-reimbursement"
-          }
-        >
-          {amount}
-        </p>
+        <div>
+          <p className="text-sm text-muted-foreground">{t(amountLabel)}</p>
+          <p
+            className="font-mono text-lg tabular-nums"
+            data-message={amountLabel}
+            data-testid={
+              amountLabel === "approvedAmount"
+                ? "approved-reimbursement"
+                : "estimated-reimbursement"
+            }
+          >
+            {amount}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -173,6 +178,7 @@ export function ClaimDecisionPanel({
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
 }) {
   const t = useTranslations("claims.review");
+  const format = useFormatter();
   const {
     intent: confirming,
     reasonAction,
@@ -241,7 +247,15 @@ export function ClaimDecisionPanel({
                 : confirming === "reopen"
                   ? t("confirmReopen")
                   : confirming === "approve"
-                    ? t("confirmApproval")
+                    ? t("confirmApproval", {
+                        amount:
+                          reimbursementAmountEur === null
+                            ? ""
+                            : format.number(Number(reimbursementAmountEur), {
+                                style: "currency",
+                                currency: "EUR",
+                              }),
+                      })
                     : confirming === "correctPayment"
                       ? t("confirmPaymentCorrection")
                       : t(`actions.${confirming}`)}
@@ -324,9 +338,11 @@ export function ClaimDecisionPanel({
 export function ClaimReviewDetails({
   details,
   partnershipId,
+  status,
 }: {
   details: ReviewDetails;
   partnershipId: string;
+  status?: ClaimStatus | null;
 }) {
   const t = useTranslations("claims.review");
   const format = useFormatter();
@@ -355,8 +371,13 @@ export function ClaimReviewDetails({
           )}
         </section>
         <div className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/50 px-4 py-3">
-          <span className="text-sm text-muted-foreground">
-            {t("estimatedReimbursement")}
+          <span
+            className="text-sm text-muted-foreground"
+            data-message={
+              reimbursementLabel(status ?? undefined) ?? "lastSubmittedAmount"
+            }
+          >
+            {t(reimbursementLabel(status ?? undefined) ?? "lastSubmittedAmount")}
           </span>
           <span
             className="font-mono text-lg tabular-nums"
@@ -488,11 +509,8 @@ export function ClaimReviewDetails({
 export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   const t = useTranslations("claims.review");
   const client = useQueryClient();
-  const { data: session } = authClient.useSession();
-  const { data: organization } = authClient.useActiveOrganization();
-  const role = organization?.members.find(
-    (entry) => entry.userId === session?.user.id,
-  )?.role;
+  const context = useReadyOrganizationContext();
+  const role = context?.role;
   const mayReview =
     Boolean(role) &&
     authClient.organization.checkRolePermission({
@@ -521,8 +539,10 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
     }),
   ).data;
   const submittedAt =
-    history.findLast((event) => event.eventType === "submitted")?.occurredAt ??
-    null;
+    history.findLast(
+      (event) =>
+        event.eventType === "submitted" || event.eventType === "resubmitted",
+    )?.occurredAt ?? null;
 
   async function decide(action: Decision, data: DecisionInput) {
     switch (action) {
@@ -578,12 +598,10 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
     >
       <ClaimSummary
         amount={claim?.reimbursementAmountEur ?? details.reimbursementAmountEur}
-        amountLabel={
-          claim?.status === "approved" || claim?.status === "paid"
-            ? t("approvedAmount")
-            : t("estimatedReimbursement")
-        }
-        hostingOrganization={organization?.name}
+        amountLabel={t(
+          reimbursementLabel(claim?.status) ?? "lastSubmittedAmount",
+        )}
+        hostingOrganization={details.hostingOrganizationName}
         partnerOrganization={details.organizationName}
         payoutAccount={details.payoutAccount}
         project={project}
@@ -600,7 +618,14 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
           ) : (
             <ClaimDecisionPanel
               archived={reviewer.projectArchived}
-              canReview={mayReview && reviewer.canReview}
+              canReview={Boolean(
+                mayReview &&
+                !reviewerQuery.isFetching &&
+                !reviewerQuery.isError &&
+                reviewer.canReview &&
+                reviewer.userId === context?.userId &&
+                reviewer.activeOrganizationId === context?.organizationId,
+              )}
               onDecision={decide}
               partnershipId={partnershipId}
               reimbursementAmountEur={claim.reimbursementAmountEur}
@@ -609,7 +634,11 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
           )}
         </aside>
         <div className="order-2 min-w-0 space-y-6 @4xl/content:col-start-1 @4xl/content:row-start-1">
-          <ClaimReviewDetails details={details} partnershipId={partnershipId} />
+          <ClaimReviewDetails
+            details={details}
+            partnershipId={partnershipId}
+            status={claim?.status}
+          />
           <ClaimHistory events={history} />
         </div>
       </div>

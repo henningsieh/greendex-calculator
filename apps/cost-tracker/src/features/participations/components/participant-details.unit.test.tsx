@@ -64,6 +64,7 @@ beforeEach(() => {
       country: "DE",
     },
     correctionContext: {
+      userId: "user-1",
       partnerOrganizationId: "partner-1",
       hostOrganizationId: "host-1",
       assignedCoordinator: false,

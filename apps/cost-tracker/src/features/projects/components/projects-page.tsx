@@ -1,6 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { headers } from "next/headers";
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
@@ -21,7 +20,6 @@ export default async function ProjectsPage(
     searchParams: Promise.resolve({}),
   },
 ) {
-  await connection();
   // Recovery has no Organization context yet; do not prefetch scoped data.
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("projects.page");

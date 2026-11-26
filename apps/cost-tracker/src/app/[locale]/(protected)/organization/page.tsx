@@ -5,3 +5,5 @@ import OrganizationPage from "@/features/organizations/components/organization-p
 export default OrganizationPage;
 
 export const metadata: Metadata = { title: "Organization" };
+
+export const instant = false;

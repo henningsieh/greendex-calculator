@@ -13,6 +13,10 @@ export const validFieldIssues = [
     "fundingBand",
   ]),
   createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"]),
+  createSafeFieldIssue("accountHolderRequired", ["accountHolder"]),
+  createSafeFieldIssue("accountHolderTooLong", ["accountHolder"]),
+  createSafeFieldIssue("ibanInvalid", ["iban"]),
+  createSafeFieldIssue("bicInvalid", ["bic"]),
   createSafeFieldIssue("entryRequired", ["entries"]),
   createSafeFieldIssue("entryRequiredForCheck", ["entries"]),
   createSafeFieldIssue("participationOutsidePartnership", [

@@ -34,7 +34,7 @@ function Alert({
   className,
   variant,
   emphasis,
-  role = variant === "info" ? "status" : "alert",
+  role = variant === "info" || variant === "success" ? "status" : "alert",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
   return (

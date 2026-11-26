@@ -758,6 +758,10 @@ export const fieldIssueCatalog = {
   journeyDistanceOutsideBands:
     "Journey distance must have exactly one frozen funding band.",
   payoutAccountRequired: "Select a Partner Payout Account.",
+  accountHolderRequired: "Enter the account holder.",
+  accountHolderTooLong: "Account holder is too long.",
+  ibanInvalid: "Enter a valid IBAN.",
+  bicInvalid: "Enter a valid BIC or leave it empty.",
   entryRequired: "Add at least one Travel Cost Entry.",
   entryRequiredForCheck: "Add a Travel Cost Entry to check this requirement.",
   participationOutsidePartnership:
@@ -801,6 +805,10 @@ const fieldIssuePathSchemas = {
     ]),
   ]),
   payoutAccountRequired: z.tuple([z.literal("payoutAccount")]),
+  accountHolderRequired: z.tuple([z.literal("accountHolder")]),
+  accountHolderTooLong: z.tuple([z.literal("accountHolder")]),
+  ibanInvalid: z.tuple([z.literal("iban")]),
+  bicInvalid: z.tuple([z.literal("bic")]),
   entryRequired: z.tuple([z.literal("entries")]),
   entryRequiredForCheck: z.tuple([z.literal("entries")]),
   participationOutsidePartnership: z.tuple([

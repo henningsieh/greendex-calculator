@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "@greendex/i18n/client";
+import { useFormatter, useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useQueryClient,
@@ -11,7 +11,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
-import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import {
+  ErrorPresentation,
+  FieldErrorMessage,
+} from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,20 +43,23 @@ import { ClaimSummary } from "@/features/claims/components/claim-summary";
 import {
   PayoutAccountCreateSchema,
   type PayoutAccountCreateValues,
-} from "@/features/claims/payout-validation";
+} from "@/features/claims/validation-schemas";
 import { useParticipantEntryAccess } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
-import { authClient } from "@/lib/auth-client";
 import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 type Cost = Outputs["costs"]["list"]["entries"][number];
 
-function PayoutFieldError({ message }: { message?: string }) {
-  const t = useTranslations("claims.workspace");
+function PayoutFieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p className="text-sm text-destructive" role="alert">
-      {t(`payout.errors.${message}`)}
+    <p
+      className="text-sm text-destructive"
+      data-error-key={message}
+      id={id}
+      role="alert"
+    >
+      <FieldErrorMessage message={message} />
     </p>
   ) : null;
 }
@@ -72,6 +78,7 @@ function ProofEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
+  const format = useFormatter();
   const [progress, setProgress] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<React.ReactNode>("");
   const [busy, setBusy] = useState(false);
@@ -110,16 +117,20 @@ function ProofEditor({
         } catch {
           body = undefined;
         }
-        setFeedback(
-          <ErrorPresentation error={body} httpStatus={request.status} />,
-        );
-        toast.add({ title: t("toast.actionFailed"), type: "error" });
+        toast.add({
+          description: (
+            <ErrorPresentation error={body} httpStatus={request.status} />
+          ),
+          type: "error",
+        });
       }
     };
     request.onerror = () => {
       setBusy(false);
-      setFeedback(<ErrorPresentation error={undefined} />);
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
+      toast.add({
+        description: <ErrorPresentation error={undefined} />,
+        type: "error",
+      });
     };
     request.send(data);
   }
@@ -133,8 +144,10 @@ function ProofEditor({
       toast.add({ title: t("toast.proofLinked"), type: "success" });
       await refresh();
     } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
+      toast.add({
+        description: <ErrorPresentation error={error} />,
+        type: "error",
+      });
     } finally {
       setBusy(false);
     }
@@ -218,7 +231,12 @@ function ProofEditor({
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <p className="text-sm font-medium">{entry.transportProfile}</p>
-              <p className="font-mono text-sm tabular-nums">{entry.amountEur}</p>
+              <p className="font-mono text-sm tabular-nums">
+                {format.number(Number(entry.amountEur), {
+                  style: "currency",
+                  currency: "EUR",
+                })}
+              </p>
             </div>
             <p className="mt-1 text-sm wrap-anywhere text-muted-foreground">
               {t("proof.linked")}{" "}
@@ -335,7 +353,11 @@ function ClaimDraftEditor({
 }) {
   const t = useTranslations("claims.workspace");
   const input = { partnershipId };
+  const client = useQueryClient();
   const [pending, setPending] = useState(false);
+  const [selectionError, setSelectionError] = useState<{ error: unknown } | null>(
+    null,
+  );
   const [optimisticSelection, setOptimisticSelection] = useState<string | null>(
     null,
   );
@@ -384,8 +406,11 @@ function ClaimDraftEditor({
           mapped = true;
         }
       }
-      if (!mapped) setError("root.server", { message: presentation.key });
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
+      if (!mapped)
+        toast.add({
+          description: <ErrorPresentation error={error} />,
+          type: "error",
+        });
     } finally {
       setPending(false);
     }
@@ -393,20 +418,27 @@ function ClaimDraftEditor({
 
   async function selectAccount(id: string) {
     if (!id) return;
+    setSelectionError(null);
     setOptimisticSelection(id);
     setPending(true);
     try {
-      await orpc.claims.selectPayoutAccount({
+      const selection = await orpc.claims.selectPayoutAccount({
         partnershipId,
         payoutAccountId: id,
       });
+      client.setQueryData<Outputs["claims"]["listPayoutAccounts"]>(
+        orpcQuery.claims.listPayoutAccounts.queryKey({ input }),
+        (current) =>
+          current
+            ? { ...current, selectedPayoutAccountId: selection.payoutAccountId }
+            : current,
+      );
       await refresh();
       setOptimisticSelection(null);
       toast.add({ title: t("toast.payoutSelected"), type: "success" });
     } catch (error) {
       setOptimisticSelection(null);
-      setError("root.server", { message: getORPCErrorPresentation(error).key });
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
+      setSelectionError({ error });
     } finally {
       setPending(false);
     }
@@ -419,8 +451,10 @@ function ClaimDraftEditor({
       await refresh();
       toast.add({ title: t("toast.claimCreated"), type: "success" });
     } catch (error) {
-      setError("root.server", { message: getORPCErrorPresentation(error).key });
-      toast.add({ title: t("toast.actionFailed"), type: "error" });
+      toast.add({
+        description: <ErrorPresentation error={error} />,
+        type: "error",
+      });
     } finally {
       setPending(false);
     }
@@ -445,6 +479,10 @@ function ClaimDraftEditor({
           <Label htmlFor="claim-payout-select">{t("payout.title")}</Label>
           {accounts.length ? (
             <select
+              aria-describedby={
+                selectionError ? "payout-selection-error" : undefined
+              }
+              aria-invalid={Boolean(selectionError)}
               className="min-h-11 w-full min-w-0 rounded-xl border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
               data-testid="claim-payout-select"
               disabled={!editable || busy}
@@ -470,6 +508,11 @@ function ClaimDraftEditor({
               </EmptyHeader>
             </Empty>
           )}
+          {selectionError && (
+            <div id="payout-selection-error" role="alert">
+              <ErrorPresentation error={selectionError.error} />
+            </div>
+          )}
           {account && (
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="mb-2 text-xs font-medium text-muted-foreground">
@@ -492,16 +535,14 @@ function ClaimDraftEditor({
             onSubmit={addAccount}
           >
             <p className="text-sm font-medium">{t("payout.create")}</p>
-            {errors.root?.server && (
-              <p className="text-sm text-destructive" role="alert">
-                {t("payout.errors.server")}
-              </p>
-            )}
             <Field data-invalid={Boolean(errors.accountHolder)}>
               <FieldLabel htmlFor="account-holder">
                 {t("payout.accountHolder")}
               </FieldLabel>
               <Input
+                aria-describedby={
+                  errors.accountHolder ? "account-holder-error" : undefined
+                }
                 aria-invalid={Boolean(errors.accountHolder)}
                 data-testid="account-holder"
                 disabled={busy}
@@ -509,11 +550,15 @@ function ClaimDraftEditor({
                 variant="accounting"
                 {...register("accountHolder")}
               />
-              <PayoutFieldError message={errors.accountHolder?.message} />
+              <PayoutFieldError
+                id="account-holder-error"
+                message={errors.accountHolder?.message}
+              />
             </Field>
             <Field data-invalid={Boolean(errors.iban)}>
               <FieldLabel htmlFor="account-iban">{t("payout.iban")}</FieldLabel>
               <Input
+                aria-describedby={errors.iban ? "account-iban-error" : undefined}
                 aria-invalid={Boolean(errors.iban)}
                 data-testid="account-iban"
                 disabled={busy}
@@ -521,11 +566,15 @@ function ClaimDraftEditor({
                 variant="figure"
                 {...register("iban")}
               />
-              <PayoutFieldError message={errors.iban?.message} />
+              <PayoutFieldError
+                id="account-iban-error"
+                message={errors.iban?.message}
+              />
             </Field>
             <Field data-invalid={Boolean(errors.bic)}>
               <FieldLabel htmlFor="account-bic">{t("payout.bic")}</FieldLabel>
               <Input
+                aria-describedby={errors.bic ? "account-bic-error" : undefined}
                 aria-invalid={Boolean(errors.bic)}
                 data-testid="account-bic"
                 disabled={busy}
@@ -533,7 +582,10 @@ function ClaimDraftEditor({
                 variant="figure"
                 {...register("bic")}
               />
-              <PayoutFieldError message={errors.bic?.message} />
+              <PayoutFieldError
+                id="account-bic-error"
+                message={errors.bic?.message}
+              />
             </Field>
             <Button
               data-testid="payout-account-create"
@@ -565,7 +617,6 @@ function ClaimDraftEditor({
 
 export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const client = useQueryClient();
-  const { data: activeOrganization } = authClient.useActiveOrganization();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
   const [
@@ -604,16 +655,22 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     }),
   ).data;
   const access = useParticipantEntryAccess(people.entryContext);
-  const editable = access.permitted && canPartnerEditClaim(draft?.status);
+  const editable =
+    access.permitted &&
+    !peopleQuery.isFetching &&
+    !peopleQuery.isError &&
+    canPartnerEditClaim(draft?.status);
   const corrections = Boolean(draft) && editable;
   const selectedPayout =
     payout.accounts.find(
       (account) => account.id === payout.selectedPayoutAccountId,
     ) ?? null;
   const submittedAt =
-    history.findLast((event) => event.eventType === "submitted")?.occurredAt ??
-    null;
-  const summary = summaryFor(project, activeOrganization?.name, draft, preview);
+    history.findLast(
+      (event) =>
+        event.eventType === "submitted" || event.eventType === "resubmitted",
+    )?.occurredAt ?? null;
+  const summary = summaryFor(people.organizationNames, draft, preview);
   const refresh = useCallback(async () => {
     const input = { partnershipId };
     await Promise.all([
@@ -677,26 +734,21 @@ interface ClaimWorkspaceSummary {
 }
 
 function summaryFor(
-  project: Outputs["projects"]["get"],
-  activeOrganizationName: string | undefined,
+  names: Outputs["participations"]["listPartnership"]["organizationNames"],
   draft: Outputs["claims"]["getDraft"],
   preview: Outputs["claims"]["previewSubmission"],
 ): ClaimWorkspaceSummary {
-  const isPartnerView = project.relationship === "partner";
   const approved = draft?.status === "approved" || draft?.status === "paid";
-  const amount = approved
-    ? (draft?.reimbursementAmountEur ?? null)
-    : (preview?.calculatedReimbursementEur ?? null);
+  const amount =
+    draft?.status === "in_preparation"
+      ? (preview?.calculatedReimbursementEur ?? null)
+      : (draft?.reimbursementAmountEur ?? null);
 
   return {
     approved,
     amount: amount === null ? null : String(amount),
-    hostingOrganization: isPartnerView
-      ? project.hostingOrganization.name
-      : activeOrganizationName,
-    partnerOrganization: isPartnerView
-      ? activeOrganizationName
-      : project.partnerOrganizations[0]?.organizationName,
+    hostingOrganization: names.host,
+    partnerOrganization: names.partner,
   };
 }
 
@@ -745,7 +797,12 @@ function ClaimWorkspaceLayout({
       <ClaimSummary
         amount={amount}
         amountLabel={
-          approved ? t("summary.approvedAmount") : t("summary.estimatedAmount")
+          approved
+            ? t("summary.approvedAmount")
+            : draft?.status === "rejected" ||
+                draft?.status === "correction_requested"
+              ? t("summary.lastSubmittedAmount")
+              : t("summary.estimatedAmount")
         }
         hostingOrganization={hostingOrganization}
         partnerOrganization={partnerOrganization}

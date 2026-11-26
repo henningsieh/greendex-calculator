@@ -553,11 +553,46 @@ it("Participant personal page requires a session, not active Organization Member
   expect(mocks.membership).not.toHaveBeenCalled();
 });
 
-const dataHeaderRoutes = routes.filter(({ staticHeader }) => !staticHeader);
+const dataHeaderRoutes = routes.filter(
+  ({ path }) =>
+    path.endsWith("/claim/review") ||
+    path.endsWith("/participants/[participationId]"),
+);
+
+it("waits for the Claim workspace before committing its header", async () => {
+  let resolveQuery!: (value: undefined) => void;
+  mocks.query.mockReturnValue(
+    new Promise<undefined>((resolve) => {
+      resolveQuery = resolve;
+    }),
+  );
+  const destination = new PassThrough();
+  let html = "";
+  destination.setEncoding("utf8");
+  destination.on("data", (chunk: string) => {
+    html += chunk;
+  });
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+      <LocalizedClaimPage
+        params={Promise.resolve({ partnershipId: "partnership-1" })}
+      />
+    </NextIntlClientProvider>,
+    { onShellReady: () => pipe(destination) },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  expect(html).not.toContain(">Claim</h1>");
+  expect(html).not.toContain("Resolved Claim workspace");
+  resolveQuery(undefined);
+  await complete;
+  expect(html).toContain(">Claim</h1>");
+  expect(html).toContain("Resolved Claim workspace");
+});
 
 it.each(dataHeaderRoutes)(
   "$path waits for page data before committing its header",
-  async ({ Page, content }) => {
+  async ({ Page, content, heading }) => {
     let resolveQuery!: (value: undefined) => void;
     const pending = new Promise<undefined>((resolve) => {
       resolveQuery = resolve;
@@ -586,9 +621,11 @@ it.each(dataHeaderRoutes)(
     );
     await new Promise((resolve) => setTimeout(resolve, 80));
     expect(html).not.toContain(content);
+    expect(html).not.toContain(`>${heading}</h1>`);
     resolveQuery(undefined);
     await complete;
     expect(html).toContain(content);
+    expect(html).toContain(`>${heading}</h1>`);
   },
 );
 

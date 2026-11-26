@@ -100,6 +100,7 @@
       "historyEmpty": "Aucun événement de vérification pour l’instant.",
       "actor": "Auteur :",
       "estimatedReimbursement": "Remboursement estimé :",
+      "lastSubmittedAmount": "Dernier montant soumis :",
       "currencyEur": "EUR",
       "approvedAmount": "Montant approuvé :",
       "decisionTitle": "Décision de vérification",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Enregistrez le paiement après avoir versé la totalité des {amount} EUR en un seul virement. Cost Tracker n’envoie pas l’argent.",
       "confirmReopen": "La réouverture renvoie la demande en vérification et maintient le blocage des modifications du partenaire. Demandez une correction séparément si nécessaire.",
-      "confirmApproval": "Approuvez la demande pour le montant affiché. Cette action n’envoie pas d’argent et n’enregistre aucun paiement.",
+      "confirmApproval": "Approuvez la demande pour {amount}. Cette action n’envoie pas d’argent et n’enregistre aucun paiement.",
       "confirmPaymentCorrection": "La demande reste approuvée et repasse en attente de paiement. Cette action n’annule pas le virement bancaire.",
       "equalShare": "Part égale (calculée à la soumission)",
       "title": "Vérification de la demande",
@@ -285,14 +286,7 @@
         "accountHolder": "Titulaire du compte",
         "iban": "IBAN",
         "bic": "BIC (facultatif)",
-        "createClaim": "Créer la demande",
-        "errors": {
-          "accountHolderRequired": "Saisissez le titulaire du compte.",
-          "accountHolderTooLong": "Le titulaire est trop long.",
-          "ibanInvalid": "Saisissez un IBAN valide.",
-          "bicInvalid": "Saisissez un BIC valide ou laissez vide.",
-          "server": "Le compte de paiement n’a pas pu être enregistré."
-        }
+        "createClaim": "Créer la demande"
       },
       "notice": {
         "correctionRequested": "Correction demandée :",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Montant approuvé",
-        "estimatedAmount": "Remboursement estimé"
+        "estimatedAmount": "Remboursement estimé",
+        "lastSubmittedAmount": "Dernier montant soumis"
       },
       "toast": {
         "payoutCreated": "Compte de paiement créé",

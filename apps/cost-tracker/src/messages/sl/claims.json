@@ -100,6 +100,7 @@
       "historyEmpty": "Še ni dogodkov pregleda.",
       "actor": "Izvajalec:",
       "estimatedReimbursement": "Ocenjeno povračilo:",
+      "lastSubmittedAmount": "Zadnji predloženi znesek:",
       "currencyEur": "EUR",
       "approvedAmount": "Odobreni znesek:",
       "decisionTitle": "Odločitev o pregledu",
@@ -140,7 +141,7 @@
       },
       "confirmTransfer": "Plačilo zabeležite šele, ko z enim bančnim nakazilom nakažete celoten znesek {amount} EUR. Cost Tracker ne nakazuje denarja.",
       "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
-      "confirmApproval": "Odobrite zahtevek za prikazani znesek. S tem ne nakažete denarja in ne zabeležite plačila.",
+      "confirmApproval": "Odobrite zahtevek za {amount}. S tem ne nakažete denarja in ne zabeležite plačila.",
       "confirmPaymentCorrection": "Zahtevek ostane odobren in znova velja za neplačanega. S tem ne razveljavite bančnega nakazila.",
       "equalShare": "Enak delež (izračunan ob oddaji)",
       "title": "Pregled zahtevka",
@@ -285,14 +286,7 @@
         "accountHolder": "Imetnik računa",
         "iban": "IBAN",
         "bic": "BIC (neobvezno)",
-        "createClaim": "Ustvari zahtevek",
-        "errors": {
-          "accountHolderRequired": "Vnesite imetnika računa.",
-          "accountHolderTooLong": "Imetnik računa je predolg.",
-          "ibanInvalid": "Vnesite veljaven IBAN.",
-          "bicInvalid": "Vnesite veljaven BIC ali pustite prazno.",
-          "server": "Računa za izplačilo ni bilo mogoče shraniti."
-        }
+        "createClaim": "Ustvari zahtevek"
       },
       "notice": {
         "correctionRequested": "Zahtevan popravek:",
@@ -332,7 +326,8 @@
       },
       "summary": {
         "approvedAmount": "Odobreni znesek",
-        "estimatedAmount": "Ocenjeno povračilo"
+        "estimatedAmount": "Ocenjeno povračilo",
+        "lastSubmittedAmount": "Zadnji predloženi znesek"
       },
       "toast": {
         "payoutCreated": "Račun za izplačilo ustvarjen",

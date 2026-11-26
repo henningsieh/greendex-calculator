@@ -526,6 +526,8 @@ describe("Partner Organization setup links", () => {
     expect(await client.claims.reviewerAccess({ partnershipId })).toEqual({
       canReview: true,
       projectArchived: true,
+      userId,
+      activeOrganizationId: hostId,
     });
     asUser(recipientEmail, partnerId);
     expect(await client.projects.get({ projectId })).toMatchObject({

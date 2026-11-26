@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { connection } from "next/server";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
@@ -63,23 +62,23 @@ async function ClaimReviewSection({
     input: { partnershipId },
     meta: { costTrackerORPC: true },
   } as const;
-  const scope = await client
-    .query(orpcQuery.projectPartnerships.getScope.queryOptions(options))
-    .catch(swallowPrefetchError);
+  const details = client.query(
+    orpcQuery.claims.getReviewDetails.queryOptions(options),
+  );
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
       client.query(orpcQuery.claims.getHistory.queryOptions(options)),
-      client.query(orpcQuery.claims.getReviewDetails.queryOptions(options)),
+      details,
       client.query(orpcQuery.claims.reviewerAccess.queryOptions(options)),
-      scope?.projectId
-        ? client.query(
-            orpcQuery.projects.get.queryOptions({
-              input: { projectId: scope.projectId },
-              meta: { costTrackerORPC: true },
-            }),
-          )
-        : Promise.resolve(),
+      details.then((result) =>
+        client.query(
+          orpcQuery.projects.get.queryOptions({
+            input: { projectId: result.projectId },
+            meta: { costTrackerORPC: true },
+          }),
+        ),
+      ),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
@@ -96,20 +95,24 @@ export default async function ClaimReviewPage({
 }: {
   params: Promise<{ partnershipId: string }>;
 }) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
+  const content = Promise.all([
+    ClaimReviewSection({ params }),
+    ReviewContext({ params }),
+  ]);
   const t = await getTranslations("claims.review");
+  const [section, context] = await content;
 
   return (
     <RouteTransition>
       <div className="space-y-6">
         <ProtectedPageHeader
-          description={await ReviewContext({ params })}
+          description={context}
           eyebrow={t("eyebrow")}
           title={t("title")}
         />
-        <ClaimReviewSection params={params} />
+        {section}
       </div>
     </RouteTransition>
   );

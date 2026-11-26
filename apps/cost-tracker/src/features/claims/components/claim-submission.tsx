@@ -4,10 +4,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useFormatter } from "@greendex/i18n/client";
 import { CheckIcon, CircleDashedIcon } from "lucide-react";
 
-import {
-  ErrorDetail,
-  ErrorPresentation,
-} from "@/components/error-presentation/error-presentation";
+import { ErrorDetail } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +69,10 @@ function ChecklistItem({
         )}
       </span>
       <div className="min-w-0 flex-1 space-y-2">
-        <p className="text-sm font-medium">{label}</p>
+        <p className="text-sm font-medium">
+          {label}{" "}
+          <span className="sr-only">{t(item.passed ? "done" : "open")}</span>
+        </p>
         {item.gaps.map((gap, index) => {
           const parsed = ChecklistFieldIssueSchema.safeParse(gap);
           if (!parsed.success)
@@ -90,13 +90,15 @@ function ChecklistItem({
               className="text-sm text-muted-foreground"
               key={`${issue.path.join(".")}-${issue.id}`}
             >
-              <ErrorDetail issue={issue} />{" "}
               <a
                 className="link-prose"
                 data-testid={`submission-gap-${issue.path.join("-")}`}
                 href={`#${gapAnchor(issue.path)}`}
               >
-                {t("goToGap")}
+                {t("goToGap")}:{" "}
+                <span>
+                  <ErrorDetail issue={issue} />
+                </span>
               </a>
             </p>
           );
@@ -119,7 +121,7 @@ export function ClaimSubmission({
 }) {
   const t = useTranslations("claims.submission");
   const format = useFormatter();
-  const { confirming, pending, disabled, failure, open, cancel, submit } =
+  const { confirming, pending, disabled, open, cancel, submit } =
     useClaimSubmission(partnershipId, action, preview, refresh);
   const ready = preview.items.every((item) => item.passed);
   const amount =
@@ -216,11 +218,6 @@ export function ClaimSubmission({
               </Button>
             </div>
           </Alert>
-        )}
-        {failure && (
-          <div role="alert">
-            <ErrorPresentation error={failure.error} />
-          </div>
         )}
       </CardContent>
     </Card>

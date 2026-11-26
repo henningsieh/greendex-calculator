@@ -142,6 +142,10 @@
       "networkFailure": "The server or network is unreachable. Check your connection and try again."
     },
     "details": {
+      "accountHolderRequired": "Enter the account holder.",
+      "accountHolderTooLong": "Account holder is too long.",
+      "ibanInvalid": "Enter a valid IBAN.",
+      "bicInvalid": "Enter a valid BIC or leave it empty.",
       "emailRequired": "Email address is required.",
       "emailInvalid": "Enter a valid email address.",
       "organizationIdRequired": "Organization ID is required.",

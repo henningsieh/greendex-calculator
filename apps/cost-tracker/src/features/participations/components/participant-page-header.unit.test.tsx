@@ -50,7 +50,7 @@ it("prefetches the participant snapshot behind the page identity", async () => {
   expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
 });
 
-it("prefetches the Partnership snapshot for the coordination route", async () => {
+it("renders the coordination header without a Partnership lookup", async () => {
   mocks.query.mockResolvedValue({ projectName: "Workshop" });
 
   render(
@@ -59,11 +59,7 @@ it("prefetches the Partnership snapshot for the coordination route", async () =>
     }),
   );
 
-  expect(mocks.query).toHaveBeenCalledOnce();
-  expect(mocks.query).toHaveBeenCalledWith({
-    input: { partnershipId: "partnership-1" },
-    meta: { costTrackerORPC: true },
-  });
+  expect(mocks.query).not.toHaveBeenCalled();
   expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
 });
 
@@ -100,7 +96,7 @@ it.each([undefined, "person-1"])(
       }),
     );
 
-    expect(mocks.query).toHaveBeenCalledOnce();
+    expect(mocks.query).toHaveBeenCalledTimes(participationId ? 1 : 0);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   },

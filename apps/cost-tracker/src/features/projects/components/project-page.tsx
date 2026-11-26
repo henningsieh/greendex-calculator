@@ -1,5 +1,3 @@
-import { connection } from "next/server";
-
 import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -9,7 +7,6 @@ interface ProjectPageProps {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   return (
