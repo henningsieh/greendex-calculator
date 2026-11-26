@@ -20,7 +20,15 @@
       "action": "Aktion",
       "allocationAmount": "Betrag (EUR)",
       "allocationPercentage": "Prozentual",
-      "allocationEqual": "Gleichmäßig"
+      "allocationEqual": "Gleichmäßig",
+      "claimAmount": "Erstattungsbetrag",
+      "participants": "{count, plural, =1 {1 Teilnehmende:r} other {# Teilnehmende}}",
+      "fullyAllocated": "jeder Euro zugeordnet",
+      "receipts": "{count, plural, =1 {1 Beleg} other {# Belege}}",
+      "receiptMissing": "Noch kein Beleg",
+      "equalShareDetail": "Gleichmäßig · je {amount}",
+      "percentageShareDetail": "Anteil {percentage} %",
+      "amountShareDetail": "Anteil {amount}"
     },
     "queue": {
       "eyebrow": "Arbeitsbereich",
@@ -154,7 +162,17 @@
       "confirmDescription": "Sende den Erstattungsantrag zur Prüfung an die Hosting-Organisation. Erst wenn sie eine Korrektur anfordert, kannst du den Antrag bearbeiten oder das Auszahlungskonto wechseln.",
       "confirm": "Einreichung bestätigen",
       "cancel": "Abbrechen",
-      "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist"
+      "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist",
+      "done": "Erledigt",
+      "open": "Offen",
+      "readyToSubmit": "Bereit zur Einreichung",
+      "inProgress": "In Bearbeitung",
+      "item": {
+        "payoutAccount": "Auszahlungskonto ausgewählt",
+        "entries": "Reisekostenpositionen erfasst",
+        "proofDocuments": "Belege zu jeder Position",
+        "journeys": "Reisen der Teilnehmenden vollständig"
+      }
     },
     "workspace": {
       "noClaim": "Kein Erstattungsantrag",
@@ -270,6 +288,14 @@
     },
     "link": {
       "claimReview": "Antragsprüfung"
+    },
+    "transport": {
+      "boat": "Boot",
+      "bus": "Bus",
+      "train": "Zug",
+      "car": "Auto",
+      "electricCar": "Elektroauto",
+      "plane": "Flugzeug"
     }
   }
 }

@@ -60,25 +60,9 @@
         "description": "Liquida los costes de viaje de Erasmus sin pelearte con la hoja de cálculo. Fotografía el billete, reparte el coste y presenta la solicitud: cada cifra sigue siendo trazable hasta su justificante.",
         "start": "Empezar a registrar costes",
         "seeHow": "Ver cómo funciona",
-        "trustLine": "Gratis para empezar · Sin tarjeta de crédito · Datos de demostración más abajo"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Abonado",
-          "detail": "calculado · no editable"
-        },
-        "documented": {
-          "label": "Documentado",
-          "detail": "sin lagunas abiertas"
-        },
-        "avgReview": {
-          "label": "Tiempo medio de revisión",
-          "detail": "revisión por la organización anfitriona",
-          "unit": "h"
-        }
+        "trustLine": "Importes exactos · sin totales a mano · datos de muestra abajo"
       },
       "process": {
-        "eyebrow": "El proceso",
         "title": "Una solicitud. Cero preguntas posteriores.",
         "description": "El espacio de trabajo lo comprueba todo antes de que envíes: cuenta de abono, apuntes de coste, enlaces a justificantes y tipos de financiación congelados. Lo que falte aparece en una lista de comprobación, no en un correo tres semanas después.",
         "record": {
@@ -93,13 +77,6 @@
           "title": "Asignar",
           "description": "Asigna el coste a las personas participantes que cubría."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Cuenta de abono · Green Routes e.V.",
-        "train": "Tren · 428,60 € · justificante vinculado",
-        "bus": "Autobús · 86,40 € · justificante vinculado",
-        "openUpload": "Billetes de autobús locales · subida pendiente",
-        "status": "515,00 € listos para enviar"
       },
       "values": {
         "proof": {
@@ -116,7 +93,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratis para empezar",
         "title": "¿Listo para tu próxima solicitud?",
         "description": "Sube la foto. Reparte el coste. Recupera el dinero."
       },
@@ -124,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Registros claros para viajes compartidos."
       },
-      "journey": {
+      "sample": {
+        "caption": "Reembolso de ejemplo · datos de muestra",
         "project": "Taller de primavera",
-        "subtitle": "Rastro de costes de viaje",
-        "train": {
-          "title": "Tren a Utrecht",
-          "detail": "Berlín · 2 participantes"
-        },
-        "receipt": {
-          "title": "Justificante adjunto",
-          "detail": "bahn-ticket.pdf",
-          "status": "Listo"
-        },
-        "allocation": {
-          "title": "Coste asignado",
-          "detail": "Reparto a partes iguales"
-        },
-        "submissionComplete": "Envío completado"
+        "partner": "Green Routes e.V.",
+        "train": "Berlín → Utrecht · 2 viajeros",
+        "bus": "Trayectos locales · 2 viajeros",
+        "total": "2 participantes · 2 justificantes vinculados",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Tren y autobús",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlín ↔ Utrecht · 2 viajeros"
       }
     },
     "designSystem": {

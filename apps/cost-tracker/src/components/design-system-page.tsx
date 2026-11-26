@@ -493,15 +493,15 @@ export default function DesignSystemPage() {
           <TerminalDots />
           <div className="mt-4 flex flex-col gap-1">
             <p>
-              <span className="text-primary">✓</span>{" "}
+              <span className="text-brand">✓</span>{" "}
               {t("designSystem.terminal.tokens")}
             </p>
             <p>
-              <span className="text-primary">✓</span>{" "}
+              <span className="text-brand">✓</span>{" "}
               {t("designSystem.terminal.buttons")}
             </p>
             <p>
-              <span className="text-muted-foreground/70">◌</span>{" "}
+              <span className="text-term-muted/70">◌</span>{" "}
               {t("designSystem.terminal.landing")}
             </p>
           </div>

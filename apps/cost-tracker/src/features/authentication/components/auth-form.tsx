@@ -2,13 +2,13 @@
 
 import { GoogleIcon } from "@greendex/auth/oauth-icons";
 import { useTranslations } from "@greendex/i18n/client";
-import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 
 import { destinationHref } from "@/app/paths";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -185,19 +185,17 @@ export function AuthForm({
 
       {!isSignIn && entryContext === "direct" && !decision && (
         <p
-          className="mt-4 text-sm text-muted-foreground"
+          className="mt-4 text-center text-sm text-balance text-muted-foreground"
           data-testid="direct-invitation-pointer"
         >
           {t("auth.invitationPointer")}
         </p>
       )}
       <Link
-        className={cn(
-          buttonVariants({ size: "sm", variant: "ghost" }),
-          "mx-auto mt-5 flex w-fit",
-        )}
+        className="mx-auto mt-6 flex w-fit items-center gap-1.5 text-sm link-prose"
         href="/"
       >
+        <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
         {t("auth.home")}
       </Link>
     </div>

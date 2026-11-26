@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
    shadcn Card wants gapped cards; this is one container, dividers only by
    1px lines, no gaps. Exactly one hero cell carries the amber wash. */
 const statGridVariants = cva(
-  "overflow-hidden rounded-xl border border-border bg-card shadow-[inset_0_1px_0_var(--glass-edge)]",
+  "overflow-hidden rounded-2xl border border-border bg-card shadow-[inset_0_1px_0_var(--glass-edge)]",
   {
     variants: {
       columns: {
@@ -52,7 +52,10 @@ function StatCell({
       data-slot="stat-cell"
       data-hero={hero ? "true" : undefined}
       className={cn(
+        // Three cells on a two-column phone grid: the last one spans the row so
+        // the raster never ends in a half-empty cell.
         "border-r border-b border-border nth-[2n]:border-r-0 md:nth-[2n]:border-r md:nth-[3n]:border-r-0",
+        "max-md:nth-[3]:col-span-2 max-md:nth-[3]:border-r-0",
         statCellVariants({ hero }),
         className,
       )}

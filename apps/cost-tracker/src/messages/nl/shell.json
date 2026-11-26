@@ -60,25 +60,9 @@
         "description": "Reiskosten voor Erasmus afhandelen zonder gedoe met spreadsheets. Maak een foto van het ticket, deel de kosten, dien de declaratie in — elk bedrag blijft herleidbaar tot het bewijsstuk.",
         "start": "Kosten bijhouden starten",
         "seeHow": "Bekijk hoe het werkt",
-        "trustLine": "Gratis starten · Geen creditcard · Demodata hieronder"
-      },
-      "stats": {
-        "disbursed": {
-          "label": "Uitbetaald",
-          "detail": "berekend · niet bewerkbaar"
-        },
-        "documented": {
-          "label": "Gedocumenteerd",
-          "detail": "geen openstaande lacunes"
-        },
-        "avgReview": {
-          "label": "Gem. beoordelingstijd",
-          "detail": "beoordeling door organiserende organisatie",
-          "unit": "u"
-        }
+        "trustLine": "Exacte bedragen · geen handmatige totalen · voorbeeldgegevens hieronder"
       },
       "process": {
-        "eyebrow": "Het proces",
         "title": "Eén declaratie. Nul vervolgvragen.",
         "description": "De werkruimte controleert alles voordat je indient: uitbetalingsrekening, kostenposten, bewijsdocumentkoppelingen, vastgelegde financieringstarieven. Wat ontbreekt, verschijnt als controlelijst — niet als e-mail drie weken later.",
         "record": {
@@ -93,13 +77,6 @@
           "title": "Toewijzen",
           "description": "Wijs de kosten toe aan de deelnemers die ze dekten."
         }
-      },
-      "terminal": {
-        "payoutAccount": "Uitbetalingsrekening · Green Routes e.V.",
-        "train": "Trein · €428,60 · bewijsdocument gekoppeld",
-        "bus": "Bus · €86,40 · bewijsdocument gekoppeld",
-        "openUpload": "Lokale bustickets · upload open",
-        "status": "€515,00 klaar voor indiening"
       },
       "values": {
         "proof": {
@@ -116,7 +93,6 @@
         }
       },
       "cta": {
-        "eyebrow": "Gratis starten",
         "title": "Klaar voor je volgende declaratie?",
         "description": "Upload de foto. Deel de kosten. Krijg het geld terug."
       },
@@ -124,23 +100,17 @@
         "product": "Greendex Cost Tracker",
         "tagline": "Heldere administratie voor gedeelde reizen."
       },
-      "journey": {
+      "sample": {
+        "caption": "Voorbeeldvergoeding · voorbeeldgegevens",
         "project": "Voorjaarsworkshop",
-        "subtitle": "Reiskostenspoor",
-        "train": {
-          "title": "Trein naar Utrecht",
-          "detail": "Berlijn · 2 deelnemers"
-        },
-        "receipt": {
-          "title": "Bewijsstuk toegevoegd",
-          "detail": "bahn-ticket.pdf",
-          "status": "Gereed"
-        },
-        "allocation": {
-          "title": "Kosten toegewezen",
-          "detail": "Gelijk aandeel"
-        },
-        "submissionComplete": "Indiening voltooid"
+        "partner": "Green Routes e.V.",
+        "train": "Berlijn → Utrecht · 2 reizigers",
+        "bus": "Lokaal vervoer · 2 reizigers",
+        "total": "2 deelnemers · 2 bewijsdocumenten gekoppeld",
+        "checkPayout": "Green Routes e.V.",
+        "checkEntries": "Trein en bus",
+        "checkProofs": "bahn-ticket.pdf · bus-ticket.pdf",
+        "checkJourneys": "Berlijn ↔ Utrecht · 2 reizigers"
       }
     },
     "designSystem": {

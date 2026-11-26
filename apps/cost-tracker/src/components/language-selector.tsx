@@ -87,7 +87,7 @@ export function LanguageSelector() {
             className="size-4 rounded-xs ring-1 ring-foreground/15"
             data-icon="inline-start"
           />
-          <ChevronDownIcon aria-hidden="true" />
+          <ChevronDownIcon aria-hidden="true" className="hidden sm:block" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>

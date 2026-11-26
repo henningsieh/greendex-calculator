@@ -1,7 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { CheckIcon } from "lucide-react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { SiteBrand } from "@/components/site-brand";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export default async function AuthLayout({
   children,
@@ -10,27 +12,38 @@ export default async function AuthLayout({
 
   return (
     <main className="grid min-h-svh lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <section className="relative hidden overflow-hidden bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between xl:p-16">
-        <div className="absolute top-1/3 -right-28 size-80 rounded-full border border-primary-foreground/10" />
-        <div className="absolute top-1/3 -right-10 size-44 rounded-full border border-primary-foreground/15" />
-        <SiteBrand className="text-primary-foreground" />
+      {/* Brand panel. Erasmus Blue carries the day shift; after dark the three
+          Ember vibes resolve --primary to amber, so the panel takes the deep
+          brand ground instead and lets amber stay the submit button's alone. */}
+      <section className="relative hidden overflow-hidden bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between xl:p-16 dark:border-r dark:border-border dark:bg-claim-band dark:text-claim-band-foreground">
+        <div className="absolute top-1/3 -right-28 size-80 rounded-full border border-white/10" />
+        <div className="absolute top-1/3 -right-10 size-44 rounded-full border border-white/15" />
+        <SiteBrand />
 
         <div className="relative max-w-lg">
-          <p className="font-heading text-4xl font-semibold tracking-tight text-balance xl:text-5xl">
+          <p className="font-heading text-4xl leading-[1.05] font-black tracking-[-0.03em] text-balance xl:text-5xl">
             {t("tagline")}
           </p>
-          <ul className="mt-9 flex flex-col gap-4 text-sm text-primary-foreground/80">
+          <ul className="mt-9 flex flex-col gap-4 text-sm text-primary-foreground/80 dark:text-claim-band-foreground/75">
             <AuthBenefit>{t("benefitTotals")}</AuthBenefit>
             <AuthBenefit>{t("benefitDocuments")}</AuthBenefit>
             <AuthBenefit>{t("benefitAllocations")}</AuthBenefit>
           </ul>
         </div>
 
-        <p className="text-sm text-primary-foreground/65">{t("footer")}</p>
+        <p className="text-sm text-primary-foreground/65 dark:text-claim-band-foreground/60">
+          {t("footer")}
+        </p>
       </section>
 
       <section className="flex min-h-svh flex-col bg-background p-5 sm:px-8 lg:px-14 xl:px-20">
-        <SiteBrand className="lg:hidden" />
+        <div className="flex items-center justify-between gap-3">
+          <SiteBrand className="lg:hidden" />
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeSwitcher />
+            <LanguageSelector />
+          </div>
+        </div>
         <div className="flex flex-1 items-center justify-center py-12 has-data-onboarding-state:items-start has-data-onboarding-state:py-4">
           {children}
         </div>
@@ -42,7 +55,7 @@ export default async function AuthLayout({
 function AuthBenefit({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-center gap-3">
-      <span className="flex size-6 items-center justify-center rounded-full bg-primary-foreground/10">
+      <span className="flex size-6 items-center justify-center rounded-full bg-white/10">
         <CheckIcon aria-hidden="true" className="size-3.5" />
       </span>
       {children}

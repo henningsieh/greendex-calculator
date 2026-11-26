@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
 import type { Outputs } from "@/lib/orpc/router";
+import { cn } from "@/lib/utils";
 
 export function ClaimBand({
   title,
@@ -37,6 +38,48 @@ export function ClaimBand({
           </span>
         )}
       </Card>
+    </header>
+  );
+}
+
+/**
+ * The in-document sibling of `Card variant="claim-band"`: the same dark band
+ * and brand spine, sized to sit flush at the top of a Claim document card
+ * instead of standing alone.
+ */
+export function ClaimBandHeader({
+  title,
+  subtitle,
+  status,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  status: NonNullable<Outputs["claims"]["getDraft"]>["status"] | null;
+  className?: string;
+}) {
+  return (
+    <header
+      className={cn(
+        "relative flex flex-wrap items-start justify-between gap-4 bg-claim-band px-6 py-5 text-claim-band-foreground",
+        className,
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute top-5 left-0 h-9 w-1.5 bg-brand"
+      />
+      <div className="min-w-0">
+        {subtitle ? (
+          <p className="text-sm text-claim-band-foreground/70">{subtitle}</p>
+        ) : null}
+        <p className="font-heading text-xl font-extrabold tracking-tight">
+          {title}
+        </p>
+      </div>
+      <span className="inline-flex rounded-xl bg-card">
+        <ClaimStatusBadge status={status} />
+      </span>
     </header>
   );
 }
