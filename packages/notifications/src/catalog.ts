@@ -54,6 +54,42 @@ export type ClaimPaidNotificationEvent = Extract<
   { type: "claim.paid" }
 >;
 
+/** Socket event name and internal emit route share one persisted envelope. */
+export const NOTIFICATION_CREATED_EVENT = "notification-created";
+
+export const NotificationCreatedSchema = z
+  .object({
+    id: z.string().min(1),
+    event: NotificationEventSchema,
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export type NotificationCreated = z.infer<typeof NotificationCreatedSchema>;
+
+/**
+ * One broadcast unit: the personal room to reach and the inbox row that caused
+ * it. The realtime service performs no authorization and re-implements no
+ * recipient rules; it only validates this envelope and emits it.
+ */
+export const RealtimeEmitNotificationSchema = z
+  .object({
+    recipientUserId: z.string().min(1),
+    notification: NotificationCreatedSchema,
+  })
+  .strict();
+
+export const RealtimeEmitRequestSchema = z
+  .object({
+    notifications: z.array(RealtimeEmitNotificationSchema).min(1).max(1000),
+  })
+  .strict();
+
+export type RealtimeEmitNotification = z.infer<
+  typeof RealtimeEmitNotificationSchema
+>;
+export type RealtimeEmitRequest = z.infer<typeof RealtimeEmitRequestSchema>;
+
 function unhandledEvent(event: NotificationEvent): never {
   throw new Error(`Unhandled notification event: ${JSON.stringify(event)}`);
 }

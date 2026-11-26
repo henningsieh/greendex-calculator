@@ -28,6 +28,8 @@ export const env = createEnv({
     S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
     S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
     S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE,
+    REALTIME_INTERNAL_URL: process.env.REALTIME_INTERNAL_URL,
+    REALTIME_EMIT_SECRET: process.env.REALTIME_EMIT_SECRET,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
 });

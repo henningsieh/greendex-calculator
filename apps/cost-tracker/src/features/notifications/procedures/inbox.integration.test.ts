@@ -178,7 +178,7 @@ describe("notification inbox reads", () => {
     expect(result.unreadCount).toBe(1);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
-      id: mine.ids[0],
+      id: mine.ids[0]?.id,
       event: mine.event,
     });
   });
@@ -217,7 +217,7 @@ describe("notification inbox reads", () => {
     ]);
 
     const result = await client.notifications.markRead({
-      ids: [own.ids[0]!, foreign.ids[0]!],
+      ids: [own.ids[0]!.id, foreign.ids[0]!.id],
     });
 
     expect(result).toEqual({ updated: 1, unreadCount: 1 });

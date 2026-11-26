@@ -6,7 +6,7 @@ import {
   type NotificationEvent,
 } from "@greendex/notifications";
 
-type NotificationTransaction = Parameters<
+export type NotificationTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
 >[0];
 
@@ -14,6 +14,13 @@ type NotificationTransaction = Parameters<
 export type NotificationRecipient = {
   userId: string;
   organizationId: string;
+};
+
+/** Inserted inbox row identity; the emit path needs the target room. */
+export type PersistedNotification = {
+  id: string;
+  recipientUserId: string;
+  createdAt: Date;
 };
 
 export type NotificationWrite = {
@@ -37,7 +44,7 @@ export type NotificationWrite = {
 export async function persistNotifications(
   tx: NotificationTransaction,
   write: NotificationWrite,
-): Promise<string[]> {
+): Promise<PersistedNotification[]> {
   const recipients = new Map(
     write.recipients.map((recipient) => [
       `${recipient.userId}\u0000${recipient.organizationId}`,
@@ -67,6 +74,10 @@ export async function persistNotifications(
         notificationsTable.dedupeKey,
       ],
     })
-    .returning({ id: notificationsTable.id });
-  return inserted.map(({ id }) => id);
+    .returning({
+      id: notificationsTable.id,
+      recipientUserId: notificationsTable.recipientUserId,
+      createdAt: notificationsTable.createdAt,
+    });
+  return inserted;
 }
