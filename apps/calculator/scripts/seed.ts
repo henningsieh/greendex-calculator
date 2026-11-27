@@ -99,6 +99,7 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
 import {
+  ensureClaimStatusShowcase,
   ensureCostTrackerScenarios,
   SUBMISSION_PAYOUT_ACCOUNT_IDS,
 } from "./seed-cost-tracker";
@@ -1271,6 +1272,20 @@ export const SEED_SCENARIOS = {
     description:
       "Isolated Project for onboarding checks; Partnerships to the second and third Partner Organizations.",
   },
+  claimStatusShowcase: {
+    kind: "showcase",
+    description:
+      "Badge constellation for the Seed Organization: one Project per Claim status plus one archived Project, all partnered with the Seed Partner Organization.",
+    projects: [
+      "Seed Showcase In Preparation",
+      "Seed Showcase Submitted",
+      "Seed Showcase Correction Requested",
+      "Seed Showcase Approved",
+      "Seed Showcase Rejected",
+      "Seed Showcase Paid",
+      "Seed Showcase Archived",
+    ],
+  },
 } as const;
 
 export interface SeedSummary {
@@ -2086,6 +2101,17 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
       ({ email }) => email,
     ),
   );
+  if (partnerOrganization && costTrackerPartnerOwner) {
+    await ensureClaimStatusShowcase(db, {
+      hostId: orgId,
+      partnerId: partnerOrganization.id,
+      ownerId: userId,
+      partnerOwnerId: costTrackerPartnerOwner.id,
+    });
+    console.log(
+      "✅ Claim-status showcase: seven Projects cover every Claim status plus one archived Project",
+    );
+  }
   for (const scenarioUserId of [
     reviewUserId,
     ...(await ensureCostTrackerScenarios(db)),
