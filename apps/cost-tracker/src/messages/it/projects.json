@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Progetti con almeno uno dei partner selezionati.",
       "refresh": "Aggiorna",
       "columns": "Scegli colonne",
+      "fields": "Scegli campi",
       "resetColumns": "Ripristina colonne",
       "sortOrder": "Ordine di ordinamento",
       "sortDescription": "Le regole si applicano dall’alto verso il basso. Le regole successive ordinano i progetti con valori uguali a quelli delle regole precedenti. Resta attiva almeno una regola.",

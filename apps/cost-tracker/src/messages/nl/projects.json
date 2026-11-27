@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Projecten met een van de geselecteerde partners.",
       "refresh": "Vernieuwen",
       "columns": "Kolommen kiezen",
+      "fields": "Velden kiezen",
       "resetColumns": "Kolommen resetten",
       "sortOrder": "Sorteervolgorde",
       "sortDescription": "Regels worden van boven naar beneden toegepast. Latere regels ordenen projecten met overeenkomende waarden hierboven. Er blijft minimaal één regel actief.",

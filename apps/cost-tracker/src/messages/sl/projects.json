@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Projekti z vsakim izbranim partnerjem.",
       "refresh": "Osveži",
       "columns": "Izberite stolpce",
+      "fields": "Izberite polja",
       "resetColumns": "Ponastavi stolpce",
       "sortOrder": "Vrstni red razvrščanja",
       "sortDescription": "Pravila veljajo od zgoraj navzdol. Poznejša pravila razvrstijo projekte z enakimi vrednostmi zgoraj. Vsaj eno pravilo ostane aktivno.",

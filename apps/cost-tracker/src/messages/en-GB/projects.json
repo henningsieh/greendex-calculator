@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Projects with any selected Partner.",
       "refresh": "Refresh",
       "columns": "Choose columns",
+      "fields": "Choose fields",
       "resetColumns": "Reset columns",
       "sortOrder": "Sort order",
       "sortDescription": "Rules apply from top to bottom. Later rules order Projects with matching values above. At least one rule stays active.",

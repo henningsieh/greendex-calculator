@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Projekte mit mindestens einem ausgewählten Partner.",
       "refresh": "Aktualisieren",
       "columns": "Spalten auswählen",
+      "fields": "Felder auswählen",
       "resetColumns": "Spalten zurücksetzen",
       "sortOrder": "Sortierreihenfolge",
       "sortDescription": "Regeln gelten von oben nach unten. Weitere Regeln sortieren Projekte mit gleichen Werten in den vorherigen Regeln. Mindestens eine Regel bleibt aktiv.",

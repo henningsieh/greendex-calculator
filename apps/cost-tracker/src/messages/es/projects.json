@@ -76,6 +76,7 @@
       "partnerFilterHelp": "Proyectos con cualquiera de los socios seleccionados.",
       "refresh": "Actualizar",
       "columns": "Elegir columnas",
+      "fields": "Elegir campos",
       "resetColumns": "Restablecer columnas",
       "sortOrder": "Orden de clasificación",
       "sortDescription": "Las reglas se aplican de arriba abajo. Las reglas posteriores ordenan los proyectos con valores coincidentes en las anteriores. Siempre queda activa al menos una regla.",
