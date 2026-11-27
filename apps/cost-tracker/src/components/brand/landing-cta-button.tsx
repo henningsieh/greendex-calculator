@@ -18,11 +18,16 @@ function LandingCtaButton({
   className?: string;
   children: ReactNode;
 }) {
+  /* Wrap-tolerant at large text: the translated label plus icon, gap, and
+     lg padding exceed a 375px column, so the label breaks to centered
+     lines instead of forcing its section wider. min-h keeps the
+     single-line height unchanged. */
   return (
     <Link
       className={cn(
         buttonVariants({ size: "lg" }),
         "ember-cta group rounded-full",
+        "h-auto min-h-11 text-center whitespace-normal",
         className,
       )}
       href={href}
