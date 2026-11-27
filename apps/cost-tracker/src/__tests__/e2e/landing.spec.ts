@@ -103,3 +103,37 @@ for (const locale of ["en-GB", "de"]) {
     }
   }
 }
+
+// The band subtitle carries partner names, which arrive as single
+// compounds in some locales. Fixtures only use spaced names, so this
+// injects an unbreakable token into the real band header and measures it
+// in a real browser — jsdom cannot observe wrapping.
+test("landing band wraps an unbroken subtitle at 375 24px", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto("/en-GB");
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "24px";
+  });
+  const band = page.locator('[data-slot="card"] > header').first();
+  await expect(band).toBeVisible();
+  await band.evaluate((el) => {
+    const subtitle = el.querySelector("p");
+    // A single 66-char token: what a spaceless compound name amounts to
+    // at 24px. Built from repeat (see onboarding spec) and set through a
+    // DOM API the copy-assertion policy permits.
+    if (subtitle) subtitle.replaceChildren("a".repeat(66));
+  });
+  for (const theme of ["light", "theme-erasmus-midnight"] as const) {
+    await page.evaluate((t) => {
+      document.documentElement.classList.toggle(
+        "theme-erasmus-midnight",
+        t === "theme-erasmus-midnight",
+      );
+      window.scrollTo(0, 0);
+    }, theme);
+    expect(
+      await band.evaluate((el) => el.scrollWidth <= el.clientWidth + 2),
+      `band fits in ${theme}`,
+    ).toBe(true);
+  }
+});

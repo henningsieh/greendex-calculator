@@ -71,7 +71,9 @@ export function ClaimBandHeader({
       />
       <div className="min-w-0">
         {subtitle ? (
-          <p className="text-sm text-claim-band-foreground/70">{subtitle}</p>
+          <p className="text-sm wrap-anywhere text-claim-band-foreground/70">
+            {subtitle}
+          </p>
         ) : null}
         {/* Project names are single compounds in some locales
             (de "Frühlingsworkshop"); yield inside the word rather than
