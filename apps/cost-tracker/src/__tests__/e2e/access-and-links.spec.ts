@@ -475,7 +475,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await page.goto(`/partnerships/${ids.partnership}/claim/review`);
       await denied(page);
       if (actor === "P") {
-        await expect(page.getByTestId("organization-switcher")).toBeVisible();
+        await expect(
+          page.getByTestId("organization-switcher").filter({ visible: true }),
+        ).toBeVisible();
       }
       // Text-free: no link to the protected partnership leaks.
       await expect(
