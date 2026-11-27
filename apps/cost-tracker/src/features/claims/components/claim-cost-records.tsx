@@ -145,7 +145,10 @@ export function ClaimCostRecords({
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                {/* Single-word allocation details (de "Gleichmäßig")
+                    cannot wrap otherwise and would burst the middle
+                    column. */}
+                <p className="mt-0.5 font-mono text-xs wrap-anywhere text-muted-foreground">
                   {row.allocationDetail ?? allocationDetail(row)}
                 </p>
               </div>
@@ -186,11 +189,17 @@ export function ClaimCostRecords({
       </ul>
       {total ? (
         <div className="border-t border-border px-5 py-4 sm:px-6">
-          <div className="flex items-baseline justify-between gap-4">
+          {/* The tabular total is one unbreakable token at text-2xl; let
+              it take its own right-aligned line instead of widening the
+              card at large text. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <span className="font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
               {t("document.claimAmount")}
             </span>
-            <span className="font-mono text-2xl tabular-nums">
+            <span
+              className="ml-auto font-mono text-2xl tabular-nums"
+              data-testid="claim-total-amount"
+            >
               {money(total.amountEur)}
             </span>
           </div>

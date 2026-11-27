@@ -126,8 +126,13 @@ export default async function LandingPage() {
               {t("landing.hero.start")}
               <ArrowRightIcon data-icon="inline-end" />
             </LandingCtaButton>
+            {/* Same wrap tolerance as the primary CTA: the ghost label is a
+                translated sentence that outgrows 375px at large text. */}
             <Link
-              className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+              className={cn(
+                buttonVariants({ size: "lg", variant: "ghost" }),
+                "h-auto min-h-11 text-center whitespace-normal",
+              )}
               href="#how-it-works"
             >
               {t("landing.hero.seeHow")}
