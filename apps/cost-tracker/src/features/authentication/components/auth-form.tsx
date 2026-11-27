@@ -146,11 +146,16 @@ export function AuthForm({
 
       <form action={submit}>
         <FieldGroup className="gap-6">
+          {/* Caller-owned wrapping (shared Button stays nowrap): at large
+            text the translated label plus icon, gap, and padding exceed a
+            375px column, so the label breaks to a second centered line
+            instead of jamming edge-to-edge. */}
           <Button
             data-testid="google-sign-in"
             onClick={signInWithGoogle}
             type="button"
             variant="outline"
+            className="h-auto min-h-10 text-center whitespace-normal"
           >
             <GoogleIcon data-icon="inline-start" />
             {t("auth.google")}

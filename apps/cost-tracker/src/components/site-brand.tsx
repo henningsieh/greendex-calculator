@@ -33,8 +33,11 @@ export function SiteBrand({ className, href = "/" }: SiteBrandProps) {
           {t("name")}
         </span>
         {/* Inherits the lockup's color at reduced opacity so the mark stays
-            legible on any ground it is placed on (page, Erasmus blue panel). */}
-        <span className="font-mono text-xs tracking-[0.18em] uppercase opacity-70">
+            legible on any ground it is placed on (page, Erasmus blue panel).
+            Wraps below small screens so the two-word product line yields
+            width instead of forcing page scroll at large text; sizes stay
+            locked, desktop keeps room for one line. */}
+        <span className="font-mono text-xs tracking-[0.18em] whitespace-normal uppercase opacity-70">
           {t("product")}
         </span>
       </span>
