@@ -73,7 +73,10 @@ export function ClaimBandHeader({
         {subtitle ? (
           <p className="text-sm text-claim-band-foreground/70">{subtitle}</p>
         ) : null}
-        <p className="font-heading text-xl font-extrabold tracking-tight">
+        {/* Project names are single compounds in some locales
+            (de "Frühlingsworkshop"); yield inside the word rather than
+            burst the band. */}
+        <p className="font-heading text-xl font-extrabold tracking-tight wrap-anywhere">
           {title}
         </p>
       </div>

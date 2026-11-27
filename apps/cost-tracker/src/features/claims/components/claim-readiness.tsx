@@ -55,11 +55,11 @@ export function ClaimReadiness({ items }: { items: ClaimReadinessItem[] }) {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium wrap-anywhere">
                   {t(itemLabelKeys[item.key])}
                 </p>
                 {item.detail ? (
-                  <p className="mt-0.5 text-sm text-muted-foreground">
+                  <p className="mt-0.5 text-sm wrap-anywhere text-muted-foreground">
                     {item.detail}
                   </p>
                 ) : null}
