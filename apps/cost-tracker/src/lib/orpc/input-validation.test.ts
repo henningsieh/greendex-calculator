@@ -8,6 +8,30 @@ import { normalizeInputValidationError } from "@/lib/orpc/input-validation";
 const errors = createSituationErrors();
 
 describe("input validation normalization", () => {
+  it.each([
+    ["accountHolderRequired", "accountHolder"],
+    ["accountHolderTooLong", "accountHolder"],
+    ["ibanInvalid", "iban"],
+    ["bicInvalid", "bic"],
+  ])("keeps payout issue %s only at its allowed path", (id, path) => {
+    const cause = new ValidationError({
+      message: "private",
+      invalidData: {},
+      issues: [
+        { path: [path], message: id },
+        { path: ["other"], message: id },
+      ],
+    });
+    const result = normalizeInputValidationError(
+      new ORPCError("BAD_REQUEST", { cause }),
+      errors,
+    );
+    expect(result?.data).toMatchObject({
+      reason: "INVALID_INPUT",
+      issues: [{ id, path: [path] }],
+    });
+  });
+
   it("deduplicates field failures and never returns vendor messages", () => {
     const cause = new ValidationError({
       message: "private",

@@ -15,7 +15,12 @@ type Permissions = Parameters<Role["authorize"]>[0];
 
 export function createAuthClientMock(session: BrowserSession) {
   return {
-    useSession: () => ({ data: { user: { id: session.userId } } }),
+    useSession: () => ({
+      data: {
+        user: { id: session.userId },
+        session: { activeOrganizationId: session.activeOrganizationId },
+      },
+    }),
     useActiveOrganization: () => ({
       data: session.activeOrganizationId
         ? {

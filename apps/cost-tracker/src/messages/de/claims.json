@@ -100,6 +100,7 @@
       "historyEmpty": "Noch keine Prüfereignisse.",
       "actor": "Akteur:",
       "estimatedReimbursement": "Voraussichtliche Erstattung:",
+      "lastSubmittedAmount": "Zuletzt eingereichter Betrag:",
       "currencyEur": "EUR",
       "approvedAmount": "Genehmigter Betrag:",
       "decisionTitle": "Prüfentscheidung",
@@ -140,13 +141,35 @@
       },
       "confirmTransfer": "Erfasse die Zahlung erst, wenn du {amount} EUR vollständig in einer einzigen Überweisung gezahlt hast. Cost Tracker überweist kein Geld.",
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
-      "confirmApproval": "Genehmige den Erstattungsantrag über den angezeigten Betrag. Damit überweist oder erfasst du noch keine Zahlung.",
+      "confirmApproval": "Genehmige den Erstattungsantrag über {amount}. Damit überweist oder erfasst du noch keine Zahlung.",
       "confirmPaymentCorrection": "Der Erstattungsantrag bleibt genehmigt und gilt wieder als unbezahlt. Die Überweisung wird dadurch nicht rückgängig gemacht.",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
       "title": "Antragsprüfung",
       "contextLoading": "Kontext wird geladen",
       "contextUnavailable": "Antragskontext nicht verfügbar",
-      "queueEyebrow": "Arbeitsbereich"
+      "queueEyebrow": "Arbeitsbereich",
+      "payoutTitle": "Auszahlungskonto",
+      "allocationAmount": "Betragsaufteilung",
+      "allocationPercentage": "Prozentuale Aufteilung",
+      "history": {
+        "submitted": "Eingereicht",
+        "correction_requested": "Korrektur angefordert",
+        "resubmitted": "Erneut eingereicht",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt",
+        "reopened": "Wieder geöffnet",
+        "paid": "Bezahlt",
+        "payment_corrected": "Zahlungsstatus korrigiert",
+        "journey_updated": "Reise korrigiert"
+      },
+      "toast": {
+        "requestCorrection": "Korrektur angefordert",
+        "approve": "Antrag genehmigt",
+        "reject": "Antrag abgelehnt",
+        "reopen": "Antrag wieder geöffnet",
+        "markPaid": "Zahlung erfasst",
+        "correctPayment": "Zahlungseintrag korrigiert"
+      }
     },
     "submission": {
       "title": "Einreichung",
@@ -171,7 +194,14 @@
         "payoutAccount": "Auszahlungskonto ausgewählt",
         "entries": "Reisekostenpositionen erfasst",
         "proofDocuments": "Belege zu jeder Position",
-        "journeys": "Reisen der Teilnehmenden vollständig"
+        "journeys": "Reisen der Teilnehmenden vollständig",
+        "entryDetails": "Transport, genaue Kosten und Aufteilungen sind gültig",
+        "participations": "Abgedeckte Teilnahmen gehören zu dieser Partnerschaft",
+        "fundingRules": "Die Förderregeln des Projekts sind erfüllt"
+      },
+      "toast": {
+        "submitted": "Antrag eingereicht",
+        "submitFailed": "Antrag konnte nicht eingereicht werden"
       }
     },
     "workspace": {
@@ -240,7 +270,10 @@
         "currencyEur": "EUR",
         "linked": "Verknüpft:",
         "linkLabel": "Beleg mit diesen Kosten verknüpfen",
-        "selectDocument": "Dokument zum Erstattungsantrag auswählen"
+        "selectDocument": "Dokument zum Erstattungsantrag auswählen",
+        "description": "Lade die Belege hoch und verknüpfe sie mit den Reisekostenpositionen.",
+        "documentFallback": "Dokument",
+        "none": "Keine"
       },
       "payout": {
         "selected": "Ausgewähltes Auszahlungskonto:",
@@ -261,7 +294,9 @@
         "rejected": "Abgelehnt:",
         "rejectedBody": "Dieser Erstattungsantrag ist gesperrt und unbezahlt. Nur Hosting-Mitarbeitende können ihn wieder öffnen; das Wiederöffnen entsperrt keine Partner-Bearbeitung.",
         "approved": "Genehmigt · unbezahlt. Die vollständige Überweisung wurde nicht erfasst.",
-        "paid": "Bezahlt. Die vollständige Überweisung wurde getrennt von der Genehmigung erfasst."
+        "paid": "Bezahlt. Die vollständige Überweisung wurde getrennt von der Genehmigung erfasst.",
+        "approvedTitle": "Genehmigt",
+        "paidTitle": "Bezahlt"
       },
       "draft": {
         "title": "Antragsentwurf"
@@ -284,6 +319,26 @@
         "savedClaim": "Erstattungsantrag {status} / gespeichert",
         "noClaim": "Es wurde kein Erstattungsantrag erstellt. Das Öffnen dieses Arbeitsbereichs speichert nichts.",
         "payable": "Berechneter Auszahlungsbetrag: {amount} EUR (vom Server berechnet)."
+      },
+      "setup": {
+        "title": "Antrag einrichten",
+        "description": "Wähle das Auszahlungskonto, bevor du den Antrag erstellst."
+      },
+      "summary": {
+        "approvedAmount": "Genehmigter Betrag",
+        "estimatedAmount": "Geschätzte Erstattung",
+        "lastSubmittedAmount": "Zuletzt eingereichter Betrag"
+      },
+      "toast": {
+        "payoutCreated": "Auszahlungskonto erstellt",
+        "payoutSelected": "Auszahlungskonto ausgewählt",
+        "claimCreated": "Antrag erstellt",
+        "costSaved": "Reisekostenposition gespeichert",
+        "journeySaved": "Teilnahme-Reise gespeichert",
+        "journeyCorrected": "Teilnahme-Reise korrigiert",
+        "proofUploaded": "Nachweis hochgeladen",
+        "proofLinked": "Nachweis verknüpft",
+        "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen."
       }
     },
     "link": {
@@ -296,6 +351,18 @@
       "car": "Auto",
       "electricCar": "Elektroauto",
       "plane": "Flugzeug"
+    },
+    "summary": {
+      "title": "Antragsübersicht",
+      "partner": "Partnerorganisation",
+      "hosting": "Gastgebende Organisation",
+      "schedule": "Zeitraum",
+      "payout": "Auszahlungskonto",
+      "submitted": "Eingereicht",
+      "unknown": "Nicht verfügbar",
+      "notCalculated": "Noch nicht berechnet",
+      "noPayout": "Kein Auszahlungskonto ausgewählt",
+      "notSubmitted": "Noch nicht eingereicht"
     }
   }
 }

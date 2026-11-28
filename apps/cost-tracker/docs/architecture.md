@@ -61,21 +61,15 @@ Memberships, active Organization recovery, and permission-dependent navigation.
 The fallback contains no private data or staff actions. A brief neutral-shell
 flash before a login redirect or Organization recovery is accepted. All gates
 remain server-side, and pages/procedures still authorize each request. This
-layout no longer exports `instant = false`. Nineteen pages outside it retain that
-exception: login/register avoid a signed-in form flash; the five invitation,
-setup, and Participant entry pages preserve request-time secret handling and
-onboarding/recipient state-machine order; and the twelve `@breadcrumb` slots
-render header chrome whose labels resolve per request. That state machine is
-outside this adoption scope. The export opts out of validation, not request
-handling.
+layout no longer exports `instant = false`. Login, registration, invitation,
+setup, Participant entry, and protected data routes opt out of instant
+validation. This preserves request-time entry handling and full-content page
+transitions. The export opts out of validation, not request handling.
 
 Organization-scoped pages check active Membership readiness independently of the
 shell; procedures remain authoritative for permissions. Initial data and URL
-promises resolve in async children behind
-inner Suspense boundaries. Feature-owned skeletons match Claim document bands,
-responsive decision/summary columns, Participant cards, and Partnership lists.
-The same section skeletons are composed into route-level `loading.tsx` fallbacks;
-only navigation fallbacks add a header placeholder. Permission-dependent actions
+promises resolve in async server sections. Claim document headers and bodies
+resolve together before the transition commits. Permission-dependent actions
 remain absent until authorization resolves. Claim grouping, Cost Allocation,
 and payout procedures are unchanged.
 
@@ -97,13 +91,8 @@ the [route audit](prefetch-suspense-audit.md) for coverage and remaining checks.
 
 ## Navigation chrome
 
-The protected layout renders the header's `@breadcrumb` slot inside `Suspense`.
-Every slot segment is a thin file: it exports `instant = false` and renders
-`BreadcrumbSlot` from `src/features/breadcrumbs`, which owns the boundary, the
-fallback, and the label lookup. A leaf route passes its `shell` message key
-(`<BreadcrumbSlot current="nav.projects" />`); a nested route passes the async
-content that resolves its crumbs. Crumb labels stay static: no entity names or
-payload strings enter the trail.
+The protected layout renders `BreadcrumbNav` in the shell. Crumb labels stay
+static: no entity names or payload strings enter the trail.
 
 Hrefs are typed from Next's generated routes ([`src/app/routes.ts`](../src/app/routes.ts)).
 Dynamic Project and Project Partnership targets come from the builders in

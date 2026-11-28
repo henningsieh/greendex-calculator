@@ -16,6 +16,7 @@ import {
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Link } from "@/lib/i18n/routing";
 import type { Outputs } from "@/lib/orpc/router";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 export function JoinedParticipants({
   data,
@@ -93,6 +94,7 @@ export function JoinedParticipants({
                   aria-describedby={`participation-name-${participant.id}`}
                   href={participationPath(partnershipId, participant.id)}
                   data-testid={`participant-details-${participant.id}`}
+                  transitionTypes={[viewTransitionType.forward]}
                 >
                   {t("joined.detailsFor")}
                 </Link>

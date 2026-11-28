@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { PartnerGuideDialog } from "@/features/partnerships/components/partner-guide-dialog";
 import { PartnerOrganizationsTabs } from "@/features/partnerships/components/partner-organizations-tabs";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
@@ -35,44 +36,41 @@ export default async function PartnerOrganizationsPage() {
     throw error;
   });
   return (
-    <div>
-      <ProjectDataErrorBoundary resource="Project Partnerships">
-        {/* Title-only header: this page has no irreversible action, so no
-            primary button lives here. Both setup dialogs sit in the toolbar
-            below — Invite as the single primary, Assign as secondary — where
-            they act on the listed partnerships instead of competing in the
-            header. */}
-        <ProtectedPageHeader
-          eyebrow={t("eyebrow")}
-          title={t("title")}
-          description={t("description")}
-        />
+    <RouteTransition>
+      <div>
+        <ProjectDataErrorBoundary resource="Project Partnerships">
+          {/* The header's right side carries the page's most important
+            actions: the Invite menu (primary) stacked over the guide
+            (ghost), so both stay visible without scrolling past the tabs. */}
+          <ProtectedPageHeader
+            eyebrow={t("eyebrow")}
+            title={t("title")}
+            description={t("description")}
+            rightButton={
+              <div className="flex flex-col items-stretch gap-2">
+                {canCreateProjectPartnership ? (
+                  <Suspense fallback={<ProjectOptionsLoading />}>
+                    <PartnershipActionsSection />
+                  </Suspense>
+                ) : null}
+                <PartnerGuideDialog />
+              </div>
+            }
+          />
 
-        {canCreateProjectPartnership ? (
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-2">
-            <Suspense fallback={<ProjectOptionsLoading />}>
-              <PartnershipActionsSection />
-            </Suspense>
-            <PartnerGuideDialog />
-          </div>
-        ) : (
-          <div className="mt-8 flex flex-wrap items-center justify-end gap-2">
-            <PartnerGuideDialog />
-          </div>
-        )}
-
-        <PartnerOrganizationsTabs
-          showInvitations={canCreateProjectPartnership}
-          partnerships={
-            <Suspense fallback={<ProjectPartnershipsSkeleton />}>
-              <ProjectPartnershipSection
-                canAssign={canCreateProjectPartnership}
-              />
-            </Suspense>
-          }
-          invitations={canCreateProjectPartnership && <SetupLinkList />}
-        />
-      </ProjectDataErrorBoundary>
-    </div>
+          <PartnerOrganizationsTabs
+            showInvitations={canCreateProjectPartnership}
+            partnerships={
+              <Suspense fallback={<ProjectPartnershipsSkeleton />}>
+                <ProjectPartnershipSection
+                  canAssign={canCreateProjectPartnership}
+                />
+              </Suspense>
+            }
+            invitations={canCreateProjectPartnership && <SetupLinkList />}
+          />
+        </ProjectDataErrorBoundary>
+      </div>
+    </RouteTransition>
   );
 }

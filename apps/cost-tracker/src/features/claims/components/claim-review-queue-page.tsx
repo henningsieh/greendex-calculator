@@ -1,9 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import {
@@ -49,21 +49,22 @@ export default async function ClaimReviewQueuePage(
     searchParams: Promise.resolve({}),
   },
 ) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   const t = await getTranslations("claims.queue");
 
   return (
-    <div className="min-w-0">
-      <ProtectedPageHeader
-        description={t("description")}
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-      />
-      <Suspense fallback={<ClaimReviewQueueLoading />}>
-        <ClaimReviewQueueSection searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <RouteTransition>
+      <div className="min-w-0">
+        <ProtectedPageHeader
+          description={t("description")}
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+        />
+        <Suspense fallback={<ClaimReviewQueueLoading />}>
+          <ClaimReviewQueueSection searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </RouteTransition>
   );
 }

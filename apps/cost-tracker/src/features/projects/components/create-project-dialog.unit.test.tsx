@@ -135,7 +135,9 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project", {
+        transitionTypes: ["nav-forward"],
+      }),
     );
     await user.click(screen.getByTestId("new-project"));
     await user.click(
@@ -207,7 +209,9 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     mocks.create.mockResolvedValueOnce({ id: "created-project" });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project", {
+        transitionTypes: ["nav-forward"],
+      }),
     );
     expect(mocks.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ country: "DE" }),

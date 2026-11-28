@@ -142,6 +142,10 @@
       "networkFailure": "Il server o la rete non sono raggiungibili. Controlla la connessione e riprova."
     },
     "details": {
+      "accountHolderRequired": "Inserisci l’intestatario del conto.",
+      "accountHolderTooLong": "L’intestatario è troppo lungo.",
+      "ibanInvalid": "Inserisci un IBAN valido.",
+      "bicInvalid": "Inserisci un BIC valido o lascia vuoto.",
       "emailRequired": "L’indirizzo email è obbligatorio.",
       "emailInvalid": "Inserisci un indirizzo email valido.",
       "organizationIdRequired": "L’ID dell’organizzazione è obbligatorio.",

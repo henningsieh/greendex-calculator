@@ -5,3 +5,5 @@ import UserSettingsPage from "@/features/user-settings/components/user-settings-
 export default UserSettingsPage;
 
 export const metadata: Metadata = { title: "Account settings" };
+
+export const instant = false;

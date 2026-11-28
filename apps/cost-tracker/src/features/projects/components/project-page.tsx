@@ -1,7 +1,4 @@
-import { connection } from "next/server";
-import { Suspense } from "react";
-
-import { ProjectWorkspaceLoading } from "@/features/projects/components/project-workspace-loading";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
@@ -10,14 +7,13 @@ interface ProjectPageProps {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   return (
-    <div>
-      <Suspense fallback={<ProjectWorkspaceLoading />}>
+    <RouteTransition>
+      <div>
         <ProjectWorkspaceSection params={params} />
-      </Suspense>
-    </div>
+      </div>
+    </RouteTransition>
   );
 }

@@ -88,11 +88,15 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: false,
       projectArchived: false,
+      userId: coordinator,
+      activeOrganizationId: partner,
     });
     activeOrg = host;
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
       projectArchived: false,
+      userId: coordinator,
+      activeOrganizationId: host,
     });
     actor = participant;
     await expect(
@@ -104,6 +108,8 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
       canReview: true,
       projectArchived: false,
+      userId: owner,
+      activeOrganizationId: host,
     });
   });
   it("reads only Partner payout options and the selected account without creating a Claim", async () => {
@@ -184,6 +190,7 @@ describe("Claim drafts and Partnership payout selection", () => {
   it("rejects malformed payout details without persisting an account", async () => {
     for (const input of [
       { accountHolder: "Partner", iban: "DE89370400440532013001" },
+      { accountHolder: "Partner", iban: "DE5112345678901" },
       { accountHolder: "Partner", iban: "DE89--370400440532013000" },
       { accountHolder: "   ", iban: "DE89370400440532013000" },
       { accountHolder: "P".repeat(201), iban: "DE89370400440532013000" },
@@ -196,6 +203,35 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(
       (await client.claims.listPayoutAccounts({ partnershipId: own })).accounts,
     ).toHaveLength(2);
+  });
+
+  it.each([
+    [
+      { accountHolder: " ", iban: "DE89370400440532013000" },
+      "accountHolderRequired",
+      "accountHolder",
+    ],
+    [
+      { accountHolder: "P".repeat(201), iban: "DE89370400440532013000" },
+      "accountHolderTooLong",
+      "accountHolder",
+    ],
+    [{ accountHolder: "Partner", iban: "invalid" }, "ibanInvalid", "iban"],
+    [
+      { accountHolder: "Partner", iban: "DE89370400440532013000", bic: "BAD" },
+      "bicInvalid",
+      "bic",
+    ],
+  ])("returns safe payout validation issue %s", async (input, id, path) => {
+    await expect(
+      client.claims.createPayoutAccount({ partnershipId: own, ...input }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: {
+        reason: "INVALID_INPUT",
+        issues: [expect.objectContaining({ id, path: [path] })],
+      },
+    });
   });
 
   it("restricts creation to authorized Partner staff on their Partnership", async () => {

@@ -20,6 +20,7 @@ import {
   FieldError as FormFieldError,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
 import { JourneyInputSchema } from "@/features/participations/validation-schemas";
 import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
@@ -67,6 +68,7 @@ function JourneyCorrection({
       await orpc.journeys.update(values);
       await refresh();
       setEditing(false);
+      toast.add({ title: t("toast.journeyCorrected"), type: "success" });
     } catch (error) {
       setServerError(error);
       const presentation = getORPCErrorPresentation(error);
@@ -87,7 +89,11 @@ function JourneyCorrection({
           mapped = true;
         }
       }
-      if (!mapped) setError("root.server", { type: "server" });
+      if (!mapped)
+        toast.add({
+          description: <ErrorPresentation error={error} />,
+          type: "error",
+        });
     }
   });
 
@@ -280,6 +286,7 @@ export function JourneyEditor({
     try {
       await orpc.journeys.save(values);
       await refresh();
+      toast.add({ title: t("toast.journeySaved"), type: "success" });
       reset({
         partnershipId,
         projectParticipantId: "",
@@ -318,7 +325,10 @@ export function JourneyEditor({
             { shouldFocus: true },
           );
         } else {
-          setError("root.server", { type: "server" });
+          toast.add({
+            description: <ErrorPresentation error={error} />,
+            type: "error",
+          });
         }
       }
     }

@@ -26,11 +26,12 @@ import {
   RefreshCwIcon,
   XIcon,
 } from "lucide-react";
-import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { projectPath } from "@/app/paths";
 import { CountryValue } from "@/components/country-value";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -55,6 +56,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ParticipantsLink } from "@/features/participations/components/participants-link";
+import { ProjectRegisterCard } from "@/features/projects/components/project-card";
 import {
   getProjectColumnFilters,
   getProjectSortMode,
@@ -77,8 +79,9 @@ import {
   type ProjectVisibility,
 } from "@/lib/ui-preferences/definitions";
 import { cn } from "@/lib/utils";
+import { viewTransitionType } from "@/lib/view-transitions";
 
-const projectListTableFeatures = tableFeatures({
+export const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
   rowPaginationFeature,
@@ -274,6 +277,7 @@ export function ResolvedProjectListResults({
             title={row.original.name}
             href={projectPath(row.original.id)}
             data-testid={`project-link-${row.original.id}`}
+            transitionTypes={[viewTransitionType.forward]}
           >
             {row.original.name}
           </Link>
@@ -692,7 +696,8 @@ export function ResolvedProjectListResults({
             >
               <Columns3Icon data-icon="inline-start" />
               <span className="sr-only @lg/content:not-sr-only">
-                {t("columns")}
+                <span className="@4xl/content:hidden">{t("fields")}</span>
+                <span className="hidden @4xl/content:inline">{t("columns")}</span>
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -866,70 +871,11 @@ export function ResolvedProjectListResults({
       {/* Below xl: one card per Project. */}
       <div className="grid grid-cols-1 gap-3 @2xl/content:grid-cols-2 @4xl/content:hidden">
         {rows.length === 0 ? (
-          <div className="rounded-xl border bg-card px-4 py-10">{emptyState}</div>
+          <Card className="items-center px-4 py-10">{emptyState}</Card>
         ) : (
-          rows.map((row) => {
-            const [titleCell, ...cellList] = row.getVisibleCells();
-            if (!titleCell) return null;
-            // Participants is navigation, not a data field: it leaves the
-            // <dl> for the card footer, matching the submitted-Claim cards.
-            // A hidden Participants column takes the footer with it.
-            const detailCells = cellList.filter(
-              (cell) =>
-                cell.column.id !== "participants" && cell.column.id !== "status",
-            );
-            const statusCell = cellList.find(
-              (cell) => cell.column.id === "status",
-            );
-            const showsParticipants = cellList.some(
-              (cell) => cell.column.id === "participants",
-            );
-            return (
-              <article
-                className="rounded-xl border bg-card px-4 py-3.5"
-                data-project-id={row.id}
-                key={row.id}
-              >
-                <div className="flex items-start justify-between gap-3 text-sm font-medium">
-                  <Link
-                    className="block wrap-anywhere link-prose"
-                    data-testid={`project-link-${row.original.id}-card`}
-                    href={projectPath(row.original.id)}
-                  >
-                    {row.original.name}
-                  </Link>
-                  {statusCell &&
-                    flexRender(
-                      statusCell.column.columnDef.cell,
-                      statusCell.getContext(),
-                    )}
-                </div>
-                <dl className="mt-2 grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] items-baseline gap-x-4 gap-y-1 border-t pt-2">
-                  {detailCells.map((cell) => (
-                    <Fragment key={cell.id}>
-                      <dt className="text-xs text-muted-foreground">
-                        {cellLabels[cell.column.id]}
-                      </dt>
-                      <dd className="min-w-0 text-right text-xs wrap-anywhere">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </dd>
-                    </Fragment>
-                  ))}
-                </dl>
-                {showsParticipants && (
-                  <div className="mt-2 border-t pt-2 text-right">
-                    <ParticipantsLink
-                      projectId={row.original.id}
-                      testId={`project-participants-${row.original.id}-card`}
-                    />
-                  </div>
-                )}
-              </article>
-            );
-          })
+          rows.map((row) => (
+            <ProjectRegisterCard key={row.id} row={row} labels={cellLabels} />
+          ))
         )}
       </div>
 

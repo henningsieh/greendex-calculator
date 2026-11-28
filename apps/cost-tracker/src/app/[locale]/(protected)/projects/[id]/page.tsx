@@ -5,3 +5,5 @@ import ProjectPage from "@/features/projects/components/project-page";
 export default ProjectPage;
 
 export const metadata: Metadata = { title: "Project workspace" };
+
+export const instant = false;

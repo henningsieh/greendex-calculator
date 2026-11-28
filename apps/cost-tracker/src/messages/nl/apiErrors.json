@@ -142,6 +142,10 @@
       "networkFailure": "De server of het netwerk is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."
     },
     "details": {
+      "accountHolderRequired": "Voer de rekeninghouder in.",
+      "accountHolderTooLong": "De rekeninghouder is te lang.",
+      "ibanInvalid": "Voer een geldig IBAN in.",
+      "bicInvalid": "Voer een geldige BIC in of laat leeg.",
       "emailRequired": "Het e-mailadres is verplicht.",
       "emailInvalid": "Voer een geldig e-mailadres in.",
       "organizationIdRequired": "De organisatie-ID is verplicht.",

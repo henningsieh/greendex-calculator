@@ -12,6 +12,7 @@ import {
   ShipIcon,
   TrainFrontIcon,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -41,8 +42,11 @@ const transportLabelKeys = {
 
 type TravelCostEntry = Pick<
   typeof travelCostEntriesTable.$inferSelect,
-  "id" | "amountEur" | "transportProfile"
->;
+  "id" | "amountEur"
+> & {
+  // The server projects persisted enum columns as plain strings.
+  transportProfile: string;
+};
 
 export type ClaimCostRecord = TravelCostEntry & {
   /** Optional journey or scope shown beside the transport label. */
@@ -52,9 +56,17 @@ export type ClaimCostRecord = TravelCostEntry & {
   /** Proof Documents linked to this cost. */
   receipts: number;
   allocation: "equal" | "amount" | "percentage";
+  /** Explicit allocation line when the stored method is not equal. */
+  allocationDetail?: string;
   /** Explicit share for a non-equal method, as stored. */
   shareEur?: string;
   percentage?: string;
+  /** Participant shares, rendered under the allocation line. */
+  allocations?: ReactNode;
+  /** Proof Document links, rendered under the receipts line. */
+  documents?: ReactNode;
+  /** Edit or review action for this row. */
+  action?: ReactNode;
 };
 
 export type ClaimCostRecordTotal = Pick<
@@ -71,9 +83,11 @@ export type ClaimCostRecordTotal = Pick<
 export function ClaimCostRecords({
   rows,
   total,
+  testId = "claim-cost-records",
 }: {
   rows: ClaimCostRecord[];
   total?: ClaimCostRecordTotal;
+  testId?: string;
 }) {
   const t = useTranslations("claims");
   const format = useFormatter();
@@ -90,24 +104,29 @@ export function ClaimCostRecords({
     if (row.allocation === "amount" && row.shareEur !== undefined) {
       return t("document.amountShareDetail", { amount: money(row.shareEur) });
     }
-    if (row.participants > 1) {
-      return t("document.equalShareDetail", {
-        amount: money(Number(row.amountEur) / row.participants),
-      });
-    }
     return t("document.allocationEqual");
   }
 
   return (
-    <div>
+    <div data-testid={testId}>
       <ul className="divide-y border-t border-border">
         {rows.map((row) => {
-          const Icon = transportIcons[row.transportProfile];
+          const Icon =
+            transportIcons[
+              row.transportProfile as ParticipantTransportEmissionProfile
+            ] ?? TrainFrontIcon;
+          const transportLabel =
+            transportLabelKeys[
+              row.transportProfile as ParticipantTransportEmissionProfile
+            ] ?? "transport.train";
           const missingReceipt = row.receipts === 0;
 
           return (
             <li
               className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 px-5 py-4 sm:px-6"
+              data-amount-eur={row.amountEur}
+              data-transport-profile={row.transportProfile}
+              id={`cost-${row.id}`}
               key={row.id}
             >
               <Icon
@@ -116,7 +135,7 @@ export function ClaimCostRecords({
               />
               <div className="min-w-0">
                 <p className="text-sm font-medium">
-                  {t(transportLabelKeys[row.transportProfile])}
+                  {t(transportLabel)}
                   {row.detail ? (
                     // The route is supporting detail; a narrow record keeps the
                     // ledger lines that carry the money.
@@ -126,8 +145,11 @@ export function ClaimCostRecords({
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                  {allocationDetail(row)}
+                {/* Single-word allocation details (de "Gleichmäßig")
+                    cannot wrap otherwise and would burst the middle
+                    column. */}
+                <p className="mt-0.5 font-mono text-xs wrap-anywhere text-muted-foreground">
+                  {row.allocationDetail ?? allocationDetail(row)}
                 </p>
               </div>
               <div className="text-right">
@@ -150,17 +172,34 @@ export function ClaimCostRecords({
                     : t("document.receipts", { count: row.receipts })}
                 </p>
               </div>
+              {row.allocations || row.documents || row.action ? (
+                <div className="col-span-3 mt-3 flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
+                  <div className="min-w-0 space-y-2 text-xs text-muted-foreground">
+                    {row.allocations}
+                    {row.documents}
+                  </div>
+                  {row.action ? (
+                    <div className="shrink-0">{row.action}</div>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           );
         })}
       </ul>
       {total ? (
         <div className="border-t border-border px-5 py-4 sm:px-6">
-          <div className="flex items-baseline justify-between gap-4">
+          {/* The tabular total is one unbreakable token at text-2xl; let
+              it take its own right-aligned line instead of widening the
+              card at large text. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <span className="font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
               {t("document.claimAmount")}
             </span>
-            <span className="font-mono text-2xl tabular-nums">
+            <span
+              className="ml-auto font-mono text-2xl tabular-nums"
+              data-testid="claim-total-amount"
+            >
               {money(total.amountEur)}
             </span>
           </div>

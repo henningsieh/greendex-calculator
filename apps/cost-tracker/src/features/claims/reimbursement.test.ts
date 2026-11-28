@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveReimbursement } from "@/features/claims/reimbursement";
+import {
+  deriveReimbursement,
+  equalAllocation,
+} from "@/features/claims/reimbursement";
+
+it("distributes remainder cents without losing money", () => {
+  expect([0, 1, 2].map((index) => equalAllocation("100.00", index, 3))).toEqual([
+    "33.34",
+    "33.33",
+    "33.33",
+  ]);
+});
 
 const bands = [
   { minKm: "500.00", maxKm: "999.00", standardEur: "309.00", greenEur: "417.00" },

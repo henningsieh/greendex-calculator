@@ -43,6 +43,7 @@ import {
 import { projectStatus } from "@/features/projects/project-lifecycle";
 import type { ProjectPartnershipSummary } from "@/features/projects/validation-schemas";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 function ProjectMetric({
   label,
@@ -242,6 +243,7 @@ function PartnerProjectCard({
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3">
           <ButtonLink
             href={partnershipClaimPath(partnership.id)}
+            transitionTypes={[viewTransitionType.forward]}
             icon={<EntityIcon className="size-3.5 shrink-0" entity="claim" />}
             testId="open-claim-workspace"
           >

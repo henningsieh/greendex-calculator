@@ -27,25 +27,47 @@ async function seed() {
   });
 }
 
-async function duplicates(client: Pool) {
-  const result = await client.query<{ duplicates: number }>(`
-    SELECT (
-      (SELECT count(*) FROM (SELECT slug FROM organization GROUP BY slug HAVING count(*) > 1) AS o) +
-      (SELECT count(*) FROM (SELECT email FROM "user" GROUP BY email HAVING count(*) > 1) AS u) +
-      (SELECT count(*) FROM (SELECT organization_id, name FROM project GROUP BY organization_id, name HAVING count(*) > 1) AS p)
-    )::int AS duplicates
+async function duplicateGroups(client: Pool) {
+  const result = await client.query<{ key: string; size: number }>(`
+    WITH identities(kind, identity) AS (
+      SELECT 'organization', jsonb_build_array(slug) FROM organization
+      UNION ALL SELECT 'user', jsonb_build_array(email) FROM "user"
+      UNION ALL SELECT 'project', jsonb_build_array(organization_id, name) FROM project
+    )
+    SELECT md5(jsonb_build_array(kind, identity)::text) AS key, count(*)::int AS size
+    FROM identities GROUP BY kind, identity HAVING count(*) > 1
+    ORDER BY key
   `);
-  return result.rows[0]!.duplicates;
+  return new Map(result.rows.map(({ key, size }) => [key, size]));
+}
+
+async function identityFingerprints(client: Pool) {
+  const result = await client.query<{ kind: string; fingerprint: string }>(`
+    WITH identities(kind, identity) AS (
+      SELECT 'organization', jsonb_build_array(id, slug) FROM organization
+      UNION ALL SELECT 'user', jsonb_build_array(id, email) FROM "user"
+      UNION ALL SELECT 'project', jsonb_build_array(id, organization_id, name) FROM project
+    )
+    SELECT kind, md5(jsonb_agg(identity ORDER BY identity)::text) AS fingerprint
+    FROM identities GROUP BY kind ORDER BY kind
+  `);
+  return result.rows;
 }
 
 describe("seed contract on the shared development database", () => {
   it(
     "repeats the CLI seed without creating duplicate identities",
     async () => {
-      await seed();
       const client = pool();
       try {
-        expect(await duplicates(client)).toBe(0);
+        const before = await duplicateGroups(client);
+        await seed();
+        for (const [key, size] of await duplicateGroups(client)) {
+          expect(
+            size,
+            "The seed must not add a duplicate identity",
+          ).toBeLessThanOrEqual(before.get(key) ?? 0);
+        }
         const seeded = await client.query<{ slug: string }>(
           "SELECT slug FROM organization WHERE slug IN ('seed-org', 'seed-partner-org') ORDER BY slug",
         );
@@ -53,16 +75,12 @@ describe("seed contract on the shared development database", () => {
           "seed-org",
           "seed-partner-org",
         ]);
+
+        const first = await identityFingerprints(client);
+        await seed();
+        expect(await identityFingerprints(client)).toEqual(first);
       } finally {
         await client.end();
-      }
-
-      await seed();
-      const second = pool();
-      try {
-        expect(await duplicates(second)).toBe(0);
-      } finally {
-        await second.end();
       }
     },
     commandTimeoutMs,

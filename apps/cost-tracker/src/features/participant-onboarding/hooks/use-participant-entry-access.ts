@@ -7,10 +7,12 @@ import {
   type ProjectScopeDecision,
 } from "@greendex/auth/project-authorization";
 
+import { useReadyOrganizationContext } from "@/features/organizations/organization-switch";
 import { authClient } from "@/lib/auth-client";
 
 /** The Project Partnership scope a procedure reports to the browser. */
 export type ParticipantEntryScopeContext = {
+  userId: string;
   partnerOrganizationId: string;
   hostOrganizationId: string;
   assignedCoordinator: boolean;
@@ -26,15 +28,12 @@ export type ParticipantEntryScopeContext = {
 export function useParticipantEntryAccess(
   scope: ParticipantEntryScopeContext | undefined,
 ): ProjectScopeDecision {
-  const { data: session } = authClient.useSession();
-  const { data: activeOrganization } = authClient.useActiveOrganization();
-  const role =
-    activeOrganization?.members.find(
-      (entry) => entry.userId === session?.user?.id,
-    )?.role ?? null;
+  const context = useReadyOrganizationContext();
+  const role = context?.role ?? null;
   return evaluateProjectScopeAccess({
     role,
-    activeOrganizationId: activeOrganization?.id ?? null,
+    activeOrganizationId:
+      context && scope?.userId === context.userId ? context.organizationId : null,
     // An absent scope report is missing context, so the policy refuses.
     partnerOrganizationId: scope?.partnerOrganizationId ?? null,
     hostOrganizationId: scope?.hostOrganizationId ?? null,

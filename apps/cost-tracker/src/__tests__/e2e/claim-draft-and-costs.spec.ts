@@ -136,6 +136,10 @@ async function openPartnership(
   destination: "participants" | "claim",
 ) {
   await page.goto("/projects");
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
   await expect(page.getByTestId("project-scope-partner")).toHaveAttribute(
     "aria-selected",
     "true",
@@ -463,7 +467,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      await page.locator(`a[href$="${participantsURL}"]`).click();
+      await page.getByTestId("back-to-participations").click();
       await expectPrivateURL(page, new RegExp(`${participantsURL}$`));
       const [savedCountry] = await db
         .select({ country: projectParticipantsTable.country })
@@ -858,7 +862,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByTestId("cost-save").click();
       const cost = page
         .getByTestId("claim-cost-table")
-        .locator('tbody tr[data-amount-eur="100.00"]');
+        .locator('li[data-amount-eur="100.00"]');
       await expect(cost).toBeVisible();
       // Text-free: equal-split method proven by the shares DB assertions below (all null = equal).
       const [claim] = await db
@@ -942,9 +946,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(checklist.getByRole("listitem")).toHaveCount(7);
       // Functional state only: each item carries the pass badge variant.
       // No visible copy is asserted, so rewording never breaks this.
-      await expect(
-        checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
-      ).toHaveCount(7);
+      await expect(checklist.locator('li[data-state="passed"]')).toHaveCount(7);
       const band = getTravelFundingRate(Number(distance));
       expect(band).not.toBeNull();
       const [entry] = await db

@@ -142,6 +142,10 @@
       "networkFailure": "Le serveur ou le réseau est inaccessible. Vérifiez votre connexion et réessayez."
     },
     "details": {
+      "accountHolderRequired": "Saisissez le titulaire du compte.",
+      "accountHolderTooLong": "Le titulaire est trop long.",
+      "ibanInvalid": "Saisissez un IBAN valide.",
+      "bicInvalid": "Saisissez un BIC valide ou laissez vide.",
       "emailRequired": "L’adresse e-mail est obligatoire.",
       "emailInvalid": "Saisissez une adresse e-mail valide.",
       "organizationIdRequired": "L’identifiant de l’organisation est obligatoire.",

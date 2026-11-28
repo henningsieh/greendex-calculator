@@ -37,9 +37,12 @@ export default async function AuthLayout({
       </section>
 
       <section className="flex min-h-svh flex-col bg-background p-5 sm:px-8 lg:px-14 xl:px-20">
-        <div className="flex items-center justify-between gap-3">
-          <SiteBrand className="lg:hidden" />
-          <div className="ml-auto flex items-center gap-1">
+        {/* Wraps instead of scrolling at large text: the brand lockup keeps
+            its locked sizes and yields width first (see site-brand), while
+            the switcher cluster never shrinks. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <SiteBrand className="min-w-0 lg:hidden" />
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeSwitcher />
             <LanguageSelector />
           </div>

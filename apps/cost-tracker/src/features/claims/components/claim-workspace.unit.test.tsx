@@ -6,6 +6,7 @@ import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import { toast } from "@/components/ui/toast";
 import {
   createSafeFieldIssue,
   safeErrorResponseBody,
@@ -18,8 +19,11 @@ import {
 } from "@/lib/orpc/error-message";
 import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
-import { orpcQuery } from "@/lib/orpc/orpc";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
+
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: vi.fn() },
+}));
 
 vi.mock(
   "@/components/error-presentation/error-presentation",
@@ -54,6 +58,7 @@ const mocks = vi.hoisted(() => ({
   draft: null as null | {
     id: string;
     partnershipId: string;
+    reimbursementAmountEur?: string | null;
     status:
       | "in_preparation"
       | "submitted"
@@ -154,7 +159,28 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
     },
     orpcQuery: {
       ...original.orpcQuery,
-      projects: original.orpcQuery.projects,
+      projects: {
+        ...original.orpcQuery.projects,
+        get: query(original.orpcQuery.projects.get, () => ({
+          id: "project",
+          name: "Workshop",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-12-31"),
+          location: "Berlin",
+          country: "DE",
+          archived: false,
+          participantCount: 1,
+          daysLeft: 30,
+          relationship: "partner" as const,
+          hostingOrganization: { id: "host", name: "Hosting Organization" },
+          partnership: {
+            claimStatus: null,
+            id: "own",
+            assignedAt: new Date("2026-01-01"),
+            updatedAt: new Date("2026-01-01"),
+          },
+        })),
+      },
       claims: {
         ...original.orpcQuery.claims,
         getDraft: query(original.orpcQuery.claims.getDraft, () => mocks.draft),
@@ -200,7 +226,10 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         listPartnership: query(
           original.orpcQuery.participations.listPartnership,
           () => ({
+            projectId: "project",
+            projectName: "Workshop",
             projectArchived: mocks.projectArchived,
+            organizationNames: { host: "Host", partner: "Partner" },
             participations: [
               {
                 id: "person",
@@ -257,6 +286,7 @@ function mount(client = createQueryClient(), locale: "en-GB" | "de" = "en-GB") {
 }
 
 beforeEach(() => {
+  vi.mocked(toast.add).mockClear();
   mocks.permitted = true;
   mocks.projectArchived = false;
   mocks.draft = null;
@@ -280,6 +310,7 @@ beforeEach(() => {
   });
   mocks.select.mockReset().mockImplementation(async (input) => {
     mocks.selected = input.payoutAccountId;
+    return input;
   });
   mocks.createAccount.mockReset().mockImplementation(async () => {
     const account = {
@@ -719,8 +750,14 @@ describe("Claim workspace", () => {
     mount();
     await userEvent.click(await screen.findByTestId("correct-journey-person"));
     await userEvent.click(screen.getByTestId("journey-correction-save"));
-    const form = screen.getByTestId("journey-correction-save").closest("form")!;
-    expect(await within(form).findByRole("alert")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "error",
+          description: expect.anything(),
+        }),
+      ),
+    );
     expect(
       screen.getByTestId("journey-correction-person-origin"),
     ).toHaveAttribute("aria-invalid", "false");
@@ -734,7 +771,7 @@ describe("Claim workspace", () => {
     );
     await userEvent.click(screen.getByTestId("journey-correction-save"));
     await waitFor(() => expect(mocks.updateJourney).toHaveBeenCalledTimes(2));
-    expect(within(form).getByRole("alert")).toBeInTheDocument();
+    expect(toast.add).toHaveBeenCalledTimes(2);
     expect(
       screen.getByTestId("journey-correction-person-origin"),
     ).toHaveAttribute("aria-invalid", "false");
@@ -836,11 +873,14 @@ describe("Claim workspace", () => {
     );
     await userEvent.type(screen.getByTestId("journey-distance"), "10");
     await userEvent.click(screen.getByTestId("journey-save"));
-    expect(
-      await within(
-        screen.getByTestId("journey-save").closest("form")!,
-      ).findByRole("alert"),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "error",
+          description: expect.anything(),
+        }),
+      ),
+    );
     expect(
       within(screen.getByTestId("journey-distance").parentElement!).queryByRole(
         "alert",
@@ -1310,6 +1350,24 @@ describe("Claim workspace", () => {
     expect(document.getElementById("journey-gap-person")).not.toBeNull();
   });
 
+  it("keeps the saved amount in the summary during correction", async () => {
+    mocks.draft = {
+      id: "claim",
+      partnershipId: "own",
+      status: "correction_requested",
+      reimbursementAmountEur: "726.00",
+    };
+    mocks.preview = { items: [], calculatedReimbursementEur: "844.00" };
+    mount();
+    expect(
+      (await screen.findByTestId("claim-summary")).querySelector("data"),
+    ).toHaveAttribute("value", "726.00");
+    expect(screen.getByTestId("calculated-reimbursement")).toHaveAttribute(
+      "data-reimbursement",
+      "844.00",
+    );
+  });
+
   it("shows computed preview, confirms lock before mutation, then keeps workspace read-only", async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.selected = "account";
@@ -1325,15 +1383,7 @@ describe("Claim workspace", () => {
       ].map((key) => ({ key, passed: true, gaps: [] })),
       calculatedReimbursementEur: "726.00",
     };
-    const client = createQueryClient();
-    const project = {
-      queryKey: orpcQuery.projects.get.queryKey({
-        input: { projectId: "project" },
-      }),
-      queryFn: async () => mocks.draft?.status,
-    };
-    expect(await client.query(project)).toBe("in_preparation");
-    mount(client);
+    mount();
     expect(await screen.findByTestId("calculated-reimbursement")).toHaveAttribute(
       "data-reimbursement",
       "726.00",
@@ -1352,7 +1402,6 @@ describe("Claim workspace", () => {
         document.querySelector('[data-draft-status="submitted"]'),
       ).toBeInTheDocument(),
     );
-    expect(await client.query(project)).toBe("submitted");
     expect(screen.getByTestId("claim-locked")).toBeInTheDocument();
     expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
     expect(screen.queryByTestId("cost-save")).toBeNull();
@@ -1425,9 +1474,14 @@ describe("Claim workspace", () => {
     );
     await userEvent.click(screen.getByTestId("claim-submit"));
     await userEvent.click(screen.getByTestId("claim-submit-confirm"));
-    expect(
-      await within(screen.getByTestId("claim-submission")).findByRole("alert"),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "error",
+          description: expect.anything(),
+        }),
+      ),
+    );
     expect(
       await screen.findByTestId("submission-gap-entries-entry-proofDocuments"),
     ).toHaveAttribute("href", "#proof-entry");
@@ -1437,11 +1491,6 @@ describe("Claim workspace", () => {
 
   it("creates an account from the empty state, refreshes options, and requires selection then explicit save", async () => {
     mocks.accounts = [];
-    mocks.createAccount.mockRejectedValueOnce(
-      new ORPCError("BAD_REQUEST", {
-        data: { issues: [{ path: ["iban"], message: "Invalid IBAN checksum." }] },
-      }),
-    );
     mount();
     expect(
       await screen.findByTestId("payout-account-create"),
@@ -1449,19 +1498,15 @@ describe("Claim workspace", () => {
     expect(screen.queryByTestId("claim-payout-select")).toBeNull();
     expect(screen.getByTestId("claim-create")).toBeDisabled();
     await userEvent.type(screen.getByTestId("account-holder"), "Example");
-    await userEvent.type(
-      screen.getByTestId("account-iban"),
-      "DE89370400440532013001",
-    );
+    await userEvent.type(screen.getByTestId("account-iban"), "DE5112345678901");
     await userEvent.click(screen.getByTestId("payout-account-create"));
     expect(
       await within(
         screen.getByTestId("account-iban").closest("form")!,
       ).findByRole("alert"),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("account-iban")).toHaveValue(
-      "DE89370400440532013001",
-    );
+    expect(screen.getByTestId("account-iban")).toHaveValue("DE5112345678901");
+    expect(mocks.createAccount).not.toHaveBeenCalled();
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     await userEvent.clear(screen.getByTestId("account-iban"));
     await userEvent.type(
@@ -1469,6 +1514,7 @@ describe("Claim workspace", () => {
       "DE89 3704 0044 0532 0130 00",
     );
     await userEvent.click(screen.getByTestId("payout-account-create"));
+    await waitFor(() => expect(mocks.createAccount).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.getByTestId("payout-option-new-account")).toHaveValue(
         "new-account",
@@ -1477,7 +1523,7 @@ describe("Claim workspace", () => {
     expect(mocks.createAccount).toHaveBeenLastCalledWith({
       partnershipId: "own",
       accountHolder: "Example",
-      iban: "DE89 3704 0044 0532 0130 00",
+      iban: "DE89370400440532013000",
       bic: "",
     });
     expect(screen.getByTestId("claim-create")).toBeDisabled();
@@ -1493,6 +1539,26 @@ describe("Claim workspace", () => {
       expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
   }, 30_000);
+
+  it.each(["en-GB", "de"] as const)(
+    "associates localized payout validation with its field in %s",
+    async (locale) => {
+      mocks.accounts = [];
+      mount(createQueryClient(), locale);
+      await userEvent.click(await screen.findByTestId("payout-account-create"));
+      const input = screen.getByTestId("account-holder");
+      await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+      expect(input).toHaveAttribute("aria-describedby", "account-holder-error");
+      expect(document.getElementById("account-holder-error")).toHaveAttribute(
+        "data-error-key",
+        "accountHolderRequired",
+      );
+      expect(document.getElementById("account-holder-error")).toHaveAttribute(
+        "role",
+        "alert",
+      );
+    },
+  );
 
   it("shows account absence and saved journeys read-only", async () => {
     mocks.accounts = [];
@@ -1610,15 +1676,16 @@ it.each([
       );
       expect(requests[0].send).toHaveBeenCalledOnce();
       requests[0].onload?.();
-      const feedback = await within(
-        document.getElementById("claim-proofs")!,
-      ).findByTestId("proof-feedback");
-      expect(feedback).toBeInTheDocument();
-      if (_name === "locked Claim")
-        expect(feedback.querySelector("[data-error-key]")).toHaveAttribute(
-          "data-error-key",
-          "CLAIM_NOT_EDITABLE",
-        );
+      await waitFor(() =>
+        expect(toast.add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: "error",
+            description: expect.objectContaining({
+              props: expect.objectContaining({ httpStatus: status }),
+            }),
+          }),
+        ),
+      );
       expect(invalidate).not.toHaveBeenCalled();
       expect(screen.getByTestId("proof-upload")).toBeEnabled();
       expect(screen.getByRole("progressbar")).toHaveValue(0);

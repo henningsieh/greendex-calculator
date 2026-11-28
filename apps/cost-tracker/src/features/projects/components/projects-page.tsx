@@ -1,9 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { headers } from "next/headers";
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectListLoading } from "@/features/projects/components/project-list-loading";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
@@ -20,7 +20,6 @@ export default async function ProjectsPage(
     searchParams: Promise.resolve({}),
   },
 ) {
-  await connection();
   // Recovery has no Organization context yet; do not prefetch scoped data.
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("projects.page");
@@ -33,17 +32,19 @@ export default async function ProjectsPage(
   });
 
   return (
-    <div className="min-w-0">
-      <ProtectedPageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-        rightButton={canCreate ? <CreateProjectDialog /> : undefined}
-      />
+    <RouteTransition>
+      <div className="min-w-0">
+        <ProtectedPageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          description={t("description")}
+          rightButton={canCreate ? <CreateProjectDialog /> : undefined}
+        />
 
-      <Suspense fallback={<ProjectListLoading />}>
-        <ProjectListSection searchParams={searchParams} />
-      </Suspense>
-    </div>
+        <Suspense fallback={<ProjectListLoading />}>
+          <ProjectListSection searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </RouteTransition>
   );
 }

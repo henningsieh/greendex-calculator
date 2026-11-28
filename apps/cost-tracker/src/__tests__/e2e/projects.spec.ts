@@ -50,7 +50,7 @@ test.describe("Cost Tracker Project production path", () => {
     const variant = await badge.getAttribute("data-variant");
     if (!variant) throw new Error("Project status has no badge variant");
     await page.setViewportSize({ width: 390, height: 900 });
-    const card = page.locator(`article[data-project-id="${fixture.projectId}"]`);
+    const card = page.locator(`div[data-project-id="${fixture.projectId}"]`);
     const title = card.getByTestId(`project-link-${fixture.projectId}-card`);
     const cardBadge = card.getByTestId("project-status");
     await expect(cardBadge).toBeVisible();

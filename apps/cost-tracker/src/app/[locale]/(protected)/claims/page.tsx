@@ -5,3 +5,5 @@ import ClaimReviewQueuePage from "@/features/claims/components/claim-review-queu
 export default ClaimReviewQueuePage;
 
 export const metadata: Metadata = { title: "Claims" };
+
+export const instant = false;

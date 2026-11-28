@@ -142,6 +142,10 @@
       "networkFailure": "Strežnik ali omrežje nista dosegljiva. Preverite povezavo in poskusite znova."
     },
     "details": {
+      "accountHolderRequired": "Vnesite imetnika računa.",
+      "accountHolderTooLong": "Imetnik računa je predolg.",
+      "ibanInvalid": "Vnesite veljaven IBAN.",
+      "bicInvalid": "Vnesite veljaven BIC ali pustite prazno.",
       "emailRequired": "E-poštni naslov je obvezen.",
       "emailInvalid": "Vnesite veljaven e-poštni naslov.",
       "organizationIdRequired": "ID organizacije je obvezen.",

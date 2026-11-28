@@ -6,9 +6,41 @@ import {
   travelCostEntriesTable,
 } from "@greendex/database/schema";
 import { createSelectSchema } from "drizzle-zod";
+import { getCountrySpecifications, isValidIBAN } from "ibantools";
 import { z } from "zod";
 
 import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
+
+const ibanCountries = getCountrySpecifications();
+const PayoutAccountSelectSchema = createSelectSchema(payoutAccountsTable);
+
+export const PayoutAccountCreateSchema = z.object({
+  accountHolder: PayoutAccountSelectSchema.shape.accountHolder
+    .trim()
+    .min(1, "accountHolderRequired")
+    .max(200, "accountHolderTooLong"),
+  iban: PayoutAccountSelectSchema.shape.iban
+    .trim()
+    .transform((value) => value.replace(/\s/g, "").toUpperCase())
+    .refine(
+      (value) =>
+        ibanCountries[value.slice(0, 2)]?.IBANRegistry === true &&
+        isValidIBAN(value),
+      "ibanInvalid",
+    ),
+  bic: PayoutAccountSelectSchema.shape.bic
+    .unwrap()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .refine(
+      (value) =>
+        value === "" ||
+        /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$/.test(value),
+      "bicInvalid",
+    ),
+});
+
+export type PayoutAccountCreateValues = z.infer<typeof PayoutAccountCreateSchema>;
 
 const ClaimSelectSchema = createSelectSchema(claimsTable);
 

@@ -254,6 +254,7 @@ describe("ParticipantCoordination", () => {
       ],
       registrationLinks: [{ id: "link-1", enabled: true }],
       entryContext: {
+        userId: "user-1",
         partnerOrganizationId: "partner-1",
         hostOrganizationId: "host-1",
         assignedCoordinator: false,
@@ -540,6 +541,7 @@ describe("ParticipantCoordination", () => {
       invitations: [],
       registrationLinks: [{ id: "link-1", enabled: false }],
       entryContext: {
+        userId: "user-1",
         partnerOrganizationId: "partner-1",
         hostOrganizationId: "host-1",
         assignedCoordinator: false,
@@ -871,6 +873,7 @@ describe("ParticipantCoordination", () => {
       ],
       registrationLinks: [],
       entryContext: {
+        userId: "user-1",
         partnerOrganizationId: "partner-1",
         hostOrganizationId: "host-1",
         assignedCoordinator: false,

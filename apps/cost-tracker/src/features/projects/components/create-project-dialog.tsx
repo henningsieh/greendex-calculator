@@ -44,6 +44,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 type Details = z.input<typeof ProjectCreateInputSchema>;
 
@@ -110,7 +111,9 @@ export function CreateProjectDialog() {
       const { id } = await orpc.projects.create(values);
       setOpen(false);
       reset();
-      router.push(projectPath(id));
+      router.push(projectPath(id), {
+        transitionTypes: [viewTransitionType.forward],
+      });
     } catch (error) {
       setSubmitError(<ErrorPresentation error={error} />);
     }

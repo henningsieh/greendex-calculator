@@ -41,6 +41,7 @@
       "expires": "Läuft ab",
       "action": "Aktion",
       "assignPartner": "bestehenden Partner zuweisen",
+      "addPartner": "Neuen Partner hinzufügen",
       "recipientLink": "Empfänger-Setup-Link",
       "copy": "Kopieren",
       "copied": "Link kopiert. Teile ihn nur mit der eingeladenen Person.",

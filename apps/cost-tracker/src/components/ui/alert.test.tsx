@@ -17,6 +17,7 @@ const variants = [
   "destructive",
   "accent",
   "info",
+  "success",
 ] as const satisfies readonly AlertProps["variant"][];
 const emphases = [
   "default",
@@ -56,7 +57,7 @@ describe("Alert", () => {
           </Alert>,
         );
 
-        const alert = screen.getByRole(variant === "info" ? "status" : "alert");
+        const alert = screen.getByRole(variant === "info" || variant === "success" ? "status" : "alert");
         expect(alert).toHaveAccessibleName("Fixture title");
         expect(alert).toHaveAccessibleDescription(
           `${"long-address".repeat(20)}@example.org`,
@@ -109,8 +110,8 @@ describe("Alert", () => {
     },
   );
 
-  it("allows an informational message to opt into an urgent announcement explicitly", () => {
-    render(<Alert variant="info" role="alert" />);
+  it.each(["info", "success"] as const)("allows %s to opt into an urgent announcement explicitly", (variant) => {
+    render(<Alert variant={variant} role="alert" />);
 
     expect(screen.getByRole("alert")).toHaveRole("alert");
   });

@@ -64,6 +64,7 @@ import {
 import { useDebouncedSearchDraft } from "@/hooks/use-debounced-search-draft";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 type SortField = "submitted" | "project" | "partner";
 
@@ -546,6 +547,7 @@ export function ClaimReviewQueue() {
                           className="block truncate font-medium link-prose"
                           href={projectPath(row.projectId)}
                           title={row.projectName}
+                          transitionTypes={[viewTransitionType.forward]}
                         >
                           {row.projectName}
                         </Link>
@@ -590,6 +592,7 @@ export function ClaimReviewQueue() {
                   <Link
                     className="min-w-0 font-medium wrap-anywhere link-prose"
                     href={projectPath(row.projectId)}
+                    transitionTypes={[viewTransitionType.forward]}
                   >
                     {row.projectName}
                   </Link>

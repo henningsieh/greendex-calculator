@@ -208,7 +208,7 @@ describe("Project list", { timeout: 20_000 }, () => {
   it("places the status badge next to the card title, not in the details", async () => {
     renderList();
     const title = await screen.findByTestId("project-link-project-1-card");
-    const card = title.closest("article");
+    const card = title.closest("[data-project-id]");
     const badge = card?.querySelector("[data-status]");
     expect(badge).toHaveAttribute("data-status", "open");
     expect(badge?.parentElement).toBe(title.parentElement);
@@ -241,7 +241,7 @@ describe("Project list", { timeout: 20_000 }, () => {
     renderList();
     const title = await screen.findByTestId("project-link-project-1-card");
     const flag = title
-      .closest("article")
+      .closest("[data-project-id]")
       ?.querySelector('dl [data-country="DE"]');
 
     expect(flag).toBeTruthy();

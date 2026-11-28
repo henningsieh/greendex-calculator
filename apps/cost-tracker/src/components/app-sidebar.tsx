@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/sidebar";
 import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { Link, usePathname } from "@/lib/i18n/routing";
+import {
+  persistentViewTransitionName,
+  viewTransitionType,
+} from "@/lib/view-transitions";
 
 interface SidebarNavItem {
   href: AppRoute;
@@ -68,7 +72,12 @@ function SidebarNavGroup({
                   aria-current={active ? "page" : undefined}
                   data-testid={item.testId}
                   isActive={active}
-                  render={<Link href={item.href} />}
+                  render={
+                    <Link
+                      href={item.href}
+                      transitionTypes={[viewTransitionType.forward]}
+                    />
+                  }
                   tooltip={item.label}
                 >
                   {item.icon}
@@ -134,7 +143,12 @@ export function AppSidebar({
     : [];
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      style={{
+        viewTransitionName: persistentViewTransitionName.appSidebar,
+      }}
+    >
       <SidebarHeader>
         {showOrganizationSwitcher && activeOrganizationId ? (
           <SidebarMenu>

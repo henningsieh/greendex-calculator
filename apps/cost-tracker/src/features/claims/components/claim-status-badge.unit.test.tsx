@@ -6,18 +6,18 @@ import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badg
 
 describe("ClaimStatusBadge", () => {
   it.each([
-    [null, "secondary"],
-    ["in_preparation", "secondary"],
-    ["submitted", "status-attention"],
-    ["correction_requested", "status-correction"],
-    ["approved", "status-success"],
-    ["rejected", "status-destructive-solid"],
-    ["paid", "status-success-solid"],
-  ] as const)("renders %s as %s", (status, variant) => {
+    null,
+    "in_preparation",
+    "submitted",
+    "correction_requested",
+    "approved",
+    "rejected",
+    "paid",
+  ] as const)("renders %s", (status) => {
     renderWithMessages(<ClaimStatusBadge status={status} />);
     expect(screen.getByTestId("claim-status")).toHaveAttribute(
       "data-variant",
-      variant,
+      "claim-state",
     );
     expect(screen.getByTestId("claim-status")).toHaveAttribute(
       "data-claim-status",

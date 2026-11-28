@@ -82,7 +82,10 @@ vi.mock("@/lib/orpc/orpc", () => {
           queryOptions: () => ({ queryKey: ["organization-options"] }),
         },
       },
-      projectPartnerships: { list: { queryOptions } },
+      projectPartnerships: {
+        getScope: { queryOptions },
+        list: { queryOptions },
+      },
     },
   };
 });
@@ -161,6 +164,7 @@ const routes = [
     heading: "Claim",
     label: "Loading Claim workspace",
     content: "Resolved Claim workspace",
+    staticHeader: false,
   },
   {
     path: "/[locale]/claims",
@@ -168,6 +172,7 @@ const routes = [
     heading: "Claims",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
+    staticHeader: true,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/claim/review",
@@ -175,6 +180,7 @@ const routes = [
     heading: "Claim review",
     label: "Loading Claim review",
     content: "Resolved Claim review",
+    staticHeader: false,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants",
@@ -182,6 +188,7 @@ const routes = [
     heading: "Participations",
     label: "Loading Participations",
     content: "Resolved Participations",
+    staticHeader: false,
   },
   {
     path: "/[locale]/partnerships/[partnershipId]/participants/[participationId]",
@@ -189,6 +196,7 @@ const routes = [
     heading: "Participation details",
     label: "Loading Participation details",
     content: "Resolved Participant details",
+    staticHeader: false,
   },
   {
     path: "/[locale]/projects/[id]/participants",
@@ -196,6 +204,7 @@ const routes = [
     heading: "Participations",
     label: "Loading Participations",
     content: "Resolved Hosted report",
+    staticHeader: true,
   },
   {
     path: "/[locale]/partner-organizations",
@@ -203,12 +212,14 @@ const routes = [
     heading: "Partners",
     label: "Loading Project Partnerships",
     content: "Resolved Partnerships",
+    staticHeader: true,
   },
   {
     path: "/[locale]/projects/[id]",
     Page: LocalizedProjectPage,
     label: "Loading Project workspace",
     content: "Resolved Project workspace",
+    staticHeader: false,
   },
 ];
 
@@ -286,7 +297,7 @@ it("prefetches the authorized Claim review snapshot", async () => {
   });
   // Header context + the four section prefetches. The mocked QueryClient does
   // not dedupe by key; the request-scoped client does, so this is a superset.
-  expect(mocks.query).toHaveBeenCalledTimes(5);
+  expect(mocks.query).toHaveBeenCalledTimes(6);
 });
 
 it("renders the authorized review context in the page header", async () => {
@@ -343,8 +354,8 @@ it("degrades the review context instead of failing the page when refused", async
   expect(errors).toEqual([]);
 });
 
-it.each(routes)(
-  "$path streams matching cards before request data resolves",
+it.each(routes.filter(({ staticHeader }) => staticHeader))(
+  "$path streams a loading skeleton before request data resolves",
   async ({ Page, heading, label, content }) => {
     let resolveData!: (value: undefined) => void;
     const data = new Promise<undefined>((resolve) => {
@@ -357,7 +368,13 @@ it.each(routes)(
       destination.setEncoding("utf8");
       destination.on("data", (chunk: string) => {
         html += chunk;
-        if (html.includes(label)) resolve();
+        // View-transition markers split the shell into more chunks than the
+        // bare page did, so wait for the skeleton instead of assuming it
+        // shares a chunk with the loading label. Data stays unresolved until
+        // the assertions below run, so this still proves the shell streams
+        // before request data.
+        if (html.includes(label) && html.includes('data-slot="skeleton"'))
+          resolve();
       });
     });
     const complete = new Promise<void>((resolve) =>
@@ -386,7 +403,7 @@ it.each(routes)(
     try {
       await shell;
       if (heading) expect(html).toContain(`>${heading}</h1>`);
-      expect(html).toContain('data-slot="card"');
+      expect(html).toContain('data-slot="skeleton"');
       expect(html).not.toContain(content);
     } finally {
       resolveData(undefined);
@@ -536,11 +553,88 @@ it("Participant personal page requires a session, not active Organization Member
   expect(mocks.membership).not.toHaveBeenCalled();
 });
 
+const dataHeaderRoutes = routes.filter(
+  ({ path }) =>
+    path.endsWith("/claim/review") ||
+    path.endsWith("/participants/[participationId]"),
+);
+
+it("waits for the Claim workspace before committing its header", async () => {
+  let resolveQuery!: (value: undefined) => void;
+  mocks.query.mockReturnValue(
+    new Promise<undefined>((resolve) => {
+      resolveQuery = resolve;
+    }),
+  );
+  const destination = new PassThrough();
+  let html = "";
+  destination.setEncoding("utf8");
+  destination.on("data", (chunk: string) => {
+    html += chunk;
+  });
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+      <LocalizedClaimPage
+        params={Promise.resolve({ partnershipId: "partnership-1" })}
+      />
+    </NextIntlClientProvider>,
+    { onShellReady: () => pipe(destination) },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  expect(html).not.toContain(">Claim</h1>");
+  expect(html).not.toContain("Resolved Claim workspace");
+  resolveQuery(undefined);
+  await complete;
+  expect(html).toContain(">Claim</h1>");
+  expect(html).toContain("Resolved Claim workspace");
+});
+
+it.each(dataHeaderRoutes)(
+  "$path waits for page data before committing its header",
+  async ({ Page, content, heading }) => {
+    let resolveQuery!: (value: undefined) => void;
+    const pending = new Promise<undefined>((resolve) => {
+      resolveQuery = resolve;
+    });
+    mocks.query.mockReturnValue(pending);
+    const destination = new PassThrough();
+    let html = "";
+    destination.setEncoding("utf8");
+    destination.on("data", (chunk: string) => {
+      html += chunk;
+    });
+    const complete = new Promise<void>((resolve) =>
+      destination.on("end", resolve),
+    );
+    const { pipe } = renderToPipeableStream(
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+        <Page
+          params={Promise.resolve({
+            id: "partnership-1",
+            partnershipId: "partnership-1",
+            participationId: "participation-1",
+          })}
+        />
+      </NextIntlClientProvider>,
+      { onShellReady: () => pipe(destination) },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(html).not.toContain(content);
+    expect(html).not.toContain(`>${heading}</h1>`);
+    resolveQuery(undefined);
+    await complete;
+    expect(html).toContain(content);
+    expect(html).toContain(`>${heading}</h1>`);
+  },
+);
+
 it.each(
   routes.filter(({ path }) => /\[[^\]]+\]/.test(path.replace("/[locale]", ""))),
 )(
-  "$path streams the shell without resolving route identity",
-  async ({ Page, label, content }) => {
+  "$path waits for route identity before committing",
+  async ({ Page, content }) => {
+    mocks.query.mockResolvedValue(undefined);
     let resolveParams!: (value: {
       id: string;
       partnershipId: string;
@@ -553,41 +647,29 @@ it.each(
     }>((resolve) => {
       resolveParams = resolve;
     });
-    mocks.query.mockResolvedValue(undefined);
     const destination = new PassThrough();
     let html = "";
-    const shell = new Promise<void>((resolve) => {
-      destination.setEncoding("utf8");
-      destination.on("data", (chunk: string) => {
-        html += chunk;
-        if (html.includes(label)) resolve();
-      });
+    destination.setEncoding("utf8");
+    destination.on("data", (chunk: string) => {
+      html += chunk;
     });
     const complete = new Promise<void>((resolve) =>
       destination.on("end", resolve),
     );
     const { pipe } = renderToPipeableStream(
       <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
-        <div>
-          <Page params={params} />
-        </div>
+        <Page params={params} />
       </NextIntlClientProvider>,
-      {
-        onShellReady: () => pipe(destination),
-      },
+      { onShellReady: () => pipe(destination) },
     );
-    try {
-      await shell;
-      expect(mocks.query).not.toHaveBeenCalled();
-      expect(html).not.toContain(content);
-    } finally {
-      resolveParams({
-        id: "partnership-1",
-        partnershipId: "partnership-1",
-        participationId: "participation-1",
-      });
-      await complete;
-    }
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(html).not.toContain(content);
+    resolveParams({
+      id: "partnership-1",
+      partnershipId: "partnership-1",
+      participationId: "participation-1",
+    });
+    await complete;
     expect(html).toContain(content);
     expect(mocks.query).toHaveBeenCalled();
   },

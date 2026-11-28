@@ -79,6 +79,15 @@ it.each([
     expect(markup).toContain('href="#cost-entry"');
     const document = new DOMParser().parseFromString(markup, "text/html");
     expect(
+      document.querySelector('a[href="#claim-payout"] > span:not(:empty)'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('a[href="#proof-entry"] > span:not(:empty)'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-state="open"] p .sr-only:not(:empty)'),
+    ).not.toBeNull();
+    expect(
       document
         .querySelector('[data-testid="claim-submit"]')
         ?.getAttribute("disabled"),

@@ -1,60 +1,66 @@
 "use client";
 
-import { useTranslations } from "@greendex/i18n/client";
-import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
+import { useFormatter, useTranslations } from "@greendex/i18n/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  useQueryClient,
+  useSuspenseQueries,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import {
-  ErrorDetail,
   ErrorPresentation,
+  FieldErrorMessage,
 } from "@/components/error-presentation/error-presentation";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/toast";
 import {
   canCreateClaim,
   canPartnerEditClaim,
   claimSubmissionAction,
 } from "@/features/claims/claim-lifecycle";
 import { CostEditor } from "@/features/claims/components/claim-cost-editor";
-import {
-  ClaimBand,
-  PayoutAccountLines,
-} from "@/features/claims/components/claim-document";
+import { PayoutAccountLines } from "@/features/claims/components/claim-document";
 import { JourneyEditor } from "@/features/claims/components/claim-journey-editor";
 import { ClaimHistory } from "@/features/claims/components/claim-review";
 import { ClaimSubmission } from "@/features/claims/components/claim-submission";
+import { ClaimSummary } from "@/features/claims/components/claim-summary";
+import {
+  PayoutAccountCreateSchema,
+  type PayoutAccountCreateValues,
+} from "@/features/claims/validation-schemas";
 import { useParticipantEntryAccess } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
 import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 type Cost = Outputs["costs"]["list"]["entries"][number];
-type FieldErrors = Record<string, React.ReactNode>;
 
-function errorsFor(error: unknown, root: string): FieldErrors {
-  const presentation = getORPCErrorPresentation(error);
-  const errors: FieldErrors = {};
-  for (const issue of presentation.issues ?? []) {
-    const path = issue.path.join(".");
-    if (path) errors[path] = <ErrorDetail issue={issue} />;
-  }
-  if (presentation.key === "PAYOUT_ACCOUNT_REQUIRED")
-    errors.payoutAccount = <ErrorPresentation error={error} />;
-  if (!Object.keys(errors).length)
-    errors[root] = <ErrorPresentation error={error} />;
-  return errors;
-}
-
-function FieldError({ message }: { message?: React.ReactNode }) {
+function PayoutFieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <div role="alert" className="text-sm text-destructive">
-      {message}
-    </div>
+    <p
+      className="text-sm text-destructive"
+      data-error-key={message}
+      id={id}
+      role="alert"
+    >
+      <FieldErrorMessage message={message} />
+    </p>
   ) : null;
 }
 
@@ -72,9 +78,11 @@ function ProofEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
+  const format = useFormatter();
   const [progress, setProgress] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<React.ReactNode>("");
   const [busy, setBusy] = useState(false);
+
   function upload(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -98,7 +106,8 @@ function ProofEditor({
       setBusy(false);
       if (request.status === 201) {
         setProgress(100);
-        setFeedback("Proof Document uploaded.");
+        setFeedback(t("toast.proofUploaded"));
+        toast.add({ title: t("toast.proofUploaded"), type: "success" });
         form.reset();
         void refresh();
       } else {
@@ -108,65 +117,92 @@ function ProofEditor({
         } catch {
           body = undefined;
         }
-        setFeedback(
-          <ErrorPresentation error={body} httpStatus={request.status} />,
-        );
+        toast.add({
+          description: (
+            <ErrorPresentation error={body} httpStatus={request.status} />
+          ),
+          type: "error",
+        });
       }
     };
     request.onerror = () => {
       setBusy(false);
-      setFeedback(<ErrorPresentation error={undefined} />);
+      toast.add({
+        description: <ErrorPresentation error={undefined} />,
+        type: "error",
+      });
     };
     request.send(data);
   }
+
   async function link(entryId: string, proofDocumentId: string) {
     setFeedback("");
     setBusy(true);
     try {
       await orpc.costs.linkDocument({ partnershipId, entryId, proofDocumentId });
-      setFeedback("Proof Document linked.");
+      setFeedback(t("toast.proofLinked"));
+      toast.add({ title: t("toast.proofLinked"), type: "success" });
       await refresh();
     } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
+      toast.add({
+        description: <ErrorPresentation error={error} />,
+        type: "error",
+      });
     } finally {
       setBusy(false);
     }
   }
+
   return (
-    <Card variant="document">
+    <Card>
       <CardHeader>
         <CardTitle as="h2">{t("proof.title")}</CardTitle>
+        <CardDescription>{t("proof.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4" id="claim-proofs">
+      <CardContent className="space-y-5" id="claim-proofs">
         {documents.length === 0 ? (
-          <p>{t("proof.empty")}</p>
+          <p className="text-sm text-muted-foreground">{t("proof.empty")}</p>
         ) : (
-          <ul>
+          <ul className="divide-y divide-border rounded-xl border border-border">
             {documents.map((document) => (
-              <li key={document.id} className="wrap-anywhere">
-                {document.originalFileName} ({document.byteSize}{" "}
-                {t("proof.bytes")})
+              <li
+                className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3"
+                key={document.id}
+              >
+                <p className="min-w-0 text-sm font-medium wrap-anywhere">
+                  {document.originalFileName}
+                </p>
+                <p className="font-mono text-xs text-muted-foreground">
+                  {document.byteSize} {t("proof.bytes")}
+                </p>
               </li>
             ))}
           </ul>
         )}
         {editable && (
-          <form className="space-y-4" onSubmit={upload}>
-            <Label htmlFor="proof-file">{t("proof.uploadLabel")}</Label>
-            <Input
-              variant="accounting"
-              id="proof-file"
-              data-testid="proof-file"
-              name="file"
-              type="file"
-              accept="application/pdf,image/jpeg,image/png"
-            />
+          <form
+            className="grid gap-4 rounded-xl border border-border p-4"
+            onSubmit={upload}
+          >
+            <Field>
+              <FieldLabel htmlFor="proof-file">
+                {t("proof.uploadLabel")}
+              </FieldLabel>
+              <Input
+                accept="application/pdf,image/jpeg,image/png"
+                data-testid="proof-file"
+                id="proof-file"
+                name="file"
+                type="file"
+                variant="accounting"
+              />
+            </Field>
             <Button
-              size="lg"
-              variant="default"
-              type="submit"
-              disabled={busy}
               data-testid="proof-upload"
+              disabled={busy}
+              size="sm"
+              type="submit"
+              variant="default"
             >
               {t("proof.upload")}
             </Button>
@@ -174,46 +210,55 @@ function ProofEditor({
         )}
         {progress !== null && (
           <progress
-            className="w-full accent-primary"
-            value={progress}
-            max={100}
             aria-label={t("proof.progressLabel")}
+            className="w-full accent-primary"
+            max={100}
+            value={progress}
           >
             {t("proof.uploadProgress")} {progress}%
           </progress>
         )}
         {feedback && (
-          <div data-testid="proof-feedback" aria-live="polite" aria-atomic="true">
+          <div aria-live="polite" aria-atomic="true" data-testid="proof-feedback">
             {feedback}
           </div>
         )}
         {entries.map((entry) => (
-          <div key={entry.id} id={`proof-${entry.id}`}>
-            <p>
-              {entry.transportProfile}{" "}
-              <span className="font-mono tabular-nums">
-                {entry.amountEur} {t("proof.currencyEur")}
-              </span>
-            </p>
-            <p className="wrap-anywhere">
+          <div
+            className="rounded-xl border border-border p-4"
+            id={`proof-${entry.id}`}
+            key={entry.id}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm font-medium">{entry.transportProfile}</p>
+              <p className="font-mono text-sm tabular-nums">
+                {format.number(Number(entry.amountEur), {
+                  style: "currency",
+                  currency: "EUR",
+                })}
+              </p>
+            </div>
+            <p className="mt-1 text-sm wrap-anywhere text-muted-foreground">
               {t("proof.linked")}{" "}
               {entry.proofDocumentIds
                 .map(
                   (id) =>
                     documents.find((document) => document.id === id)
-                      ?.originalFileName ?? "Document",
+                      ?.originalFileName ?? t("proof.documentFallback"),
                 )
-                .join(", ") || t("copy.none")}
+                .join(", ") || t("proof.none")}
             </p>
             {editable && (
-              <div>
-                <Label htmlFor={`link-${entry.id}`}>{t("proof.linkLabel")}</Label>
+              <Field className="mt-3">
+                <FieldLabel htmlFor={`link-${entry.id}`}>
+                  {t("proof.linkLabel")}
+                </FieldLabel>
                 <select
-                  id={`link-${entry.id}`}
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                   data-testid={`link-proof-${entry.id}`}
-                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                  disabled={busy}
                   defaultValue=""
+                  disabled={busy}
+                  id={`link-${entry.id}`}
                   onChange={(event) => {
                     if (event.target.value)
                       void link(entry.id, event.target.value);
@@ -235,40 +280,12 @@ function ProofEditor({
                       </option>
                     ))}
                 </select>
-              </div>
+              </Field>
             )}
           </div>
         ))}
       </CardContent>
     </Card>
-  );
-}
-
-function SelectedClaimPayout({
-  payout,
-  editable,
-}: {
-  payout: Outputs["claims"]["listPayoutAccounts"];
-  editable: boolean;
-}) {
-  const t = useTranslations("claims.workspace");
-  const account = payout.accounts.find(
-    (item) => item.id === payout.selectedPayoutAccountId,
-  );
-  if (!payout.selectedPayoutAccountId) return null;
-  return account ? (
-    <div className="my-5 space-y-3">
-      <p>
-        {t("payout.selected")}
-        {editable && ` ${t("payout.changeHint")}`}
-      </p>
-      <PayoutAccountLines account={account} />
-    </div>
-  ) : (
-    <p>
-      {t("payout.unavailable")}
-      {editable && ` · ${t("payout.changeHint")}`}
-    </p>
   );
 }
 
@@ -284,9 +301,9 @@ function ClaimStateNotice({
   if (!draft) return null;
   if (draft.status === "correction_requested")
     return (
-      <Alert data-testid="claim-correction-notice">
+      <Alert data-testid="claim-correction-notice" variant="info">
+        <AlertTitle>{t("notice.correctionRequested")}</AlertTitle>
         <AlertDescription>
-          {t("notice.correctionRequested")}{" "}
           {history.findLast((event) => event.eventType === "correction_requested")
             ?.reason ?? t("copy.correctionHistory")}
           <p>{t("notice.correctionBody")}</p>
@@ -295,9 +312,9 @@ function ClaimStateNotice({
     );
   if (draft.status === "rejected")
     return (
-      <Alert>
+      <Alert variant="destructive">
+        <AlertTitle>{t("notice.rejected")}</AlertTitle>
         <AlertDescription>
-          {t("notice.rejected")}{" "}
           {history.findLast((event) => event.eventType === "rejected")?.reason ??
             t("copy.rejectionHistory")}
           <p>{t("notice.rejectedBody")}</p>
@@ -306,13 +323,15 @@ function ClaimStateNotice({
     );
   if (draft.status === "approved")
     return (
-      <Alert>
+      <Alert variant="success">
+        <AlertTitle>{t("notice.approvedTitle")}</AlertTitle>
         <AlertDescription>{t("notice.approved")}</AlertDescription>
       </Alert>
     );
   if (draft.status === "paid")
     return (
-      <Alert>
+      <Alert variant="success">
+        <AlertTitle>{t("notice.paidTitle")}</AlertTitle>
         <AlertDescription>{t("notice.paid")}</AlertDescription>
       </Alert>
     );
@@ -333,103 +352,152 @@ function ClaimDraftEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
-  const client = useQueryClient();
   const input = { partnershipId };
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
+  const client = useQueryClient();
   const [pending, setPending] = useState(false);
-  const [accountHolder, setAccountHolder] = useState("");
-  const [iban, setIban] = useState("");
-  const [bic, setBic] = useState("");
-  const [accountErrors, setAccountErrors] = useState<FieldErrors>({});
-  async function addAccount(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const [selectionError, setSelectionError] = useState<{ error: unknown } | null>(
+    null,
+  );
+  const [optimisticSelection, setOptimisticSelection] = useState<string | null>(
+    null,
+  );
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<PayoutAccountCreateValues>({
+    resolver: zodResolver(PayoutAccountCreateSchema),
+    defaultValues: { accountHolder: "", iban: "", bic: "" },
+  });
+  const busy = pending || isSubmitting;
+  const [createdAccounts, setCreatedAccounts] = useState<
+    Outputs["claims"]["listPayoutAccounts"]["accounts"]
+  >([]);
+  const accounts = [
+    ...payout.accounts,
+    ...createdAccounts.filter(
+      (created) => !payout.accounts.some((item) => item.id === created.id),
+    ),
+  ];
+  const selectedId = optimisticSelection ?? payout.selectedPayoutAccountId ?? "";
+  const account = accounts.find((item) => item.id === selectedId);
+
+  const addAccount = handleSubmit(async (values) => {
     setPending(true);
-    setFeedback("");
-    setAccountErrors({});
     try {
-      await orpc.claims.createPayoutAccount({
+      const created = await orpc.claims.createPayoutAccount({
         partnershipId,
-        accountHolder,
-        iban,
-        bic,
+        accountHolder: values.accountHolder,
+        iban: values.iban,
+        bic: values.bic,
       });
-      await client.invalidateQueries({
-        queryKey: orpcQuery.claims.listPayoutAccounts.queryKey({ input }),
-      });
-      setAccountHolder("");
-      setIban("");
-      setBic("");
-      setFeedback("Payout Account created. Select it to use it for this Claim.");
+      setCreatedAccounts((current) => [...current, created]);
+      reset();
+      toast.add({ title: t("toast.payoutCreated"), type: "success" });
     } catch (error) {
-      setAccountErrors(errorsFor(error, "account"));
+      const presentation = getORPCErrorPresentation(error);
+      let mapped = false;
+      for (const issue of presentation.issues ?? []) {
+        const field = issue.path[0];
+        if (field === "accountHolder" || field === "iban" || field === "bic") {
+          setError(field, { message: issue.id }, { shouldFocus: !mapped });
+          mapped = true;
+        }
+      }
+      if (!mapped)
+        toast.add({
+          description: <ErrorPresentation error={error} />,
+          type: "error",
+        });
     } finally {
       setPending(false);
     }
-  }
+  });
+
   async function selectAccount(id: string) {
     if (!id) return;
+    setSelectionError(null);
+    setOptimisticSelection(id);
     setPending(true);
-    setFeedback("");
     try {
-      await orpc.claims.selectPayoutAccount({
+      const selection = await orpc.claims.selectPayoutAccount({
         partnershipId,
         payoutAccountId: id,
       });
+      client.setQueryData<Outputs["claims"]["listPayoutAccounts"]>(
+        orpcQuery.claims.listPayoutAccounts.queryKey({ input }),
+        (current) =>
+          current
+            ? { ...current, selectedPayoutAccountId: selection.payoutAccountId }
+            : current,
+      );
       await refresh();
-      setFeedback("Payout Account selected.");
+      setOptimisticSelection(null);
+      toast.add({ title: t("toast.payoutSelected"), type: "success" });
     } catch (error) {
-      setFeedback(<ErrorPresentation error={error} />);
+      setOptimisticSelection(null);
+      setSelectionError({ error });
     } finally {
       setPending(false);
     }
   }
+
   async function saveDraft() {
     setPending(true);
-    setFeedback("");
     try {
       await orpc.claims.saveDraft(input);
       await refresh();
-      setFeedback("Claim draft saved.");
+      toast.add({ title: t("toast.claimCreated"), type: "success" });
     } catch (error) {
-      setFeedback(
-        errorsFor(error, "draft").payoutAccount ?? (
-          <ErrorPresentation error={error} />
-        ),
-      );
+      toast.add({
+        description: <ErrorPresentation error={error} />,
+        type: "error",
+      });
     } finally {
       setPending(false);
     }
   }
+
   return (
-    <Card variant="document">
+    <Card>
       <CardHeader>
-        <CardTitle as="h2">{t("draft.title")}</CardTitle>
+        <CardTitle as="h2">{t("setup.title")}</CardTitle>
+        <CardDescription>{t("setup.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p data-draft-status={draft?.status ?? "none"}>
+      <CardContent className="space-y-6">
+        <p
+          className="text-sm text-muted-foreground"
+          data-draft-status={draft?.status ?? "none"}
+        >
           {draft
             ? t("copy.savedClaim", { status: t(`status.${draft.status}`) })
             : t("copy.noClaim")}
         </p>
-        <div id="claim-payout">
+        <div className="space-y-3" id="claim-payout">
           <Label htmlFor="claim-payout-select">{t("payout.title")}</Label>
-          {payout.accounts.length ? (
+          {accounts.length ? (
             <select
-              id="claim-payout-select"
+              aria-describedby={
+                selectionError ? "payout-selection-error" : undefined
+              }
+              aria-invalid={Boolean(selectionError)}
+              className="min-h-11 w-full min-w-0 rounded-xl border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
               data-testid="claim-payout-select"
-              className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-              disabled={!editable || pending}
-              value={payout.selectedPayoutAccountId ?? ""}
+              disabled={!editable || busy}
+              id="claim-payout-select"
               onChange={(event) => void selectAccount(event.target.value)}
+              value={selectedId}
             >
               <option value="">{t("payout.selectAccount")}</option>
-              {payout.accounts.map((account) => (
+              {accounts.map((item) => (
                 <option
-                  data-testid={`payout-option-${account.id}`}
-                  key={account.id}
-                  value={account.id}
+                  data-testid={`payout-option-${item.id}`}
+                  key={item.id}
+                  value={item.id}
                 >
-                  {account.accountHolder} · {account.iban}
+                  {item.accountHolder} · {item.iban}
                 </option>
               ))}
             </select>
@@ -440,83 +508,107 @@ function ClaimDraftEditor({
               </EmptyHeader>
             </Empty>
           )}
-          <SelectedClaimPayout payout={payout} editable={editable} />
-          {editable && (
-            <form
-              className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>p]:col-span-full"
-              onSubmit={addAccount}
-              noValidate
-            >
-              <p>{t("payout.create")}</p>
-              <FieldError message={accountErrors.account} />
-              <div className="sm:col-span-2">
-                <Label htmlFor="account-holder">
-                  {t("payout.accountHolder")}
-                </Label>
-                <Input
-                  variant="accounting"
-                  id="account-holder"
-                  data-testid="account-holder"
-                  value={accountHolder}
-                  onChange={(event) => setAccountHolder(event.target.value)}
-                  disabled={pending}
-                />
-                <FieldError message={accountErrors.accountHolder} />
-              </div>
-              <div>
-                <Label htmlFor="account-iban">{t("payout.iban")}</Label>
-                <Input
-                  variant="figure"
-                  id="account-iban"
-                  data-testid="account-iban"
-                  value={iban}
-                  onChange={(event) => setIban(event.target.value)}
-                  disabled={pending}
-                />
-                <FieldError message={accountErrors.iban} />
-              </div>
-              <div>
-                <Label htmlFor="account-bic">{t("payout.bic")}</Label>
-                <Input
-                  variant="figure"
-                  id="account-bic"
-                  value={bic}
-                  onChange={(event) => setBic(event.target.value)}
-                  disabled={pending}
-                />
-                <FieldError message={accountErrors.bic} />
-              </div>
-              <Button
-                size="lg"
-                variant="default"
-                type="submit"
-                disabled={pending}
-                data-testid="payout-account-create"
-              >
-                {t("payout.create")}
-              </Button>
-            </form>
+          {selectionError && (
+            <div id="payout-selection-error" role="alert">
+              <ErrorPresentation error={selectionError.error} />
+            </div>
+          )}
+          {account && (
+            <div className="rounded-xl bg-muted/50 p-4">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {t("payout.selected")}
+                {editable && ` ${t("payout.changeHint")}`}
+              </p>
+              <PayoutAccountLines account={account} />
+            </div>
+          )}
+          {!account && payout.selectedPayoutAccountId && (
+            <p className="text-sm text-muted-foreground">
+              {t("payout.unavailable")}
+            </p>
           )}
         </div>
+        {editable && (
+          <form
+            className="grid gap-4 rounded-xl border border-border p-4"
+            noValidate
+            onSubmit={addAccount}
+          >
+            <p className="text-sm font-medium">{t("payout.create")}</p>
+            <Field data-invalid={Boolean(errors.accountHolder)}>
+              <FieldLabel htmlFor="account-holder">
+                {t("payout.accountHolder")}
+              </FieldLabel>
+              <Input
+                aria-describedby={
+                  errors.accountHolder ? "account-holder-error" : undefined
+                }
+                aria-invalid={Boolean(errors.accountHolder)}
+                data-testid="account-holder"
+                disabled={busy}
+                id="account-holder"
+                variant="accounting"
+                {...register("accountHolder")}
+              />
+              <PayoutFieldError
+                id="account-holder-error"
+                message={errors.accountHolder?.message}
+              />
+            </Field>
+            <Field data-invalid={Boolean(errors.iban)}>
+              <FieldLabel htmlFor="account-iban">{t("payout.iban")}</FieldLabel>
+              <Input
+                aria-describedby={errors.iban ? "account-iban-error" : undefined}
+                aria-invalid={Boolean(errors.iban)}
+                data-testid="account-iban"
+                disabled={busy}
+                id="account-iban"
+                variant="figure"
+                {...register("iban")}
+              />
+              <PayoutFieldError
+                id="account-iban-error"
+                message={errors.iban?.message}
+              />
+            </Field>
+            <Field data-invalid={Boolean(errors.bic)}>
+              <FieldLabel htmlFor="account-bic">{t("payout.bic")}</FieldLabel>
+              <Input
+                aria-describedby={errors.bic ? "account-bic-error" : undefined}
+                aria-invalid={Boolean(errors.bic)}
+                data-testid="account-bic"
+                disabled={busy}
+                id="account-bic"
+                variant="figure"
+                {...register("bic")}
+              />
+              <PayoutFieldError
+                id="account-bic-error"
+                message={errors.bic?.message}
+              />
+            </Field>
+            <Button
+              data-testid="payout-account-create"
+              disabled={busy}
+              size="sm"
+              type="submit"
+              variant="default"
+            >
+              {t("payout.create")}
+            </Button>
+          </form>
+        )}
         {editable && !draft && (
           <Button
-            variant="default"
+            data-testid="claim-create"
+            disabled={busy || !canCreateClaim(null, Boolean(selectedId))}
+            onClick={() => void saveDraft()}
             size="lg"
             type="button"
-            disabled={
-              pending ||
-              !canCreateClaim(null, Boolean(payout.selectedPayoutAccountId))
-            }
-            data-testid="claim-create"
-            onClick={() => void saveDraft()}
+            variant="default"
           >
             {t("payout.createClaim")}
           </Button>
-        )}
-        {feedback && (
-          <div aria-live="polite" aria-atomic="true">
-            {feedback}
-          </div>
         )}
       </CardContent>
     </Card>
@@ -524,7 +616,6 @@ function ClaimDraftEditor({
 }
 
 export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
-  const t = useTranslations("claims.workspace");
   const client = useQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
@@ -557,14 +648,29 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const documents = documentsQuery.data;
   const preview = previewQuery.data;
   const history = historyQuery.data;
-  // The one Partner editing rule (ADR-0017), evaluated with the status the
-  // server authorized: add and correct while the Claim is unsubmitted or
-  // returned for correction. The screen keeps no status-to-action copy.
+  const project = useSuspenseQuery(
+    orpcQuery.projects.get.queryOptions({
+      input: { projectId: people.projectId },
+      meta: { costTrackerORPC: true },
+    }),
+  ).data;
   const access = useParticipantEntryAccess(people.entryContext);
-  const editable = access.permitted && canPartnerEditClaim(draft?.status);
-  // Adding a journey needs no Claim; correcting a saved one needs the Claim that
-  // records the correction, so the rule applies once a Claim exists.
+  const editable =
+    access.permitted &&
+    !peopleQuery.isFetching &&
+    !peopleQuery.isError &&
+    canPartnerEditClaim(draft?.status);
   const corrections = Boolean(draft) && editable;
+  const selectedPayout =
+    payout.accounts.find(
+      (account) => account.id === payout.selectedPayoutAccountId,
+    ) ?? null;
+  const submittedAt =
+    history.findLast(
+      (event) =>
+        event.eventType === "submitted" || event.eventType === "resubmitted",
+    )?.occurredAt ?? null;
+  const summary = summaryFor(people.organizationNames, draft, preview);
   const refresh = useCallback(async () => {
     const input = { partnershipId };
     await Promise.all([
@@ -586,8 +692,6 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   }, [client, partnershipId]);
 
   useEffect(() => {
-    // History can replay the pre-mutation HTML/RSC snapshot into a new QueryClient.
-    // Its hydration timestamp is not evidence that the Claim is still editable.
     const navigation = performance.getEntriesByType("navigation")[0] as
       | PerformanceNavigationTiming
       | undefined;
@@ -601,43 +705,138 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   }, [refresh]);
 
   return (
-    <section className="min-w-0" aria-label={t("label")}>
-      <ClaimBand title={t("bandTitle")} status={draft?.status} />
+    <ClaimWorkspaceLayout
+      corrections={corrections}
+      costs={costs}
+      documents={documents}
+      draft={draft}
+      editable={editable}
+      history={history}
+      journeys={journeys}
+      partnershipId={partnershipId}
+      people={people}
+      payout={payout}
+      preview={preview}
+      project={project}
+      refresh={refresh}
+      selectedPayout={selectedPayout}
+      submittedAt={submittedAt}
+      summary={summary}
+    />
+  );
+}
+
+interface ClaimWorkspaceSummary {
+  approved: boolean;
+  amount: string | null;
+  hostingOrganization?: string;
+  partnerOrganization?: string;
+}
+
+function summaryFor(
+  names: Outputs["participations"]["listPartnership"]["organizationNames"],
+  draft: Outputs["claims"]["getDraft"],
+  preview: Outputs["claims"]["previewSubmission"],
+): ClaimWorkspaceSummary {
+  const approved = draft?.status === "approved" || draft?.status === "paid";
+  const amount =
+    draft?.status === "in_preparation"
+      ? (preview?.calculatedReimbursementEur ?? null)
+      : (draft?.reimbursementAmountEur ?? null);
+
+  return {
+    approved,
+    amount: amount === null ? null : String(amount),
+    hostingOrganization: names.host,
+    partnerOrganization: names.partner,
+  };
+}
+
+function ClaimWorkspaceLayout({
+  corrections,
+  costs,
+  documents,
+  draft,
+  editable,
+  history,
+  journeys,
+  partnershipId,
+  people,
+  payout,
+  preview,
+  project,
+  refresh,
+  selectedPayout,
+  submittedAt,
+  summary,
+}: {
+  corrections: boolean;
+  costs: Outputs["costs"]["list"];
+  documents: Outputs["documents"]["list"];
+  draft: Outputs["claims"]["getDraft"];
+  editable: boolean;
+  history: Outputs["claims"]["getHistory"];
+  journeys: Outputs["journeys"]["list"];
+  partnershipId: string;
+  people: Outputs["participations"]["listPartnership"];
+  payout: Outputs["claims"]["listPayoutAccounts"];
+  preview: Outputs["claims"]["previewSubmission"];
+  project: Outputs["projects"]["get"];
+  refresh: () => Promise<void>;
+  selectedPayout:
+    | Outputs["claims"]["listPayoutAccounts"]["accounts"][number]
+    | null;
+  submittedAt: Date | null;
+  summary: ClaimWorkspaceSummary;
+}) {
+  const t = useTranslations("claims.workspace");
+  const { amount, approved, hostingOrganization, partnerOrganization } = summary;
+
+  return (
+    <section aria-label={t("label")} className="min-w-0 space-y-6">
+      <ClaimSummary
+        amount={amount}
+        amountLabel={
+          approved
+            ? t("summary.approvedAmount")
+            : draft?.status === "rejected" ||
+                draft?.status === "correction_requested"
+              ? t("summary.lastSubmittedAmount")
+              : t("summary.estimatedAmount")
+        }
+        hostingOrganization={hostingOrganization}
+        partnerOrganization={partnerOrganization}
+        payoutAccount={selectedPayout}
+        project={project}
+        status={draft?.status ?? null}
+        submitted={Boolean(draft && draft.status !== "in_preparation")}
+        submittedAt={submittedAt}
+      />
       {people.projectArchived && editable && <ArchivedActionExplanation />}
       <fieldset
+        className="min-w-0 border-0 p-0"
         disabled={people.projectArchived && editable}
-        className="min-w-0 border border-t-0 bg-card"
       >
-        <div
-          className={
-            editable && preview
-              ? "grid min-w-0 min-[961px]:grid-cols-[minmax(0,1fr)_340px]"
-              : "min-w-0"
-          }
-        >
-          {editable && preview && (
-            <aside
-              className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
-              aria-label={t("submissionLabel")}
-              data-testid="claim-submission"
-            >
-              <ClaimSubmission
-                partnershipId={partnershipId}
-                preview={preview}
-                action={claimSubmissionAction(draft?.status ?? null)}
-                refresh={refresh}
-              />
-            </aside>
-          )}
-          <div className="min-w-0 min-[961px]:col-start-1 min-[961px]:row-start-1">
+        <div className="grid gap-6 @4xl/content:grid-cols-[minmax(0,1fr)_22rem]">
+          <aside className="order-1 min-w-0 space-y-6 @4xl/content:sticky @4xl/content:top-6 @4xl/content:col-start-2 @4xl/content:row-start-1 @4xl/content:self-start">
+            <ClaimStateNotice draft={draft} history={history} />
             <ClaimDraftEditor
-              partnershipId={partnershipId}
               draft={draft}
-              payout={payout}
               editable={editable}
+              partnershipId={partnershipId}
+              payout={payout}
               refresh={refresh}
             />
-            <ClaimStateNotice draft={draft} history={history} />
+            {editable && preview && (
+              <ClaimSubmission
+                action={claimSubmissionAction(draft?.status ?? null)}
+                partnershipId={partnershipId}
+                preview={preview}
+                refresh={refresh}
+              />
+            )}
+          </aside>
+          <div className="order-2 min-w-0 space-y-6 @4xl/content:col-start-1 @4xl/content:row-start-1">
             {draft && !editable && (
               <Alert data-testid="claim-locked">
                 <AlertDescription>
@@ -653,42 +852,41 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                 </AlertDescription>
               </Alert>
             )}
+            {!draft && (
+              <Alert variant="info">
+                <AlertDescription>{t("noDraft")}</AlertDescription>
+              </Alert>
+            )}
             <JourneyEditor
-              partnershipId={partnershipId}
-              participants={people.participations}
-              saved={journeys}
-              editable={editable}
               corrections={corrections}
+              editable={editable}
+              participants={people.participations}
+              partnershipId={partnershipId}
               refresh={refresh}
+              saved={journeys}
             />
+            {draft && (
+              <>
+                <CostEditor
+                  documents={documents}
+                  editable={editable}
+                  entries={costs.entries}
+                  participants={people.participations}
+                  partnershipId={partnershipId}
+                  refresh={refresh}
+                />
+                <ProofEditor
+                  documents={documents}
+                  editable={editable}
+                  entries={costs.entries}
+                  partnershipId={partnershipId}
+                  refresh={refresh}
+                />
+                <ClaimHistory events={history} />
+              </>
+            )}
           </div>
         </div>
-        {draft && (
-          <>
-            <CostEditor
-              partnershipId={partnershipId}
-              participants={people.participations}
-              entries={costs.entries}
-              documents={documents}
-              editable={editable}
-              refresh={refresh}
-            />
-            <ProofEditor
-              partnershipId={partnershipId}
-              entries={costs.entries}
-              documents={documents}
-              editable={editable}
-              refresh={refresh}
-            />
-          </>
-        )}
-
-        {draft && <ClaimHistory events={history} />}
-        {!draft && (
-          <Alert>
-            <AlertDescription>{t("noDraft")}</AlertDescription>
-          </Alert>
-        )}
       </fieldset>
     </section>
   );

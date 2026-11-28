@@ -2,9 +2,13 @@
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorization";
-import { useTranslations } from "@greendex/i18n/client";
+import { useFormatter, useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
-import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
+import {
+  useQueryClient,
+  useSuspenseQueries,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -13,19 +17,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import {
   claimPanelActions,
   type ClaimPanelAction,
+  type ClaimStatus,
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
-import {
-  ClaimBand,
-  ClaimCostTable,
-  PayoutAccountLines,
-} from "@/features/claims/components/claim-document";
+import { ClaimCostRecords } from "@/features/claims/components/claim-cost-records";
+import { PayoutAccountLines } from "@/features/claims/components/claim-document";
+import { ClaimSummary } from "@/features/claims/components/claim-summary";
 import { usePaymentController } from "@/features/claims/payment-controller";
 import type { ClaimDecisionInput } from "@/features/claims/types";
+import { useReadyOrganizationContext } from "@/features/organizations/organization-switch";
 import { authClient } from "@/lib/auth-client";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -33,10 +39,17 @@ import type { Outputs } from "@/lib/orpc/router";
 type Claim = NonNullable<Outputs["claims"]["getDraft"]>;
 type History = Outputs["claims"]["getHistory"];
 type ReviewDetails = Outputs["claims"]["getReviewDetails"];
-// The offered decisions come from the shared Claim lifecycle; this surface
-// keeps presentation copy only, never its own status-to-action rule.
 type Decision = ClaimPanelAction;
 type DecisionInput = ClaimDecisionInput;
+
+const statusKeys = {
+  approved: "approved",
+  correction_requested: "correctionRequested",
+  in_preparation: "in_preparation",
+  paid: "paid",
+  rejected: "rejected",
+  submitted: "submitted",
+} as const;
 
 function reimbursementLabel(status: Claim["status"] | undefined) {
   return status === "approved" || status === "paid"
@@ -46,67 +59,63 @@ function reimbursementLabel(status: Claim["status"] | undefined) {
       : null;
 }
 
-const historyLabels: Record<History[number]["eventType"], string> = {
-  submitted: "Submitted",
-  correction_requested: "Correction requested",
-  resubmitted: "Resubmitted",
-  approved: "Approved",
-  rejected: "Rejected",
-  reopened: "Reopened",
-  paid: "Paid",
-  payment_corrected: "Paid flag corrected",
-  journey_updated: "Journey corrected",
-};
-
 export function ClaimHistory({ events }: { events: History }) {
   const t = useTranslations("claims.review");
   const dateFormat = useDateFormat();
 
   return (
-    <section
-      aria-label={t("historyLabel")}
-      data-testid="claim-history"
-      className="min-w-0 space-y-4 px-8 py-7 max-sm:px-4"
-    >
-      <h2 className="text-xl">{t("historyTitle")}</h2>
-      {events.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>{t("historyEmpty")}</EmptyTitle>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <ol className="divide-y">
-          {events.map((event, index) => (
-            <li
-              data-history-event={event.eventType}
-              key={`${event.actorUserId}-${event.occurredAt.toISOString()}-${index}`}
-              className="grid gap-x-5 gap-y-2 py-4 min-[961px]:grid-cols-[180px_200px_minmax(0,1fr)]"
-            >
-              <strong>{historyLabels[event.eventType]}</strong>
-              <time
-                dateTime={event.occurredAt.toISOString()}
-                className="font-mono text-xs text-muted-foreground"
+    <Card data-testid="claim-history">
+      <CardHeader>
+        <CardTitle as="h2">{t("historyTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {events.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{t("historyEmpty")}</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ol className="relative space-y-0 border-l border-border pl-5">
+            {events.map((event, index) => (
+              <li
+                className="relative pb-6 last:pb-0"
+                data-history-event={event.eventType}
+                key={`${event.actorUserId}-${event.occurredAt.toISOString()}-${index}`}
               >
-                {dateFormat.format(event.occurredAt, "dateTime.short")}
-              </time>
-              <span className="min-w-0 wrap-anywhere">
-                {t("actor")}{" "}
-                <span className="font-mono">{event.actorUserId}</span>
-              </span>
-              {event.reason && (
-                <p
-                  className="col-span-full wrap-anywhere"
-                  data-testid="history-reason"
-                >
-                  {event.reason}
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1.5 left-[-1.4rem] size-2 rounded-full bg-primary"
+                />
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    {t(`history.${event.eventType}`)}
+                  </p>
+                  <time
+                    className="font-mono text-xs text-muted-foreground"
+                    dateTime={event.occurredAt.toISOString()}
+                  >
+                    {dateFormat.format(event.occurredAt, "dateTime.short")}
+                  </time>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("actor")}{" "}
+                  <span className="font-mono">{event.actorUserId}</span>
                 </p>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
+                {event.reason && (
+                  <p
+                    className="mt-2 text-sm wrap-anywhere"
+                    data-testid="history-reason"
+                  >
+                    {event.reason}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -118,28 +127,36 @@ function ClaimDecisionSummary({
   reimbursementAmountEur: string | null;
 }) {
   const t = useTranslations("claims.review");
+  const format = useFormatter();
   const amountLabel = reimbursementLabel(status);
+  const amount =
+    reimbursementAmountEur === null
+      ? null
+      : format.number(Number(reimbursementAmountEur), {
+          style: "currency",
+          currency: "EUR",
+        });
 
   return (
-    <div data-review-status={status}>
-      {status === "submitted" && <p>{t("status.submitted")}</p>}
-      {status === "correction_requested" && (
-        <p>{t("status.correctionRequested")}</p>
-      )}
-      {amountLabel && reimbursementAmountEur && (
-        <p
-          data-message={amountLabel}
-          data-testid={
-            amountLabel === "approvedAmount"
-              ? "approved-reimbursement"
-              : "estimated-reimbursement"
-          }
-        >
-          {t(amountLabel)}{" "}
-          <span className="block font-mono tabular-nums">
-            {reimbursementAmountEur} {t("currencyEur")}
-          </span>
-        </p>
+    <div className="space-y-2" data-review-status={status}>
+      <p className="text-sm text-muted-foreground">
+        {t(`status.${statusKeys[status]}`)}
+      </p>
+      {amountLabel && amount && (
+        <div>
+          <p className="text-sm text-muted-foreground">{t(amountLabel)}</p>
+          <p
+            className="font-mono text-lg tabular-nums"
+            data-message={amountLabel}
+            data-testid={
+              amountLabel === "approvedAmount"
+                ? "approved-reimbursement"
+                : "estimated-reimbursement"
+            }
+          >
+            {amount}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -161,6 +178,7 @@ export function ClaimDecisionPanel({
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
 }) {
   const t = useTranslations("claims.review");
+  const format = useFormatter();
   const {
     intent: confirming,
     reasonAction,
@@ -181,38 +199,39 @@ export function ClaimDecisionPanel({
     onDecision,
   });
   const controls = claimPanelActions(status);
+
   return (
-    <Card variant="action">
+    <Card data-testid="claim-decision-panel">
       <CardHeader>
         <CardTitle as="h2">{t("decisionTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ClaimDecisionSummary
-          status={status}
           reimbursementAmountEur={reimbursementAmountEur}
+          status={status}
         />
         {canReview &&
           !confirming &&
           controls.map((action) => (
             <Button
-              className="h-auto min-h-12 max-w-full whitespace-normal"
-              size="lg"
-              key={action}
+              className="w-full"
               data-testid={`claim-decision-${action}`}
-              type="button"
-              variant={
-                action === "approve" || action === "markPaid"
-                  ? "default"
-                  : "outline"
-              }
               disabled={pending || archived}
+              key={action}
+              onClick={() => begin(action)}
               ref={(button) => {
                 if (button && returnFocus.current === action) {
                   returnFocus.current = null;
                   button.focus();
                 }
               }}
-              onClick={() => begin(action)}
+              size="lg"
+              type="button"
+              variant={
+                action === "approve" || action === "markPaid"
+                  ? "default"
+                  : "outline"
+              }
             >
               {t(`actions.${action}`)}
             </Button>
@@ -221,76 +240,85 @@ export function ClaimDecisionPanel({
           <ArchivedActionExplanation />
         )}
         {canReview && confirming && (
-          <Alert>
+          <Alert role="alert" variant="info">
             <AlertDescription ref={focusConfirmation} tabIndex={-1}>
               {confirming === "markPaid"
                 ? t("confirmTransfer", { amount: reimbursementAmountEur ?? "" })
                 : confirming === "reopen"
                   ? t("confirmReopen")
                   : confirming === "approve"
-                    ? t("confirmApproval")
+                    ? t("confirmApproval", {
+                        amount:
+                          reimbursementAmountEur === null
+                            ? ""
+                            : format.number(Number(reimbursementAmountEur), {
+                                style: "currency",
+                                currency: "EUR",
+                              }),
+                      })
                     : confirming === "correctPayment"
                       ? t("confirmPaymentCorrection")
                       : t(`actions.${confirming}`)}
-              {reasonAction && (
-                <div>
-                  <Label htmlFor="decision-reason">
-                    {t(`reasons.${reasonAction}`)}
-                  </Label>
-                  <textarea
-                    id="decision-reason"
-                    data-testid={`claim-decision-reason-${confirming}`}
-                    className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                    maxLength={MAX_CLAIM_REASON_LENGTH}
-                    readOnly={pending}
-                    required
-                    aria-invalid={Boolean(form.formState.errors.reason)}
-                    aria-describedby={
-                      form.formState.errors.reason
-                        ? "decision-reason-error"
-                        : undefined
-                    }
-                    {...form.register("reason", {
-                      onChange: () => form.clearErrors("reason"),
-                      onBlur: () => {
-                        if (
-                          reasonAction === "correctPayment" &&
-                          !form.getValues("reason").trim()
-                        )
-                          form.setError("reason", {
-                            type: "required",
-                            message: "reasonInvalid",
-                          });
-                      },
-                    })}
-                  />
-                  {form.formState.errors.reason && (
-                    <p id="decision-reason-error" role="alert">
-                      <ReasonFieldError />
-                    </p>
-                  )}
-                </div>
-              )}
             </AlertDescription>
-            <div className="flex flex-wrap gap-2">
+            {reasonAction && (
+              <Field
+                className="mt-4"
+                data-invalid={Boolean(form.formState.errors.reason)}
+              >
+                <FieldLabel htmlFor="decision-reason">
+                  {t(`reasons.${reasonAction}`)}
+                </FieldLabel>
+                <Textarea
+                  aria-describedby={
+                    form.formState.errors.reason
+                      ? "decision-reason-error"
+                      : undefined
+                  }
+                  aria-invalid={Boolean(form.formState.errors.reason)}
+                  data-testid={`claim-decision-reason-${confirming}`}
+                  id="decision-reason"
+                  maxLength={MAX_CLAIM_REASON_LENGTH}
+                  readOnly={pending}
+                  required
+                  {...form.register("reason", {
+                    onChange: () => form.clearErrors("reason"),
+                    onBlur: () => {
+                      if (
+                        reasonAction === "correctPayment" &&
+                        !form.getValues("reason").trim()
+                      )
+                        form.setError("reason", {
+                          type: "required",
+                          message: "reasonInvalid",
+                        });
+                    },
+                  })}
+                />
+                {form.formState.errors.reason && (
+                  <p id="decision-reason-error" role="alert">
+                    <ReasonFieldError />
+                  </p>
+                )}
+              </Field>
+            )}
+            <div className="mt-4 flex flex-col gap-2">
               <Button
-                className="h-auto min-h-12 max-w-full whitespace-normal"
-                variant="default"
+                data-testid={`claim-decision-confirm-${confirming}`}
+                disabled={confirmDisabled}
+                onClick={() => void execute()}
                 size="lg"
                 type="button"
-                disabled={confirmDisabled}
-                data-testid={`claim-decision-confirm-${confirming}`}
-                onClick={() => void execute()}
+                variant="default"
               >
                 {t(`actions.${confirming}`)}
               </Button>
               <Button
-                size="lg"
-                type="button"
-                variant="outline"
                 data-testid="claim-decision-cancel"
                 disabled={pending}
                 onClick={cancel}
+                size="lg"
+                type="button"
+                variant="outline"
               >
                 {t("cancel")}
               </Button>
@@ -314,110 +342,165 @@ export function ClaimReviewDetails({
 }: {
   details: ReviewDetails;
   partnershipId: string;
-  status?: Claim["status"];
+  status?: ClaimStatus | null;
 }) {
   const t = useTranslations("claims.review");
-  const amountLabel = reimbursementLabel(status);
+  const format = useFormatter();
+  const totalParticipants = new Set(
+    details.entries.flatMap((entry) =>
+      entry.allocations.map((share) => share.participantId),
+    ),
+  ).size;
 
   return (
-    <Card variant="document">
+    <Card>
       <CardHeader>
         <CardTitle as="h2">{t("detailsTitle")}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {details.payoutAccount ? (
-          <PayoutAccountLines account={details.payoutAccount} />
-        ) : (
-          <p>{t("noPayoutAccount")}</p>
-        )}
-        {amountLabel && (
-          <p>
-            {t(amountLabel)}{" "}
-            <span
-              className="font-mono tabular-nums"
-              data-testid="review-approved-reimbursement"
-              data-amount-eur={details.reimbursementAmountEur}
-            >
-              {details.reimbursementAmountEur} {t("currencyEur")}
-            </span>
-          </p>
-        )}
-        <h3 className="text-xl">{t("costsAndDocuments")}</h3>
-        {details.entries.length === 0 ? (
-          <p>{t("noCosts")}</p>
-        ) : (
-          <ClaimCostTable
-            rows={details.entries.map((entry) => ({
-              id: entry.id,
-              transportProfile: entry.transportProfile,
-              amountEur: entry.amountEur,
-              allocationMethod: entry.allocationMethod,
-              allocations: (
-                <ul className="space-y-2">
-                  {entry.allocations.map((share) => (
-                    <li
-                      data-testid={`allocation-share-${share.participantId}`}
-                      key={share.participantId}
-                    >
-                      {share.participantName}:{" "}
-                      <span className="font-mono tabular-nums">
-                        {share.amountEur
-                          ? `${share.amountEur} ${t("currencyEur")}`
-                          : share.percentage
-                            ? `${share.percentage}%`
-                            : t("equalShare")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ),
-              documents: entry.documents.length ? (
-                <ul className="space-y-3">
-                  {entry.documents.map((document) => (
-                    <li key={document.id}>
-                      <p>
-                        {t("proofDocument")} {document.originalFileName}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {document.mediaType},{" "}
-                        <span className="font-mono">{document.byteSize}</span>{" "}
-                        {t("bytes")}
-                      </p>
-                      <a
-                        href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
-                        download
-                        data-testid={`download-proof-${document.id}`}
-                      >
-                        {t("download")} {document.originalFileName}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                "None"
-              ),
-            }))}
-          />
-        )}
-        <h3>{t("journeysTitle")}</h3>
-        {details.journeys.length === 0 ? (
-          <p>{t("noJourneys")}</p>
-        ) : (
-          <ul>
-            {details.journeys.map((journey) => (
-              <li
-                data-testid={`review-journey-${journey.participantId}`}
-                data-trip-type={journey.tripType}
-                data-distance-km={journey.erasmusDistanceKm}
-                key={journey.participantId}
-              >
-                {journey.participantName}: {journey.origin} →{" "}
-                {journey.destination} · {journey.tripType} ·{" "}
-                {journey.erasmusDistanceKm} {t("km")}
-              </li>
-            ))}
-          </ul>
-        )}
+      <CardContent className="space-y-6">
+        <section aria-label={t("payoutTitle")}>
+          <h3 className="text-sm font-medium">{t("payoutTitle")}</h3>
+          {details.payoutAccount ? (
+            <div className="mt-3 rounded-xl bg-muted/50 p-4">
+              <PayoutAccountLines account={details.payoutAccount} />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("noPayoutAccount")}
+            </p>
+          )}
+        </section>
+        <div className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/50 px-4 py-3">
+          <span
+            className="text-sm text-muted-foreground"
+            data-message={
+              reimbursementLabel(status ?? undefined) ?? "lastSubmittedAmount"
+            }
+          >
+            {t(reimbursementLabel(status ?? undefined) ?? "lastSubmittedAmount")}
+          </span>
+          <span
+            className="font-mono text-lg tabular-nums"
+            data-amount-eur={details.reimbursementAmountEur}
+            data-testid="review-approved-reimbursement"
+          >
+            {format.number(Number(details.reimbursementAmountEur), {
+              style: "currency",
+              currency: "EUR",
+            })}
+          </span>
+        </div>
+        <section aria-label={t("costsAndDocuments")}>
+          <h3 className="text-sm font-medium">{t("costsAndDocuments")}</h3>
+          {details.entries.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t("noCosts")}</p>
+          ) : (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+              <ClaimCostRecords
+                rows={details.entries.map((entry) => ({
+                  id: entry.id,
+                  transportProfile: entry.transportProfile,
+                  amountEur: entry.amountEur,
+                  participants: entry.allocations.length,
+                  receipts: entry.documents.length,
+                  allocation: entry.allocationMethod as
+                    | "equal"
+                    | "amount"
+                    | "percentage",
+                  allocationDetail:
+                    entry.allocationMethod === "equal"
+                      ? undefined
+                      : t(
+                          entry.allocationMethod === "amount"
+                            ? "allocationAmount"
+                            : "allocationPercentage",
+                        ),
+                  allocations: (
+                    <ul className="space-y-1">
+                      {entry.allocations.map((share) => (
+                        <li
+                          data-testid={`allocation-share-${share.participantId}`}
+                          key={share.participantId}
+                        >
+                          {share.participantName}:{" "}
+                          <span className="font-mono tabular-nums">
+                            {share.amountEur
+                              ? format.number(Number(share.amountEur), {
+                                  style: "currency",
+                                  currency: "EUR",
+                                })
+                              : share.percentage
+                                ? `${share.percentage}%`
+                                : t("equalShare")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ),
+                  documents:
+                    entry.documents.length > 0 ? (
+                      <ul className="space-y-1">
+                        {entry.documents.map((document) => (
+                          <li key={document.id}>
+                            <a
+                              className="link-prose"
+                              data-testid={`download-proof-${document.id}`}
+                              download
+                              href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
+                            >
+                              {document.originalFileName}
+                            </a>
+                            <span className="ml-2 text-xs">
+                              {document.mediaType},{" "}
+                              <span className="font-mono">
+                                {document.byteSize}
+                              </span>{" "}
+                              {t("bytes")}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : undefined,
+                }))}
+                testId="claim-cost-table"
+                total={{
+                  amountEur: details.reimbursementAmountEur,
+                  participants: totalParticipants,
+                }}
+              />
+            </div>
+          )}
+        </section>
+        <section aria-label={t("journeysTitle")}>
+          <h3 className="text-sm font-medium">{t("journeysTitle")}</h3>
+          {details.journeys.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("noJourneys")}
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-card">
+              {details.journeys.map((journey) => (
+                <li
+                  className="px-4 py-3"
+                  data-distance-km={journey.erasmusDistanceKm}
+                  data-testid={`review-journey-${journey.participantId}`}
+                  data-trip-type={journey.tripType}
+                  key={journey.participantId}
+                >
+                  <p className="text-sm font-medium">{journey.participantName}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {journey.origin} → {journey.destination} · {journey.tripType}{" "}
+                    ·{" "}
+                    <span className="font-mono tabular-nums">
+                      {journey.erasmusDistanceKm}
+                    </span>{" "}
+                    {t("km")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </CardContent>
     </Card>
   );
@@ -426,11 +509,8 @@ export function ClaimReviewDetails({
 export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   const t = useTranslations("claims.review");
   const client = useQueryClient();
-  const { data: session } = authClient.useSession();
-  const { data: organization } = authClient.useActiveOrganization();
-  const role = organization?.members.find(
-    (entry) => entry.userId === session?.user.id,
-  )?.role;
+  const context = useReadyOrganizationContext();
+  const role = context?.role;
   const mayReview =
     Boolean(role) &&
     authClient.organization.checkRolePermission({
@@ -452,6 +532,18 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   const history = historyQuery.data;
   const reviewer = reviewerQuery.data;
   const details = detailsQuery.data;
+  const project = useSuspenseQuery(
+    orpcQuery.projects.get.queryOptions({
+      input: { projectId: details.projectId },
+      meta: { costTrackerORPC: true },
+    }),
+  ).data;
+  const submittedAt =
+    history.findLast(
+      (event) =>
+        event.eventType === "submitted" || event.eventType === "resubmitted",
+    )?.occurredAt ?? null;
+
   async function decide(action: Decision, data: DecisionInput) {
     switch (action) {
       case "requestCorrection":
@@ -495,42 +587,58 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
         client.invalidateQueries({ queryKey: query.key({ type: "query" }) }),
       ),
     );
+    toast.add({ title: t(`toast.${action}`), type: "success" });
   }
+
   return (
     <section
       aria-label={t("sectionLabel")}
+      className="min-w-0 space-y-6"
       data-testid="claim-review"
-      className="min-w-0 space-y-5"
     >
-      <div className="min-w-0">
-        <ClaimBand title={t("bandTitle")} status={claim?.status} />
-        <div className="min-w-0 border border-t-0 bg-card">
-          <div className="grid min-w-0 min-[961px]:grid-cols-[minmax(0,1fr)_340px]">
-            <aside
-              aria-label={t("decisionLabel")}
-              className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
-            >
-              {!claim ? (
-                <p>{t("noClaim")}</p>
-              ) : (
-                <ClaimDecisionPanel
-                  partnershipId={partnershipId}
-                  status={claim.status}
-                  reimbursementAmountEur={claim.reimbursementAmountEur}
-                  canReview={mayReview && reviewer.canReview}
-                  archived={reviewer.projectArchived}
-                  onDecision={decide}
-                />
+      <ClaimSummary
+        amount={claim?.reimbursementAmountEur ?? details.reimbursementAmountEur}
+        amountLabel={t(
+          reimbursementLabel(claim?.status) ?? "lastSubmittedAmount",
+        )}
+        hostingOrganization={details.hostingOrganizationName}
+        partnerOrganization={details.organizationName}
+        payoutAccount={details.payoutAccount}
+        project={project}
+        status={claim?.status ?? null}
+        submitted={Boolean(claim && claim.status !== "in_preparation")}
+        submittedAt={submittedAt}
+      />
+      <div className="grid gap-6 @4xl/content:grid-cols-[minmax(0,1fr)_22rem]">
+        <aside className="order-1 min-w-0 @4xl/content:sticky @4xl/content:top-6 @4xl/content:col-start-2 @4xl/content:row-start-1 @4xl/content:self-start">
+          {!claim ? (
+            <Card>
+              <CardContent>{t("noClaim")}</CardContent>
+            </Card>
+          ) : (
+            <ClaimDecisionPanel
+              archived={reviewer.projectArchived}
+              canReview={Boolean(
+                mayReview &&
+                !reviewerQuery.isFetching &&
+                !reviewerQuery.isError &&
+                reviewer.canReview &&
+                reviewer.userId === context?.userId &&
+                reviewer.activeOrganizationId === context?.organizationId,
               )}
-            </aside>
-            <div className="min-w-0 min-[961px]:col-start-1 min-[961px]:row-start-1">
-              <ClaimReviewDetails
-                details={details}
-                partnershipId={partnershipId}
-                status={claim?.status}
-              />
-            </div>
-          </div>
+              onDecision={decide}
+              partnershipId={partnershipId}
+              reimbursementAmountEur={claim.reimbursementAmountEur}
+              status={claim.status}
+            />
+          )}
+        </aside>
+        <div className="order-2 min-w-0 space-y-6 @4xl/content:col-start-1 @4xl/content:row-start-1">
+          <ClaimReviewDetails
+            details={details}
+            partnershipId={partnershipId}
+            status={claim?.status}
+          />
           <ClaimHistory events={history} />
         </div>
       </div>

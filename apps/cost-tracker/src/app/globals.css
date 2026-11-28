@@ -102,7 +102,7 @@
   --primary-foreground: #1c1200;
   --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
-  --muted: rgb(255 255 255 / 0.04);
+  --muted: rgb(255 255 255 / 0.07);
   --muted-foreground: #9dacc9;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
@@ -155,7 +155,7 @@
   --primary-foreground: #1c1200;
   --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
-  --muted: rgb(255 255 255 / 0.04);
+  --muted: rgb(255 255 255 / 0.07);
   --muted-foreground: #b8a9d4;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
@@ -208,7 +208,7 @@
   --primary-foreground: #1c1200;
   --secondary: rgb(255 255 255 / 0.09);
   --secondary-foreground: #f7f2e9;
-  --muted: rgb(255 255 255 / 0.04);
+  --muted: rgb(255 255 255 / 0.12);
   --muted-foreground: #98a0b8;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
@@ -477,5 +477,90 @@
 @layer utilities {
   [data-slot="sidebar"][data-mobile="true"] {
     height: 100dvh;
+  }
+}
+
+/* ── View transitions ──────────────────────────────────────────────────
+   One route boundary, enter-only. A streaming app replaces the outgoing page
+   with a loading boundary in the same commit, so animating the exit would
+   move a page that is already gone. Untyped arrivals stay silent; only a
+   typed navigation with ready destination content slides the new page in.
+
+   `::view-transition-*` hangs off the document's transition pseudo-tree, not
+   off the element carrying the class, so these rules cannot be Tailwind
+   utilities. Element names come from `src/lib/view-transitions.ts`. */
+@theme {
+  --vt-duration-route: 220ms;
+}
+
+@keyframes vt-route-in-right {
+  from {
+    translate: 24px;
+    opacity: 0.7;
+  }
+  to {
+    translate: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes vt-route-in-left {
+  from {
+    translate: -24px;
+    opacity: 0.7;
+  }
+  to {
+    translate: 0;
+    opacity: 1;
+  }
+}
+
+/* Live root: unnamed content swaps instantly, so skeleton handoffs never
+   crossfade the whole document. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* The outgoing named page is hidden at once; it was either replaced by a
+   skeleton or by the incoming page in the same transition. */
+::view-transition-old(.vt-nav-forward),
+::view-transition-old(.vt-nav-back) {
+  display: none;
+}
+::view-transition-new(.vt-nav-forward) {
+  animation: var(--vt-duration-route) ease-out both vt-route-in-right;
+}
+::view-transition-new(.vt-nav-back) {
+  animation: var(--vt-duration-route) ease-out both vt-route-in-left;
+}
+
+/* Persistent chrome: named, pinned, layered above page content. */
+::view-transition-group(app-header),
+::view-transition-group(app-sidebar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-group(app-toast) {
+  animation: none;
+  z-index: 200;
+}
+::view-transition-old(app-header),
+::view-transition-new(app-header),
+::view-transition-old(app-sidebar),
+::view-transition-new(app-sidebar),
+::view-transition-old(app-toast),
+::view-transition-new(app-toast) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

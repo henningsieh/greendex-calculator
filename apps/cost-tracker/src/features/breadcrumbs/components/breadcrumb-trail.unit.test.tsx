@@ -19,7 +19,7 @@ vi.stubGlobal(
     }) satisfies Partial<MediaQueryList>,
 );
 
-it("links earlier crumbs to their destinations and leaves the current page unlinked", () => {
+it("links the register and renders entity and current crumbs without destinations", () => {
   const { container } = render(
     <SidebarProvider>
       <BreadcrumbTrail
@@ -32,7 +32,6 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
           },
           {
             label: "Partnership",
-            href: "/partnerships/partnership-1",
           },
         ]}
       />
@@ -44,7 +43,7 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
     within(navigation)
       .getAllByRole("link")
       .map((link) => link.getAttribute("href")),
-  ).toEqual(["/en-GB/projects", "/en-GB/partnerships/partnership-1", null]);
+  ).toEqual(["/en-GB/projects", null]);
   expect(within(navigation).getByTestId("back-to-projects")).toHaveAttribute(
     "href",
     "/en-GB/projects",

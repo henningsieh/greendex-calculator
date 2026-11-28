@@ -1,11 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { connection } from "next/server";
-import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { RouteTransition } from "@/components/view-transition-boundaries";
 import { ClaimReview } from "@/features/claims/components/claim-review";
-import { ClaimReviewLoading } from "@/features/claims/components/claim-review-loading";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -64,12 +62,23 @@ async function ClaimReviewSection({
     input: { partnershipId },
     meta: { costTrackerORPC: true },
   } as const;
+  const details = client.query(
+    orpcQuery.claims.getReviewDetails.queryOptions(options),
+  );
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
       client.query(orpcQuery.claims.getHistory.queryOptions(options)),
-      client.query(orpcQuery.claims.getReviewDetails.queryOptions(options)),
+      details,
       client.query(orpcQuery.claims.reviewerAccess.queryOptions(options)),
+      details.then((result) =>
+        client.query(
+          orpcQuery.projects.get.queryOptions({
+            input: { projectId: result.projectId },
+            meta: { costTrackerORPC: true },
+          }),
+        ),
+      ),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
@@ -86,25 +95,25 @@ export default async function ClaimReviewPage({
 }: {
   params: Promise<{ partnershipId: string }>;
 }) {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
+  const content = Promise.all([
+    ClaimReviewSection({ params }),
+    ReviewContext({ params }),
+  ]);
   const t = await getTranslations("claims.review");
+  const [section, context] = await content;
 
   return (
-    <div className="space-y-6">
-      <ProtectedPageHeader
-        description={
-          <Suspense fallback={t("contextLoading")}>
-            <ReviewContext params={params} />
-          </Suspense>
-        }
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-      />
-      <Suspense fallback={<ClaimReviewLoading />}>
-        <ClaimReviewSection params={params} />
-      </Suspense>
-    </div>
+    <RouteTransition>
+      <div className="space-y-6">
+        <ProtectedPageHeader
+          description={context}
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+        />
+        {section}
+      </div>
+    </RouteTransition>
   );
 }

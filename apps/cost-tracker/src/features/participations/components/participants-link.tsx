@@ -7,6 +7,7 @@ import {
 } from "@/app/paths";
 import { ButtonLink } from "@/components/button-link";
 import { EntityIcon } from "@/components/entity-icon";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 /**
  * Both Project and Partnership views use the same destination label. The
@@ -46,6 +47,7 @@ export function ParticipantsLink({
       }
       icon={<EntityIcon className="size-3.5 shrink-0" entity="participants" />}
       testId={testId}
+      transitionTypes={[viewTransitionType.forward]}
     >
       {t("label")}
     </ButtonLink>

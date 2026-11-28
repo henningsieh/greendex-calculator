@@ -1,19 +1,19 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { ComponentProps } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import type { ClaimStatus } from "@/features/claims/claim-lifecycle";
+import { cn } from "@/lib/utils";
 
-const variants = {
-  in_preparation: "secondary",
-  submitted: "status-attention",
-  correction_requested: "status-correction",
-  approved: "status-success",
-  rejected: "status-destructive-solid",
-  paid: "status-success-solid",
-} satisfies Record<ClaimStatus, ComponentProps<typeof Badge>["variant"]>;
+const dotClasses = {
+  approved: "bg-success",
+  correction_requested: "bg-destructive",
+  in_preparation: "bg-muted-foreground",
+  paid: "bg-success",
+  rejected: "bg-destructive",
+  submitted: "bg-brand",
+} satisfies Record<ClaimStatus, string>;
 
 export function ClaimStatusBadge({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("claims");
@@ -22,8 +22,15 @@ export function ClaimStatusBadge({ status }: { status: ClaimStatus | null }) {
       data-testid="claim-status"
       data-status={status ?? "none"}
       data-claim-status={status ?? "none"}
-      variant={status ? variants[status] : "secondary"}
+      variant="claim-state"
     >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-2 shrink-0 rounded-full",
+          status ? dotClasses[status] : "bg-muted-foreground",
+        )}
+      />
       {status === null
         ? t("workspace.noClaim")
         : status === "approved"

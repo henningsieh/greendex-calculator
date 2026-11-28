@@ -6,6 +6,7 @@ import type { ComponentProps } from "react";
 import { partnershipClaimReviewPath } from "@/app/paths";
 import { ButtonLink } from "@/components/button-link";
 import { EntityIcon } from "@/components/entity-icon";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 /**
  * Navigation into a submitted Claim's review page. Labelled with the
@@ -38,6 +39,7 @@ export function ClaimReviewLink({
       href={partnershipClaimReviewPath(partnershipId)}
       icon={<EntityIcon className="size-3.5 shrink-0" entity="claim" />}
       testId={testId}
+      transitionTypes={[viewTransitionType.forward]}
     >
       {t("claimReview")}
     </ButtonLink>

@@ -360,9 +360,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     // Functional state only: 7 items, each carrying the pass badge variant.
     // No visible copy is asserted, so rewording never breaks this.
     await expect(checklist.getByRole("listitem")).toHaveCount(7);
-    await expect(
-      checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
-    ).toHaveCount(7);
+    await expect(checklist.locator('li[data-state="passed"]')).toHaveCount(7);
     await p.getByTestId("claim-submit").dblclick();
     const confirm = p.getByTestId("claim-submit-confirm");
     await expect(confirm).toBeVisible();

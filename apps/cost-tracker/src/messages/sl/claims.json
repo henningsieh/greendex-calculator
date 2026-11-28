@@ -100,6 +100,7 @@
       "historyEmpty": "Še ni dogodkov pregleda.",
       "actor": "Izvajalec:",
       "estimatedReimbursement": "Ocenjeno povračilo:",
+      "lastSubmittedAmount": "Zadnji predloženi znesek:",
       "currencyEur": "EUR",
       "approvedAmount": "Odobreni znesek:",
       "decisionTitle": "Odločitev o pregledu",
@@ -140,13 +141,35 @@
       },
       "confirmTransfer": "Plačilo zabeležite šele, ko z enim bančnim nakazilom nakažete celoten znesek {amount} EUR. Cost Tracker ne nakazuje denarja.",
       "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
-      "confirmApproval": "Odobrite zahtevek za prikazani znesek. S tem ne nakažete denarja in ne zabeležite plačila.",
+      "confirmApproval": "Odobrite zahtevek za {amount}. S tem ne nakažete denarja in ne zabeležite plačila.",
       "confirmPaymentCorrection": "Zahtevek ostane odobren in znova velja za neplačanega. S tem ne razveljavite bančnega nakazila.",
       "equalShare": "Enak delež (izračunan ob oddaji)",
       "title": "Pregled zahtevka",
       "contextLoading": "Nalaganje konteksta",
       "contextUnavailable": "Kontekst zahtevka ni na voljo",
-      "queueEyebrow": "Delovni prostor"
+      "queueEyebrow": "Delovni prostor",
+      "payoutTitle": "Račun za izplačilo",
+      "allocationAmount": "Razdelitev po znesku",
+      "allocationPercentage": "Odstotna razdelitev",
+      "history": {
+        "submitted": "Poslano",
+        "correction_requested": "Zahtevana popravek",
+        "resubmitted": "Ponovno poslano",
+        "approved": "Odobreno",
+        "rejected": "Zavrnjeno",
+        "reopened": "Ponovno odprto",
+        "paid": "Plačano",
+        "payment_corrected": "Status plačila popravljen",
+        "journey_updated": "Potovanje popravljeno"
+      },
+      "toast": {
+        "requestCorrection": "Popravek zahtevan",
+        "approve": "Zahtevek odobren",
+        "reject": "Zahtevek zavrnjen",
+        "reopen": "Zahtevek ponovno odprt",
+        "markPaid": "Plačilo zabeleženo",
+        "correctPayment": "Zapis plačila popravljen"
+      }
     },
     "submission": {
       "title": "Oddaja",
@@ -171,7 +194,14 @@
         "payoutAccount": "Račun za izplačilo izbran",
         "entries": "Postavke potnih stroškov zabeležene",
         "proofDocuments": "Dokazilo pri vsaki postavki",
-        "journeys": "Poti udeležencev zaključene"
+        "journeys": "Poti udeležencev zaključene",
+        "entryDetails": "Prevoz, natančni stroški in razdelitve so veljavni",
+        "participations": "Zajete udeležbe pripadajo temu partnerstvu",
+        "fundingRules": "Pravila financiranja projekta so izpolnjena"
+      },
+      "toast": {
+        "submitted": "Zahtevek poslan",
+        "submitFailed": "Zahtevka ni bilo mogoče poslati"
       }
     },
     "workspace": {
@@ -240,7 +270,10 @@
         "currencyEur": "EUR",
         "linked": "Povezano:",
         "linkLabel": "Poveži dokazilo s tem stroškom",
-        "selectDocument": "Izberite dokument zahtevka"
+        "selectDocument": "Izberite dokument zahtevka",
+        "description": "Naložite in povežite potrdila za vsak potni strošek.",
+        "documentFallback": "Dokument",
+        "none": "Brez"
       },
       "payout": {
         "selected": "Izbrani račun za izplačilo:",
@@ -261,7 +294,9 @@
         "rejected": "Zavrnjeno:",
         "rejectedBody": "Ta zahtevek je zaklenjen in neizplačan. Ponovno ga lahko odpre samo osebje gostiteljske organizacije; ponovno odprtje ne odklene urejanja za partnerja.",
         "approved": "Odobreno · neizplačano. Celotno nakazilo ni bilo zabeleženo.",
-        "paid": "Izplačano. Celotno nakazilo je bilo zabeleženo ločeno od odobritve."
+        "paid": "Izplačano. Celotno nakazilo je bilo zabeleženo ločeno od odobritve.",
+        "approvedTitle": "Odobreno",
+        "paidTitle": "Plačano"
       },
       "draft": {
         "title": "Osnutek zahtevka"
@@ -284,6 +319,26 @@
         "savedClaim": "Zahtevek {status} / shranjen",
         "noClaim": "Zahtevek še ni ustvarjen. Odpiranje tega prostora ne shrani ničesar.",
         "payable": "Izračunano izplačilo: {amount} EUR (izračuna strežnik)."
+      },
+      "setup": {
+        "title": "Nastavitev zahtevka",
+        "description": "Izberite račun za izplačilo, preden ustvarite zahtevek."
+      },
+      "summary": {
+        "approvedAmount": "Odobreni znesek",
+        "estimatedAmount": "Ocenjeno povračilo",
+        "lastSubmittedAmount": "Zadnji predloženi znesek"
+      },
+      "toast": {
+        "payoutCreated": "Račun za izplačilo ustvarjen",
+        "payoutSelected": "Račun za izplačilo izbran",
+        "claimCreated": "Zahtevek ustvarjen",
+        "costSaved": "Potni strošek shranjen",
+        "journeySaved": "Potovanje udeležbe shranjeno",
+        "journeyCorrected": "Potovanje udeležbe popravljeno",
+        "proofUploaded": "Dokazilo naloženo",
+        "proofLinked": "Dokazilo povezano",
+        "actionFailed": "Dejanje ni uspelo. Poskusite znova."
       }
     },
     "link": {
@@ -296,6 +351,18 @@
       "car": "Avto",
       "electricCar": "Električni avto",
       "plane": "Letalo"
+    },
+    "summary": {
+      "title": "Pregled zahtevka",
+      "partner": "Partnerska organizacija",
+      "hosting": "Gostiteljska organizacija",
+      "schedule": "Obdobje",
+      "payout": "Račun za izplačilo",
+      "submitted": "Poslano",
+      "unknown": "Ni na voljo",
+      "notCalculated": "Še ni izračunano",
+      "noPayout": "Noben račun za izplačilo ni izbran",
+      "notSubmitted": "Še ni poslano"
     }
   }
 }

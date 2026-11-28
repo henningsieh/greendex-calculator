@@ -1,17 +1,15 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ProtectedPageSkeleton } from "@/components/protected-shell-skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
 import { SelectOrganization } from "@/features/authentication/components/select-organization";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
-import { BreadcrumbTrailFallback } from "@/features/breadcrumbs/components/breadcrumb-trail";
+import { BreadcrumbNav } from "@/features/breadcrumbs/components/breadcrumb-nav";
 import {
   canManageOrganization,
   canViewPartnerNetwork,
@@ -20,11 +18,11 @@ import { resolveStaffOrganizationContext } from "@/features/organizations/staff-
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession } from "@/lib/session";
 import { readSidebarPreference } from "@/lib/ui-preferences/server";
+import { persistentViewTransitionName } from "@/lib/view-transitions";
 
 export async function ProtectedShell({
   children,
-  breadcrumb,
-}: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
+}: Readonly<{ children: React.ReactNode }>) {
   await connection();
   const session = await getSession();
   // Redirect the shell for signed-out Users; route children execute independently.
@@ -86,7 +84,12 @@ export async function ProtectedShell({
         staffOrganizations={context.memberships}
       />
       <div className="min-h-svh w-full min-w-0 bg-muted/35">
-        <header className="border-b bg-background">
+        <header
+          className="border-b bg-background"
+          style={{
+            viewTransitionName: persistentViewTransitionName.appHeader,
+          }}
+        >
           <div className="flex items-start gap-1">
             <div className="min-w-0 flex-1">
               <AppNavigation
@@ -95,14 +98,14 @@ export async function ProtectedShell({
               />
             </div>
           </div>
-          <Suspense fallback={<BreadcrumbTrailFallback />}>{breadcrumb}</Suspense>
+          <BreadcrumbNav />
         </header>
         {/* `@container/content` makes the Project register and its filters
             respond to this content column, not the viewport. Expanding or
             collapsing the sidebar changes the column width and therefore
             switches the table to record cards (and back) on its own. */}
         <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
-          <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
+          {children}
         </main>
       </div>
     </SidebarProvider>

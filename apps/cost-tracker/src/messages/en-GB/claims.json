@@ -100,6 +100,7 @@
       "historyEmpty": "No review events yet.",
       "actor": "Actor:",
       "estimatedReimbursement": "Estimated reimbursement:",
+      "lastSubmittedAmount": "Last submitted amount:",
       "currencyEur": "EUR",
       "approvedAmount": "Approved amount:",
       "decisionTitle": "Review decision",
@@ -140,13 +141,35 @@
       },
       "confirmTransfer": "Record payment only after sending the full {amount} EUR in one bank transfer. Cost Tracker doesn’t send the money.",
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
-      "confirmApproval": "Approve the claim for the amount shown. This doesn’t send money or record a payment.",
+      "confirmApproval": "Approve the claim for {amount}. This doesn’t send money or record a payment.",
       "confirmPaymentCorrection": "This makes the claim approved but unpaid again. It doesn’t reverse the bank transfer.",
       "equalShare": "Equal share (computed on submission)",
       "title": "Claim review",
       "contextLoading": "Loading context",
       "contextUnavailable": "Claim context unavailable",
-      "queueEyebrow": "Workspace"
+      "queueEyebrow": "Workspace",
+      "payoutTitle": "Payout Account",
+      "allocationAmount": "Amount allocation",
+      "allocationPercentage": "Percentage allocation",
+      "history": {
+        "submitted": "Submitted",
+        "correction_requested": "Correction requested",
+        "resubmitted": "Resubmitted",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "reopened": "Reopened",
+        "paid": "Paid",
+        "payment_corrected": "Paid flag corrected",
+        "journey_updated": "Journey corrected"
+      },
+      "toast": {
+        "requestCorrection": "Correction requested",
+        "approve": "Claim approved",
+        "reject": "Claim rejected",
+        "reopen": "Claim reopened",
+        "markPaid": "Payment recorded",
+        "correctPayment": "Payment record corrected"
+      }
     },
     "submission": {
       "title": "Submission",
@@ -171,7 +194,14 @@
         "payoutAccount": "Payout Account selected",
         "entries": "Travel Cost Entries recorded",
         "proofDocuments": "A Proof Document on every cost",
-        "journeys": "Participant Journeys complete"
+        "journeys": "Participant Journeys complete",
+        "entryDetails": "Transport, exact costs and allocations are valid",
+        "participations": "Covered Participations belong to this Partnership",
+        "fundingRules": "Project funding rules are satisfied"
+      },
+      "toast": {
+        "submitted": "Claim submitted",
+        "submitFailed": "Claim could not be submitted"
       }
     },
     "workspace": {
@@ -240,7 +270,10 @@
         "currencyEur": "EUR",
         "linked": "Linked:",
         "linkLabel": "Link a Proof Document to this cost",
-        "selectDocument": "Select Claim document"
+        "selectDocument": "Select Claim document",
+        "description": "Upload and link the receipts that support each Travel Cost Entry.",
+        "documentFallback": "Document",
+        "none": "None"
       },
       "payout": {
         "selected": "Selected Payout Account:",
@@ -261,7 +294,9 @@
         "rejected": "Rejected:",
         "rejectedBody": "This Claim is locked and unpaid. Only Hosting staff may reopen it; reopening does not unlock Partner edits.",
         "approved": "Approved · unpaid. The full transfer has not been recorded.",
-        "paid": "Paid. The full transfer was recorded separately from approval."
+        "paid": "Paid. The full transfer was recorded separately from approval.",
+        "approvedTitle": "Approved",
+        "paidTitle": "Paid"
       },
       "draft": {
         "title": "Claim draft"
@@ -284,6 +319,26 @@
         "savedClaim": "Claim {status} / saved",
         "noClaim": "No Claim has been created. Opening this workspace saves nothing.",
         "payable": "Calculated payable: {amount} EUR (computed by the server)."
+      },
+      "setup": {
+        "title": "Claim setup",
+        "description": "Choose the Payout Account before creating the Claim."
+      },
+      "summary": {
+        "approvedAmount": "Approved amount",
+        "estimatedAmount": "Estimated reimbursement",
+        "lastSubmittedAmount": "Last submitted amount"
+      },
+      "toast": {
+        "payoutCreated": "Payout Account created",
+        "payoutSelected": "Payout Account selected",
+        "claimCreated": "Claim created",
+        "costSaved": "Travel Cost Entry saved",
+        "journeySaved": "Participant Journey saved",
+        "journeyCorrected": "Participant Journey corrected",
+        "proofUploaded": "Proof Document uploaded",
+        "proofLinked": "Proof Document linked",
+        "actionFailed": "Action failed. Please try again."
       }
     },
     "link": {
@@ -296,6 +351,18 @@
       "car": "Car",
       "electricCar": "Electric car",
       "plane": "Plane"
+    },
+    "summary": {
+      "title": "Claim overview",
+      "partner": "Partner Organization",
+      "hosting": "Hosting Organization",
+      "schedule": "Schedule",
+      "payout": "Payout Account",
+      "submitted": "Submitted",
+      "unknown": "Not available",
+      "notCalculated": "Not calculated yet",
+      "noPayout": "No Payout Account selected",
+      "notSubmitted": "Not submitted yet"
     }
   }
 }

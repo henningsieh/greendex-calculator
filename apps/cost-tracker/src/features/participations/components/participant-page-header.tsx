@@ -1,9 +1,12 @@
 import { getTranslations } from "@greendex/i18n/server";
 
+import { partnershipParticipantsPath } from "@/app/paths";
+import { ButtonLink } from "@/components/button-link";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
+import { viewTransitionType } from "@/lib/view-transitions";
 
 export async function ParticipantPageHeader({
   params,
@@ -23,13 +26,6 @@ export async function ParticipantPageHeader({
         }),
       );
       participantName = data?.participation.displayName;
-    } else {
-      await client.query(
-        orpcQuery.participations.listPartnership.queryOptions({
-          input: { partnershipId },
-          meta: { costTrackerORPC: true },
-        }),
-      );
     }
   } catch (error) {
     // Presentation refusal, not a data failure: the shell already renders its
@@ -48,6 +44,17 @@ export async function ParticipantPageHeader({
           ? "participantDetailsDescription"
           : "coordinateDescription",
       )}
+      rightButton={
+        participantName !== undefined ? (
+          <ButtonLink
+            href={partnershipParticipantsPath(partnershipId)}
+            testId="back-to-participations"
+            transitionTypes={[viewTransitionType.back]}
+          >
+            {t("projectParticipations")}
+          </ButtonLink>
+        ) : undefined
+      }
     />
   );
 }

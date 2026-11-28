@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { ChevronDownIcon, LinkIcon, MailPlusIcon } from "lucide-react";
+import { ChevronDownIcon, LinkIcon, MailPlusIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -66,8 +66,8 @@ export function PartnershipActions({
             />
           }
         >
-          <MailPlusIcon aria-hidden="true" />
-          {t("setup.invitePartner")}
+          <PlusIcon aria-hidden="true" />
+          {t("setup.addPartner")}
           <ChevronDownIcon aria-hidden="true" />
         </DropdownMenuTrigger>
         {/* max-content width: both options stay on one line each. */}

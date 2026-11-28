@@ -495,6 +495,7 @@ describe("Project-scope participant entry authorization", () => {
       await client.participations.listPartnership({ partnershipId: partnership })
     ).entryContext;
     expect(context).toEqual({
+      userId: owner,
       partnerOrganizationId: partner,
       hostOrganizationId: host,
       assignedCoordinator: false,

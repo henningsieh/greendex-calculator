@@ -6,20 +6,21 @@ authoritative agent convention, see
 
 ## Verdict
 
-All ten protected routes that server-prefetch TanStack Query data render
-an authorized page shell, then await their prefetch in an async child beneath
-an **inner Suspense boundary**. They use matching hydrated query options and
-an initial-query error boundary. Route-level `loading.tsx` remains the
-navigation fallback. Cache Components is enabled, with deliberate request-bound
-authentication gates matching Calculator. Claim and Project Partnership surfaces
-use feature-owned card/document skeletons in both inner and navigation boundaries.
-The Project detail's real title depends on fetched data,
-so its static shell shows a section label instead. Page/layout authorization
-still precedes the shell, and navigating away can still cancel the RSC stream.
+Protected routes that prefetch TanStack Query data hydrate matching client
+queries and use an initial-query error boundary. The Claim workspace and
+review await their header and document data before committing the route.
+Other protected pages can stream slower body sections within their own
+boundaries. No protected page uses a route-level `loading.tsx`.
+
+Cache Components stays enabled. Request-bound protected routes explicitly
+opt out of instant navigation validation so their real headings can arrive
+with the route. Authorization still precedes protected data reads. Navigating
+away can cancel an RSC response.
 
 ## Inventory
 
-All ten protected routes that prefetch into `HydrateClient`:
+The ten protected routes that prefetch into `HydrateClient` are listed below.
+The boundary column records the original audit, not the current opt-out design.
 
 | Route                                               | Initial queries                                     | Boundary                | Consumer              |
 | --------------------------------------------------- | --------------------------------------------------- | ----------------------- | --------------------- |
@@ -254,8 +255,8 @@ per-route `prefetch = 'partial'` export was needed because the audit found zero
 legacy `prefetch={true}` Links and every protected destination already carries
 a static shell with URL data behind Suspense. Adopted via the flag: `/`, all
 protected data pages, and `/user-settings`. Excluded from instant validation
-via retained `instant = false`: `/login`, `/register`, and the five
-onboarding/recipient entry pages inventoried above. No route carries
+via `instant = false`: `/login`, `/register`, the five onboarding/recipient
+entry pages, and protected data pages including `/user-settings`. No route carries
 `prefetch = 'force-disabled'`.
 
 ### Redirect correctness

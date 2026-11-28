@@ -210,7 +210,11 @@ One radius base (10px, `--radius: 0.625rem`) scales the whole system: 6 / 8 / 10
 
 - **Character:** whispered metadata — 10px semibold uppercase micro-labels by default.
 - **Ember Pill:** the exception that proves the rule — pill-shaped, gold-bordered, glass-edged, for brand seals (e.g. theme names). Text follows the theme foreground.
-- **Claim Status:** sentence-case, wrapping, large — status must read as a sentence, never as a stamp.
+- **Claim Status:** sentence-case, wrapping, large — status must read as a sentence, never as a stamp. The light document chip (`claim-state`) carries a semantic dot and neutral text; dense registers keep the compact status variants.
+
+### Alerts
+
+- **Character:** one leading rule, sentence-case copy, and a semantic tint — never a shout. `info` guides, `success` confirms approved or paid state, `destructive` marks rejected or blocked state; all use the same box and rule geometry.
 
 ### Inputs / Fields
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -16,9 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
+import {
+  organizationSwitchKey,
+  reloadOrganizationPage,
+} from "@/features/organizations/organization-switch";
 import type { OrganizationMembershipSummary } from "@/features/organizations/staff-eligibility";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "@/lib/i18n/routing";
 
 interface OrganizationSwitcherProps {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
@@ -33,38 +36,43 @@ interface OrganizationSwitcherProps {
 /**
  * The single staff Organization switcher (ADR-0015). Lists only the
  * caller's Memberships with the current Organization explicit, and switches
- * through the supported Better Auth active-Organization API. Switching
- * invalidates Organization-scoped UI data and refreshes the shell so stale
- * data or capabilities can neither authorize nor leak; the server
- * re-authorizes every request regardless.
+ * through the Better Auth active-Organization API. A successful switch
+ * creates a fresh document and cache under the new Organization.
  */
 export function OrganizationSwitcher({
   organizations,
   activeOrganizationId,
   layout = "header",
 }: OrganizationSwitcherProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("organizations.switcher");
-  const [pendingId, setPendingId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const mutation = useMutation({
+    mutationKey: organizationSwitchKey,
+    mutationFn: async (organizationId: string) => {
+      const result = await authClient.organization.setActive({ organizationId });
+      if (result.error) throw result.error;
+    },
+  });
+  const pendingId =
+    mutation.isPending || mutation.isSuccess ? mutation.variables : null;
   const active = organizations.find(
     (organization) => organization.id === activeOrganizationId,
   );
 
   async function switchOrganization(organizationId: string) {
-    if (organizationId === activeOrganizationId || pendingId !== null) return;
-    setPendingId(organizationId);
+    if (
+      organizationId === activeOrganizationId ||
+      queryClient.isMutating({ mutationKey: organizationSwitchKey }) > 0
+    )
+      return;
     setFailed(false);
 
     try {
-      await authClient.organization.setActive({ organizationId });
-      await queryClient.invalidateQueries();
-      router.refresh();
+      await mutation.mutateAsync(organizationId);
+      reloadOrganizationPage();
     } catch {
       setFailed(true);
-    } finally {
-      setPendingId(null);
     }
   }
 

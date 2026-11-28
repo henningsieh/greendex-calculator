@@ -14,6 +14,11 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 const access = vi.hoisted(() => ({
   role: "coordinator",
   canReview: true,
+  pending: false,
+  refetching: false,
+  error: false,
+  hintOrganization: "host",
+  status: "submitted" as "submitted" | "rejected" | "correction_requested",
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock("@/components/ui/toast", () => ({ toast: { add: toastAdd } }));
@@ -24,22 +29,43 @@ vi.mock("@/lib/auth-client", async (importOriginal) => {
     authClient: {
       ...authClient,
       organization: authClient.organization,
-      useSession: () => ({ data: { user: { id: "reviewer" } } }),
+      useSession: () => ({
+        data: {
+          user: { id: "reviewer" },
+          session: { activeOrganizationId: "host" },
+        },
+        isPending: access.pending,
+        isRefetching: access.refetching,
+        error: access.error,
+      }),
       useActiveOrganization: () => ({
-        data: { members: [{ userId: "reviewer", role: access.role }] },
+        data: {
+          id: "host",
+          members: [{ userId: "reviewer", role: access.role }],
+        },
       }),
     },
   };
 });
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-query")>()),
+  useMutationState: () => [],
   useQueryClient: () => ({}),
   useSuspenseQueries: () => [
-    { data: { status: "submitted", reimbursementAmountEur: "726.00" } },
+    { data: { status: access.status, reimbursementAmountEur: "726.00" } },
     { data: [] },
-    { data: { canReview: access.canReview } },
     {
       data: {
+        canReview: access.canReview,
+        userId: "reviewer",
+        activeOrganizationId: access.hintOrganization,
+      },
+    },
+    {
+      data: {
+        projectId: "project-1",
+        projectName: "Workshop",
+        organizationName: "Partner Organization",
         entries: [],
         journeys: [],
         payoutAccount: null,
@@ -47,11 +73,29 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
       },
     },
   ],
+  useSuspenseQuery: () => ({
+    data: {
+      id: "project-1",
+      name: "Workshop",
+      location: "Berlin",
+      country: "DE",
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-12-31"),
+      archived: false,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    },
+  }),
 }));
 beforeEach(() => {
   toastAdd.mockClear();
   access.role = "coordinator";
   access.canReview = true;
+  access.pending = false;
+  access.refetching = false;
+  access.error = false;
+  access.hintOrganization = "host";
+  access.status = "submitted";
 });
 
 const history = [
@@ -192,15 +236,42 @@ describe("Claim decisions", () => {
     render(<ClaimReview partnershipId="partner" />);
     expect(screen.queryByTestId("claim-decision-approve")).toBeNull();
   });
+  it.each(["pending", "refetching", "error"] as const)(
+    "hides controls when session is %s",
+    (state) => {
+      access[state] = true;
+      render(<ClaimReview partnershipId="partner" />);
+      expect(screen.queryByTestId("claim-decision-approve")).toBeNull();
+    },
+  );
+  it("hides controls for a stale Organization hint", () => {
+    access.hintOrganization = "previous-host";
+    render(<ClaimReview partnershipId="partner" />);
+    expect(screen.queryByTestId("claim-decision-approve")).toBeNull();
+  });
+  it.each(["rejected", "correction_requested"] as const)(
+    "labels retained review details for %s as previously submitted",
+    (status) => {
+      access.status = status;
+      const { container } = render(<ClaimReview partnershipId="partner" />);
+      expect(
+        container.querySelector('[data-message="lastSubmittedAmount"]'),
+      ).toBeInTheDocument();
+      expect(
+        container.querySelector('[data-message="estimatedReimbursement"]'),
+      ).toBeNull();
+    },
+  );
 
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
     render(
       <ClaimReviewDetails
-        status="submitted"
         partnershipId="partner"
         details={{
+          projectId: "project-1",
           projectName: "Workshop",
           organizationName: "Partner Organization",
+          hostingOrganizationName: "Host Organization",
           reimbursementAmountEur: "726.00",
           payoutAccount: { accountHolder: "Partner", iban: "DE123", bic: null },
           entries: [
@@ -245,13 +316,9 @@ describe("Claim decisions", () => {
     const costRow = document.querySelector("#cost-cost");
     expect(costRow).toHaveAttribute("data-transport-profile", "train");
     expect(costRow).toHaveAttribute("data-amount-eur", "800.00");
-    expect(costRow?.querySelectorAll("td")).toHaveLength(4);
-    expect(screen.getByTestId("allocation-share-person")).toBeInTheDocument();
     expect(
-      screen
-        .getByTestId("claim-cost-table")
-        .closest('[data-slot="table-container"]'),
-    ).toHaveAttribute("tabindex", "0");
+      costRow?.querySelector('[data-testid="allocation-share-person"]'),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("download-proof-proof")).toHaveAttribute(
       "href",
       "/api/proof-documents?partnershipId=partner&documentId=proof",
@@ -359,6 +426,7 @@ describe("Claim decisions", () => {
     expect(screen.queryByTestId("approved-reimbursement")).toBeNull();
     expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
     await userEvent.click(screen.getByTestId("claim-decision-approve"));
+    expect(screen.getByRole("alert")).toBeVisible();
     expect(onDecision).not.toHaveBeenCalled();
     await userEvent.click(screen.getByTestId("claim-decision-confirm-approve"));
     expect(onDecision).toHaveBeenCalledWith("approve", {
