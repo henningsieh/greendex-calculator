@@ -2,7 +2,13 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  SectionTabs,
+  SectionTabsList,
+  SectionTabsRow,
+  SectionTabsTrigger,
+  SectionTabsWrapper,
+} from "@/components/section-tabs";
 import { ProjectListMetricsLoading } from "@/features/projects/components/project-list-metrics-loading";
 
 /**
@@ -22,25 +28,27 @@ export function ProjectScopeTabsLoading({
 }) {
   const t = useTranslations("projects.list");
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-      <Tabs defaultValue="hosted">
-        <TabsList variant="line" aria-hidden="true">
-          {(["hosted", "partner"] as const).map((scope) => (
-            /* Same inline-flex wrapper the resolved tabs get from their
-               TooltipTrigger; it gives the trigger an auto height, so the
-               padding box overflows the 40px list exactly like the real one. */
-            <span className="inline-flex" key={scope}>
-              <TabsTrigger variant="line-base" value={scope} disabled>
-                <span className="relative">
-                  <span className="invisible">{t(scope)}</span>
-                  <span className="absolute inset-0 animate-pulse rounded-sm bg-muted" />
-                </span>
-              </TabsTrigger>
-            </span>
-          ))}
-        </TabsList>
-      </Tabs>
-      {showMetrics ? <ProjectListMetricsLoading /> : null}
-    </div>
+    <SectionTabsWrapper>
+      <SectionTabsRow>
+        <SectionTabs defaultValue="hosted">
+          <SectionTabsList aria-hidden="true">
+            {(["hosted", "partner"] as const).map((scope) => (
+              /* Same inline-flex wrapper the resolved tabs get from their
+                 TooltipTrigger; it keeps the skeleton trigger the same auto
+                 height as the real one. */
+              <span className="inline-flex" key={scope}>
+                <SectionTabsTrigger value={scope} disabled>
+                  <span className="relative">
+                    <span className="invisible">{t(scope)}</span>
+                    <span className="absolute inset-0 animate-pulse rounded-sm bg-muted" />
+                  </span>
+                </SectionTabsTrigger>
+              </span>
+            ))}
+          </SectionTabsList>
+        </SectionTabs>
+        {showMetrics ? <ProjectListMetricsLoading /> : null}
+      </SectionTabsRow>
+    </SectionTabsWrapper>
   );
 }

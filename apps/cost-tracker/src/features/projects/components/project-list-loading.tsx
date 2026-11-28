@@ -9,15 +9,13 @@ import { ProjectScopeTabsLoading } from "@/features/projects/components/project-
 
 /**
  * Section fallback for the Projects page: the scope-tabs row, the filter card
- * and the results register, with the same `mt-6`/`gap-4` rhythm as the
+ * and the results register, with the same `mt-10`/`gap-4` rhythm as the
  * resolved section. The page shell already renders the real header.
  */
 export function ProjectListLoadingContent() {
   return (
-    <div className="mt-6 flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <ProjectScopeTabsLoading />
-      </div>
+    <div className="flex min-w-0 flex-col gap-4">
+      <ProjectScopeTabsLoading />
       <ProjectListFiltersLoading />
       {/* The resolved list wraps its results in this gap-3 column; the
           skeleton must too, or every gap below the filters grows to the

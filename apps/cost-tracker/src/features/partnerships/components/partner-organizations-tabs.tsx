@@ -2,7 +2,13 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  SectionTabs,
+  SectionTabsContent,
+  SectionTabsList,
+  SectionTabsTrigger,
+  SectionTabsWrapper,
+} from "@/components/section-tabs";
 
 /**
  * Experiment: section tabs for the Partner Organizations page.
@@ -20,29 +26,30 @@ export function PartnerOrganizationsTabs({
   const t = useTranslations("partnerships.partnerOrganizations.tabs");
   if (!showInvitations) return <>{partnerships}</>;
   return (
-    <Tabs
-      className="mt-10"
-      data-testid="partner-organizations-tabs"
-      defaultValue="partnerships"
-    >
-      <TabsList aria-label={t("label")} variant="line">
-        <TabsTrigger
-          data-testid="partner-organizations-tab-partnerships"
-          value="partnerships"
-          variant="line"
-        >
-          {t("partnerships")}
-        </TabsTrigger>
-        <TabsTrigger
-          data-testid="partner-organizations-tab-invitations"
-          value="invitations"
-          variant="line"
-        >
-          {t("invitations")}
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="partnerships">{partnerships}</TabsContent>
-      <TabsContent value="invitations">{invitations}</TabsContent>
-    </Tabs>
+    <SectionTabsWrapper>
+      <SectionTabs
+        data-testid="partner-organizations-tabs"
+        defaultValue="partnerships"
+      >
+        <SectionTabsList aria-label={t("label")}>
+          <SectionTabsTrigger
+            data-testid="partner-organizations-tab-partnerships"
+            value="partnerships"
+          >
+            {t("partnerships")}
+          </SectionTabsTrigger>
+          <SectionTabsTrigger
+            data-testid="partner-organizations-tab-invitations"
+            value="invitations"
+          >
+            {t("invitations")}
+          </SectionTabsTrigger>
+        </SectionTabsList>
+        <SectionTabsContent value="partnerships">
+          {partnerships}
+        </SectionTabsContent>
+        <SectionTabsContent value="invitations">{invitations}</SectionTabsContent>
+      </SectionTabs>
+    </SectionTabsWrapper>
   );
 }

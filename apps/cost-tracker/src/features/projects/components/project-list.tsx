@@ -6,6 +6,7 @@ import { useQueryStates } from "nuqs";
 import { Suspense, useEffect, useRef, useSyncExternalStore } from "react";
 
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { SectionTabsRow, SectionTabsWrapper } from "@/components/section-tabs";
 import {
   Empty,
   EmptyDescription,
@@ -229,27 +230,29 @@ function ResolvedProjectList({
   return (
     <section
       aria-label={t("label")}
-      className="mt-6 flex min-w-0 flex-col gap-4"
+      className="flex min-w-0 flex-col gap-4"
       data-hydrated={isHydrated ? "true" : undefined}
       data-testid="project-list"
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <ProjectScopeTabs
-          scope={scope}
-          availableScopes={availableScopes}
-          updateListState={updateListState}
-        />
-        <Suspense
-          fallback={
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-5 w-36" />
-            </div>
-          }
-        >
-          <ProjectListMetrics scope={scope} state={state} />
-        </Suspense>
-      </div>
+      <SectionTabsWrapper>
+        <SectionTabsRow>
+          <ProjectScopeTabs
+            scope={scope}
+            availableScopes={availableScopes}
+            updateListState={updateListState}
+          />
+          <Suspense
+            fallback={
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-36" />
+              </div>
+            }
+          >
+            <ProjectListMetrics scope={scope} state={state} />
+          </Suspense>
+        </SectionTabsRow>
+      </SectionTabsWrapper>
       <ProjectListFilters
         onSearchChange={updateSearchDraft}
         searchDraft={searchDraft}

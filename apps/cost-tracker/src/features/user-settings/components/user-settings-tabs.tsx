@@ -2,7 +2,13 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  SectionTabs,
+  SectionTabsContent,
+  SectionTabsList,
+  SectionTabsTrigger,
+  SectionTabsWrapper,
+} from "@/components/section-tabs";
 import type { UserSummary } from "@/features/authentication/types";
 import { EditNameForm } from "@/features/user-settings/components/edit-name-form";
 import { ThemeSettings } from "@/features/user-settings/components/theme-settings";
@@ -13,39 +19,39 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
   const t = useTranslations("settings.tabs");
 
   return (
-    <Tabs className="mt-10" defaultValue="account">
-      <TabsList aria-label={t("sections")} variant="line">
-        <TabsTrigger
-          value="account"
-          variant="line"
-          data-testid="settings-tab-account"
-        >
-          {t("account")}
-        </TabsTrigger>
-        <TabsTrigger
-          value="appearance"
-          variant="line"
-          data-testid="settings-tab-appearance"
-        >
-          {t("appearance")}
-        </TabsTrigger>
-      </TabsList>
+    <SectionTabsWrapper>
+      <SectionTabs defaultValue="account">
+        <SectionTabsList aria-label={t("sections")}>
+          <SectionTabsTrigger value="account" data-testid="settings-tab-account">
+            {t("account")}
+          </SectionTabsTrigger>
+          <SectionTabsTrigger
+            value="appearance"
+            data-testid="settings-tab-appearance"
+          >
+            {t("appearance")}
+          </SectionTabsTrigger>
+        </SectionTabsList>
 
-      <TabsContent className="mt-8" value="account">
-        <SettingsPanel description={t("accountDescription")} title={t("account")}>
-          <EditNameForm email={email} name={name} />
-        </SettingsPanel>
-      </TabsContent>
+        <SectionTabsContent className="mt-8" value="account">
+          <SettingsPanel
+            description={t("accountDescription")}
+            title={t("account")}
+          >
+            <EditNameForm email={email} name={name} />
+          </SettingsPanel>
+        </SectionTabsContent>
 
-      <TabsContent className="mt-8" value="appearance">
-        <SettingsPanel
-          description={t("appearanceDescription")}
-          title={t("appearance")}
-        >
-          <ThemeSettings />
-        </SettingsPanel>
-      </TabsContent>
-    </Tabs>
+        <SectionTabsContent className="mt-8" value="appearance">
+          <SettingsPanel
+            description={t("appearanceDescription")}
+            title={t("appearance")}
+          >
+            <ThemeSettings />
+          </SettingsPanel>
+        </SectionTabsContent>
+      </SectionTabs>
+    </SectionTabsWrapper>
   );
 }
 
