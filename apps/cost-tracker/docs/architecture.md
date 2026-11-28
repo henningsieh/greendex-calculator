@@ -108,6 +108,12 @@ the public route segments in one explicit list so a new protected route is gated
 by default. `ProtectedShell` keeps the authoritative `getSession()` check, which
 also covers an expired session whose cookie is still present.
 
+## Notification declarations
+
+`src/lib/orpc/notification-declarations.ts` is the complete inventory of router entries: every action maps to a typed notification intent (event plus recipient resolver) or to explicit `null` when it emits nothing. `router.ts` attaches the inventory through `attachNotificationDeclarations`, and the mapped `NotificationDeclarationTree<typeof router>` type fails type checking when an entry is missing, renamed, or extra. The runtime enforcement test walks the exported router and requires a declaration on every procedure object. `claims.markPaid` is the only v1 emitter (`claim.paid` v1); its recipient resolver runs inside the payment transaction. After commit, the handler emits best-effort to the separate [Realtime service](../../realtime/README.md), which validates the Better Auth session on handshake, joins personal user rooms only, and broadcasts validated envelopes. A failed emit leaves the payment and its persisted inbox rows intact.
+
+The shell bell reads the unread query on mount and window focus, invalidates it on every live push and socket reconnect, and marks a clicked notification read before opening its Claim. The live stream shows a toast through the existing toast manager. `NEXT_PUBLIC_REALTIME_URL` is passed from the protected shell to the client bell; when it is absent the bell still reads persisted unread rows, only live delivery is disabled.
+
 ## oRPC error presentation
 
 Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh failures retain cached data and produce a toast. Identical refresh failures—same oRPC status and code, or the same local error type and message—share one toast within a two-second interval; distinct failures remain separately visible.
@@ -123,6 +129,7 @@ Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh
 | `participations`         | Participant management, reports, duplicate review, and Participant Journeys                          |
 | `participant-onboarding` | Participant Invitations, Registration Links, required information, Agreement acceptance, and joining |
 | `claims`                 | Claim lifecycle, costs, allocations, documents, payout workflow, submission, review, and payment     |
+| `notifications`          | Persistent notification inbox, event catalog use, unread listing, and read state                     |
 | `user-settings`          | Personal preferences                                                                                 |
 | `breadcrumbs`            | Per-route breadcrumb trails in the App Shell header, their slot boundary, and their labels           |
 

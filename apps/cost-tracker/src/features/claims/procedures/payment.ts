@@ -14,8 +14,14 @@ import {
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { claimPaidNotificationIntent } from "@/features/claims/procedures/payment-notification";
 import { decimalUnits } from "@/features/claims/reimbursement";
 import { ClaimInputSchema } from "@/features/claims/validation-schemas";
+import {
+  declareNotifications,
+  persistDeclaredNotifications,
+} from "@/features/notifications/procedures/actions";
+import { emitNotificationCreated } from "@/features/notifications/procedures/emit";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -27,7 +33,7 @@ const result = z.object({
 });
 
 /** Call only after the bank confirms one full transfer; a failed transfer is not a Claim event. */
-export const markPaid = authorized
+const markPaidProcedure = authorized
   .input(
     ClaimInputSchema.extend({
       amountEur: z
@@ -51,7 +57,7 @@ export const markPaid = authorized
     );
     if (scope.hostId !== context.session.activeOrganizationId)
       throw createSituationErrors(errors).hostingPaymentRequired();
-    return db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx) => {
       // Shared Project → Partnership → Claim lock order (claim-locks.ts) so
       // payment cannot race a decision or payout change.
       const { claim } = await lockClaimScope(
@@ -77,9 +83,11 @@ export const markPaid = authorized
         if (!fullPayment)
           throw createSituationErrors(errors).fullTransferRequired();
         return {
-          id: claim.id,
-          status: "paid" as const,
-          reimbursementAmountEur: claim.reimbursementAmountEur,
+          result: {
+            id: claim.id,
+            status: "paid" as const,
+            reimbursementAmountEur: claim.reimbursementAmountEur,
+          },
         };
       }
       const decision = evaluateClaimTransition(claim.status, "markPaid", {
@@ -98,13 +106,40 @@ export const markPaid = authorized
         actorUserId: context.user.id,
         eventType: "paid",
       });
+      // Same transaction as the status and history writes: a socket failure
+      // can never roll the payment back, and duplicate pays insert nothing.
+      const notifications = await persistDeclaredNotifications(
+        tx,
+        claimPaidNotificationIntent,
+        {
+          actorUserId: context.user.id,
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+          claimId: claim.id,
+          amountEur: claim.reimbursementAmountEur,
+        },
+      );
       return {
-        id: claim.id,
-        status: decision.state,
-        reimbursementAmountEur: claim.reimbursementAmountEur,
+        result: {
+          id: claim.id,
+          status: decision.state,
+          reimbursementAmountEur: claim.reimbursementAmountEur,
+        },
+        notifications,
       };
     });
+    // Best-effort after commit: a failure is logged, the payment stands, and
+    // the persisted rows remain the offline catch-up source of truth.
+    if ("notifications" in outcome && outcome.notifications)
+      await emitNotificationCreated(outcome.notifications);
+    return outcome.result;
   });
+
+export const markPaid = declareNotifications(
+  markPaidProcedure,
+  claimPaidNotificationIntent,
+);
 
 /** Corrects an application flag, not the bank transfer; the original paid event remains. */
 export const correctPayment = authorized

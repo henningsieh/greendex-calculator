@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "bell": {
+      "open": "{count, plural, =0 {Ni neprebranih obvestil} one {# neprebrano obvestilo} other {# neprebranih obvestil}}",
+      "title": "Obvestila",
+      "empty": "Ni neprebranih obvestil",
+      "loading": "Nalaganje obvestil",
+      "error": "Obvestil ni bilo mogoče naložiti",
+      "markAllRead": "Označi vse kot prebrano",
+      "claimPaidTitle": "Zahtevek plačan",
+      "claimPaidDescription": "Za vaš zahtevek je bilo zabeleženih {amount}.",
+      "openClaim": "Odpri zahtevek",
+      "updateFailed": "Stanja obvestila ni bilo mogoče shraniti. Poskusite znova."
+    },
+    "toast": {
+      "title": "Zahtevek plačan",
+      "description": "Za vaš zahtevek je bilo zabeleženih {amount}."
+    }
+  }
+}

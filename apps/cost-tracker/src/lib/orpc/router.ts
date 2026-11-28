@@ -38,6 +38,11 @@ import {
   submit,
 } from "@/features/claims/procedures/submission";
 import {
+  listUnread,
+  markAllRead,
+  markRead,
+} from "@/features/notifications/procedures/inbox";
+import {
   searchOrganizations,
   listOrganizationOptions,
   listMyOrganizations,
@@ -92,8 +97,12 @@ import {
   listHostedOptions,
   searchHosted,
 } from "@/features/projects/procedures/search-hosted";
+import {
+  attachNotificationDeclarations,
+  notificationDeclarationTree,
+} from "@/lib/orpc/notification-declarations";
 
-export const router = {
+const routerShape = {
   authentication: {
     createOrganization,
     onboardingNextStep,
@@ -104,6 +113,7 @@ export const router = {
     updateUser,
   },
   participantOnboarding,
+  notifications: { listUnread, markRead, markAllRead },
   participations: { ...participations, listOnboardingProgress },
   duplicateReviews,
   claims: {
@@ -167,6 +177,11 @@ export const router = {
     removePartnerCoordinator,
   },
 };
+
+export const router = attachNotificationDeclarations(
+  routerShape,
+  notificationDeclarationTree,
+);
 
 export type Router = typeof router;
 export type Outputs = InferRouterOutputs<Router>;

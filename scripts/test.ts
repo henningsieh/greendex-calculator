@@ -297,7 +297,14 @@ async function main(): Promise<void> {
       if (appScope) {
         await check(`${appScope}/${suite}`, () => appTests(appScope, suite));
       } else if (suite === "unit") {
-        for (const name of ["auth", "email", "database", "config", "i18n"]) {
+        for (const name of [
+          "auth",
+          "email",
+          "database",
+          "config",
+          "i18n",
+          "notifications",
+        ]) {
           const directory = `packages/${name}`;
           const files = filesFor(directory).filter(
             (file) => !file.includes(".integration.test."),
@@ -320,6 +327,9 @@ async function main(): Promise<void> {
             ),
           );
         }
+        await check("apps/realtime", () =>
+          vitest("apps/realtime", filesFor("apps/realtime")),
+        );
         await check("repository policies/tooling", () =>
           vitest(".", globSync("scripts/**/*.test.ts", { cwd: root }).sort()),
         );

@@ -28,6 +28,7 @@
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
     "@greendex/i18n": "workspace:*",
+    "@greendex/notifications": "workspace:*",
     "@hookform/resolvers": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/json-schema": "catalog:",
@@ -61,6 +62,7 @@
     "react-hook-form": "catalog:",
     "server-only": "^0.0.1",
     "shadcn": "^4.23.0",
+    "socket.io-client": "catalog:",
     "tw-animate-css": "catalog:",
     "zod": "catalog:"
   },

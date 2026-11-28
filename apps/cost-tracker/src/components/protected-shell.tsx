@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { env } from "@/env";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
@@ -95,6 +96,7 @@ export async function ProtectedShell({
               <AppNavigation
                 email={session.user.email}
                 name={session.user.name}
+                realtimeUrl={env.NEXT_PUBLIC_REALTIME_URL}
               />
             </div>
           </div>

@@ -10,10 +10,14 @@ const mocks = vi.hoisted(() => ({
   lock: vi.fn(),
   write: vi.fn(),
   limit: vi.fn(),
+  emit: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: mocks.getSession } },
+}));
+vi.mock("@/features/notifications/procedures/emit", () => ({
+  emitNotificationCreated: mocks.emit,
 }));
 vi.mock("@/features/partnerships/procedures/coordination", () => {
   return {

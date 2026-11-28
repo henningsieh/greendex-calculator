@@ -29,6 +29,7 @@ const TAXONOMY = new Set([
   "Costs",
   "Documents",
   "Reviews",
+  "Notifications",
 ]);
 
 function procedureSources(dir: string): string[] {

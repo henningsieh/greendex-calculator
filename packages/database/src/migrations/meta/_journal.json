@@ -295,6 +295,13 @@
       "when": 1795354260046,
       "tag": "0041_futuristic_stephen_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1795679926282,
+      "tag": "0042_notifications_inbox",
+      "breakpoints": true
     }
   ]
 }

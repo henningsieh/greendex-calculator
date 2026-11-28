@@ -24,7 +24,7 @@
     "generate:cost-tracker-workflows": "pnpm run check:cost-tracker-workflows --write",
     "lint": "tsx scripts/lint.ts",
     "lint:check": "pnpm --filter @greendex/calculator run lint:check && pnpm --filter @greendex/cost-tracker run lint:check && pnpm --filter @greendex/documentation run lint:check",
-    "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
+    "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- dotenv -e apps/realtime/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
     "start": "turbo run start",
     "test:e2e": "tsx scripts/test.ts e2e",

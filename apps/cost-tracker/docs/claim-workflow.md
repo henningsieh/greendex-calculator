@@ -60,6 +60,8 @@ Approval and payment are separate. Cost Tracker records one full bank transfer:
 
 If staff accidentally mark a Claim paid without a transfer, an authorized Hosting-side role may correct the flag back to unpaid with a required reason. This is a record correction, not a banking reversal; both actions remain in Claim history.
 
+Recording the full payment also writes one persistent notification for each responsible user of the Partner Organization side (assigned Partner coordinators plus Owners and Admins), in the same transaction as the status and history change. Repeating the confirmed payment creates no second notification. Live delivery is best-effort after commit; failures never roll the payment back, and the persisted notifications remain the source of truth for offline catch-up.
+
 ## History and access
 
 Claim history is append-only. It records Participant Journey updates (`journey_updated`), submission, correction request and reason, resubmission, approval, rejection and reason, reopening, paid marking, and paid-flag correction, including responsible User and time.

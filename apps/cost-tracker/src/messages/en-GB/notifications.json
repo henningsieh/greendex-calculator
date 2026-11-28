@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "bell": {
+      "open": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
+      "title": "Notifications",
+      "empty": "No unread notifications",
+      "loading": "Loading notifications",
+      "error": "Could not load notifications",
+      "markAllRead": "Mark all as read",
+      "claimPaidTitle": "Claim paid",
+      "claimPaidDescription": "{amount} was recorded for your Claim.",
+      "openClaim": "Open Claim",
+      "updateFailed": "Could not save the notification state. Try again."
+    },
+    "toast": {
+      "title": "Claim paid",
+      "description": "{amount} was recorded for your Claim."
+    }
+  }
+}

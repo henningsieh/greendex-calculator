@@ -33,6 +33,10 @@ const privateInvariantThrows: Record<string, string[]> = {
     'new Error("Quota principal lock unavailable after cleanup races")',
   ],
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
+  "lib/orpc/notification-declarations.ts": [
+    "new Error(`Missing notification declaration at ${location}.`)",
+    "new Error(`Invalid notification declaration at ${location}.`)",
+  ],
   "components/ui/sidebar.tsx": [
     'new Error("useSidebar must be used within a SidebarProvider.")',
   ],

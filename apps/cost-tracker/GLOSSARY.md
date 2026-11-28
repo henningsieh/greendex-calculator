@@ -72,6 +72,10 @@ _Avoid_: Project completion, Cost Submission Window
 The lifecycle-masked value shown in the Cost Tracker Project list: `archived`, `ready` (an active Project whose Partnerships all have settled Claims), or `open` (an active Project with at least one missing or unsettled Claim). It is a derived read-only projection over the Project archive flag and the Claim settled rule, not its own state machine.
 _Avoid_: Settlement filter and archive filter as separate facets, stored list status
 
+**Notification**:
+One persistent inbox entry for one recipient User in one Organization, announcing a domain change (first: a Claim recorded as paid). It carries the event type and version, payload, actor, read state, and creation time. Delivery (socket, toast) is a separate best-effort concern and never the source of truth.
+_Avoid_: Email, toast, message (for the persisted row), alert
+
 **Payout Account**:
 A reusable bank account owned by one Partner Organization and selected by a Project Partnership for its Claim.
 _UI label (de)_: Auszahlungskonto (plural: Auszahlungskonten).

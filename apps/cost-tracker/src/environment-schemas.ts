@@ -25,8 +25,14 @@ export const CostTrackerServerEnvironmentSchema = z.object({
   S3_FORCE_PATH_STYLE: z
     .enum(["true", "false"])
     .transform((value) => value === "true"),
+  // Notification delivery is best-effort; the inbox row remains authoritative.
+  // Both values are optional so deployments without a realtime service keep
+  // working and simply log no emit target.
+  REALTIME_INTERNAL_URL: z.url().optional(),
+  REALTIME_EMIT_SECRET: z.string().min(16).optional(),
 });
 
 export const CostTrackerClientEnvironmentSchema = z.object({
   NEXT_PUBLIC_BASE_URL: z.url(),
+  NEXT_PUBLIC_REALTIME_URL: z.url().optional(),
 });
