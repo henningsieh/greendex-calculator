@@ -3,11 +3,24 @@
 import { useTranslations } from "@greendex/i18n/client";
 
 import {
+  AppHeaderRow,
+  protectedFrameClassName,
+  protectedMainClassName,
+} from "@/components/app-header-row";
+import {
   ProtectedPageHeaderLoading,
   LoadingRegion,
 } from "@/components/loading-skeletons";
-import { SiteBrand } from "@/components/site-brand";
-import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Sidebar,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +52,16 @@ function SidebarMenuRowSkeleton({ label }: { label: string }) {
 
 function SidebarBrandRowSkeleton() {
   return (
-    <div className="flex h-14 items-center gap-2 px-3">
-      <Skeleton className="size-8 shrink-0" />
-      <div className="grid flex-1 gap-1.5 group-data-[collapsible=icon]:hidden">
-        <Skeleton className="h-3.5 w-28" />
-      </div>
-    </div>
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton size="lg" render={<div />}>
+          <Skeleton className="size-8 shrink-0" />
+          <div className="grid flex-1 gap-1.5 group-data-[collapsible=icon]:hidden">
+            <Skeleton className="h-3.5 w-28" />
+          </div>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
@@ -81,39 +98,47 @@ export function ProtectedShellSkeleton({
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
       <Sidebar collapsible="icon" side="left">
-        <div className="flex flex-col gap-2 p-2">
+        <SidebarHeader>
           <SidebarBrandRowSkeleton />
-        </div>
+        </SidebarHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
           <SidebarGroupSkeleton rows={["w-24", "w-16"]} />
           <SidebarGroupSkeleton rows={["w-20"]} />
           <SidebarGroupSkeleton rows={["w-24", "w-16"]} />
         </div>
-        <div className="flex flex-col gap-2 p-2">
+        <SidebarFooter>
           <SidebarBrandRowSkeleton />
-        </div>
+        </SidebarFooter>
       </Sidebar>
       <div
-        className="min-h-svh w-full min-w-0 bg-muted/35"
+        className={protectedFrameClassName}
         data-testid="protected-shell-skeleton-content"
       >
         <LoadingRegion label={t("loading")}>
           <header className="border-b bg-background">
-            <div className="flex items-center gap-1">
-              <Skeleton className="size-8 shrink-0" />
-              <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
-                <div className="flex h-18 items-center justify-between">
-                  <SiteBrand />
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="size-9" />
-                    <Skeleton className="size-9" />
-                    <Skeleton className="h-9 w-28" />
-                  </div>
+            <AppHeaderRow
+              leading={
+                <div
+                  className={cn(
+                    buttonVariants({
+                      variant: "ghost",
+                      size: "icon-SidebarTrigger",
+                    }),
+                    "pointer-events-none overflow-hidden",
+                  )}
+                >
+                  <Skeleton className="size-full" />
                 </div>
+              }
+            >
+              <div className="flex items-center gap-2">
+                <Skeleton className="size-9" />
+                <Skeleton className="size-9" />
+                <Skeleton className="size-9 lg:w-28" />
               </div>
-            </div>
+            </AppHeaderRow>
           </header>
-          <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
+          <main className={protectedMainClassName}>
             <ProtectedPageHeaderLoading />
           </main>
         </LoadingRegion>

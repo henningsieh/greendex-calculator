@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
+import {
+  protectedFrameClassName,
+  protectedMainClassName,
+} from "@/components/app-header-row";
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -82,30 +86,24 @@ export async function ProtectedShell({
         showPartnerOrganizations={await canViewPartnerNetwork()}
         staffOrganizations={context.memberships}
       />
-      <div className="min-h-svh w-full min-w-0 bg-muted/35">
+      <div className={protectedFrameClassName}>
         <header
           className="border-b bg-background"
           style={{
             viewTransitionName: persistentViewTransitionName.appHeader,
           }}
         >
-          <div className="flex items-center gap-1">
-            <SidebarTrigger className="shrink-0" />
-            <div className="min-w-0 flex-1">
-              <AppNavigation
-                email={session.user.email}
-                name={session.user.name}
-              />
-            </div>
-          </div>
+          <AppNavigation
+            email={session.user.email}
+            name={session.user.name}
+            leading={<SidebarTrigger />}
+          />
         </header>
         {/* `@container/content` makes the Project register and its filters
             respond to this content column, not the viewport. Expanding or
             collapsing the sidebar changes the column width and therefore
             switches the table to record cards (and back) on its own. */}
-        <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
-          {children}
-        </main>
+        <main className={protectedMainClassName}>{children}</main>
       </div>
     </SidebarProvider>
   );
