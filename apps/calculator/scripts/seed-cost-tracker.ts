@@ -31,6 +31,10 @@ import {
   SEED_READ_ONLY_INVITATION_EXPIRY,
 } from "./seed-scenarios";
 import {
+  ensureClaimStatusShowcaseProcedural,
+  verifyShowcaseTripwire,
+} from "./seed-showcase-lifecycle";
+import {
   ensureSeedUsers,
   ensureSeedOrganizations,
   ensureSeedMemberships,
@@ -3620,11 +3624,15 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
  * Partner Organization (partner): one Project/Partnership/Claim per Claim
  * status plus one archived Project, so every Project status badge (Settlement
  * open, Ready to archive, Archived) and every Claim status badge renders for
- * the seed Owner. History on the paid and correction-requested Claims mirrors
- * the procedure-written events, so the review timeline shows the full parade.
- * Names stay outside `SEED_PROJECTS` so hosting-Project counts keep
- * converging on the ten basics; every step is find-or-create (the archived
- * flag is set once at creation and never rewritten).
+ * the seed Owner.
+ *
+ * #453: states are produced by driving the owning claim logic (create, submit,
+ * review, payment transitions) through the shared transition table and the
+ * real reimbursement derivation — see `seed-showcase-lifecycle.ts`. No
+ * hand-inserted Claim amounts and no hand-written history rows. Names stay
+ * outside `SEED_PROJECTS` so hosting-Project counts keep converging on the ten
+ * basics; consistent slices converge without rewrites, inconsistent slices are
+ * rebuilt (demo data, explicit user permission).
  */
 export async function ensureClaimStatusShowcase(
   db: SeedDatabase,
@@ -3635,157 +3643,11 @@ export async function ensureClaimStatusShowcase(
     partnerOwnerId: string;
   },
 ): Promise<void> {
-  const slices = [
-    {
-      name: "Seed Showcase In Preparation",
-      status: "in_preparation",
-      amount: null,
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Submitted",
-      status: "submitted",
-      amount: "250.00",
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Correction Requested",
-      status: "correction_requested",
-      amount: "310.50",
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Approved",
-      status: "approved",
-      amount: "420.00",
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Rejected",
-      status: "rejected",
-      amount: "175.25",
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Paid",
-      status: "paid",
-      amount: "500.00",
-      archived: false,
-    },
-    {
-      name: "Seed Showcase Archived",
-      status: "paid",
-      amount: "600.00",
-      archived: true,
-    },
-  ] as const;
-  const projectIds = [
-    SEED_IDS.project.showcaseInPreparation,
-    SEED_IDS.project.showcaseSubmitted,
-    SEED_IDS.project.showcaseCorrection,
-    SEED_IDS.project.showcaseApproved,
-    SEED_IDS.project.showcaseRejected,
-    SEED_IDS.project.showcasePaid,
-    SEED_IDS.project.showcaseArchived,
-  ] as const;
-  const partnershipIds = [
-    SEED_IDS.partnership.showcaseInPreparation,
-    SEED_IDS.partnership.showcaseSubmitted,
-    SEED_IDS.partnership.showcaseCorrection,
-    SEED_IDS.partnership.showcaseApproved,
-    SEED_IDS.partnership.showcaseRejected,
-    SEED_IDS.partnership.showcasePaid,
-    SEED_IDS.partnership.showcaseArchived,
-  ] as const;
-  const claimIds = [
-    SEED_IDS.claim.showcaseInPreparation,
-    SEED_IDS.claim.showcaseSubmitted,
-    SEED_IDS.claim.showcaseCorrection,
-    SEED_IDS.claim.showcaseApproved,
-    SEED_IDS.claim.showcaseRejected,
-    SEED_IDS.claim.showcasePaid,
-    SEED_IDS.claim.showcaseArchived,
-  ] as const;
-  {
-    const rows = slices.map((slice, index) => ({
-      id: projectIds[index]!,
-      name: slice.name,
-      organizationId: ids.hostId,
-      startDate: new Date("2024-06-01"),
-      endDate: new Date("2024-06-07"),
-      location: "Berlin",
-      country: "DE",
-      archived: false,
-      costTrackerArchived: slice.archived,
-    })) satisfies (typeof projects.$inferInsert)[];
-    await ensureSeedProjects(db, rows);
-  }
-  {
-    const rows = slices.map((_, index) => ({
-      id: partnershipIds[index]!,
-      projectId: projectIds[index]!,
-      organizationId: ids.partnerId,
-    })) satisfies (typeof partnerships.$inferInsert)[];
-    await ensureSeedPartnerships(db, rows);
-  }
-  {
-    const rows = slices.map((_, index) => ({
-      partnershipId: partnershipIds[index]!,
-      userId: ids.partnerOwnerId,
-    })) satisfies (typeof assignments.$inferInsert)[];
-    await ensureSeedPartnerAssignments(db, rows);
-  }
-  {
-    const rows = slices.map((slice, index) => ({
-      id: claimIds[index]!,
-      partnershipId: partnershipIds[index]!,
-      status: slice.status,
-      reimbursementAmountEur: slice.amount,
-    })) satisfies (typeof claims.$inferInsert)[];
-    await ensureSeedClaims(db, rows);
-  }
-  {
-    const rows = [
-      {
-        id: SEED_IDS.claimHistory.showcasePaidSubmitted,
-        claimId: SEED_IDS.claim.showcasePaid,
-        eventType: "submitted",
-        actorUserId: ids.ownerId,
-        occurredAt: new Date("2024-06-10T00:00:00Z"),
-      },
-      {
-        id: SEED_IDS.claimHistory.showcasePaidApproved,
-        claimId: SEED_IDS.claim.showcasePaid,
-        eventType: "approved",
-        actorUserId: ids.ownerId,
-        occurredAt: new Date("2024-06-12T00:00:00Z"),
-      },
-      {
-        id: SEED_IDS.claimHistory.showcasePaidPaid,
-        claimId: SEED_IDS.claim.showcasePaid,
-        eventType: "paid",
-        actorUserId: ids.ownerId,
-        occurredAt: new Date("2024-06-14T00:00:00Z"),
-      },
-      {
-        id: SEED_IDS.claimHistory.showcaseCorrectionSubmitted,
-        claimId: SEED_IDS.claim.showcaseCorrection,
-        eventType: "submitted",
-        actorUserId: ids.ownerId,
-        occurredAt: new Date("2024-06-10T00:00:00Z"),
-      },
-      {
-        id: SEED_IDS.claimHistory.showcaseCorrectionRequested,
-        claimId: SEED_IDS.claim.showcaseCorrection,
-        eventType: "correction_requested",
-        actorUserId: ids.ownerId,
-        occurredAt: new Date("2024-06-11T00:00:00Z"),
-        reason: "Seed showcase correction round-trip.",
-      },
-    ] satisfies (typeof history.$inferInsert)[];
-    await ensureSeedClaimHistory(db, rows);
-  }
+  await ensureClaimStatusShowcaseProcedural(db, ids);
 }
+
+/** Re-exported so the seed entrypoint can run the tripwire as its final step. */
+export { verifyShowcaseTripwire };
 
 /** The sole seed entrypoint calls this builder; it has no environment/CLI path. */
 export async function ensureCostTrackerScenarios(
