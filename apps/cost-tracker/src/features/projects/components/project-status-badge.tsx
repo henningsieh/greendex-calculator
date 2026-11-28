@@ -3,7 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import type { ComponentProps } from "react";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeCompact } from "@/components/ui/badge";
 import type {
   projectStatus,
   ProjectState,
@@ -16,11 +16,19 @@ const variants = {
   archived: "secondary",
 } satisfies Record<ProjectListStatus, ComponentProps<typeof Badge>["variant"]>;
 
-export function ProjectStatusBadge({ status }: { status: ProjectListStatus }) {
+export function ProjectStatusBadge({
+  status,
+  compact = false,
+}: {
+  status: ProjectListStatus;
+  /** Dense card contexts: tighter box, smaller digits. */
+  compact?: boolean;
+}) {
   const t = useTranslations("projects");
   return (
     <Badge
       variant={variants[status]}
+      className={compact ? badgeCompact : undefined}
       data-status={status}
       data-testid="project-status"
     >

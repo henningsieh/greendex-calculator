@@ -52,6 +52,11 @@ const badgeVariants = cva(
   }
 )
 
+/* Compact register treatment: tighter box and smaller digits for status
+   chips inside dense cards. Pairs with the tinted status variants; the
+   later classes win over the variant box through the caller's cn merge. */
+export const badgeCompact = "px-2 py-0.5 text-[9px]";
+
 function Badge({
   className,
   variant = "default",

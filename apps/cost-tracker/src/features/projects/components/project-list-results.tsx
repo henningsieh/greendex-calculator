@@ -56,7 +56,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ParticipantsLink } from "@/features/participations/components/participants-link";
-import { ProjectCard } from "@/features/projects/components/project-card";
+import { ProjectRegisterCard } from "@/features/projects/components/project-card";
 import {
   getProjectColumnFilters,
   getProjectSortMode,
@@ -81,7 +81,7 @@ import {
 import { cn } from "@/lib/utils";
 import { viewTransitionType } from "@/lib/view-transitions";
 
-const projectListTableFeatures = tableFeatures({
+export const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
   rowPaginationFeature,
@@ -873,62 +873,9 @@ export function ResolvedProjectListResults({
         {rows.length === 0 ? (
           <Card className="items-center px-4 py-10">{emptyState}</Card>
         ) : (
-          rows.map((row) => {
-            const [titleCell, ...cellList] = row.getVisibleCells();
-            if (!titleCell) return null;
-            // Participants is navigation, not a data field: it leaves the
-            // <dl> for the card footer, matching the submitted-Claim cards.
-            // A hidden Participants column takes the footer with it.
-            const detailCells = cellList.filter(
-              (cell) =>
-                cell.column.id !== "participants" && cell.column.id !== "status",
-            );
-            const statusCell = cellList.find(
-              (cell) => cell.column.id === "status",
-            );
-            const showsParticipants = cellList.some(
-              (cell) => cell.column.id === "participants",
-            );
-            return (
-              <ProjectCard
-                projectId={row.id}
-                name={row.original.name}
-                nameHref={projectPath(row.original.id)}
-                nameTestId={`project-link-${row.original.id}-card`}
-                status={
-                  statusCell
-                    ? flexRender(
-                        statusCell.column.columnDef.cell,
-                        statusCell.getContext(),
-                      )
-                    : undefined
-                }
-                details={detailCells.map((cell) => ({
-                  id: cell.id,
-                  label: cellLabels[cell.column.id] ?? "",
-                  value: flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  ),
-                  // Dates read as data: tabular mono digits in a muted chip.
-                  mono:
-                    cell.column.id === "startDate" ||
-                    cell.column.id === "endDate",
-                }))}
-                footer={
-                  showsParticipants ? (
-                    <ParticipantsLink
-                      density="compact"
-                      className="relative"
-                      projectId={row.original.id}
-                      testId={`project-participants-${row.original.id}-card`}
-                    />
-                  ) : undefined
-                }
-                key={row.id}
-              />
-            );
-          })
+          rows.map((row) => (
+            <ProjectRegisterCard key={row.id} row={row} labels={cellLabels} />
+          ))
         )}
       </div>
 

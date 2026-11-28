@@ -1,7 +1,13 @@
+import { flexRender, type Row } from "@tanstack/react-table";
 import { Fragment, type ReactNode } from "react";
 
+import { projectPath } from "@/app/paths";
 import type { AppHref } from "@/app/routes";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ParticipantsLink } from "@/features/participations/components/participants-link";
+import type { projectListTableFeatures } from "@/features/projects/components/project-list-results";
+import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
+import type { ProjectListRow } from "@/features/projects/types";
 import { Link } from "@/lib/i18n/routing";
 import { viewTransitionType } from "@/lib/view-transitions";
 
@@ -77,5 +83,62 @@ export function ProjectCard({
         </div>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Register adapter: turns one table row into a ProjectCard. Owns the table
+ * plumbing — visible-cell split, status/details/footer mapping, test ids —
+ * so the register grid stays a one-line map. The footer renders the compact
+ * Participants link above the title link's stretch, exactly as before.
+ */
+export function ProjectRegisterCard({
+  row,
+  labels,
+}: {
+  row: Row<typeof projectListTableFeatures, ProjectListRow>;
+  labels: Record<string, string>;
+}) {
+  const [titleCell, ...cellList] = row.getVisibleCells();
+  if (!titleCell) return null;
+  // Participants is navigation, not a data field: it leaves the
+  // <dl> for the card footer, matching the submitted-Claim cards.
+  // A hidden Participants column takes the footer with it.
+  const detailCells = cellList.filter(
+    (cell) => cell.column.id !== "participants" && cell.column.id !== "status",
+  );
+  const showStatus = cellList.some((cell) => cell.column.id === "status");
+  const showParticipants = cellList.some(
+    (cell) => cell.column.id === "participants",
+  );
+  return (
+    <ProjectCard
+      projectId={row.id}
+      name={row.original.name}
+      nameHref={projectPath(row.original.id)}
+      nameTestId={`project-link-${row.original.id}-card`}
+      status={
+        showStatus ? (
+          <ProjectStatusBadge status={row.original.status} compact />
+        ) : undefined
+      }
+      details={detailCells.map((cell) => ({
+        id: cell.id,
+        label: labels[cell.column.id] ?? "",
+        value: flexRender(cell.column.columnDef.cell, cell.getContext()),
+        // Dates read as data: tabular mono digits in a muted chip.
+        mono: cell.column.id === "startDate" || cell.column.id === "endDate",
+      }))}
+      footer={
+        showParticipants ? (
+          <ParticipantsLink
+            density="compact"
+            className="relative"
+            projectId={row.original.id}
+            testId={`project-participants-${row.original.id}-card`}
+          />
+        ) : undefined
+      }
+    />
   );
 }
