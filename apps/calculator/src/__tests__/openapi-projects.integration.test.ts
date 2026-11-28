@@ -125,14 +125,15 @@ it("serves organization details, role, stats and member search shapes", async ()
     id: fixture.organizationId,
   });
   expect(await ok("/organizations/role")).toBe("owner");
-  // Seed: ten base Projects plus two REST and three review Projects;
-  // two linked showcase Users (login-free Participations do not add a User);
-  // 39 template Shared Travel Legs plus the travel-management scenario leg.
+  // Seed: ten base Projects plus two REST, three review and seven showcase
+  // Projects; two linked showcase Users (login-free Participations do not
+  // add a User); 39 template Shared Travel Legs plus the travel-management
+  // scenario leg.
   const stats = await ok("/organizations/stats", "POST", {
     organizationId: fixture.organizationId,
   });
   expect(stats).toEqual({
-    totalProjects: 15,
+    totalProjects: 22,
     totalParticipants: 2,
     totalSharedTravelLegs: 40,
   });

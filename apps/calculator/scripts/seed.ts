@@ -57,6 +57,11 @@ import { Buffer } from "node:buffer";
  * Participant Invitations remain distinct, and participant entry stays
  * app-owned and Partner-initiated, so future invitation/agreement/claim-state
  * scenarios must use the owning app's procedures, never direct auth writes.
+ * Per #453 this rule covers ALL existing claim-state seeds too: the showcase
+ * (`seed-showcase-lifecycle.ts`) drives the shared claim transition table and
+ * the real reimbursement derivation, and `verifyShowcaseTripwire` (final seed
+ * step, also `--verify-showcase-tripwire` standalone) recomputes every
+ * showcase amount and asserts history coverage per status.
  *
  * Run: pnpm run db:seed (uses tsx). Uses its own DB pool and exits the
  * process when finished. For local/dev use only — do not run in production.
@@ -102,6 +107,7 @@ import {
   ensureClaimStatusShowcase,
   ensureCostTrackerScenarios,
   SUBMISSION_PAYOUT_ACCOUNT_IDS,
+  verifyShowcaseTripwire,
 } from "./seed-cost-tracker";
 import { SEED_IDS } from "./seed-ids";
 import { ensureReviewScenarios } from "./seed-review-scenarios";
@@ -2119,6 +2125,12 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     await ensurePasswordAccount(db, scenarioUserId);
   }
 
+  // #453 tripwire: every showcase Claim amount must equal a fresh
+  // recomputation and every status must carry its procedure-written history.
+  // Fails the seed loudly with Claim identity + expected-vs-stored amounts.
+  await verifyShowcaseTripwire(db);
+  console.log("✅ Showcase tripwire: 7 Claim states recomputed and green");
+
   return {
     userId,
     organizationId: orgId,
@@ -2627,6 +2639,13 @@ async function runFromEnvironment(): Promise<void> {
   const db = drizzle(seedPool, { schema });
 
   try {
+    if (process.argv.includes("--verify-showcase-tripwire")) {
+      console.log("🔍 Running showcase tripwire standalone...");
+      await verifyShowcaseTripwire(db);
+      console.log("✅ Showcase tripwire passed standalone");
+      return;
+    }
+
     if (process.argv.includes("--reset-seed-data")) {
       if (process.env.SEED_ALLOW_DEV_RESET !== "true") {
         console.error(
