@@ -41,6 +41,7 @@
       "expires": "Expire le",
       "action": "Action",
       "assignPartner": "affecter un partenaire existant",
+      "addPartner": "Ajouter un nouveau partenaire",
       "recipientLink": "Lien de configuration du destinataire",
       "copy": "Copier",
       "copied": "Lien copié. Ne le partagez qu’avec la personne invitée.",

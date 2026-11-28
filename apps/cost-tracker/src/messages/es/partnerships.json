@@ -41,6 +41,7 @@
       "expires": "Caduca",
       "action": "Acción",
       "assignPartner": "asignar un socio existente",
+      "addPartner": "Añadir nuevo socio",
       "recipientLink": "Enlace de configuración del destinatario",
       "copy": "Copiar",
       "copied": "Enlace copiado. Compártelo solo con la persona invitada.",
