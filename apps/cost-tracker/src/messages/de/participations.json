@@ -1,27 +1,25 @@
 {
   "participations": {
     "report": {
-      "label": "Teilnahmen",
-      "description": "Teilnahmen nach vertretener Organisation.",
       "agreementVersion": "Agreement-Version",
       "agreementUnpublished": "ist nicht veröffentlicht, daher zählt keine teilnehmende Person als abgeschlossen.",
-      "empty": "Noch keine Teilnahmen sind diesem Projekt beigetreten.",
+      "empty": "Noch niemand nimmt an diesem Projekt teil.",
       "country": "Land:",
       "completed": "abgeschlossen",
       "pending": "ausstehend",
       "countryHeader": "Land",
-      "participationCount": "{count, plural, one {# Teilnahme} other {# Teilnahmen}}",
-      "hideParticipants": "{count, plural, one {# Teilnahme} other {# Teilnahmen}} ausblenden",
-      "showParticipants": "{count, plural, one {# Teilnahme} other {# Teilnahmen}} anzeigen",
+      "hideParticipants": "{count, plural, one {# teilnehmende Person} other {# Teilnehmende}} ausblenden",
+      "showParticipants": "{count, plural, one {# teilnehmende Person} other {# Teilnehmende}} anzeigen",
       "agreementCompleted": "Vereinbarung angenommen",
       "agreementPending": "Vereinbarung ausstehend",
       "noEmail": "Keine E-Mail-Adresse erfasst",
-      "notSet": "Nicht angegeben"
+      "notSet": "Nicht angegeben",
+      "participantCount": "{count, plural, one {# teilnehmende Person} other {# Teilnehmende}}"
     },
     "loading": {
       "projectParticipations": "Teilnahmen werden geladen",
       "details": "Teilnahmedetails werden geladen",
-      "report": "Teilnahmen werden geladen"
+      "report": "Teilnehmende werden geladen"
     },
     "review": {
       "registeredUser": "Registrierte Person:",
@@ -120,16 +118,9 @@
       "projects": "Projekte"
     },
     "app": {
-      "eyebrow": "Partnerschaft",
-      "backToProjects": "Zurück zu Projekten",
-      "reportTitle": "Teilnahmen",
-      "reportDescription": "Projektweite Teilnahmen nach Organisation.",
-      "projectParticipations": "Teilnahmen",
+      "reportDescription": "Projektweite Teilnehmende nach Organisation.",
       "coordinateDescription": "Teilnahmen für diese Partnerschaft.",
-      "participantDetails": "Teilnahmedetails",
-      "participantDetailsDescription": "Lies diese Teilnahme und korrigiere die Daten, die du korrigieren darfst.",
-      "projects": "Projekte",
-      "hostedEyebrow": "Gehostetes Projekt"
+      "participantDetailsDescription": "Lies diese Teilnahme und korrigiere die Daten, die du korrigieren darfst."
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,9 +173,6 @@
         "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
         "execute": "Projektteilnahme entfernen"
       }
-    },
-    "link": {
-      "label": "Teilnahmen"
     }
   }
 }

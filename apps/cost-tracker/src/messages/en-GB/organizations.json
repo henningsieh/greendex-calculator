@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Administration",
-      "title": "Organization",
-      "description": "Manage staff members and pending invitations for the active Organization."
+      "settingsDescription": "Manage settings for the active Organization.",
+      "teamDescription": "Manage staff members and pending invitations for the active Organization."
     },
     "loading": {
       "label": "Loading Organization",

@@ -59,7 +59,6 @@
       "startDate": "Date de début",
       "endDate": "Date de fin",
       "schedule": "Calendrier",
-      "viewParticipants": "Participations",
       "name": "Nom du projet",
       "searchPlaceholder": "Rechercher des projets",
       "sort": "Trier",
@@ -101,7 +100,6 @@
       "project": "Projet",
       "location": "Lieu",
       "country": "Pays",
-      "participants": "Participations",
       "refreshing": "Actualisation des projets…",
       "updatedAt": "Mis à jour à {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Affecté :",
       "assignmentUpdated": "Affectation mise à jour :",
       "openClaim": "Demande",
-      "hostedProject": "Projet hébergé",
-      "partnerProject": "Projet partenaire",
       "noClaim": "Aucune demande",
       "completing": "Clôture…",
       "complete": "Clôturer le projet",
@@ -165,19 +161,16 @@
         "rejected": "Rejetée",
         "paid": "Payée"
       },
-      "projectParticipations": "Participations",
       "statPartners": "Partenaires",
-      "statParticipants": "Participations",
       "daysLeft": "{count, plural, one {# jour restant} other {# jours restants}}",
       "ended": "Terminé",
       "claimsInReview": "Demandes en vérification",
       "schedule": "Calendrier",
       "location": "Lieu",
       "statPartnersDetail": "organisations affectées",
-      "statParticipantsDetail": "enregistrées jusqu’ici",
+      "statParticipantsDetail": "inscrits jusqu’ici",
       "claimsInReviewDetail": "nécessitent une décision",
-      "daysUntil": "jusqu’au {date}",
-      "participants": "Participants"
+      "daysUntil": "jusqu’au {date}"
     }
   }
 }

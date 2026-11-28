@@ -1,27 +1,25 @@
 {
   "participations": {
     "report": {
-      "label": "Deelnames",
-      "description": "Deelnames per vertegenwoordigde organisatie.",
       "agreementVersion": "Versie van de overeenkomst",
       "agreementUnpublished": "is niet gepubliceerd, dus geen enkele deelnemer telt als voltooid.",
-      "empty": "Er zijn nog geen projectdeelnames aan dit project toegevoegd.",
+      "empty": "Er zijn nog geen deelnemers aan dit project.",
       "country": "Land:",
       "completed": "voltooid",
       "pending": "in afwachting",
       "countryHeader": "Land",
-      "participationCount": "{count, plural, one {# deelname} other {# deelnames}}",
-      "hideParticipants": "{count, plural, one {# deelname} other {# deelnames}} verbergen",
-      "showParticipants": "{count, plural, one {# deelname} other {# deelnames}} tonen",
+      "hideParticipants": "{count, plural, one {# deelnemer} other {# deelnemers}} verbergen",
+      "showParticipants": "{count, plural, one {# deelnemer} other {# deelnemers}} tonen",
       "agreementCompleted": "Overeenkomst afgerond",
       "agreementPending": "Overeenkomst in afwachting",
       "noEmail": "Geen e-mailadres vastgelegd",
-      "notSet": "Niet ingesteld"
+      "notSet": "Niet ingesteld",
+      "participantCount": "{count, plural, one {# deelnemer} other {# deelnemers}}"
     },
     "loading": {
       "projectParticipations": "Deelnames laden",
       "details": "Deelnamedetails laden",
-      "report": "Deelnames laden"
+      "report": "Deelnemers laden"
     },
     "review": {
       "registeredUser": "Geregistreerde gebruiker:",
@@ -120,16 +118,9 @@
       "projects": "Projecten"
     },
     "app": {
-      "eyebrow": "Partnerschap",
-      "backToProjects": "Terug naar projecten",
-      "reportTitle": "Deelnames",
-      "reportDescription": "Deelnames per organisatie voor het hele project.",
-      "projectParticipations": "Deelnames",
+      "reportDescription": "Deelnemers per organisatie voor het hele project.",
       "coordinateDescription": "Deelnames voor dit partnerschap.",
-      "participantDetails": "Deelnamedetails",
-      "participantDetailsDescription": "Bekijk deze projectdeelname en corrigeer de gegevens die je mag corrigeren.",
-      "projects": "Projecten",
-      "hostedEyebrow": "Gehost project"
+      "participantDetailsDescription": "Bekijk deze projectdeelname en corrigeer de gegevens die je mag corrigeren."
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,9 +173,6 @@
         "description": "De projectdeelname van {participant} verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "execute": "Projectdeelname verwijderen"
       }
-    },
-    "link": {
-      "label": "Deelnames"
     }
   }
 }

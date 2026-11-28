@@ -59,7 +59,6 @@
       "startDate": "Datum začetka",
       "endDate": "Datum konca",
       "schedule": "Termin",
-      "viewParticipants": "Udeležbe",
       "name": "Ime projekta",
       "searchPlaceholder": "Išči projekte",
       "sort": "Razvrsti",
@@ -101,7 +100,6 @@
       "project": "Projekt",
       "location": "Lokacija",
       "country": "Država",
-      "participants": "Udeležbe",
       "refreshing": "Osveževanje projektov…",
       "updatedAt": "Posodobljeno ob {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Dodeljeno:",
       "assignmentUpdated": "Dodelitev posodobljena:",
       "openClaim": "Zahtevek",
-      "hostedProject": "Gostovani projekt",
-      "partnerProject": "Partnerski projekt",
       "noClaim": "Ni zahtevka",
       "completing": "Zaključevanje…",
       "complete": "Zaključi projekt",
@@ -165,9 +161,7 @@
         "rejected": "Zavrnjeno",
         "paid": "Izplačano"
       },
-      "projectParticipations": "Udeležbe",
       "statPartners": "Partnerji",
-      "statParticipants": "Udeležbe",
       "daysLeft": "{count, plural, one {# dan preostal} two {# dni preostala} few {# dnevi preostali} other {# dni preostalo}}",
       "ended": "Končano",
       "claimsInReview": "Zahtevki v pregledu",
@@ -176,8 +170,7 @@
       "statPartnersDetail": "dodeljene organizacije",
       "statParticipantsDetail": "doslej zabeleženo",
       "claimsInReviewDetail": "potrebujejo odločitev",
-      "daysUntil": "do {date}",
-      "participants": "Udeleženci"
+      "daysUntil": "do {date}"
     }
   }
 }

@@ -1,27 +1,25 @@
 {
   "participations": {
     "report": {
-      "label": "Udeležbe",
-      "description": "Udeležbe po zastopani organizaciji.",
       "agreementVersion": "Različica sporazuma",
       "agreementUnpublished": "ni objavljen, zato se noben udeleženec ne šteje kot zaključen.",
-      "empty": "V ta projekt se še niso pridružile nobene udeležbe.",
+      "empty": "V projektu še ni udeležencev.",
       "country": "Država:",
       "completed": "zaključeno",
       "pending": "čaka",
       "countryHeader": "Država",
-      "participationCount": "{count, plural, one {# udeležba} two {# udeležbi} few {# udeležbe} other {# udeležb}}",
-      "hideParticipants": "Skrij udeležbe ({count})",
-      "showParticipants": "Prikaži udeležbe ({count})",
+      "hideParticipants": "Skrij udeležence ({count})",
+      "showParticipants": "Prikaži udeležence ({count})",
       "agreementCompleted": "Sporazum sprejet",
       "agreementPending": "Sporazum še ni sprejet",
       "noEmail": "E-poštni naslov ni zabeležen",
-      "notSet": "Ni nastavljeno"
+      "notSet": "Ni nastavljeno",
+      "participantCount": "{count, plural, one {# udeleženec} two {# udeleženca} few {# udeleženci} other {# udeležencev}}"
     },
     "loading": {
       "projectParticipations": "Nalaganje udeležb",
       "details": "Nalaganje podrobnosti udeležbe",
-      "report": "Nalaganje udeležb"
+      "report": "Nalaganje udeležencev"
     },
     "review": {
       "registeredUser": "Registrirani uporabnik:",
@@ -120,16 +118,9 @@
       "projects": "Projekti"
     },
     "app": {
-      "eyebrow": "Partnerstvo",
-      "backToProjects": "Nazaj na projekte",
-      "reportTitle": "Udeležbe",
-      "reportDescription": "Udeležbe v celotnem projektu po organizaciji.",
-      "projectParticipations": "Udeležbe",
+      "reportDescription": "Udeleženci v celotnem projektu po organizaciji.",
       "coordinateDescription": "Udeležbe za to partnerstvo.",
-      "participantDetails": "Podrobnosti udeležbe",
-      "participantDetailsDescription": "Preberite to udeležbo v projektu in popravite podatke, ki jih smete popraviti.",
-      "projects": "Projekti",
-      "hostedEyebrow": "Gostovani projekt"
+      "participantDetailsDescription": "Preberite to udeležbo v projektu in popravite podatke, ki jih smete popraviti."
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,9 +173,6 @@
         "description": "Odstraniti udeležbo osebe {participant} v projektu? Tega dejanja ni mogoče razveljaviti.",
         "execute": "Odstrani udeležbo v projektu"
       }
-    },
-    "link": {
-      "label": "Udeležbe"
     }
   }
 }

@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Administration",
-      "title": "Organisation",
-      "description": "Gérez les membres du personnel et les invitations en attente de l’organisation active."
+      "settingsDescription": "Gérez les paramètres de l’organisation active.",
+      "teamDescription": "Gérez les membres du personnel et les invitations en attente de l’organisation active."
     },
     "loading": {
       "label": "Chargement de l’organisation",

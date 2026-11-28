@@ -23,8 +23,8 @@
       "searchLabel": "Filter partnerships",
       "searchPlaceholder": "Filter by organization or project…",
       "emptySearch": "No partnerships match this filter.",
-      "viewDetails": "View details",
-      "removed": "Project partnership removed."
+      "removed": "Project partnership removed.",
+      "openProject": "Open project"
     },
     "setup": {
       "title": "Partner Setup Link",
@@ -105,7 +105,7 @@
       "tabs": {
         "label": "Partner sections",
         "partnerships": "Partnerships",
-        "invitations": "Pending invitations"
+        "invitations": "Invitations"
       }
     },
     "confirmations": {

@@ -23,8 +23,8 @@
       "searchLabel": "Partnerschappen filteren",
       "searchPlaceholder": "Filteren op organisatie of project…",
       "emptySearch": "Geen partnerschappen die aan dit filter voldoen.",
-      "viewDetails": "Details bekijken",
-      "removed": "Projectpartnerschap verwijderd."
+      "removed": "Projectpartnerschap verwijderd.",
+      "openProject": "Project openen"
     },
     "setup": {
       "title": "Instellingslink voor partner",
@@ -105,7 +105,7 @@
       "tabs": {
         "label": "Partneronderdelen",
         "partnerships": "Partnerschappen",
-        "invitations": "Openstaande uitnodigingen"
+        "invitations": "Uitnodigingen"
       }
     },
     "confirmations": {

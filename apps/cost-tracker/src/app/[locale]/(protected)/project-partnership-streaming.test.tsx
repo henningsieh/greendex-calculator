@@ -16,6 +16,9 @@ vi.mock("@greendex/i18n/server", async () => ({
 vi.mock("@/lib/orpc/client.server", () => ({}));
 vi.mock("@/lib/i18n/routing", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
+  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({
@@ -34,6 +37,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.membership,
+  getSession: vi.fn().mockResolvedValue(null),
   requireSession: mocks.requireSession,
 }));
 vi.mock("@/features/organizations/access", () => ({
@@ -193,7 +197,7 @@ const routes = [
   {
     path: "/[locale]/partnerships/[partnershipId]/participants/[participationId]",
     Page: LocalizedParticipantDetailsPage,
-    heading: "Participation details",
+    heading: "Participation",
     label: "Loading Participation details",
     content: "Resolved Participant details",
     staticHeader: false,
@@ -201,10 +205,10 @@ const routes = [
   {
     path: "/[locale]/projects/[id]/participants",
     Page: LocalizedHostedParticipantsPage,
-    heading: "Participations",
+    heading: "Participants",
     label: "Loading Participations",
     content: "Resolved Hosted report",
-    staticHeader: true,
+    staticHeader: false,
   },
   {
     path: "/[locale]/partner-organizations",
@@ -295,9 +299,7 @@ it("prefetches the authorized Claim review snapshot", async () => {
   expect(mocks.query).toHaveBeenCalledWith({
     input: { partnershipId: "requested-partnership" },
   });
-  // Header context + the four section prefetches. The mocked QueryClient does
-  // not dedupe by key; the request-scoped client does, so this is a superset.
-  expect(mocks.query).toHaveBeenCalledTimes(6);
+  expect(mocks.query).toHaveBeenCalledTimes(5);
 });
 
 it("renders the authorized review context in the page header", async () => {
@@ -332,6 +334,7 @@ it("renders the authorized review context in the page header", async () => {
 });
 
 it("degrades the review context instead of failing the page when refused", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
   mocks.query.mockRejectedValue(new ORPCError("FORBIDDEN"));
   const destination = new PassThrough();
   destination.resume();
@@ -352,6 +355,27 @@ it("degrades the review context instead of failing the page when refused", async
   );
   await complete;
   expect(errors).toEqual([]);
+  expect(log).not.toHaveBeenCalled();
+  log.mockRestore();
+});
+
+it("logs an unexpected Claim review context failure", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  mocks.query.mockRejectedValue(new Error("connection reset"));
+  const destination = new PassThrough();
+  destination.resume();
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
+      <LocalizedClaimReviewPage
+        params={Promise.resolve({ partnershipId: "requested-partnership" })}
+      />
+    </NextIntlClientProvider>,
+    { onShellReady: () => pipe(destination) },
+  );
+  await complete;
+  expect(log).toHaveBeenCalledWith("Claim review header context failed.");
+  log.mockRestore();
 });
 
 it.each(routes.filter(({ staticHeader }) => staticHeader))(
@@ -680,7 +704,7 @@ it.each([
   ["Claim review", LocalizedClaimReviewPageMetadata],
   ["Participations", LocalizedPartnershipParticipantsPageMetadata],
   ["Participation details", LocalizedParticipantDetailsPageMetadata],
-  ["Participations", LocalizedHostedParticipantsPageMetadata],
+  ["Participants", LocalizedHostedParticipantsPageMetadata],
 ])("preserves %s metadata", (title, localized) => {
   expect(localized).toEqual({ title });
 });

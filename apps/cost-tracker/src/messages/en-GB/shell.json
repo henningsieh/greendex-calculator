@@ -18,13 +18,16 @@
       "organization": "Organization",
       "workspace": "Workspace",
       "manage": "Administration",
-      "claimReview": "Claims"
+      "claimReview": "Claims",
+      "settings": "Settings",
+      "team": "Team"
     },
     "account": {
       "openMenu": "Open account menu for {name}",
       "settings": "Account settings",
       "signOut": "Sign out",
-      "signingOut": "Working…"
+      "signingOut": "Working…",
+      "label": "Account"
     },
     "themeSwitcher": {
       "label": "Color theme",
@@ -229,16 +232,13 @@
       "notSet": "Not set"
     },
     "crumbs": {
-      "projectDetails": "Project details",
-      "partnership": "Partnership",
-      "participants": "Participations",
-      "participantDetails": "Participation details",
-      "claimReviews": "Claim review",
+      "participants": "Participants",
       "claimWorkspace": "Claim",
-      "userSettings": "User settings",
       "claimReview": "Claim review",
       "hostedProject": "Hosted Project",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partner Project",
+      "participations": "Participations",
+      "participation": "Participation"
     },
     "datePicker": {
       "placeholder": "Pick a date",

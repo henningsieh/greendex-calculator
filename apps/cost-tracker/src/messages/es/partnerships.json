@@ -23,8 +23,8 @@
       "searchLabel": "Filtrar colaboraciones",
       "searchPlaceholder": "Filtrar por organización o proyecto…",
       "emptySearch": "Ninguna colaboración coincide con este filtro.",
-      "viewDetails": "Ver detalles",
-      "removed": "Colaboración de proyecto eliminada."
+      "removed": "Colaboración de proyecto eliminada.",
+      "openProject": "Abrir proyecto"
     },
     "setup": {
       "title": "Enlace de configuración para socios",
@@ -105,7 +105,7 @@
       "tabs": {
         "label": "Secciones de socios",
         "partnerships": "Colaboraciones",
-        "invitations": "Invitaciones pendientes"
+        "invitations": "Invitaciones"
       }
     },
     "confirmations": {

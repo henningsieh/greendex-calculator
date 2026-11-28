@@ -23,6 +23,12 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { organizations: { updateCountry: mocks.updateCountry } },
   orpcQuery: {
     organizations: {
+      listMembers: {
+        queryOptions: () => ({
+          queryKey: ["organization-members"],
+          queryFn: async () => ({ members: [] }),
+        }),
+      },
       getSettings: {
         queryOptions: () => ({
           queryKey: ["organization-settings"],

@@ -1,4 +1,3 @@
-import { useTranslations } from "next-intl";
 import type { ComponentProps } from "react";
 
 import {
@@ -7,13 +6,9 @@ import {
 } from "@/app/paths";
 import { ButtonLink } from "@/components/button-link";
 import { EntityIcon } from "@/components/entity-icon";
+import { useParticipationLabel } from "@/features/breadcrumbs/use-participation-label";
 import { viewTransitionType } from "@/lib/view-transitions";
 
-/**
- * Both Project and Partnership views use the same destination label. The
- * look, density scale, and trailing arrow live in `ButtonLink`; this module
- * only adds the Participants entity icon and the destination.
- */
 export function ParticipantsLink({
   className,
   density = "default",
@@ -33,7 +28,9 @@ export function ParticipantsLink({
   | { projectId: string; partnershipId?: never }
   | { partnershipId: string; projectId?: never }
 )) {
-  const t = useTranslations("participations.link");
+  const label = useParticipationLabel(
+    projectId === undefined ? "participations" : "participants",
+  );
 
   return (
     <ButtonLink
@@ -49,7 +46,7 @@ export function ParticipantsLink({
       testId={testId}
       transitionTypes={[viewTransitionType.forward]}
     >
-      {t("label")}
+      {label}
     </ButtonLink>
   );
 }

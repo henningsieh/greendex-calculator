@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Amministrazione",
-      "title": "Organizzazione",
-      "description": "Gestisci il personale e gli inviti in sospeso per l’organizzazione attiva."
+      "settingsDescription": "Gestisci le impostazioni dell’organizzazione attiva.",
+      "teamDescription": "Gestisci il personale e gli inviti in sospeso per l’organizzazione attiva."
     },
     "loading": {
       "label": "Caricamento dell’organizzazione",

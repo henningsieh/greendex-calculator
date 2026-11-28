@@ -1,7 +1,10 @@
 import { getTranslations } from "@greendex/i18n/server";
 
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
-import { OrganizationContent } from "@/features/organizations/components/organization-content";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
+import { OrganizationSettings } from "@/features/organizations/components/organization-settings";
+import { OrganizationTeam } from "@/features/organizations/components/organization-team";
+import type { OrganizationPageKind } from "@/features/organizations/types";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { requireActiveOrganization } from "@/lib/session";
 import {
@@ -10,52 +13,59 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-/**
- * Prefetches Organization staff data and owns the page error boundary.
- * The header renders from the same tree, so denied viewers see the page
- * skeleton first and the boundary denial second — exactly like the
- * Project workspace. Procedures enforce owner/admin access; the Denial
- * below is their verdict, not a presentation guess.
- */
-export async function OrganizationPageSection() {
-  const { session, organization } = await requireActiveOrganization();
-  const t = await getTranslations("organizations");
+export async function OrganizationPageSection({
+  page,
+}: {
+  page: OrganizationPageKind;
+}) {
+  const { session } = await requireActiveOrganization();
   const queryClient = getQueryClient();
-  await Promise.all([
-    queryClient
-      .query(
-        orpcQuery.organizations.getSettings.queryOptions({
-          meta: { costTrackerORPC: true },
-        }),
-      )
-      .catch(swallowPrefetchError),
-    queryClient
-      .query(
-        orpcQuery.organizations.listMembers.queryOptions({
-          input: {},
-          meta: { costTrackerORPC: true },
-        }),
-      )
-      .catch(swallowPrefetchError),
-    queryClient
-      .query(
-        orpcQuery.organizations.listPendingInvitations.queryOptions({
-          input: {},
-          meta: { costTrackerORPC: true },
-        }),
-      )
-      .catch(swallowPrefetchError),
-  ]);
+  const members = queryClient.query(
+    orpcQuery.organizations.listMembers.queryOptions({
+      input: {},
+      meta: { costTrackerORPC: true },
+    }),
+  );
+  const pageData =
+    page === "settings"
+      ? queryClient.query(
+          orpcQuery.organizations.getSettings.queryOptions({
+            meta: { costTrackerORPC: true },
+          }),
+        )
+      : queryClient.query(
+          orpcQuery.organizations.listPendingInvitations.queryOptions({
+            input: {},
+            meta: { costTrackerORPC: true },
+          }),
+        );
+  await Promise.all(
+    [members, pageData].map((query) => query.catch(swallowPrefetchError)),
+  );
+  const t = await getTranslations("organizations");
 
   return (
     <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="Organization staff">
-        <OrganizationContent
-          email={session.user.email}
-          organizationName={organization.name}
-          eyebrow={t("page.eyebrow")}
-          description={t("page.description")}
-        />
+      <ProjectDataErrorBoundary
+        resource={
+          page === "settings" ? "Organization settings" : "Organization staff"
+        }
+      >
+        <div className="space-y-10">
+          <ProtectedRouteHeader
+            page={page}
+            description={t(
+              page === "team"
+                ? "page.teamDescription"
+                : "page.settingsDescription",
+            )}
+          />
+          {page === "settings" ? (
+            <OrganizationSettings />
+          ) : (
+            <OrganizationTeam currentUserEmail={session.user.email} />
+          )}
+        </div>
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

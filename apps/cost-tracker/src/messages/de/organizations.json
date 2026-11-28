@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Verwaltung",
-      "title": "Organisation",
-      "description": "Verwalte Teammitglieder und ausstehende Einladungen für die aktive Organisation."
+      "settingsDescription": "Passe die Einstellungen der aktiven Organisation an.",
+      "teamDescription": "Verwalte Teammitglieder und ausstehende Einladungen für die aktive Organisation."
     },
     "loading": {
       "label": "Organisation wird geladen",

@@ -626,8 +626,6 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBe(`/partnerships/${ids.partnerships[0]}/claim/review`);
     const header = host.locator("main header");
     await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
-    // Breadcrumbs render in the shell header, above the main content. The
-    // client derives one trail from the pathname; no slot fallback is kept.
     const breadcrumb = host.locator('[data-slot="breadcrumb"]:visible');
     await expect(breadcrumb.locator('[aria-current="page"]:visible')).toHaveCount(
       1,
@@ -640,6 +638,10 @@ test.describe.serial("Claim review journey 25–26", () => {
       "/en-GB/projects",
     );
     await expect(breadcrumb.getByRole("listitem")).toHaveCount(3);
+    const projectLink = breadcrumb.locator(
+      `a[href="/en-GB/projects/${ids.project}"]`,
+    );
+    await expect(projectLink).toBeVisible();
     await host.setViewportSize({ width: 375, height: 812 });
     const fits = await breadcrumb.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
@@ -663,6 +665,10 @@ test.describe.serial("Claim review journey 25–26", () => {
       host,
       new RegExp(`/partnerships/${ids.partnerships[0]}/claim/review$`),
     );
+    await projectLink.click();
+    await expectPrivateURL(host, new RegExp(`/projects/${ids.project}$`));
+    await host.goto(reviewURL);
+    await expect(projectLink).toBeVisible();
     await host.setViewportSize({ width: 1280, height: 720 });
     const review = host.getByTestId("claim-review");
     await expect(
@@ -746,6 +752,16 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(first).toHaveCount(0);
 
     const partner = await pageFor(browser, "P", baseURL!);
+    await partner.goto(`/partnerships/${ids.partnerships[0]}/claim`);
+    const partnerProject = partner.locator(
+      `nav[data-slot="breadcrumb"] a[href="/en-GB/projects/${ids.project}"]`,
+    );
+    await expect(partnerProject).toBeVisible();
+    await partnerProject.click();
+    await expect(partner.getByTestId("project-workspace")).toHaveAttribute(
+      "data-relationship",
+      "partner",
+    );
     await partner.goto(`/partnerships/${ids.partnerships[0]}/claim`);
     // Text-free: correction notice state hook instead of visible copy.
     await expect(

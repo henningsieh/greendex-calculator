@@ -2,7 +2,11 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  SectionTabs,
+  SectionTabsList,
+  SectionTabsTrigger,
+} from "@/components/section-tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ProjectListScopeAvailability } from "@/features/projects/list-query-options";
 import type { ProjectListQueryState } from "@/features/projects/types";
@@ -23,14 +27,14 @@ export function ProjectScopeTabs({
 }) {
   const t = useTranslations("projects.list");
   return (
-    <Tabs
+    <SectionTabs
       value={scope}
       onValueChange={(value) => {
         if (value === "hosted" || value === "partner")
           updateListState({ scope: value });
       }}
     >
-      <TabsList aria-label={t("relationship")} variant="line">
+      <SectionTabsList aria-label={t("relationship")}>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -43,14 +47,13 @@ export function ProjectScopeTabs({
               />
             }
           >
-            <TabsTrigger
+            <SectionTabsTrigger
               data-testid="project-scope-hosted"
-              variant="line-base"
               disabled={!availableScopes.hosted && availableScopes.partner}
               value="hosted"
             >
               {t("hosted")}
-            </TabsTrigger>
+            </SectionTabsTrigger>
           </TooltipTrigger>
           {!availableScopes.hosted && (
             <TooltipContent>{t("noHostedProjects")}</TooltipContent>
@@ -68,20 +71,19 @@ export function ProjectScopeTabs({
               />
             }
           >
-            <TabsTrigger
+            <SectionTabsTrigger
               data-testid="project-scope-partner"
-              variant="line-base"
               disabled={!availableScopes.partner}
               value="partner"
             >
               {t("partner")}
-            </TabsTrigger>
+            </SectionTabsTrigger>
           </TooltipTrigger>
           {!availableScopes.partner && (
             <TooltipContent>{t("noPartnerProjects")}</TooltipContent>
           )}
         </Tooltip>
-      </TabsList>
-    </Tabs>
+      </SectionTabsList>
+    </SectionTabs>
   );
 }

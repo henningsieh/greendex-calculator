@@ -1,7 +1,5 @@
-import { getTranslations } from "@greendex/i18n/server";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { RouteTransition } from "@/components/view-transition-boundaries";
 import { HostedParticipantsSection } from "@/features/participations/components/hosted-participants-section";
 import { HostedParticipantsSkeleton } from "@/features/participations/components/loading-skeletons";
@@ -13,16 +11,10 @@ export default async function HostedParticipantsPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await hasOrganizationMembership())) return null;
-  const t = await getTranslations("participations.app");
 
   return (
     <RouteTransition>
       <div className="space-y-8">
-        <ProtectedPageHeader
-          eyebrow={t("hostedEyebrow")}
-          title={t("reportTitle")}
-          description={t("reportDescription")}
-        />
         <Suspense fallback={<HostedParticipantsSkeleton />}>
           <HostedParticipantsSection params={params} />
         </Suspense>

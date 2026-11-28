@@ -833,6 +833,20 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(target).toBeVisible();
     await target.selectOption(actors.C.id);
     const c = await pageFor(browser, "C", baseURL!);
+    await c.goto("/organization/team");
+    await expect(c.getByTestId("data-error-fallback")).toBeVisible({
+      timeout: 90_000,
+    });
+    await expect(c.getByTestId("retry-project-data")).toBeVisible();
+    await expect(c.getByTestId("staff-members")).toHaveCount(0);
+    await expect(
+      c.locator('[data-slot="sidebar-group"][data-navigation-section]:visible'),
+    ).toHaveCount(1);
+    await expect(
+      c.locator(
+        '[data-slot="sidebar-group"][data-navigation-section="workspace"]:visible',
+      ),
+    ).toBeVisible();
     await c.goto("/projects");
     // Text-free: empty-state hook instead of visible copy.
     await expect(c.locator('[data-testid="projects-empty"]')).toBeVisible();

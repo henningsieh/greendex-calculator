@@ -157,7 +157,7 @@ test.describe.serial("guided Organization Invitation", () => {
     await expect(accept).toBeFocused();
     await page.keyboard.press("Enter");
     await expectPrivateURL(page, "/projects");
-    await page.goto("/organization");
+    await page.goto("/organization/team");
     await expect(await staffRow(page, fixture.actors.A.id)).toBeVisible();
     expect(requests).toEqual(["POST"]);
     await page.goto(destination);
@@ -682,7 +682,7 @@ test.describe.serial("guided Organization Invitation", () => {
     );
     await select.click();
     await expectPrivateURL(page, "/projects");
-    await page.goto("/organization");
+    await page.goto("/organization/team");
     await expect(await staffRow(page, fixture.actors.A.id)).toBeVisible();
   });
 
@@ -828,7 +828,7 @@ test.describe.serial("guided Organization Invitation", () => {
       const boundary = await inbox.boundary();
       const host = await fixture.actorContext(browser, "H", baseURL);
       const owner = await host.newPage();
-      await owner.goto("/organization");
+      await owner.goto("/organization/team");
       await owner.getByTestId("staff-invite-email").fill(recipient);
       await owner.getByTestId("send-staff-invitation").click();
       const deliveredInvitation = await inbox.deliveredLink(
@@ -896,7 +896,7 @@ test.describe.serial("guided Organization Invitation", () => {
       });
       await page.getByTestId("accept-organization-invitation").click();
       await expectPrivateURL(page, "/projects");
-      await page.goto("/organization");
+      await page.goto("/organization/team");
       const created = await db.query.user.findFirst({
         where: and(eq(user.email, recipient), eq(user.name, name)),
       });

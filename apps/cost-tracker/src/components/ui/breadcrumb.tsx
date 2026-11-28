@@ -84,8 +84,6 @@ function BreadcrumbPage({
     <span
       data-slot="breadcrumb-page"
       data-variant={variant}
-      role="link"
-      aria-disabled="true"
       aria-current="page"
       className={cn(breadcrumbPageVariants({ variant }), className)}
       {...props}

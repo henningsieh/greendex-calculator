@@ -1052,7 +1052,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     }) => {
       const owner = await actorContext(browser, "E", baseURL!);
       const ownerPage = await owner.newPage();
-      await ownerPage.goto("/organization");
+      await ownerPage.goto("/organization/team");
       await expect(
         ownerPage.getByTestId(`staff-invitation-${invitationId}`),
       ).toBeVisible();
@@ -1069,7 +1069,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await page.getByTestId("accept-organization-invitation").click();
       // Preserve the original full-URL match; only the diagnostic receives a boolean.
       await expectPrivateURL(page, /\/projects$/);
-      await page.goto("/organization");
+      await page.goto("/organization/team");
       await expect(page.locator('[data-testid="staff-invite"]')).toBeVisible();
       await expect(
         (await staffRow(page, actors.M.id)).getByTestId(

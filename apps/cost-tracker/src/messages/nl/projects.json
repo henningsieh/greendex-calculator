@@ -59,7 +59,6 @@
       "startDate": "Startdatum",
       "endDate": "Einddatum",
       "schedule": "Planning",
-      "viewParticipants": "Deelnames",
       "name": "Projectnaam",
       "searchPlaceholder": "Projecten zoeken",
       "sort": "Sorteren",
@@ -101,7 +100,6 @@
       "project": "Project",
       "location": "Locatie",
       "country": "Land",
-      "participants": "Deelnames",
       "refreshing": "Projecten vernieuwen…",
       "updatedAt": "Bijgewerkt om {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Toegewezen:",
       "assignmentUpdated": "Toewijzing bijgewerkt:",
       "openClaim": "Declaratie",
-      "hostedProject": "Gehost project",
-      "partnerProject": "Partnerproject",
       "noClaim": "Geen declaratie",
       "completing": "Afronden…",
       "complete": "Project afronden",
@@ -165,9 +161,7 @@
         "rejected": "Afgewezen",
         "paid": "Betaald"
       },
-      "projectParticipations": "Deelnames",
       "statPartners": "Partners",
-      "statParticipants": "Deelnames",
       "daysLeft": "{count, plural, one {# dag over} other {# dagen over}}",
       "ended": "Afgelopen",
       "claimsInReview": "Declaraties in beoordeling",
@@ -176,8 +170,7 @@
       "statPartnersDetail": "toegewezen organisaties",
       "statParticipantsDetail": "tot nu toe vastgelegd",
       "claimsInReviewDetail": "wachten op een besluit",
-      "daysUntil": "tot {date}",
-      "participants": "Deelnemers"
+      "daysUntil": "tot {date}"
     }
   }
 }

@@ -189,14 +189,22 @@ async function denied(page: Page) {
 
 async function partnerPage(page: Page) {
   await page.goto("/projects");
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
   await page.getByTestId("project-scope-partner").click();
   await page
     .locator(`a[href$="/projects/${projectId}"]`)
     .filter({ visible: true })
     .click();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
-    timeout: 90_000,
-  });
+  await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+    "data-project-id",
+    projectId,
+    {
+      timeout: 90_000,
+    },
+  );
 }
 
 test.use({
@@ -371,13 +379,75 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(page.getByTestId("hosted-participants")).toBeVisible();
       await expect(page.getByTestId("organization-assignment")).toHaveCount(0);
     }
+    await h.goto(`/de/projects/${projectId}/participants`);
+    const breadcrumbs = h.locator('nav[data-slot="breadcrumb"]');
+    await expect(
+      breadcrumbs.locator(`a[href="/de/projects/${projectId}"]`),
+    ).toBeVisible();
+    await expect(breadcrumbs.locator('[aria-current="page"]')).toBeVisible();
+
+    await h.goto(`/de/partnerships/${ids.partnership}/participants`);
+    await expect(
+      breadcrumbs.locator(`a[href="/de/projects/${projectId}"]`),
+    ).toBeVisible();
+    await expect(h.getByTestId("participation-add")).toHaveCount(0);
+    await breadcrumbs.locator(`a[href="/de/projects/${projectId}"]`).click();
+    await expect(h).toHaveURL(new RegExp(`/de/projects/${projectId}$`));
+
+    const pageSection = h.locator("main [data-navigation-section]:visible");
+    const sidebarSection = (testId: string) =>
+      h
+        .getByTestId(testId)
+        .locator("xpath=ancestor::*[@data-slot='sidebar-group'][1]");
+    await expect(
+      sidebarSection("sidebar-nav-partner-organizations"),
+    ).toHaveAttribute("data-navigation-section", "management");
+    await expect(sidebarSection("sidebar-nav-projects")).toHaveAttribute(
+      "data-navigation-section",
+      "workspace",
+    );
+    await h.goto(`/de/partnerships/${ids.partnership}`);
+    await expect(pageSection).toHaveAttribute(
+      "data-navigation-section",
+      "management",
+    );
+    await expect(breadcrumbs).toHaveCount(0);
+    await expect(h.locator('[data-slot="sidebar-trigger"]')).toBeVisible();
+    await h.getByTestId("sidebar-nav-partner-organizations").click();
+    await expect(
+      h.getByTestId("partner-organizations-tab-partnerships"),
+    ).toBeVisible();
+    await expect(
+      h.getByTestId("partner-organizations-tab-invitations"),
+    ).toBeVisible();
+    const openProject = h.getByTestId(
+      `open-partnership-project-${ids.partnership}`,
+    );
+    await expect(openProject).toHaveAttribute(
+      "href",
+      `/de/projects/${projectId}`,
+    );
+    await expect(pageSection).toHaveAttribute(
+      "data-navigation-section",
+      "management",
+    );
+    await openProject.click();
+    await expect(pageSection).toHaveAttribute(
+      "data-navigation-section",
+      "workspace",
+    );
+    await expect(h.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      projectId,
+    );
+
     const partner = await pageFor(browser, "P", baseURL!);
     await partnerPage(partner);
     await expect(
       partner.locator('a[href*="/partnerships/"][href$="/participants"]'),
     ).toBeVisible();
     await expect(partner.getByTestId("organization-assignment")).toHaveCount(0);
-    await h.goto("/organization");
+    await h.goto("/organization/team");
     const [adminMembership] = await db
       .select({ id: member.id })
       .from(member)
@@ -401,6 +471,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const x = await pageFor(browser, "X", baseURL!);
     for (const route of [
       `/projects/${projectId}`,
+      `/projects/${projectId}/participants`,
       `/partnerships/${ids.partnership}/participants`,
       `/partnerships/${ids.partnership}/claim`,
       `/partnerships/${ids.partnership}/claim/review`,
@@ -441,6 +512,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ).toBeVisible();
     const f = await pageFor(browser, "F", baseURL!);
     for (const [route, _resource] of [
+      [`/projects/${projectId}/participants`, "Hosting Participant view"],
       [`/partnerships/${ids.partnership}/participants`, "Project Participations"],
       [`/partnerships/${ids.partnership}/claim`, "Claim workspace"],
     ]) {
@@ -456,7 +528,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         ),
       ).toHaveCount(0);
       await expect(
-        f.locator(`nav[aria-label="breadcrumb"] a[href*="${ids.partnership}"]`),
+        f.locator(
+          `nav[aria-label="breadcrumb"] a[href*="${ids.partnership}"], nav[aria-label="breadcrumb"] a[href*="${projectId}"]`,
+        ),
       ).toHaveCount(0);
       await expect(
         f.locator(

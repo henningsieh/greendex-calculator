@@ -1,6 +1,11 @@
+import { getTranslations } from "@greendex/i18n/server";
+
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
+import { partnershipNavigation } from "@/features/breadcrumbs/partnership-navigation";
 import { ParticipantDetails } from "@/features/participations/components/participant-details";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { getSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -14,7 +19,7 @@ export async function ParticipantDetailsSection({
 }) {
   const { partnershipId, participationId } = await params;
   const queryClient = getQueryClient();
-  await queryClient
+  const data = await queryClient
     .query(
       orpcQuery.participations.get.queryOptions({
         input: { partnershipId, id: participationId },
@@ -23,14 +28,37 @@ export async function ParticipantDetailsSection({
     )
     .catch(swallowPrefetchError);
 
+  const t = getTranslations("participations.app");
+  const [description, session] = await Promise.all([
+    t.then((t) => t("participantDetailsDescription")),
+    getSession(),
+  ]);
+
   return (
-    <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="Participant details">
-        <ParticipantDetails
-          partnershipId={partnershipId}
-          participationId={participationId}
-        />
-      </ProjectDataErrorBoundary>
-    </HydrateClient>
+    <>
+      <ProtectedRouteHeader
+        page="participation"
+        context={
+          data
+            ? partnershipNavigation(
+                data.projectId,
+                partnershipId,
+                data.correctionContext,
+                session?.session.activeOrganizationId,
+              )
+            : undefined
+        }
+        description={description}
+        title={data?.participation.displayName}
+      />
+      <HydrateClient client={queryClient}>
+        <ProjectDataErrorBoundary resource="Participant details">
+          <ParticipantDetails
+            partnershipId={partnershipId}
+            participationId={participationId}
+          />
+        </ProjectDataErrorBoundary>
+      </HydrateClient>
+    </>
   );
 }

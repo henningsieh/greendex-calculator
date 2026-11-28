@@ -1,27 +1,25 @@
 {
   "participations": {
     "report": {
-      "label": "Partecipazioni",
-      "description": "Partecipazioni per organizzazione rappresentata.",
       "agreementVersion": "Versione dell’accordo",
       "agreementUnpublished": "non è pubblicato, quindi nessun partecipante risulta completato.",
-      "empty": "Nessuna partecipazione al progetto ha ancora aderito a questo progetto.",
+      "empty": "Nessuno ha ancora aderito a questo progetto.",
       "country": "Paese:",
       "completed": "completato",
       "pending": "in attesa",
       "countryHeader": "Paese",
-      "participationCount": "{count, plural, one {# partecipazione} other {# partecipazioni}}",
-      "hideParticipants": "Nascondi {count, plural, one {# partecipazione} other {# partecipazioni}}",
-      "showParticipants": "Mostra {count, plural, one {# partecipazione} other {# partecipazioni}}",
+      "hideParticipants": "Nascondi {count, plural, one {# partecipante} other {# partecipanti}}",
+      "showParticipants": "Mostra {count, plural, one {# partecipante} other {# partecipanti}}",
       "agreementCompleted": "Accordo accettato",
       "agreementPending": "Accordo in attesa",
       "noEmail": "Nessuna email registrata",
-      "notSet": "Non impostato"
+      "notSet": "Non impostato",
+      "participantCount": "{count, plural, one {# partecipante} other {# partecipanti}}"
     },
     "loading": {
       "projectParticipations": "Caricamento delle partecipazioni",
       "details": "Caricamento dei dettagli della partecipazione",
-      "report": "Caricamento delle partecipazioni"
+      "report": "Caricamento dei partecipanti"
     },
     "review": {
       "registeredUser": "Utente registrato:",
@@ -120,16 +118,9 @@
       "projects": "Progetti"
     },
     "app": {
-      "eyebrow": "Partenariato",
-      "backToProjects": "Torna ai progetti",
-      "reportTitle": "Partecipazioni",
-      "reportDescription": "Partecipazioni dell’intero progetto per organizzazione.",
-      "projectParticipations": "Partecipazioni",
+      "reportDescription": "Partecipanti dell’intero progetto per organizzazione.",
       "coordinateDescription": "Partecipazioni per questo partenariato.",
-      "participantDetails": "Dettagli della partecipazione",
-      "participantDetailsDescription": "Leggi questa partecipazione al progetto e correggi i dati che sei autorizzato a modificare.",
-      "projects": "Progetti",
-      "hostedEyebrow": "Progetto ospitato"
+      "participantDetailsDescription": "Leggi questa partecipazione al progetto e correggi i dati che sei autorizzato a modificare."
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,9 +173,6 @@
         "description": "Rimuovere la partecipazione al progetto di {participant}? Questa rimozione non può essere annullata.",
         "execute": "Rimuovi partecipazione al progetto"
       }
-    },
-    "link": {
-      "label": "Partecipazioni"
     }
   }
 }

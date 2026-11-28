@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Beheer",
-      "title": "Organisatie",
-      "description": "Beheer teamleden en openstaande uitnodigingen voor de actieve organisatie."
+      "settingsDescription": "Beheer de instellingen van de actieve organisatie.",
+      "teamDescription": "Beheer teamleden en openstaande uitnodigingen voor de actieve organisatie."
     },
     "loading": {
       "label": "Organisatie laden",

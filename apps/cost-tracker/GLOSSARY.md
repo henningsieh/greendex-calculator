@@ -16,12 +16,22 @@ _Avoid_: Host Organization, Host
 An Organization assigned to one Project through a Project Partnership. The same Organization may be the Hosting Organization of another Project.
 _UI label_: Partner (plural: Partners). Use Partner Organization when the full domain name is needed in technical documentation. A Partner is not a Partnership.
 
+**Hosted Project**:
+A Project viewed from the Organization that owns it.
+_UI label (de)_: Gastgeberprojekt.
+
+**Partner Project**:
+A Project viewed from an Organization assigned to it as a Partner Organization.
+_UI label (de)_: Partnerprojekt.
+
 **Project Participation**:
 The record that one User takes part in one Project, belonging to the Project rather than to a Partner Organization.
-_UI label (de)_: Teilnahme (plural: Teilnahmen); the domain term is Projektteilnahme (plural: Projektteilnahmen).
+_UI label_: Participation (plural: Participations); German: Teilnahme (plural: Teilnahmen), short for Projektteilnahme. Use this label when working with Project Participation records, including in the Partner workspace.
 _Avoid_: Partner's participants, Membership, Invitee
 
-_UI label_: Participation (plural: Participations) when coordinators work with Project Participation records. Participant still means the person, including when they register, accept the Participant Agreement, or enter their journey.
+**Participant**:
+The person, not the Project Participation record. The Hosted Project overview shows Participants grouped by the Organization they represent.
+_UI label_: Participant (plural: Participants); German: teilnehmende Person (plural: Teilnehmende).
 
 **Participant Agreement**:
 The app-wide, versioned EU–Erasmus agreement in Cost Tracker, accepted by a User rather than by a Project Participation.

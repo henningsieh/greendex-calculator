@@ -1,9 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { RouteTransition } from "@/components/view-transition-boundaries";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 import { ClaimReviewQueueLoading } from "@/features/claims/components/claim-review-queue-loading";
 import {
@@ -56,9 +56,9 @@ export default async function ClaimReviewQueuePage(
   return (
     <RouteTransition>
       <div className="min-w-0">
-        <ProtectedPageHeader
+        <ProtectedRouteHeader
           description={t("description")}
-          eyebrow={t("eyebrow")}
+          page="claims"
           title={t("title")}
         />
         <Suspense fallback={<ClaimReviewQueueLoading />}>

@@ -722,13 +722,63 @@ test.describe("Cost Tracker Project production path", () => {
   });
 });
 
-test("renders Organization staff controls without importing server auth into the browser", async ({
+test("opens Organization settings and Team separately from the sidebar", async ({
   page,
 }) => {
-  const response = await page.goto("/organization");
-  expect(response?.ok()).toBe(true);
+  await page.goto("/projects");
+  await expect(page.getByTestId("project-list")).toHaveAttribute(
+    "data-hydrated",
+    "true",
+  );
+  await page.getByTestId("sidebar-nav-organization").click();
+  await expect(page).toHaveURL(/\/organization$/);
+  const pageSection = page.locator("main [data-navigation-section]:visible");
+  await expect(pageSection).toHaveAttribute(
+    "data-navigation-section",
+    "organization",
+  );
+  await expect(page.getByTestId("organization-country")).toBeVisible();
+  await expect(
+    page.getByTestId("staff-members").filter({ visible: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByTestId("staff-invite").filter({ visible: true }),
+  ).toHaveCount(0);
+
+  await page.getByTestId("sidebar-nav-team").click();
+  await expect(page).toHaveURL(/\/organization\/team$/);
+  await expect(pageSection).toHaveAttribute(
+    "data-navigation-section",
+    "organization",
+  );
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // Text-free: staff controls are identified by stable test ids, not copy.
-  await expect(page.locator('[data-testid="staff-members"]')).toBeVisible();
-  await expect(page.locator('[data-testid="staff-invite"]')).toBeVisible();
+  await expect(page.getByTestId("staff-members")).toBeVisible();
+  await expect(page.getByTestId("staff-invite")).toBeVisible();
+  await expect(
+    page.getByTestId("organization-country").filter({ visible: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('nav[data-slot="breadcrumb"] a').filter({ visible: true }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .locator('nav[data-slot="breadcrumb"] [aria-current="page"]')
+      .filter({ visible: true }),
+  ).toBeVisible();
+
+  const account = page
+    .getByTestId("account-menu-trigger")
+    .filter({ visible: true })
+    .first();
+  await account.click();
+  await page.locator('[role="menuitem"][href$="/user-settings"]').click();
+  await expect(page).toHaveURL(/\/user-settings$/);
+  await expect(
+    page.locator("main [data-navigation-section]:visible"),
+  ).toHaveAttribute("data-navigation-section", "account");
+  await expect(
+    page
+      .locator('nav[data-slot="breadcrumb"] [aria-current="page"]')
+      .filter({ visible: true }),
+  ).toBeVisible();
 });

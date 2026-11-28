@@ -18,6 +18,13 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 export function OrganizationSettings() {
+  // The former combined page used this staff query to enforce management access.
+  useSuspenseQuery(
+    orpcQuery.organizations.listMembers.queryOptions({
+      input: {},
+      meta: { costTrackerORPC: true },
+    }),
+  );
   const options = orpcQuery.organizations.getSettings.queryOptions({
     meta: { costTrackerORPC: true },
   });
