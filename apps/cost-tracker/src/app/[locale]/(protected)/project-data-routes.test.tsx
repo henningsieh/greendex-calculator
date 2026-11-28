@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
   ),
-  query: vi.fn((options: { queryKey: string[] }) =>
+  query: vi.fn((options: { queryKey: string[] }): Promise<unknown> =>
     options.queryKey[1] === "available-scopes"
       ? mocks.availableScopes()
       : Promise.resolve(undefined),
@@ -441,6 +441,7 @@ describe("Cost Tracker Project data routes", () => {
   });
 
   it("prefetches only the requested Hosting report", async () => {
+    mocks.query.mockResolvedValueOnce({ projectId: "project-9" });
     render(
       await RealHostedParticipantsSection({
         params: Promise.resolve({ id: "project-9" }),
@@ -450,8 +451,60 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["participants-report", "project-9"],
     });
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(
+      screen
+        .getByRole("navigation")
+        .querySelector('a[href$="/projects/project-9"]'),
+    ).toBeVisible();
     expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
   });
+
+  it("omits the project link when the hosting report denies a direct request", async () => {
+    mocks.query.mockRejectedValueOnce(new ORPCError("FORBIDDEN"));
+
+    render(
+      await RealHostedParticipantsSection({
+        params: Promise.resolve({ id: "foreign-project" }),
+      }),
+    );
+
+    expect(
+      screen
+        .getByRole("navigation")
+        .querySelector('a[href$="/projects/foreign-project"]'),
+    ).toBeNull();
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
+  });
+
+  it.each([
+    { relationship: "hosted", keepsLink: true },
+    { relationship: "partner", keepsLink: false },
+  ])(
+    "checks the $relationship project context after a report failure",
+    async ({ relationship, keepsLink }) => {
+      mocks.query
+        .mockRejectedValueOnce(new Error("Report unavailable"))
+        .mockResolvedValueOnce({ id: "project-9", relationship });
+
+      render(
+        await RealHostedParticipantsSection({
+          params: Promise.resolve({ id: "project-9" }),
+        }),
+      );
+
+      const projectLink = screen
+        .getByRole("navigation")
+        .querySelector('a[href$="/projects/project-9"]');
+      if (keepsLink) {
+        expect(projectLink).toBeVisible();
+      } else {
+        expect(projectLink).toBeNull();
+      }
+      expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
+    },
+  );
 
   it("prefetches Project detail without depending on the list return destination", async () => {
     render(

@@ -4,6 +4,7 @@ import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary
 import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
 import { HostedParticipantReport } from "@/features/participations/components/hosted-participant-report";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import {
   getQueryClient,
   HydrateClient,
@@ -17,14 +18,30 @@ export async function HostedParticipantsSection({
 }) {
   const { id } = await params;
   const queryClient = getQueryClient();
-  await queryClient
+  const projectId = await queryClient
     .query(
       orpcQuery.participations.listHostedReport.queryOptions({
         input: { projectId: id },
         meta: { costTrackerORPC: true },
       }),
     )
-    .catch(swallowPrefetchError);
+    .then((report) => report.projectId)
+    .catch(async (error: unknown) => {
+      swallowPrefetchError(error);
+      if (isPresentationRefusal(error)) return undefined;
+
+      // A report failure need not hide navigation to a confirmed Hosted Project.
+      const project = await queryClient
+        .query(
+          orpcQuery.projects.get.queryOptions({
+            input: { projectId: id },
+            meta: { costTrackerORPC: true },
+          }),
+        )
+        .catch(swallowPrefetchError);
+
+      return project?.relationship === "hosted" ? project.id : undefined;
+    });
 
   const t = await getTranslations("participations.app");
 
@@ -32,7 +49,7 @@ export async function HostedParticipantsSection({
     <>
       <ProtectedRouteHeader
         page="participants"
-        context={{ projectId: id, relationship: "hosted" }}
+        context={projectId ? { projectId, relationship: "hosted" } : undefined}
         description={t("reportDescription")}
       />
       <HydrateClient client={queryClient}>

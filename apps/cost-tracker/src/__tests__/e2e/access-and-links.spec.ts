@@ -471,6 +471,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const x = await pageFor(browser, "X", baseURL!);
     for (const route of [
       `/projects/${projectId}`,
+      `/projects/${projectId}/participants`,
       `/partnerships/${ids.partnership}/participants`,
       `/partnerships/${ids.partnership}/claim`,
       `/partnerships/${ids.partnership}/claim/review`,
@@ -511,6 +512,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ).toBeVisible();
     const f = await pageFor(browser, "F", baseURL!);
     for (const [route, _resource] of [
+      [`/projects/${projectId}/participants`, "Hosting Participant view"],
       [`/partnerships/${ids.partnership}/participants`, "Project Participations"],
       [`/partnerships/${ids.partnership}/claim`, "Claim workspace"],
     ]) {
