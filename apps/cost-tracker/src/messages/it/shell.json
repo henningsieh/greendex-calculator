@@ -18,13 +18,16 @@
       "organization": "Organizzazione",
       "workspace": "Area di lavoro",
       "manage": "Amministrazione",
-      "claimReview": "Richieste di rimborso"
+      "claimReview": "Richieste di rimborso",
+      "settings": "Impostazioni",
+      "team": "Team"
     },
     "account": {
       "openMenu": "Apri il menu dell’account di {name}",
       "settings": "Impostazioni account",
       "signOut": "Esci",
-      "signingOut": "Operazione in corso…"
+      "signingOut": "Operazione in corso…",
+      "label": "Account"
     },
     "themeSwitcher": {
       "label": "Tema colore",
@@ -229,16 +232,13 @@
       "notSet": "Non impostato"
     },
     "crumbs": {
-      "projectDetails": "Dettagli del progetto",
-      "partnership": "Partenariato",
-      "participants": "Partecipazioni",
-      "participantDetails": "Dettagli della partecipazione",
-      "claimReviews": "Verifica delle richieste di rimborso",
+      "participants": "Partecipanti",
       "claimWorkspace": "Richiesta di rimborso",
-      "userSettings": "Impostazioni utente",
       "claimReview": "Verifica della richiesta di rimborso",
       "hostedProject": "Progetto ospitato",
-      "partnerProject": "Progetto partner"
+      "partnerProject": "Progetto partner",
+      "participations": "Partecipazioni",
+      "participation": "Partecipazione"
     },
     "datePicker": {
       "placeholder": "Scegli una data",

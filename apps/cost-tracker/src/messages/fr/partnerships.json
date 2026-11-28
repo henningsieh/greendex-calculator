@@ -23,8 +23,8 @@
       "searchLabel": "Filtrer les partenariats",
       "searchPlaceholder": "Filtrer par organisation ou projet…",
       "emptySearch": "Aucun partenariat ne correspond à ce filtre.",
-      "viewDetails": "Voir les détails",
-      "removed": "Partenariat de projet supprimé."
+      "removed": "Partenariat de projet supprimé.",
+      "openProject": "Ouvrir le projet"
     },
     "setup": {
       "title": "Lien de configuration du partenaire",
@@ -105,7 +105,7 @@
       "tabs": {
         "label": "Sections partenaires",
         "partnerships": "Partenariats",
-        "invitations": "Invitations en attente"
+        "invitations": "Invitations"
       }
     },
     "confirmations": {

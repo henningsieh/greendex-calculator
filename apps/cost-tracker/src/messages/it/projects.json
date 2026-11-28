@@ -59,7 +59,6 @@
       "startDate": "Data di inizio",
       "endDate": "Data di fine",
       "schedule": "Calendario",
-      "viewParticipants": "Partecipazioni",
       "name": "Nome del progetto",
       "searchPlaceholder": "Cerca progetti",
       "sort": "Ordina",
@@ -101,7 +100,6 @@
       "project": "Progetto",
       "location": "Luogo",
       "country": "Paese",
-      "participants": "Partecipazioni",
       "refreshing": "Aggiornamento dei progetti…",
       "updatedAt": "Aggiornato alle {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Assegnato:",
       "assignmentUpdated": "Assegnazione aggiornata:",
       "openClaim": "Richiesta di rimborso",
-      "hostedProject": "Progetto ospitato",
-      "partnerProject": "Progetto partner",
       "noClaim": "Nessuna richiesta di rimborso",
       "completing": "Completamento…",
       "complete": "Completa progetto",
@@ -165,19 +161,16 @@
         "rejected": "Rifiutata",
         "paid": "Pagata"
       },
-      "projectParticipations": "Partecipazioni",
       "statPartners": "Partner",
-      "statParticipants": "Partecipazioni",
       "daysLeft": "{count, plural, one {# giorno rimanente} other {# giorni rimanenti}}",
       "ended": "Concluso",
       "claimsInReview": "Richieste di rimborso in verifica",
       "schedule": "Calendario",
       "location": "Luogo",
       "statPartnersDetail": "organizzazioni assegnate",
-      "statParticipantsDetail": "registrate finora",
+      "statParticipantsDetail": "registrati finora",
       "claimsInReviewDetail": "in attesa di una decisione",
-      "daysUntil": "fino al {date}",
-      "participants": "Partecipanti"
+      "daysUntil": "fino al {date}"
     }
   }
 }

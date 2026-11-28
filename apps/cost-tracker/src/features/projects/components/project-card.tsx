@@ -4,7 +4,7 @@ import { Fragment, type ReactNode } from "react";
 import { projectPath } from "@/app/paths";
 import type { AppHref } from "@/app/routes";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ParticipantsLink } from "@/features/participations/components/participants-link";
+import { ParticipantsLink } from "@/features/breadcrumbs/components/participants-link";
 import type { projectListTableFeatures } from "@/features/projects/components/project-list-results";
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
 import type { ProjectListRow } from "@/features/projects/types";

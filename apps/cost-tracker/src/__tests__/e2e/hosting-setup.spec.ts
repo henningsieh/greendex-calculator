@@ -84,7 +84,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await expectFirstOrganizationProjects(page, fixture.organizationName);
     await page.reload();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
-    await page.goto("/organization");
+    await page.goto("/organization/team");
     const row = (await staffRow(page, fixture.actors.H.id)).getByTestId(
       `staff-role-${ORGANIZATION_ROLES.OrganizationOwner}`,
     );
@@ -115,7 +115,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     }) => {
       const host = await fixture.actorContext(browser, "H", baseURL!);
       const hostPage = await host.newPage();
-      await hostPage.goto("/organization");
+      await hostPage.goto("/organization/team");
       await expect(
         hostPage.getByTestId(`staff-invitation-${fixture.invitationId}`),
       ).toBeVisible();
@@ -136,7 +136,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page.getByTestId("accept-organization-invitation").click();
       // Preserve the original full-URL match; only the diagnostic receives a boolean.
       await expectPrivateURL(page, /\/projects$/);
-      await page.goto("/organization");
+      await page.goto("/organization/team");
       await expect(
         (await staffRow(page, fixture.actors.A.id)).getByTestId(
           `staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`,

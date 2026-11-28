@@ -59,7 +59,6 @@
       "startDate": "Startdatum",
       "endDate": "Enddatum",
       "schedule": "Zeitplan",
-      "viewParticipants": "Teilnahmen",
       "name": "Projektname",
       "searchPlaceholder": "Projekte suchen",
       "sort": "Sortieren",
@@ -101,7 +100,6 @@
       "project": "Projekt",
       "location": "Ort",
       "country": "Land",
-      "participants": "Teilnahmen",
       "refreshing": "Projekte werden aktualisiert…",
       "updatedAt": "Aktualisiert um {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Zugewiesen:",
       "assignmentUpdated": "Zuweisung aktualisiert:",
       "openClaim": "Erstattungsantrag",
-      "hostedProject": "Gehostetes Projekt",
-      "partnerProject": "Partnerprojekt",
       "noClaim": "Kein Erstattungsantrag",
       "completing": "Wird abgeschlossen…",
       "complete": "Projekt abschließen",
@@ -165,9 +161,7 @@
         "rejected": "Abgelehnt",
         "paid": "Ausgezahlt"
       },
-      "projectParticipations": "Teilnahmen",
       "statPartners": "Partner",
-      "statParticipants": "Teilnahmen",
       "daysLeft": "{count, plural, one {# Tag übrig} other {# Tage übrig}}",
       "ended": "Beendet",
       "claimsInReview": "Erstattungsanträge in Prüfung",
@@ -176,8 +170,7 @@
       "statPartnersDetail": "zugeordnete Organisationen",
       "statParticipantsDetail": "bisher erfasst",
       "claimsInReviewDetail": "warten auf Entscheidung",
-      "daysUntil": "bis {date}",
-      "participants": "Teilnehmende"
+      "daysUntil": "bis {date}"
     }
   }
 }

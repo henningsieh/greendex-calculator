@@ -3,9 +3,9 @@ import { getTranslations } from "@greendex/i18n/server";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { RouteTransition } from "@/components/view-transition-boundaries";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
 import { PartnerGuideDialog } from "@/features/partnerships/components/partner-guide-dialog";
 import { PartnerOrganizationsTabs } from "@/features/partnerships/components/partner-organizations-tabs";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
@@ -42,8 +42,8 @@ export default async function PartnerOrganizationsPage() {
           {/* The header's right side carries the page's most important
             actions: the Invite menu (primary) stacked over the guide
             (ghost), so both stay visible without scrolling past the tabs. */}
-          <ProtectedPageHeader
-            eyebrow={t("eyebrow")}
+          <ProtectedRouteHeader
+            page="partners"
             title={t("title")}
             description={t("description")}
             rightButton={

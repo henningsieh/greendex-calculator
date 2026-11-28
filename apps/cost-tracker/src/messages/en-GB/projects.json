@@ -59,7 +59,6 @@
       "startDate": "Start date",
       "endDate": "End date",
       "schedule": "Schedule",
-      "viewParticipants": "Participations",
       "name": "Project name",
       "searchPlaceholder": "Search projects",
       "sort": "Sort",
@@ -101,7 +100,6 @@
       "project": "Project",
       "location": "Location",
       "country": "Country",
-      "participants": "Participations",
       "refreshing": "Refreshing Projects…",
       "updatedAt": "Updated {time} UTC",
       "invalidCursor": {
@@ -149,8 +147,6 @@
       "assignedLabel": "Assigned:",
       "assignmentUpdated": "Assignment updated:",
       "openClaim": "Claim",
-      "hostedProject": "Hosted Project",
-      "partnerProject": "Partner Project",
       "noClaim": "No Claim",
       "completing": "Completing…",
       "complete": "Complete Project",
@@ -165,9 +161,7 @@
         "rejected": "Rejected",
         "paid": "Paid"
       },
-      "projectParticipations": "Participations",
       "statPartners": "Partners",
-      "statParticipants": "Participations",
       "daysLeft": "{count, plural, one {# day left} other {# days left}}",
       "ended": "Ended",
       "claimsInReview": "Claims in review",
@@ -176,8 +170,7 @@
       "statPartnersDetail": "assigned organizations",
       "statParticipantsDetail": "recorded so far",
       "claimsInReviewDetail": "need a decision",
-      "daysUntil": "until {date}",
-      "participants": "Participants"
+      "daysUntil": "until {date}"
     }
   }
 }

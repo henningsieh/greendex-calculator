@@ -11,7 +11,6 @@ import { ButtonLink } from "@/components/button-link";
 import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { OrgAvatar } from "@/components/org-avatar";
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +19,9 @@ import {
   EmptyHeader,
   EmptyMedia,
 } from "@/components/ui/empty";
+import { ParticipantsLink } from "@/features/breadcrumbs/components/participants-link";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
+import { useParticipationLabel } from "@/features/breadcrumbs/use-participation-label";
 import {
   type ClaimStatus,
   isClaimAwaitingReview,
@@ -27,7 +29,6 @@ import {
 } from "@/features/claims/claim-lifecycle";
 import { ClaimReviewLink } from "@/features/claims/components/claim-review-link";
 import { ClaimStatusBadge } from "@/features/claims/components/claim-status-badge";
-import { ParticipantsLink } from "@/features/participations/components/participants-link";
 import {
   PartnershipActions,
   PartnershipShortcutLinks,
@@ -264,6 +265,7 @@ export function ProjectWorkspace({
   canManagePartnerships?: boolean;
 }) {
   const t = useTranslations("projects.workspace");
+  const participantLabel = useParticipationLabel("participants");
   const dateFormat = useDateFormat();
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
@@ -311,8 +313,9 @@ export function ProjectWorkspace({
       ref={workspace}
       tabIndex={-1}
     >
-      <ProtectedPageHeader
-        eyebrow={isHosted ? t("hostedProject") : t("partnerProject")}
+      <ProtectedRouteHeader
+        page="project"
+        context={{ projectId: project.id, relationship: project.relationship }}
         title={project.name}
         rightButton={
           <div className="flex flex-wrap items-center gap-3">
@@ -406,7 +409,7 @@ export function ProjectWorkspace({
             </>
           )}
           <ProjectMetric
-            label={t("statParticipants")}
+            label={participantLabel}
             value={project.participantCount}
             detail={t("statParticipantsDetail")}
             testId="stat-participants"

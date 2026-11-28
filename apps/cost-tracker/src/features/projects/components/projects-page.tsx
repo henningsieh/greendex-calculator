@@ -2,8 +2,8 @@ import { getTranslations } from "@greendex/i18n/server";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { RouteTransition } from "@/components/view-transition-boundaries";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectListLoading } from "@/features/projects/components/project-list-loading";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
@@ -34,8 +34,8 @@ export default async function ProjectsPage(
   return (
     <RouteTransition>
       <div className="min-w-0">
-        <ProtectedPageHeader
-          eyebrow={t("eyebrow")}
+        <ProtectedRouteHeader
+          page="projects"
           title={t("title")}
           description={t("description")}
           rightButton={canCreate ? <CreateProjectDialog /> : undefined}

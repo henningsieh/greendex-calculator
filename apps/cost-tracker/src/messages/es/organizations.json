@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Administración",
-      "title": "Organización",
-      "description": "Gestiona el personal y las invitaciones pendientes de la organización activa."
+      "settingsDescription": "Gestiona los ajustes de la organización activa.",
+      "teamDescription": "Gestiona el personal y las invitaciones pendientes de la organización activa."
     },
     "loading": {
       "label": "Cargando organización",

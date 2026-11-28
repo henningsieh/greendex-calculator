@@ -18,13 +18,16 @@
       "organization": "Organisatie",
       "workspace": "Werkruimte",
       "manage": "Beheer",
-      "claimReview": "Declaraties"
+      "claimReview": "Declaraties",
+      "settings": "Instellingen",
+      "team": "Team"
     },
     "account": {
       "openMenu": "Accountmenu voor {name} openen",
       "settings": "Accountinstellingen",
       "signOut": "Uitloggen",
-      "signingOut": "Bezig…"
+      "signingOut": "Bezig…",
+      "label": "Account"
     },
     "themeSwitcher": {
       "label": "Kleurthema",
@@ -229,16 +232,13 @@
       "notSet": "Niet ingesteld"
     },
     "crumbs": {
-      "projectDetails": "Projectdetails",
-      "partnership": "Partnerschap",
-      "participants": "Deelnames",
-      "participantDetails": "Deelnamedetails",
-      "claimReviews": "Beoordeling van declaraties",
+      "participants": "Deelnemers",
       "claimWorkspace": "Declaratie",
-      "userSettings": "Gebruikersinstellingen",
       "claimReview": "Beoordeling van declaratie",
-      "hostedProject": "Gehost project",
-      "partnerProject": "Partnerproject"
+      "hostedProject": "Gastheerproject",
+      "partnerProject": "Partnerproject",
+      "participations": "Deelnames",
+      "participation": "Deelname"
     },
     "datePicker": {
       "placeholder": "Kies een datum",

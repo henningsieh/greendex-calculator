@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { useParticipationLabel } from "@/features/breadcrumbs/use-participation-label";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -24,6 +25,7 @@ type PartnerOrganizationGroup = ParticipantReport["organizations"][number];
  */
 export function HostedParticipantReport({ projectId }: { projectId: string }) {
   const t = useTranslations("participations.report");
+  const label = useParticipationLabel("participants");
   const { data } = useSuspenseQuery(
     orpcQuery.participations.listHostedReport.queryOptions({
       input: { projectId },
@@ -34,11 +36,10 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
   return (
     <section
       data-testid="hosted-participant-report"
-      aria-label={t("label")}
+      aria-label={label}
       className="space-y-6"
       data-agreement-published={data.agreement.published}
     >
-      <p className="text-sm text-muted-foreground">{t("description")}</p>
       {!data.agreement.published && (
         <p
           className="text-sm text-muted-foreground"
@@ -90,7 +91,7 @@ function PartnerOrganizationParticipants({
             data-country={group.country}
           >{`${t("country")} ${group.country}`}</Badge>
           <Badge data-participant-count={group.participantCount}>
-            {t("participationCount", { count: group.participantCount })}
+            {t("participantCount", { count: group.participantCount })}
           </Badge>
           <Badge
             variant="secondary"

@@ -18,13 +18,16 @@
       "organization": "Organizacija",
       "workspace": "Delovni prostor",
       "manage": "Administracija",
-      "claimReview": "Zahtevki"
+      "claimReview": "Zahtevki",
+      "settings": "Nastavitve",
+      "team": "Ekipa"
     },
     "account": {
       "openMenu": "Odpri meni računa za {name}",
       "settings": "Nastavitve računa",
       "signOut": "Odjava",
-      "signingOut": "Obdelovanje…"
+      "signingOut": "Obdelovanje…",
+      "label": "Račun"
     },
     "themeSwitcher": {
       "label": "Barvna tema",
@@ -229,16 +232,13 @@
       "notSet": "Ni nastavljeno"
     },
     "crumbs": {
-      "projectDetails": "Podrobnosti projekta",
-      "partnership": "Partnerstvo",
-      "participants": "Udeležbe",
-      "participantDetails": "Podrobnosti udeležbe",
-      "claimReviews": "Pregled zahtevka",
+      "participants": "Udeleženci",
       "claimWorkspace": "Zahtevek",
-      "userSettings": "Uporabniške nastavitve",
       "claimReview": "Pregled zahtevka",
       "hostedProject": "Gostovani projekt",
-      "partnerProject": "Partnerski projekt"
+      "partnerProject": "Partnerski projekt",
+      "participations": "Udeležbe",
+      "participation": "Udeležba"
     },
     "datePicker": {
       "placeholder": "Izberite datum",

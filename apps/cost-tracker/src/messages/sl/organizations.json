@@ -17,9 +17,8 @@
       }
     },
     "page": {
-      "eyebrow": "Administracija",
-      "title": "Organizacija",
-      "description": "Upravljajte zaposlene in čakajoča povabila za aktivno organizacijo."
+      "settingsDescription": "Upravljajte nastavitve aktivne organizacije.",
+      "teamDescription": "Upravljajte zaposlene in čakajoča povabila za aktivno organizacijo."
     },
     "loading": {
       "label": "Nalaganje organizacije",

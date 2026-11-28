@@ -7,10 +7,10 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { ArrowUpRightIcon, EyeIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { ArrowUpRightIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 
-import { partnershipPath, projectPath } from "@/app/paths";
+import { projectPath } from "@/app/paths";
 import { ArchivedActionExplanation } from "@/components/archived-action-explanation";
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { EntityIcon } from "@/components/entity-icon";
@@ -253,11 +253,11 @@ export function ProjectPartnershipManager({
                               variant: "link",
                               size: "sm",
                             })}
-                            href={partnershipPath(partnership.id)}
+                            data-testid={`open-partnership-project-${partnership.id}`}
+                            href={projectPath(group.projectId)}
                             transitionTypes={[viewTransitionType.forward]}
                           >
-                            <EyeIcon aria-hidden="true" />
-                            {t("manager.viewDetails")}
+                            {t("manager.openProject")}
                             <ArrowUpRightIcon aria-hidden="true" />
                           </Link>
                           {canAssign && (

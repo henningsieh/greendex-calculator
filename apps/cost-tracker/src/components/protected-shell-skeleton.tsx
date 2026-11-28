@@ -9,7 +9,6 @@ import {
 import { SiteBrand } from "@/components/site-brand";
 import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BreadcrumbTrailFallback } from "@/features/breadcrumbs/components/breadcrumb-trail";
 import { cn } from "@/lib/utils";
 
 export function ProtectedPageSkeleton() {
@@ -66,7 +65,7 @@ function SidebarGroupSkeleton({ rows }: { rows: string[] }) {
 
 /**
  * First-paint shell. It reproduces the real shell's frame — the sidebar
- * column, the content column, the app bar and the breadcrumb row — rather than
+ * column, the content column and the app bar — rather than
  * approximating it, so nothing moves sideways when `ProtectedShell` streams
  * in. `sidebarOpen` comes from the persisted preference, read by the layout
  * above the Suspense boundary; the widths themselves come from the same
@@ -86,8 +85,9 @@ export function ProtectedShellSkeleton({
           <SidebarBrandRowSkeleton />
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
-          <SidebarGroupSkeleton rows={["w-24", "w-16", "w-20"]} />
-          <SidebarGroupSkeleton rows={["w-28"]} />
+          <SidebarGroupSkeleton rows={["w-24", "w-16"]} />
+          <SidebarGroupSkeleton rows={["w-20"]} />
+          <SidebarGroupSkeleton rows={["w-24", "w-16"]} />
         </div>
         <div className="flex flex-col gap-2 p-2">
           <SidebarBrandRowSkeleton />
@@ -99,7 +99,8 @@ export function ProtectedShellSkeleton({
       >
         <LoadingRegion label={t("loading")}>
           <header className="border-b bg-background">
-            <div className="flex items-start gap-1">
+            <div className="flex items-center gap-1">
+              <Skeleton className="size-8 shrink-0" />
               <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
                 <div className="flex h-18 items-center justify-between">
                   <SiteBrand />
@@ -111,7 +112,6 @@ export function ProtectedShellSkeleton({
                 </div>
               </div>
             </div>
-            <BreadcrumbTrailFallback />
           </header>
           <main className="@container/content mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
             <ProtectedPageHeaderLoading />

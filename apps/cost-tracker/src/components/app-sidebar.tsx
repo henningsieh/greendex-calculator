@@ -19,6 +19,10 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import {
+  protectedPages,
+  sidebarGroups,
+} from "@/features/breadcrumbs/breadcrumb-routes";
 import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { Link, usePathname } from "@/lib/i18n/routing";
 import {
@@ -31,6 +35,7 @@ interface SidebarNavItem {
   label: string;
   testId: string;
   icon: ReactNode;
+  matchChildren: boolean;
 }
 
 interface AppSidebarProps {
@@ -43,14 +48,19 @@ interface AppSidebarProps {
   activeOrganizationId?: string;
 }
 
-function isItemActive(pathname: string, href: AppRoute) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isItemActive(pathname: string, item: SidebarNavItem) {
+  return (
+    pathname === item.href ||
+    (item.matchChildren && pathname.startsWith(`${item.href}/`))
+  );
 }
 
 function SidebarNavGroup({
+  section,
   label,
   items,
 }: {
+  section: string;
   label: string;
   items: SidebarNavItem[];
 }) {
@@ -59,17 +69,17 @@ function SidebarNavGroup({
   if (items.length === 0) return null;
 
   return (
-    <SidebarGroup>
+    <SidebarGroup data-navigation-section={section}>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {
-            const active = isItemActive(pathname, item.href);
+            const active = isItemActive(pathname, item);
 
             return (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
-                  aria-current={active ? "page" : undefined}
+                  aria-current={pathname === item.href ? "page" : undefined}
                   data-testid={item.testId}
                   isActive={active}
                   render={
@@ -106,41 +116,39 @@ export function AppSidebar({
     (organization) => organization.id === activeOrganizationId,
   );
 
-  const workspaceItems: SidebarNavItem[] = [
+  const entries = [
     {
-      href: "/projects",
-      label: t("nav.projects"),
+      page: protectedPages.projects,
+      icon: "project",
       testId: "sidebar-nav-projects",
-      icon: <EntityIcon entity="project" />,
+      visible: true,
     },
     {
-      href: "/claims",
-      label: t("nav.claimReview"),
+      page: protectedPages.claims,
+      icon: "claim",
       testId: "sidebar-nav-claim-review",
-      icon: <EntityIcon entity="claim" />,
+      visible: true,
     },
-    ...(showPartnerOrganizations
-      ? [
-          {
-            href: "/partner-organizations",
-            label: t("nav.partnerOrganizations"),
-            testId: "sidebar-nav-partner-organizations",
-            icon: <EntityIcon entity="partner" />,
-          } satisfies SidebarNavItem,
-        ]
-      : []),
-  ];
-
-  const manageItems: SidebarNavItem[] = showOrganization
-    ? [
-        {
-          href: "/organization",
-          label: t("nav.organization"),
-          testId: "sidebar-nav-organization",
-          icon: <EntityIcon entity="organization" />,
-        },
-      ]
-    : [];
+    {
+      page: protectedPages.partners,
+      icon: "partner",
+      testId: "sidebar-nav-partner-organizations",
+      visible: showPartnerOrganizations,
+    },
+    {
+      matchChildren: false,
+      page: protectedPages.settings,
+      icon: "organization",
+      testId: "sidebar-nav-organization",
+      visible: showOrganization,
+    },
+    {
+      page: protectedPages.team,
+      icon: "participants",
+      testId: "sidebar-nav-team",
+      visible: showOrganization,
+    },
+  ] as const;
 
   return (
     <Sidebar
@@ -181,8 +189,30 @@ export function AppSidebar({
         )}
       </SidebarHeader>
       <SidebarContent>
-        <SidebarNavGroup label={t("nav.workspace")} items={workspaceItems} />
-        <SidebarNavGroup label={t("nav.manage")} items={manageItems} />
+        {Object.entries(sidebarGroups).map(([section, label]) => (
+          <SidebarNavGroup
+            key={section}
+            section={section}
+            label={t(label)}
+            items={entries.flatMap(
+              ({ page, icon, testId, visible, ...options }) =>
+                visible && page.section === section
+                  ? [
+                      {
+                        href: page.href,
+                        matchChildren:
+                          "matchChildren" in options
+                            ? options.matchChildren
+                            : true,
+                        label: t(page.label),
+                        testId,
+                        icon: <EntityIcon entity={icon} />,
+                      },
+                    ]
+                  : [],
+            )}
+          />
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

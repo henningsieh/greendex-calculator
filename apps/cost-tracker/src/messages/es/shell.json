@@ -18,13 +18,16 @@
       "organization": "Organización",
       "workspace": "Espacio de trabajo",
       "manage": "Administración",
-      "claimReview": "Solicitudes"
+      "claimReview": "Solicitudes",
+      "settings": "Ajustes",
+      "team": "Equipo"
     },
     "account": {
       "openMenu": "Abrir el menú de la cuenta de {name}",
       "settings": "Ajustes de la cuenta",
       "signOut": "Cerrar sesión",
-      "signingOut": "Procesando…"
+      "signingOut": "Procesando…",
+      "label": "Cuenta"
     },
     "themeSwitcher": {
       "label": "Tema de color",
@@ -229,16 +232,13 @@
       "notSet": "Sin definir"
     },
     "crumbs": {
-      "projectDetails": "Detalles del proyecto",
-      "partnership": "Colaboración",
-      "participants": "Participaciones",
-      "participantDetails": "Detalles de la participación",
-      "claimReviews": "Revisión de solicitudes",
+      "participants": "Participantes",
       "claimWorkspace": "Solicitud de reembolso",
-      "userSettings": "Ajustes de usuario",
-      "claimReview": "Revisión de solicitud",
-      "hostedProject": "Proyecto alojado",
-      "partnerProject": "Proyecto socio"
+      "claimReview": "Revisión de la solicitud de reembolso",
+      "hostedProject": "Proyecto anfitrión",
+      "partnerProject": "Proyecto socio",
+      "participations": "Participaciones",
+      "participation": "Participación"
     },
     "datePicker": {
       "placeholder": "Elige una fecha",

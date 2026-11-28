@@ -55,7 +55,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ParticipantsLink } from "@/features/participations/components/participants-link";
+import { ParticipantsLink } from "@/features/breadcrumbs/components/participants-link";
+import { useParticipationLabel } from "@/features/breadcrumbs/use-participation-label";
 import { ProjectRegisterCard } from "@/features/projects/components/project-card";
 import {
   getProjectColumnFilters,
@@ -220,6 +221,7 @@ export function ResolvedProjectListResults({
   setUrlState: ProjectListQueryState[1];
 }) {
   const t = useTranslations("projects.list");
+  const participantLabel = useParticipationLabel("participants");
   const dateFormat = useDateFormat();
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
@@ -371,7 +373,7 @@ export function ResolvedProjectListResults({
               enableSorting: false,
               // The link names the column, so the header stays bare on screen
               // while assistive tech keeps the column name.
-              header: () => <span className="sr-only">{t("participants")}</span>,
+              header: () => <span className="sr-only">{participantLabel}</span>,
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
                 <ParticipantsLink
                   density="compact"
@@ -386,7 +388,7 @@ export function ResolvedProjectListResults({
           ]
         : []),
     ],
-    [scope, t, dateFormat, isHydrated],
+    [scope, t, dateFormat, isHydrated, participantLabel],
   );
   const table = useTable({
     columns,
@@ -718,7 +720,7 @@ export function ResolvedProjectListResults({
                       {sortLabels[column.id] ??
                         (column.id === "location"
                           ? t("location")
-                          : t("participants"))}
+                          : participantLabel)}
                     </DropdownMenuCheckboxItem>
                   ))}
                 <DropdownMenuItem

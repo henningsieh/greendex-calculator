@@ -1,41 +1,18 @@
 import { screen, within } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
-// jsdom has no matchMedia; the shell's sidebar trigger reads it on mount.
-vi.stubGlobal(
-  "matchMedia",
-  (query: string) =>
-    ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      dispatchEvent: () => false,
-    }) satisfies Partial<MediaQueryList>,
-);
-
-it("links the register and renders entity and current crumbs without destinations", () => {
-  const { container } = render(
-    <SidebarProvider>
-      <BreadcrumbTrail
-        current="Participants"
-        items={[
-          {
-            label: "Projects",
-            href: "/projects",
-            testId: "back-to-projects",
-          },
-          {
-            label: "Partnership",
-          },
-        ]}
-      />
-    </SidebarProvider>,
+it("links each ancestor and marks exactly one non-link as the current page", () => {
+  render(
+    <BreadcrumbTrail
+      current="Participants"
+      items={[
+        { label: "Projects", href: "/projects" },
+        { label: "Hosted Project", href: "/projects/project-42" },
+      ]}
+    />,
   );
 
   const navigation = screen.getByRole("navigation");
@@ -43,26 +20,17 @@ it("links the register and renders entity and current crumbs without destination
     within(navigation)
       .getAllByRole("link")
       .map((link) => link.getAttribute("href")),
-  ).toEqual(["/en-GB/projects", null]);
-  expect(within(navigation).getByTestId("back-to-projects")).toHaveAttribute(
-    "href",
-    "/en-GB/projects",
-  );
+  ).toEqual(["/en-GB/projects", "/en-GB/projects/project-42"]);
   expect(within(navigation).getAllByRole("listitem")).toHaveLength(3);
-  expect(
-    container.querySelectorAll('[data-slot="breadcrumb-page"]'),
-  ).toHaveLength(1);
+  const current = navigation.querySelectorAll('[aria-current="page"]');
+  expect(current).toHaveLength(1);
+  expect(current[0]).not.toHaveAttribute("href");
 });
 
-it("renders only the current page when the route has no parent crumbs", () => {
-  render(
-    <SidebarProvider>
-      <BreadcrumbTrail current="Projects" items={[]} />
-    </SidebarProvider>,
-  );
+it("renders only the current page when the route has no ancestors", () => {
+  render(<BreadcrumbTrail current="Projects" items={[]} />);
 
   const navigation = screen.getByRole("navigation");
   expect(within(navigation).getAllByRole("listitem")).toHaveLength(1);
-  expect(within(navigation).queryAllByRole("link")).toHaveLength(1);
-  expect(within(navigation).getAllByRole("link")[0]).not.toHaveAttribute("href");
+  expect(within(navigation).queryAllByRole("link")).toHaveLength(0);
 });

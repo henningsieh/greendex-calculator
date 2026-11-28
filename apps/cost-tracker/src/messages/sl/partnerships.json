@@ -23,8 +23,8 @@
       "searchLabel": "Filtriraj partnerstva",
       "searchPlaceholder": "Filtriraj po organizaciji ali projektu…",
       "emptySearch": "Noben partnerstvo ne ustreza temu filtru.",
-      "viewDetails": "Poglej podrobnosti",
-      "removed": "Projektno partnerstvo je odstranjeno."
+      "removed": "Projektno partnerstvo je odstranjeno.",
+      "openProject": "Odpri projekt"
     },
     "setup": {
       "title": "Nastavitvena povezava za partnerja",
@@ -105,7 +105,7 @@
       "tabs": {
         "label": "Razdelki partnerjev",
         "partnerships": "Partnerstva",
-        "invitations": "Čakajoča povabila"
+        "invitations": "Povabila"
       }
     },
     "confirmations": {

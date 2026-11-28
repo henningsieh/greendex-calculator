@@ -3,13 +3,12 @@ import { connection } from "next/server";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
 import { SelectOrganization } from "@/features/authentication/components/select-organization";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
-import { BreadcrumbNav } from "@/features/breadcrumbs/components/breadcrumb-nav";
 import {
   canManageOrganization,
   canViewPartnerNetwork,
@@ -90,7 +89,8 @@ export async function ProtectedShell({
             viewTransitionName: persistentViewTransitionName.appHeader,
           }}
         >
-          <div className="flex items-start gap-1">
+          <div className="flex items-center gap-1">
+            <SidebarTrigger className="shrink-0" />
             <div className="min-w-0 flex-1">
               <AppNavigation
                 email={session.user.email}
@@ -98,7 +98,6 @@ export async function ProtectedShell({
               />
             </div>
           </div>
-          <BreadcrumbNav />
         </header>
         {/* `@container/content` makes the Project register and its filters
             respond to this content column, not the viewport. Expanding or

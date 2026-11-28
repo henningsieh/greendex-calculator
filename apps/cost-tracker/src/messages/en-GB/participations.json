@@ -1,27 +1,25 @@
 {
   "participations": {
     "report": {
-      "label": "Participations",
-      "description": "Participations by represented Organization.",
       "agreementVersion": "Agreement version",
       "agreementUnpublished": "is not published, so no Participant counts as completed.",
-      "empty": "No Project Participations have joined this Project yet.",
+      "empty": "No one has joined this Project yet.",
       "country": "Country:",
       "completed": "completed",
       "pending": "pending",
       "countryHeader": "Country",
-      "participationCount": "{count, plural, one {# Participation} other {# Participations}}",
-      "hideParticipants": "Hide {count, plural, one {# Participation} other {# Participations}}",
-      "showParticipants": "Show {count, plural, one {# Participation} other {# Participations}}",
+      "hideParticipants": "Hide {count, plural, one {# Participant} other {# Participants}}",
+      "showParticipants": "Show {count, plural, one {# Participant} other {# Participants}}",
       "agreementCompleted": "Agreement completed",
       "agreementPending": "Agreement pending",
       "noEmail": "No email recorded",
-      "notSet": "Not set"
+      "notSet": "Not set",
+      "participantCount": "{count, plural, one {# Participant} other {# Participants}}"
     },
     "loading": {
       "projectParticipations": "Loading Participations",
       "details": "Loading Participation details",
-      "report": "Loading Participations"
+      "report": "Loading Participants"
     },
     "review": {
       "registeredUser": "Registered User:",
@@ -120,16 +118,9 @@
       "projects": "Projects"
     },
     "app": {
-      "eyebrow": "Partnership",
-      "backToProjects": "Back to Projects",
-      "reportTitle": "Participations",
-      "reportDescription": "Project-wide Participations by Organization.",
-      "projectParticipations": "Participations",
+      "reportDescription": "Project-wide Participants by Organization.",
       "coordinateDescription": "Participations for this Partnership.",
-      "participantDetails": "Participation details",
-      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct.",
-      "projects": "Projects",
-      "hostedEyebrow": "Hosted Project"
+      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct."
     },
     "participantOnboarding": {
       "agreementUnavailable": {
@@ -182,9 +173,6 @@
         "description": "Remove the Project Participation for {participant}? This removal cannot be undone.",
         "execute": "Remove Project Participation"
       }
-    },
-    "link": {
-      "label": "Participations"
     }
   }
 }

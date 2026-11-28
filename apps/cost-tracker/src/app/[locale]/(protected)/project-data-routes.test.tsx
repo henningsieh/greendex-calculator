@@ -150,9 +150,6 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
-vi.mock("@/features/participations/components/participant-page-header", () => ({
-  ParticipantPageHeader: () => null,
-}));
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
   cookies: () => Promise.resolve({ get: () => undefined }),

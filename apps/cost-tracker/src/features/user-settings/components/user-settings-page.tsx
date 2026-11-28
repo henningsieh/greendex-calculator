@@ -1,7 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
 
-import ProtectedPageHeader from "@/components/protected-page-header";
 import { RouteTransition } from "@/components/view-transition-boundaries";
+import { ProtectedRouteHeader } from "@/features/breadcrumbs/components/protected-route-header";
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
 import { requireSession } from "@/lib/session";
 
@@ -12,8 +12,8 @@ export default async function UserSettingsPage() {
   return (
     <RouteTransition>
       <div className="max-w-5xl">
-        <ProtectedPageHeader
-          eyebrow={t("eyebrow")}
+        <ProtectedRouteHeader
+          page="account"
           title={t("title")}
           description={t("description")}
         />
