@@ -17,7 +17,7 @@ export async function HostedParticipantsSection({
 }) {
   const { id } = await params;
   const queryClient = getQueryClient();
-  const data = await queryClient
+  await queryClient
     .query(
       orpcQuery.participations.listHostedReport.queryOptions({
         input: { projectId: id },
@@ -32,9 +32,7 @@ export async function HostedParticipantsSection({
     <>
       <ProtectedRouteHeader
         page="participants"
-        context={
-          data ? { projectId: data.projectId, relationship: "hosted" } : undefined
-        }
+        context={{ projectId: id, relationship: "hosted" }}
         description={t("reportDescription")}
       />
       <HydrateClient client={queryClient}>
